@@ -1,0 +1,2 @@
+include requirements/requirements.txt
+recursive-include cuda_helpers *.py

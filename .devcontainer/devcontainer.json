@@ -1,0 +1,16 @@
+{
+    "dockerFile": "dockerfile",
+    "extensions": [
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+        "ms-azuretools.vscode-docker",
+        "GitHub.vscode-pull-request-github",
+        "ms-python.python"
+    ],
+    "runArgs": [
+        // Enforce privileged mode, see also https://github.com/uliegecsm/trilinos-container/issues/76
+        "--privileged",
+    ],
+    // Git security fix: see also https://github.com/actions/checkout/issues/766
+    "onCreateCommand": "git config --global --add safe.directory $PWD",
+}

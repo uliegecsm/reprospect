@@ -31,6 +31,8 @@ jobs:
               with:
                   set-safe-directory: true
 
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
             - run: |
                 echo "CI_IMAGE=${{ env.REGISTRY }}/${{ github.repository }}/${{ env.CI_IMAGE_BASE }}" >> $GITHUB_ENV
 

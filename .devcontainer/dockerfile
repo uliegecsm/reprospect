@@ -1,0 +1,6 @@
+FROM ghcr.io/uliegecsm/cuda-helpers/cuda:12.8.1-devel-ubuntu24.04
+
+# Installing gpg and gnupg2 allows the container to use GPG keys to sign commits.
+# See also:
+#   - https://code.visualstudio.com/remote/advancedcontainers/sharing-git-credentials
+RUN apt-helpers install-packages --update --clean --packages gpg gnupg2

@@ -19,3 +19,19 @@ RUN <<EOF
 
     apt-helpers clean
 EOF
+
+RUN --mount=target=/requirements,type=bind,source=requirements <<EOF
+    set -ex
+
+    python3 -m pip install -r /requirements/requirements.txt
+    python3 -m pip install pytest
+
+    apt-helpers install-packages --update --clean --packages curl
+
+    curl --progress-bar -L https://dl.min.io/aistor/mc/release/linux-amd64/mc \
+        --create-dirs \
+        -o /opt/aistor-binaries/mc
+    chmod +x /opt/aistor-binaries/mc
+EOF
+
+ENV PATH=/opt/aistor-binaries/:${PATH}

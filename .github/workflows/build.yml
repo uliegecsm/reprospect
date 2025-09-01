@@ -96,9 +96,13 @@ jobs:
                   path: install-from
             - run : |
                 pip install install-from/
+                rm -rf install-from/
 
             - run: |
                 python -c "import cuda_helpers.tools.device_properties as u; print(u.Cuda().get_device_name(device = 0))"
+
+            - run: |
+                cuda-helpers-install-nsight-systems --help
 
     deploy:
         needs: [set-vars, test, install-as-package-and-test]

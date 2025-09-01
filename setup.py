@@ -6,7 +6,7 @@ from setuptools import setup
 import cuda_helpers
 
 requirements = pathlib.Path(__file__).parent / 'requirements' / 'requirements.txt'
-requirements = requirements.read_text().splitlines()
+requirements = filter(None, requirements.read_text().splitlines())
 
 setup(
     name             = 'cuda-helpers',
@@ -17,9 +17,16 @@ setup(
         *requirements,
     ],
     packages = [
+        'cuda_helpers.installers',
         'cuda_helpers.tools',
     ],
     package_dir = {
+        'cuda_helpers.installers' : 'cuda_helpers/installers',
         'cuda_helpers.tools' : 'cuda_helpers/tools',
+    },
+    entry_points = {
+        'console_scripts': [
+            'cuda-helpers-install-nsight-systems = cuda_helpers.installers.nsight_systems:main',
+        ],
     },
 )

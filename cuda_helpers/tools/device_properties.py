@@ -266,3 +266,15 @@ class Cuda:
         name = b' ' * length
         self.check_api_call(func = self.cuda.cuDeviceGetName)(ctypes.c_char_p(name), len(name), device)
         return name.split(b"\0", 1)[0].decode()
+
+    @typeguard.typechecked
+    def get_device_total_memory(self, *, device : int) -> int:
+        """
+        Get device total memory.
+        """
+        total_mem = ctypes.c_size_t()
+        self.check_api_call(func = self.cuda.cuDeviceTotalMem)(
+            ctypes.byref(total_mem),
+            ctypes.c_int(device),
+        )
+        return total_mem.value

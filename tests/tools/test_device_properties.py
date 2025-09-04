@@ -80,6 +80,15 @@ class TestCuda(unittest.TestCase):
             assert isinstance(cc, str)
             logging.info(f'Name of device {device} is {cc}.')
 
+    def test_get_device_total_memory(sell):
+        """
+        Get the device total memory.
+        """
+        cuda = device_properties.Cuda()
+
+        for device in range(cuda.device_count):
+            assert cuda.get_device_total_memory(device = device) > 1024 * 1024 * 1024
+
     def test_cuda_device_attribute_uptodate(self):
         """
         Check that :py:enum:`CudaDeviceAttribute` is up-to-date with the content of `cuda.h`.

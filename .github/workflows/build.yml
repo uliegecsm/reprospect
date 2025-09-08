@@ -45,7 +45,7 @@ jobs:
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - id: changed-files
-              uses: tj-actions/changed-files@v45
+              uses: tj-actions/changed-files@v46
               with:
                   files: docker/dockerfile
 

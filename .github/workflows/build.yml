@@ -120,4 +120,4 @@ jobs:
               run: |
                 mc alias set MC_HOST_COSTMO ${{ vars.MC_HOST_COSTMO_URL }} ${{ secrets.MC_HOST_COSTMO_USER }} ${{ secrets.MC_HOST_COSTMO_PASSWORD }}
                 mc mb --ignore-existing MC_HOST_COSTMO/cuda-helpers
-                mc cp dist/cuda_helpers-0.0.2-py3-none-any.whl MC_HOST_COSTMO/cuda-helpers/
+                mc cp dist/cuda_helpers-0.0.3-py3-none-any.whl MC_HOST_COSTMO/cuda-helpers/

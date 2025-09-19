@@ -12,24 +12,24 @@ on:
         # At 06:00 on Sunday.
         - cron:  '0 6 * * 6'
 
-env:
-    REGISTRY: ghcr.io
-    CI_IMAGE_BASE: cuda:12.8.1-devel-ubuntu24.04
-
 jobs:
 
-    set-vars:
+    setup-job-matrix:
         runs-on: [self-hosted, linux, docker, amd64]
+        container:
+            image: python:3.12
         outputs:
-            CI_IMAGE: ${{ steps.common.outputs.CI_IMAGE }}
+            deploy_image: ${{ steps.strategy.outputs.deploy_image }}
+            environment: ${{ steps.strategy.outputs.environment }}
+            matrix: ${{ steps.strategy.outputs.matrix }}
         steps:
-            - name: Export common variables.
-              id  : common
+            - uses: actions/checkout@v5
+            - id  : strategy
               run : |
-                  echo "CI_IMAGE=${{ env.REGISTRY }}/${{ github.repository }}/${{ env.CI_IMAGE_BASE }}" >> $GITHUB_OUTPUT
+                  python .github/workflows/strategy.py --registry=ghcr.io --repository=${{ github.repository }} >> $GITHUB_OUTPUT
 
     build-image:
-        needs: [set-vars]
+        needs: [setup-job-matrix]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: docker:latest
@@ -37,6 +37,11 @@ jobs:
             contents: read
             packages: write
             pull-requests: read
+        strategy:
+            fail-fast: false
+            matrix:
+                include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix) }}
+        env: ${{ fromJSON(needs.setup-job-matrix.outputs.environment) }}
         steps:
             - uses: actions/checkout@v5
               with:
@@ -47,7 +52,9 @@ jobs:
             - id: changed-files
               uses: tj-actions/changed-files@v47
               with:
-                  files: docker/dockerfile
+                  files: |
+                      docker/dockerfile
+                      .github/workflows/**
 
             - uses: docker/login-action@v3
               if  : steps.changed-files.outputs.any_changed == 'true'
@@ -66,18 +73,23 @@ jobs:
                   platforms: linux/amd64
                   push: ${{ github.ref == 'refs/heads/main' }}
                   file: docker/dockerfile
-                  tags: ${{ needs.set-vars.outputs.CI_IMAGE }}
-                  cache-from: type=registry,ref=${{ needs.set-vars.outputs.CI_IMAGE }}
+                  tags: ${{ matrix.image }}
+                  cache-from: type=registry,ref=${{ matrix.image }}
                   cache-to: type=inline
                   build-args: |
-                      BASE_IMAGE=nvidia/${{ env.CI_IMAGE_BASE }}
+                      BASE_IMAGE=${{ matrix.base_image }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     test:
-        needs: [set-vars, build-image]
-        runs-on: [self-hosted, linux, docker, amd64, blackwell120, gpu:0]
+        needs: [setup-job-matrix, build-image]
+        strategy:
+            fail-fast: false
+            matrix:
+                include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix) }}
+        env: ${{ fromJSON(needs.setup-job-matrix.outputs.environment) }}
+        runs-on: ${{ matrix.runs-on }}
         container:
-            image: ${{ needs.set-vars.outputs.CI_IMAGE }}
+            image: ${{ matrix.image }}
         steps:
             - uses: actions/checkout@v5
 
@@ -86,10 +98,15 @@ jobs:
             - run: cmake -S .
 
     install-as-package-and-test:
-        needs: [set-vars, build-image]
-        runs-on: [self-hosted, linux, docker, amd64, blackwell120, gpu:0]
+        needs: [setup-job-matrix, build-image]
+        strategy:
+            fail-fast: false
+            matrix:
+                include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix) }}
+        env: ${{ fromJSON(needs.setup-job-matrix.outputs.environment) }}
+        runs-on: ${{ matrix.runs-on }}
         container:
-            image: ${{ needs.set-vars.outputs.CI_IMAGE }}
+            image: ${{ matrix.image }}
         steps:
             # Since it is still a private repository, let's avoid authentication burden by
             # installing from the files directly.
@@ -107,14 +124,13 @@ jobs:
                 cuda-helpers-install-nsight-systems --help
 
     deploy:
-        needs: [set-vars, test, install-as-package-and-test]
+        needs: [setup-job-matrix, test, install-as-package-and-test]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
-            image: ${{ needs.set-vars.outputs.CI_IMAGE }}
+            image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         steps:
             - uses: actions/checkout@v5
             - run: |
-                python -m pip install -r requirements/requirements.python.txt
                 python -m pip install build
                 python -m build
                 ls

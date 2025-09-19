@@ -45,7 +45,7 @@ int main()
     constexpr index_t block_size = 128;
     constexpr index_t grid_size  = (size + block_size - 1) / block_size;
 
-    saxpy<<<{grid_size, 1, 1}, {block_size, 1, 1} , 0, stream>>>(size, 2.f, vec_x, vec_y);
+    saxpy<<<dim3{grid_size, 1, 1}, dim3{block_size, 1, 1} , 0, stream>>>(size, 2.f, vec_x, vec_y);
 
     std::vector<float> result(size);
     CUDA_HELPERS_CHECK_CUDART_CALL(cudaMemcpyAsync(result.data(), vec_y, size * sizeof(float), cudaMemcpyDeviceToHost, stream));

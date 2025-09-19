@@ -1,6 +1,8 @@
 ARG BASE_IMAGE=ubuntu:24.04
+ARG COMPILER=gcc
+ARG COMPILER_VERSION=13
 
-FROM ${BASE_IMAGE}
+FROM ${BASE_IMAGE} AS base
 
 # Install Python3 (with the trickery for virtual environment).
 ARG PYTHON_VERSION=3.12
@@ -26,6 +28,27 @@ RUN --mount=target=/requirements/requirements.system.txt,type=bind,source=requir
 
     apt-helpers install-packages --update --clean --requirement /requirements/requirements.system.txt
 EOF
+
+FROM base AS requirements-compiler-gcc
+
+ARG COMPILER_VERSION
+
+RUN <<EOF
+    set -ex
+
+    gcc --version
+
+    echo "Expecting GCC major version to be ${COMPILER_VERSION}."
+
+    GCC_VERSION_MAJOR=$(gcc -dumpfullversion -dumpversion | cut -d. -f1)
+
+    if [ ! "$GCC_VERSION_MAJOR" = "${COMPILER_VERSION}" ];then
+        echo "GCC major version is ${GCC_VERSION_MAJOR}."
+        exit 1
+    fi
+EOF
+
+FROM requirements-compiler-${COMPILER}
 
 # Python requirements.
 RUN --mount=target=/requirements/requirements.python.txt,type=bind,source=requirements/requirements.python.txt <<EOF

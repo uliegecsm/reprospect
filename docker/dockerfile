@@ -20,11 +20,24 @@ RUN <<EOF
     apt-helpers clean
 EOF
 
-RUN --mount=target=/requirements,type=bind,source=requirements <<EOF
+# System requirements.
+RUN --mount=target=/requirements/requirements.system.txt,type=bind,source=requirements/requirements.system.txt <<EOF
     set -ex
 
-    python3 -m pip install -r /requirements/requirements.txt
+    apt-helpers install-packages --update --clean --requirement /requirements/requirements.system.txt
+EOF
+
+# Python requirements.
+RUN --mount=target=/requirements/requirements.python.txt,type=bind,source=requirements/requirements.python.txt <<EOF
+    set -ex
+
+    python3 -m pip install -r /requirements/requirements.python.txt
     python3 -m pip install pytest
+EOF
+
+# MinIO.
+RUN <<EOF
+    set -ex
 
     apt-helpers install-packages --update --clean --packages curl
 

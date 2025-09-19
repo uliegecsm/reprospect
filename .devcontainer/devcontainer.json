@@ -2,13 +2,13 @@
     "dockerFile": "dockerfile",
     "extensions": [
         "eamodio.gitlens",
+        "GitHub.vscode-pull-request-github",
         "mhutchie.git-graph",
         "ms-azuretools.vscode-docker",
-        "GitHub.vscode-pull-request-github",
-        "ms-python.python"
+        "ms-python.python",
+        "ms-vscode.cmake-tools",
     ],
     "runArgs": [
-        // Enforce privileged mode, see also https://github.com/uliegecsm/trilinos-container/issues/76
         "--privileged",
     ],
     // Git security fix: see also https://github.com/actions/checkout/issues/766

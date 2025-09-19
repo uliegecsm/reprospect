@@ -1,17 +1,27 @@
 import argparse
 import json
 import logging
-import os
 
 def full_image(*, name : str, tag : str, args : argparse.Namespace) -> str:
+    """
+    Full image from its `name` and `tag`, with remote.
+    """
     return f'{args.registry}/{args.repository}/{name}:{tag}'
 
 def complete_job(partial : dict, args : argparse.Namespace) -> dict:
+    """
+    Add fields to a job.
+    """
     logging.info(f'Completing job {partial}.')
-    name = 'cuda-' + '-'.join(partial['compiler_family'])
+
+    partial['cmake_preset'] = '-'.join(partial['compiler_family'])
+
+    name = 'cuda-' + partial['cmake_preset']
     tag = f'{partial['cuda_version']}-devel-ubuntu24.04'
+
     partial['base_image'] = f'nvidia/cuda:{tag}'
     partial[     'image'] = full_image(name = name, tag = tag, args = args)
+
     return partial
 
 def main(*, args : argparse.Namespace) -> None:

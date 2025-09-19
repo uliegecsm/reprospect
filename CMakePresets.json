@@ -1,0 +1,60 @@
+{
+    "version"   : 3,
+    "configurePresets" : [
+        {
+            "name" : "default",
+            "hidden" : true,
+            "binaryDir" : "${sourceDir}/build-with-${presetName}"
+        },
+        {
+            "name" : "gcc-nvcc",
+            "inherits" : "default",
+            "cacheVariables" : {
+                "CMAKE_CXX_COMPILER" : "g++",
+                "CMAKE_CUDA_COMPILER" : "nvcc",
+                "CMAKE_CUDA_HOST_COMPILER" : "g++",
+                "CMAKE_CUDA_SEPARABLE_COMPILATION" : "ON"
+            },
+            "errors": {
+                "dev": true
+            },
+            "warnings": {
+                "uninitialized" : true,
+                "unusedCli" : true,
+                "deprecated": true
+            }
+        }
+    ],
+    "buildPresets" : [
+        {
+            "name" : "default",
+            "hidden" : true,
+            "configurePreset" : "default",
+            "inheritConfigureEnvironment" : true
+        },
+        {
+            "name" : "gcc-nvcc",
+            "configurePreset" : "gcc-nvcc",
+            "inherits" : "default"
+        }
+    ],
+    "testPresets" : [
+        {
+            "name" : "default",
+            "hidden" : true,
+            "configurePreset" : "default",
+            "inheritConfigureEnvironment" : true,
+            "output" : {"outputOnFailure": true},
+            "execution" : {
+                "noTestsAction" : "error",
+                "stopOnFailure" : false,
+                "scheduleRandom" : true
+            }
+        },
+        {
+            "name" : "gcc-nvcc",
+            "configurePreset" : "gcc-nvcc",
+            "inherits" : "default"
+        }
+    ]
+}

@@ -93,9 +93,11 @@ jobs:
         steps:
             - uses: actions/checkout@v5
 
-            - run : python -m pytest tests -s --log-cli-level=info
+            - run: cmake -S . --preset=${{ matrix.cmake_preset }}
 
-            - run: cmake -S .
+            - run: cmake --build --preset=${{ matrix.cmake_preset }}
+
+            - run: ctest --preset=${{ matrix.cmake_preset }}
 
     install-as-package-and-test:
         needs: [setup-job-matrix, build-image]

@@ -29,14 +29,35 @@ RUN --mount=target=/requirements/requirements.system.txt,type=bind,source=requir
     apt-helpers install-packages --update --clean --requirement /requirements/requirements.system.txt
 EOF
 
-FROM base AS requirements-compiler-gcc
+FROM base AS requirements-compiler-clang
 
 ARG COMPILER_VERSION
 
 RUN <<EOF
     set -ex
 
-    gcc --version
+    apt-helpers install-packages --update --packages lsb-release wget software-properties-common gnupg
+
+    wget https://apt.llvm.org/llvm.sh
+    chmod +x llvm.sh
+    ./llvm.sh ${COMPILER_VERSION}
+    rm llvm.sh
+
+    update-alternatives-helpers --prefix /usr/bin \
+        --display --level=10 \
+        --for-each-of clang=clang-${COMPILER_VERSION} clang++=clang++-${COMPILER_VERSION}
+
+    clang --version
+
+    apt-helpers clean
+EOF
+
+FROM base AS requirements-compiler-gcc
+
+ARG COMPILER_VERSION
+
+RUN <<EOF
+    set -ex
 
     echo "Expecting GCC major version to be ${COMPILER_VERSION}."
 

@@ -95,7 +95,9 @@ jobs:
         steps:
             - uses: actions/checkout@v5
 
-            - run: cmake -S . --preset=${{ matrix.cmake_preset }}
+            - run: |
+                cmake -S . --preset=${{ matrix.cmake_preset }} \
+                    -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.cuda_arch[1] }}
 
             - run: cmake --build --preset=${{ matrix.cmake_preset }}
 

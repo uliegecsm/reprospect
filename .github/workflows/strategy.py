@@ -51,6 +51,24 @@ def main(*, args : argparse.Namespace) -> None:
         'cuda_arch' : ('blackwell', '120'),
     }, args = args))
 
+    matrix.append(complete_job({
+        'cuda_version' : '12.8.1',
+        'compiler_family' : [('clang', '19'), ('nvcc',)],
+        'cuda_arch' : ('volta', '70'),
+    }, args = args))
+
+    matrix.append(complete_job({
+        'cuda_version' : '13.0.0',
+        'compiler_family' : [('clang', '19'), ('nvcc',)],
+        'cuda_arch' : ('blackwell', '120'),
+    }, args = args))
+
+    matrix.append(complete_job({
+        'cuda_version' : '12.8.1',
+        'compiler_family' : [('clang', '21')],
+        'cuda_arch' : ('blackwell', '120'),
+    }, args = args))
+
     # Labels for testing runners.
     for job in matrix:
         runs_on = ['self-hosted', 'linux', 'docker', 'amd64', ''.join(job['cuda_arch']), 'gpu:0']

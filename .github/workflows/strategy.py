@@ -15,7 +15,9 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     """
     logging.info(f'Completing job {partial}.')
 
-    name = 'cuda-' + '-'.join(partial['compiler_family'][0][0])
+    assert all(isinstance(x, tuple) for x in partial['compiler_family'])
+
+    name = 'cuda-' + '-'.join(partial['compiler_family'][0])
 
     if len(partial['compiler_family']) > 1 and partial['compiler_family'][1][0] == 'nvcc':
         name += '-nvcc'

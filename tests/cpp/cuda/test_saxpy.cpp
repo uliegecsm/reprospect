@@ -2,9 +2,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "cuda_runtime.h"
-
-#include "cuda_helpers/Helpers.hpp"
+#include "cuda-helpers/errors/cuda_runtime.hpp"
 
 /**
  * @file

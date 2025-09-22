@@ -20,6 +20,8 @@ find_package(Python 3.12 REQUIRED Interpreter)
 include(cmake/functions/environment.cmake)
 include(cmake/modules/Warnings.cmake)
 
+add_subdirectory(cpp)
+
 enable_testing()
 
 add_subdirectory(tests)

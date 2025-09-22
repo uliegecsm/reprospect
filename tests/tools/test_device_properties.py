@@ -29,6 +29,28 @@ class TestCuda(unittest.TestCase):
         assert type(device_properties.Cuda.cuda)   is ctypes.CDLL
         assert type(device_properties.Cuda.cudart) is ctypes.CDLL
 
+    def test_check_driver_status(self):
+        """
+        Check the proper handling of `Cuda` driver API error codes.
+        """
+        device_properties.Cuda.load()
+
+        try:
+            device_properties.Cuda.check_driver_status(status = device_properties.CudaDriverError(value = 100), info = 'My random information string.')
+        except RuntimeError as e:
+            assert str(e) == "My random information string. failed with error code CudaDriverError(value=100) (CUDA_ERROR_NO_DEVICE): no CUDA-capable device is detected"
+
+    def test_check_runtime_status(self):
+        """
+        Check the proper handling of `Cuda` runtime API error codes.
+        """
+        device_properties.Cuda.load()
+
+        try:
+            device_properties.Cuda.check_runtime_status(status = device_properties.CudaRuntimeError(value = 201), info = 'My random information string.')
+        except RuntimeError as e:
+            assert str(e) == "My random information string. failed with error code CudaRuntimeError(value=201) (cudaErrorDeviceUninitialized): invalid device context"
+
     def test_device_count(self):
         """
         There must be at least one device.

@@ -76,7 +76,7 @@ RUN --mount=target=/requirements/requirements.python.txt,type=bind,source=requir
     set -ex
 
     python3 -m pip install -r /requirements/requirements.python.txt
-    python3 -m pip install pytest
+    python3 -m pip install pytest build
 EOF
 
 # MinIO.

@@ -181,7 +181,6 @@ jobs:
         steps:
             - uses: actions/checkout@v5
             - run: |
-                python -m pip install build
                 python -m build
                 ls
             - if: github.ref == 'refs/heads/main'

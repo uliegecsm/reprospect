@@ -1,6 +1,6 @@
 FROM python:3.12
 
-RUN --mount=target=/requirements/requirements.python.txt,type=bind,source=requirements/requirements.python.txt <<EOF
+RUN --mount=target=/python/requirements.txt,type=bind,source=python/requirements.txt <<EOF
     set -ex
-    pip install -r /requirements/requirements.python.txt
+    pip install -r /python/requirements.txt
 EOF

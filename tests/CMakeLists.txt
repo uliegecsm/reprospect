@@ -1,2 +1,2 @@
 add_subdirectory(cpp)
-add_subdirectory(tools)
+add_subdirectory(python)

@@ -5,7 +5,7 @@ from setuptools import setup
 
 import cuda_helpers
 
-requirements = pathlib.Path(__file__).parent / 'requirements' / 'requirements.python.txt'
+requirements = pathlib.Path(__file__).parent / 'requirements.txt'
 requirements = filter(None, requirements.read_text().splitlines())
 
 setup(

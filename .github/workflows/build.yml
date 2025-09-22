@@ -68,7 +68,7 @@ jobs:
             - uses: actions/checkout@v5
             - id  : strategy
               run : |
-                  PYTHONPATH=$PWD python .github/workflows/strategy.py \
+                  PYTHONPATH=$PWD/python python .github/workflows/strategy.py \
                       --registry=ghcr.io \
                       --repository=${{ github.repository }} >> $GITHUB_OUTPUT
 
@@ -164,7 +164,7 @@ jobs:
               with:
                   path: install-from
             - run : |
-                pip install install-from/
+                pip install install-from/python
                 rm -rf install-from/
 
             - run: |
@@ -181,7 +181,7 @@ jobs:
         steps:
             - uses: actions/checkout@v5
             - run: |
-                python -m build
+                python -m build python/
                 ls
             - if: github.ref == 'refs/heads/main'
               run: |

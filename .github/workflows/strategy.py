@@ -3,6 +3,8 @@ import json
 import logging
 import pprint
 
+from cuda_helpers.tools.architecture import NVIDIAArch
+
 def full_image(*, name : str, tag : str, args : argparse.Namespace) -> str:
     """
     Full image from its `name` and `tag`, with remote.
@@ -15,6 +17,7 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     """
     logging.info(f'Completing job {partial}.')
 
+    assert isinstance(partial['nvidia_compute_capability'], int)
     assert all(isinstance(x, tuple) for x in partial['compiler_family'])
 
     name = 'cuda-' + '-'.join(partial['compiler_family'][0])
@@ -30,6 +33,12 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     partial['base_image'] = f'nvidia/cuda:{tag}'
     partial[     'image'] = full_image(name = name, tag = tag, args = args)
 
+    partial['nvidia_arch'] = NVIDIAArch.from_compute_capability(cc = partial['nvidia_compute_capability'])
+
+    # Labels for testing runners.
+    runs_on = ['self-hosted', 'linux', 'docker', 'amd64', str(partial['nvidia_arch']).lower(), 'gpu:0']
+    partial['runs-on'] = runs_on
+
     return partial
 
 def main(*, args : argparse.Namespace) -> None:
@@ -42,37 +51,32 @@ def main(*, args : argparse.Namespace) -> None:
     matrix.append(complete_job({
         'cuda_version' : '12.8.1',
         'compiler_family' : [('gcc', '13'), ('nvcc',)],
-        'cuda_arch' : ('volta', '70'),
+        'nvidia_compute_capability' : 70,
     }, args = args))
 
     matrix.append(complete_job({
         'cuda_version' : '13.0.0',
         'compiler_family' : [('gcc', '13'), ('nvcc',)],
-        'cuda_arch' : ('blackwell', '120'),
+        'nvidia_compute_capability' : 120,
     }, args = args))
 
     matrix.append(complete_job({
         'cuda_version' : '12.8.1',
         'compiler_family' : [('clang', '19'), ('nvcc',)],
-        'cuda_arch' : ('volta', '70'),
+        'nvidia_compute_capability' : 70,
     }, args = args))
 
     matrix.append(complete_job({
         'cuda_version' : '13.0.0',
         'compiler_family' : [('clang', '19'), ('nvcc',)],
-        'cuda_arch' : ('blackwell', '120'),
+        'nvidia_compute_capability' : 120,
     }, args = args))
 
     matrix.append(complete_job({
         'cuda_version' : '12.8.1',
         'compiler_family' : [('clang', '21')],
-        'cuda_arch' : ('blackwell', '120'),
+        'nvidia_compute_capability' : 120,
     }, args = args))
-
-    # Labels for testing runners.
-    for job in matrix:
-        runs_on = ['self-hosted', 'linux', 'docker', 'amd64', ''.join(job['cuda_arch']), 'gpu:0']
-        job['runs-on'] = runs_on
 
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')
 

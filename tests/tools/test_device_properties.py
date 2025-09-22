@@ -1,6 +1,5 @@
 import ctypes
 import logging
-import os
 import pathlib
 import re
 import unittest

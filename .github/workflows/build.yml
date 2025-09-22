@@ -68,7 +68,9 @@ jobs:
             - uses: actions/checkout@v5
             - id  : strategy
               run : |
-                  python .github/workflows/strategy.py --registry=ghcr.io --repository=${{ github.repository }} >> $GITHUB_OUTPUT
+                  PYTHONPATH=$PWD python .github/workflows/strategy.py \
+                      --registry=ghcr.io \
+                      --repository=${{ github.repository }} >> $GITHUB_OUTPUT
 
     build-image:
         needs: [setup-job-matrix]
@@ -139,7 +141,7 @@ jobs:
 
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
-                    -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.cuda_arch[1] }}
+                    -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.nvidia_compute_capability }}
 
             - run: cmake --build --preset=${{ matrix.cmake_preset }}
 

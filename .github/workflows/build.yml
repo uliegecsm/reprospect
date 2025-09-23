@@ -193,7 +193,7 @@ jobs:
                 python -m build python/
                 ls
             - run: |
-                VERSION=$(python3 -c "import pathlib, re; version = re.search(r'\d+.\d+.\d+', pathlib.Path('python/cuda_helpers/__init__.py').read_text()); print(version.group());"
+                VERSION=$(python3 -c "import pathlib, re; version = re.search(r'\d+.\d+.\d+', pathlib.Path('python/cuda_helpers/__init__.py').read_text()); print(version.group());")
                 echo "Version of the project is ${VERSION}."
                 echo "VERSION=${VERSION}" >> $GITHUB_ENV
             - if: github.ref == 'refs/heads/main'

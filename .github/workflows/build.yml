@@ -192,8 +192,12 @@ jobs:
             - run: |
                 python -m build python/
                 ls
+            - run: |
+                VERSION=$(python3 -c "import pathlib, re; version = re.search(r'\d+.\d+.\d+', pathlib.Path('python/cuda_helpers/__init__.py').read_text()); print(version.group());"
+                echo "Version of the project is ${VERSION}."
+                echo "VERSION=${VERSION}" >> $GITHUB_ENV
             - if: github.ref == 'refs/heads/main'
               run: |
                 mc alias set MC_HOST_COSTMO ${{ vars.MC_HOST_COSTMO_URL }} ${{ secrets.MC_HOST_COSTMO_USER }} ${{ secrets.MC_HOST_COSTMO_PASSWORD }}
                 mc mb --ignore-existing MC_HOST_COSTMO/cuda-helpers
-                mc cp dist/cuda_helpers-$(awk -F"'" '/__version__/ {print $2}' cuda_helpers/__init__.py)-py3-none-any.whl MC_HOST_COSTMO/cuda-helpers/
+                mc cp dist/cuda_helpers-${VERSION}-py3-none-any.whl MC_HOST_COSTMO/cuda-helpers/

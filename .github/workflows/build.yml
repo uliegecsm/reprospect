@@ -8,6 +8,12 @@ on:
         branches:
             - main
     workflow_dispatch:
+        inputs:
+            build-images:
+                description: 'Force re-build of all Docker images.'
+                required: false
+                type: bool
+                default: false
     schedule:
         # At 06:00 on Sunday.
         - cron:  '0 6 * * 6'
@@ -34,21 +40,21 @@ jobs:
                       requirements/**
 
             - uses: docker/login-action@v3
-              if  : steps.changed-files.outputs.any_changed == 'true'
+              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - uses: docker/setup-buildx-action@v3
-              if  : steps.changed-files.outputs.any_changed == 'true'
+              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
 
             - uses: docker/build-push-action@v6.18.0
-              if  : steps.changed-files.outputs.any_changed == 'true'
+              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
               with:
                   context: .
                   platforms: linux/amd64
-                  push: ${{ github.ref == 'refs/heads/main' }}
+                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
                   file: docker/dockerfile.setup-job-matrix
                   tags: ghcr.io/${{ github.repository }}/setup-job-matrix:latest
                   cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/setup-job-matrix:latest
@@ -101,21 +107,21 @@ jobs:
                       .github/workflows/**
 
             - uses: docker/login-action@v3
-              if  : steps.changed-files.outputs.any_changed == 'true'
+              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
               with:
                   registry: ${{ env.REGISTRY }}
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - uses: docker/setup-buildx-action@v3
-              if  : steps.changed-files.outputs.any_changed == 'true'
+              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
 
             - uses: docker/build-push-action@v6.18.0
-              if  : steps.changed-files.outputs.any_changed == 'true'
+              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
               with:
                   context: .
                   platforms: linux/amd64
-                  push: ${{ github.ref == 'refs/heads/main' }}
+                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
                   file: docker/dockerfile
                   tags: ${{ matrix.image }}
                   cache-from: type=registry,ref=${{ matrix.image }}

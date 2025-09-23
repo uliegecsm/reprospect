@@ -25,3 +25,22 @@ add_subdirectory(cpp)
 enable_testing()
 
 add_subdirectory(tests)
+
+#---- Install.
+install(FILES LICENSE README.md DESTINATION .)
+
+#---- Package.
+set(CPACK_PACKAGE_NAME "cuda-helpers")
+set(CPACK_PACKAGE_VENDOR "uliegecsm")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+
+set(CPACK_ARCHIVE_COMPONENT_INSTALL YES)
+set(CPACK_GENERATOR TGZ)
+
+include(CPack)
+include(CPackComponent)
+
+cpack_add_component(cpp REQUIRED DISPLAY_NAME "C++ library")

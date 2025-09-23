@@ -12,7 +12,7 @@ import semantic_version
 import typeguard
 
 from cuda_helpers.tools.architecture import NVIDIAArch
-from cuda_helpers.tools.binaries import get_arch_from_compile_command
+from cuda_helpers.tools.binaries import get_arch_from_compile_command, CuObjDump, CuppFilt, ResourceUsage
 
 def test_get_arch_from_compile_command():
     """
@@ -174,3 +174,60 @@ class TestResourceUsage:
                 assert 'Used 10 registers, used 0 barriers, 380 bytes cmem[0]' in compilation, compilation
             else:
                 assert 'Used 10 registers, used 0 barriers' in compilation, compilation
+
+class TestCuppFilt:
+    """
+    Test :py:class:`cuda_helpers.tools.binaries.CuppFilt`.
+    """
+    def test_demangle(self):
+        assert CuppFilt.demangle(s = '_Z5saxpyfPKfPfj') == 'saxpy(float, const float *, float *, unsigned int)'
+
+@pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+class TestCuObjDump:
+    """
+    Tests related to :py:class:`cuda_helpers.tools.binaries.CuObjDump`.
+    """
+    class TestSaxpy:
+        """
+        When the kernel performs a `saxpy`.
+        """
+        FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
+        SIGNATURE = 'saxpy(float, const float *, float *, unsigned int)'
+
+        @typeguard.typechecked
+        def test(self, parameters : Parameters) -> None:
+            """
+            Check compilation result.
+            """
+            output, compilation = get_compilation_output(
+                source = self.FILE,
+                cwd = TestResourceUsage.TMPDIR,
+                arch = parameters.arch,
+                object = True,
+            )
+
+            cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = True)
+
+            sass = output.with_suffix(f'.{parameters.arch.compute_capability}.sass')
+            logging.debug(f'Writing SASS to {sass}.')
+            sass.write_text(cuobjdump.sass)
+
+            assert len(cuobjdump.functions) == 1
+
+            if parameters.arch.compute_capability < 90:
+                cst = 380
+            elif parameters.arch.compute_capability < 100:
+                cst = 556
+            else:
+                cst = 924
+
+            assert cuobjdump.functions[self.SIGNATURE].ru == {
+                ResourceUsage.REGISTER: 10,
+                ResourceUsage.STACK: 0,
+                ResourceUsage.SHARED: 0,
+                ResourceUsage.LOCAL: 0,
+                ResourceUsage.CONSTANT: {0: cst},
+                ResourceUsage.TEXTURE: 0,
+                ResourceUsage.SURFACE: 0,
+                ResourceUsage.SAMPLER: 0,
+            }, cuobjdump.functions[self.SIGNATURE].ru

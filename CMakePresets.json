@@ -15,8 +15,16 @@
             }
         },
         {
+            "name" : "cxx-ccache",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER_LAUNCHER" : "ccache"
+            }
+        },
+        {
             "name" : "cxx-gcc",
             "hidden": true,
+            "inherits" : "cxx-ccache",
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER" : "g++"
             }
@@ -24,13 +32,22 @@
         {
             "name" : "cxx-clang",
             "hidden": true,
+            "inherits" : "cxx-ccache",
             "cacheVariables": {
                 "CMAKE_CXX_COMPILER" : "clang++"
             }
         },
         {
+            "name" : "cuda-ccache",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_CUDA_COMPILER_LAUNCHER" : "ccache"
+            }
+        },
+        {
             "name" : "cuda-nvcc",
             "hidden" : true,
+            "inherits" : "cuda-ccache",
             "cacheVariables": {
                 "CMAKE_CUDA_COMPILER" : "nvcc",
                 "CMAKE_CUDA_SEPARABLE_COMPILATION" : "ON"
@@ -39,6 +56,7 @@
         {
             "name" : "cuda-clang",
             "hidden" : true,
+            "inherits" : "cuda-ccache",
             "cacheVariables": {
                 "CMAKE_CUDA_COMPILER" : "clang++"
             }

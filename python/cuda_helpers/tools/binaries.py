@@ -1,13 +1,15 @@
 import dataclasses
 import enum
+import io
 import logging
 import pathlib
 import re
 import subprocess
 
-from cuda_helpers.tools.architecture import NVIDIAArch
-
+import pandas
 import typeguard
+
+from cuda_helpers.tools.architecture import NVIDIAArch
 
 PATTERNS = [
     re.compile(r'-arch=sm_(\d+)'),
@@ -137,3 +139,67 @@ class CuObjDump:
             if line.startswith(' Function ') and any(x in line for x in self.functions.keys()) and line.endswith(':'):
                 function = line.replace(' Function ', '').rstrip(':')
                 self.functions[function].ru = ResourceUsage.parse(line = next(lines))
+
+    @staticmethod
+    @typeguard.typechecked
+    def extract(*,
+        file : pathlib.Path,
+        arch : NVIDIAArch,
+        cwd : pathlib.Path,
+        cubin : str,
+        **kwargs,
+    ) -> tuple['CuObjDump', pathlib.Path]:
+        """
+        Extract the `ELF` file whose name contains `cubin` from `file`, for the given `arch`.
+        The `file` can be inspected with the following command to list all `ELF` files:
+        ```
+        cuobjdump --list-elf <file>
+        ```
+
+        Note that extracting a `cubin` from `file` to extract a specific subset of the `SASS`
+        instead of extracting the `SASS` straightforwardly from the whole `file` is
+        significantly faster.
+        """
+        cmd = [
+            'cuobjdump',
+            '--extract-elf', cubin,
+            '--gpu-architecture', arch.as_sm,
+            file,
+        ]
+
+        logging.info(f'Extracting ELF file containing {cubin} from {file} for architecture {arch} with {cmd}.')
+
+        files = subprocess.check_output(args = cmd, cwd = cwd).decode().splitlines()
+
+        if len(files) != 1:
+            raise RuntimeError(files)
+
+        file = cwd / re.match(r'Extracting ELF file [ ]+ 1: ([A-Za-z0-9_.]+.cubin)', files[0]).group(1)
+
+        return CuObjDump(file = file, arch = arch, **kwargs), file
+
+    @staticmethod
+    @typeguard.typechecked
+    def symtab(*, cubin : pathlib.Path, arch : NVIDIAArch) -> pandas.DataFrame:
+        """
+        Extract the symbol table from `cubin` for `arch`.
+        """
+        cmd = ['cuobjdump', '--gpu-architecture', arch.as_sm, '--dump-elf', cubin]
+        logging.info(f'Extracting the symbol table from {cubin} using {cmd}.')
+
+        # The section starts with
+        #   .section .symtab
+        # and ends with a blank line.
+        output = io.StringIO()
+        dump = False
+        for line in subprocess.check_output(cmd).decode().splitlines():
+            if line.startswith('.section .symtab'):
+                dump = True
+            elif dump and len(line.strip()) == 0:
+                break
+            elif dump:
+                output.write(line + '\n')
+
+        output.seek(0)
+
+        return pandas.read_csv(output, sep = r'\s+')

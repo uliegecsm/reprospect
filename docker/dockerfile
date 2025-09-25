@@ -79,6 +79,13 @@ RUN --mount=target=/python/requirements.txt,type=bind,source=python/requirements
     python3 -m pip install pytest build
 EOF
 
+# Install Nsight Systems.
+RUN --mount=target=/python/cuda_helpers/installers/nsight_systems.py,type=bind,source=python/cuda_helpers/installers/nsight_systems.py <<EOF
+    set -ex
+
+    python3 /python/cuda_helpers/installers/nsight_systems.py
+EOF
+
 # MinIO.
 RUN <<EOF
     set -ex

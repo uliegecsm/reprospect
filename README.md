@@ -1,2 +1,5 @@
-# cuda-helpers
-A bunch a helpers for working with Cuda, from reading device properties to measuring energy consumption.
+![logo](docs/source/_static/logo.svg)
+
+# reprospect
+
+`reprospect` is a low-overhead reproducibility-centric profiling framework for `CUDA`-based applications in high-performance computing (HPC), built on top of the `NVIDIA` profiling and binary utilities.

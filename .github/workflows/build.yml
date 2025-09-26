@@ -182,8 +182,19 @@ jobs:
             - run: |
                 cuda-helpers-install-nsight-systems --help
 
+    documentation:
+        needs: [setup-job-matrix, build-image]
+        runs-on: [self-hosted, linux, docker, amd64]
+        container:
+            image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
+        steps:
+            - uses: actions/checkout@v5
+            - run: |
+                cd docs
+                make html
+
     deploy:
-        needs: [setup-job-matrix, test, install-as-package-and-test]
+        needs: [setup-job-matrix, build-image, test, install-as-package-and-test, documentation]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}

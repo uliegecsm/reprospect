@@ -4,6 +4,9 @@ ARG COMPILER_VERSION=13
 
 FROM ${BASE_IMAGE} AS base
 
+# Multi-architecture build approach
+ARG TARGETARCH
+
 # Install Python3 (with the trickery for virtual environment).
 ARG PYTHON_VERSION=3.12
 ENV VIRTUAL_ENV=/opt/venv-${PYTHON_VERSION}
@@ -107,7 +110,7 @@ RUN <<EOF
 
     apt-helpers install-packages --update --clean --packages curl
 
-    curl --progress-bar -L https://dl.min.io/aistor/mc/release/linux-amd64/mc \
+    curl --progress-bar -L https://dl.min.io/aistor/mc/release/linux-${TARGETARCH}/mc \
         --create-dirs \
         -o /opt/aistor-binaries/mc
     chmod +x /opt/aistor-binaries/mc

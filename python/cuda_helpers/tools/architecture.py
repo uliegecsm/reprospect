@@ -9,21 +9,32 @@ class NVIDIAFamily(enum.StrEnum):
     Supported `NVIDIA` architecture families.
     """
     VOLTA = 'VOLTA'
+    TURING = 'TURING'
     AMPERE = 'AMPERE'
+    ADA = 'ADA'
     HOPPER = 'HOPPER'
     BLACKWELL = 'BLACKWELL'
 
     @staticmethod
     @typeguard.typechecked
     def from_compute_capability(cc: str | int) -> "NVIDIAFamily":
+        """
+        Get the `NVIDIA` architecture family from a compute capability.
+
+        See: https://developer.nvidia.com/cuda-gpus
+        """
         cc = int(cc)
-        if 70 <= cc < 80:
+        if cc in [70, 72]:
             return NVIDIAFamily.VOLTA
-        elif 80 <= cc < 90:
+        elif cc == 75:
+            return NVIDIAFamily.TURING
+        elif cc in [80, 86, 87]:
             return NVIDIAFamily.AMPERE
-        elif 90 <= cc < 100:
+        elif cc == 89:
+            return NVIDIAFamily.ADA
+        elif cc == 90:
             return NVIDIAFamily.HOPPER
-        elif 100 <= cc < 130:
+        elif cc in [100, 103, 110, 120]:
             return NVIDIAFamily.BLACKWELL
         else:
             raise ValueError(f"unsupported compute capability {cc}")

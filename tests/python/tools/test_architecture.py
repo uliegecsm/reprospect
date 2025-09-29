@@ -5,6 +5,7 @@ class TestNVIDIAFamily:
     def test_from_compute_capability(self):
         assert NVIDIAFamily.from_compute_capability('70') == NVIDIAFamily.VOLTA
         assert NVIDIAFamily.from_compute_capability( 86 ) == NVIDIAFamily.AMPERE
+        assert NVIDIAFamily.from_compute_capability( 89 ) == NVIDIAFamily.ADA
         assert NVIDIAFamily.from_compute_capability( 120) == NVIDIAFamily.BLACKWELL
 
     def test_to_string(self):
@@ -30,7 +31,7 @@ class TestNVIDIAArch:
         assert NVIDIAArch.from_compute_capability(cc = 80).as_sm == 'sm_80'
 
     def test_str(self):
-        assert str(NVIDIAArch.from_compute_capability(70)) == 'VOLTA70'
+        assert str(NVIDIAArch.from_compute_capability(75)) == 'TURING75'
 
     def test_repr(self):
         assert repr(NVIDIAArch.from_compute_capability(86)) == "NVIDIAArch(family=<NVIDIAFamily.AMPERE: 'AMPERE'>, compute_capability=86)"

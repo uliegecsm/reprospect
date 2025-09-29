@@ -27,6 +27,7 @@ html_logo = '_static/logo.svg'
 html_last_updated_fmt = str()
 
 intersphinx_mapping = {
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'python': ('https://docs.python.org/3', None),
 }
 

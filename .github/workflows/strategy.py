@@ -37,6 +37,8 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
 
     partial['nvidia_arch'] = NVIDIAArch.from_compute_capability(cc = partial['nvidia_compute_capability'])
 
+    partial['build_platforms'] = ','.join(['linux/amd64'] + partial['additional_build_platforms'] if 'additional_build_platforms' in partial else [])
+
     # Labels for testing runners.
     runs_on = ['self-hosted', 'linux', 'docker', 'amd64', str(partial['nvidia_arch']).lower(), 'gpu:0']
     partial['runs-on'] = runs_on
@@ -54,6 +56,7 @@ def main(*, args : argparse.Namespace) -> None:
         'cuda_version' : '12.8.1',
         'compiler_family' : [('gcc', '13'), ('nvcc',)],
         'nvidia_compute_capability' : 70,
+        'additional_build_platforms' : ['linux/arm64'],
     }, args = args))
 
     matrix.append(complete_job({

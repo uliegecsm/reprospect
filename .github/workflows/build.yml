@@ -113,6 +113,9 @@ jobs:
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
+            - uses: docker/setup-qemu-action@v3
+              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
+            
             - uses: docker/setup-buildx-action@v3
               if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
 
@@ -120,7 +123,7 @@ jobs:
               if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
               with:
                   context: .
-                  platforms: linux/amd64
+                  platforms: ${{ matrix.build_platforms }}
                   push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
                   file: docker/dockerfile
                   tags: ${{ matrix.image }}

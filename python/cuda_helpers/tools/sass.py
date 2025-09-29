@@ -11,6 +11,7 @@ class Instruction:
     """
     Represents a single `SASS` instruction with its components.
     """
+    offset : int
     instruction : str
 
 class Decoder:
@@ -19,6 +20,8 @@ class Decoder:
 
     Simple decoder that parses `SASS` assembly and extracts key instruction information.
     """
+    HEX = r'[0-9a-f]+'
+
     @typeguard.typechecked
     def __init__(self, source : typing.Optional[pathlib.Path] = None, code : typing.Optional[str] = None) -> None:
         """
@@ -47,7 +50,7 @@ class Decoder:
             # Match instruction pattern:
             #   instruction
             instruction = re.match(
-                r'(.*)',
+                rf'\/\*({self.HEX})\*\/\s+(.*)',
                 line
             )
 
@@ -56,10 +59,12 @@ class Decoder:
                 raise RuntimeError(line)
 
             # Extract instruction components.
-            instruction = instruction.group(1).strip()
+            offset      = instruction.group(1).strip()
+            instruction = instruction.group(2).strip()
 
             # Create instruction.
             instruction = Instruction(
+                offset = int(offset, base = 16),
                 instruction = instruction,
             )
 

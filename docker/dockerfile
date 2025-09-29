@@ -15,20 +15,12 @@ ENV PATH=${VIRTUAL_ENV}/bin:${PATH}
 RUN <<EOF
     set -ex
     apt update
-    apt --yes --no-install-recommends install python3 python3-pip python3-venv
+    apt --yes --no-install-recommends install python3 python3-pip python3-venv git
     python3 -m venv $VIRTUAL_ENV
 
     printf "import re, sys\nif re.match(r'Python ${PYTHON_VERSION}.[0-9]+', '$(python3 --version)') is None: raise RuntimeError(f'Your Python version {sys.version} does not match ${PYTHON_VERSION}.')" | python3
 
-    apt clean && rm -rf /var/lib/apt/lists/*
-EOF
-
-# Install git and system helpers
-RUN <<EOF
-    set -ex
-    apt update
-    apt --yes --no-install-recommends install git
-    python3 -m pip install git+https://github.com/uliegecsm/system-helpers@0.0.3
+    python3 -m pip install git+https://github.com/uliegecsm/system-helpers
 
     apt-helpers clean
 EOF

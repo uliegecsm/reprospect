@@ -5,8 +5,6 @@ import pprint
 
 from cuda_helpers.tools.architecture import NVIDIAArch
 
-UBUNTU_VERSION = '24.04'
-
 def full_image(*, name : str, tag : str, args : argparse.Namespace) -> str:
     """
     Full image from its `name` and `tag`, with remote.
@@ -30,7 +28,7 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
 
     partial['cmake_preset'] = '-'.join([x[0] for x in partial['compiler_family']])
 
-    tag = f'{partial['cuda_version']}-devel-ubuntu{UBUNTU_VERSION}'
+    tag = f'{partial['cuda_version']}-devel-ubuntu24.04'
 
     partial['base_image'] = f'nvidia/cuda:{tag}'
     partial[     'image'] = full_image(name = name, tag = tag, args = args)

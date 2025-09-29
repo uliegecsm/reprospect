@@ -56,7 +56,7 @@ def main(*, args : argparse.Namespace) -> None:
 
     matrix.append(complete_job({
         'cuda_version' : '13.0.0',
-        'compiler_family' : [('gcc', '13'), ('nvcc',)],
+        'compiler_family' : [('gcc', '14'), ('nvcc',)],
         'nvidia_compute_capability' : 120,
     }, args = args))
 

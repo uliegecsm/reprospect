@@ -59,14 +59,19 @@ ARG COMPILER_VERSION
 RUN <<EOF
     set -ex
 
-    echo "Expecting GCC major version to be ${COMPILER_VERSION}."
+    apt-helpers install-packages --update --packages gcc-${COMPILER_VERSION} g++-${COMPILER_VERSION}
+    
+    update-alternatives-helpers --prefix /usr/bin \
+        --display --level=10 \
+        --for-each-of \
+            gcc=gcc-${COMPILER_VERSION} \
+            g++=g++-${COMPILER_VERSION} \
+            $(uname -m)-linux-gnu-gcc=$(uname -m)-linux-gnu-gcc-${COMPILER_VERSION} \
+            $(uname -m)-linux-gnu-g++=$(uname -m)-linux-gnu-g++-${COMPILER_VERSION}
 
-    GCC_VERSION_MAJOR=$(gcc -dumpfullversion -dumpversion | cut -d. -f1)
+    gcc -dumpfullversion -dumpversion
 
-    if [ ! "$GCC_VERSION_MAJOR" = "${COMPILER_VERSION}" ];then
-        echo "GCC major version is ${GCC_VERSION_MAJOR}."
-        exit 1
-    fi
+    apt-helpers clean
 EOF
 
 FROM requirements-compiler-${COMPILER}

@@ -12,13 +12,17 @@ class TestSASSDecoder:
         Check that it can decode `IMAD`.
         """
         instructions = {
-            '/*0040*/                   IMAD R4, R4, c[0x0][0x0], R3' : sass.Instruction(
+            '        /*0040*/      IMAD R4, R4, c[0x0][0x0], R3 ;        /* 0x0000000004047a24 */' + '\n' +
+            '                                                            /* 0x001fca00078e0203 */' : sass.Instruction(
                 offset = 64,
                 instruction = 'IMAD R4, R4, c[0x0][0x0], R3',
+                hex = ['0x0000000004047a24', '0x001fca00078e0203'],
             ),
-            '/*0090*/                   IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170]' : sass.Instruction(
+            '        /*0090*/      IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170] ; /* 0x00005c0004047625 */' + '\n' +
+            '                                                                /* 0x000fc800078e0005 */' : sass.Instruction(
                 offset = 144,
                 instruction = 'IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170]',
+                hex = ['0x00005c0004047625', '0x000fc800078e0005'],
             ),
         }
 

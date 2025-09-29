@@ -16,6 +16,7 @@ add_pytest(architecture)
 add_pytest(binaries)
 add_pytest(device_properties)
 add_pytest(nsys)
+add_pytest(sass)
 
 test_environment(tests_tools_binaries CMAKE_CUDA_COMPILER set ${CMAKE_CUDA_COMPILER})
 test_environment(tests_tools_binaries CMAKE_CUDA_COMPILER_ID set ${CMAKE_CUDA_COMPILER_ID})

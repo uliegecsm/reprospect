@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "cuda-helpers/errors/cuda_runtime.hpp"
+#include "reprospect/errors/cuda_runtime.hpp"
 
 /**
  * @file
@@ -25,20 +25,20 @@ int main()
     constexpr index_t size = 1024;
 
     cudaStream_t stream_A = nullptr, stream_B = nullptr;
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaStreamCreate(&stream_A));
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaStreamCreate(&stream_B));
+    REPROSPECT_CHECK_CUDART_CALL(cudaStreamCreate(&stream_A));
+    REPROSPECT_CHECK_CUDART_CALL(cudaStreamCreate(&stream_B));
 
     float* vec_x = nullptr;
     float* vec_y = nullptr;
 
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaMallocAsync(&vec_x, size * sizeof(float), stream_A)); 
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaMallocAsync(&vec_y, size * sizeof(float), stream_B));
+    REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&vec_x, size * sizeof(float), stream_A)); 
+    REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&vec_y, size * sizeof(float), stream_B));
 
     {
         const std::vector<float> vec_x_h(size, 1.f), vec_y_h(size, 2.f);
-        CUDA_HELPERS_CHECK_CUDART_CALL(cudaMemcpyAsync(vec_x, vec_x_h.data(), size * sizeof(float), cudaMemcpyHostToDevice, stream_A));
-        CUDA_HELPERS_CHECK_CUDART_CALL(cudaMemcpyAsync(vec_y, vec_y_h.data(), size * sizeof(float), cudaMemcpyHostToDevice, stream_B));
-        CUDA_HELPERS_CHECK_CUDART_CALL(cudaStreamSynchronize(stream_A));
+        REPROSPECT_CHECK_CUDART_CALL(cudaMemcpyAsync(vec_x, vec_x_h.data(), size * sizeof(float), cudaMemcpyHostToDevice, stream_A));
+        REPROSPECT_CHECK_CUDART_CALL(cudaMemcpyAsync(vec_y, vec_y_h.data(), size * sizeof(float), cudaMemcpyHostToDevice, stream_B));
+        REPROSPECT_CHECK_CUDART_CALL(cudaStreamSynchronize(stream_A));
     }
 
     constexpr index_t block_size = 128;
@@ -47,15 +47,15 @@ int main()
     saxpy_kernel<<<dim3{grid_size, 1, 1}, dim3{block_size, 1, 1} , 0, stream_B>>>(size, 2.f, vec_x, vec_y);
 
     std::vector<float> result(size);
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaMemcpyAsync(result.data(), vec_y, size * sizeof(float), cudaMemcpyDeviceToHost, stream_B));
+    REPROSPECT_CHECK_CUDART_CALL(cudaMemcpyAsync(result.data(), vec_y, size * sizeof(float), cudaMemcpyDeviceToHost, stream_B));
 
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaStreamSynchronize(stream_B));
+    REPROSPECT_CHECK_CUDART_CALL(cudaStreamSynchronize(stream_B));
 
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaFreeAsync(vec_x, stream_A));
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaFreeAsync(vec_y, stream_B));
+    REPROSPECT_CHECK_CUDART_CALL(cudaFreeAsync(vec_x, stream_A));
+    REPROSPECT_CHECK_CUDART_CALL(cudaFreeAsync(vec_y, stream_B));
 
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaStreamDestroy(stream_A));
-    CUDA_HELPERS_CHECK_CUDART_CALL(cudaStreamDestroy(stream_B));
+    REPROSPECT_CHECK_CUDART_CALL(cudaStreamDestroy(stream_A));
+    REPROSPECT_CHECK_CUDART_CALL(cudaStreamDestroy(stream_B));
 
     for(const auto& elm : result) {
         if(elm != 4.f) throw std::runtime_error("wrong value");

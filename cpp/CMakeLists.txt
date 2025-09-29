@@ -1,1 +1,1 @@
-add_subdirectory(cuda-helpers)
+add_subdirectory(reprospect)

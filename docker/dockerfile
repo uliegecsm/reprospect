@@ -90,10 +90,10 @@ RUN --mount=target=/python/requirements.txt,type=bind,source=python/requirements
 EOF
 
 # Install Nsight Systems.
-RUN --mount=target=/python/cuda_helpers/installers/nsight_systems.py,type=bind,source=python/cuda_helpers/installers/nsight_systems.py <<EOF
+RUN --mount=target=/python/reprospect/installers/nsight_systems.py,type=bind,source=python/reprospect/installers/nsight_systems.py <<EOF
     set -ex
 
-    python3 /python/cuda_helpers/installers/nsight_systems.py
+    python3 /python/reprospect/installers/nsight_systems.py
 EOF
 
 # MinIO.

@@ -4,7 +4,7 @@ import pathlib
 import pytest
 import typeguard
 
-from cuda_helpers.tools import sass, binaries
+from reprospect.tools import sass, binaries
 
 from tests.python.tools.test_binaries import Parameters, PARAMETERS, get_compilation_output
 
@@ -24,7 +24,7 @@ ISETP_NE_U32_AND = \
 
 class TestSASSDecoder:
     """
-    Test :py:class:`cuda_helpers.tools.sass.Decoder`.
+    Test :py:class:`reprospect.tools.sass.Decoder`.
     """
     @typeguard.typechecked
     def test_IMAD(self) -> None:

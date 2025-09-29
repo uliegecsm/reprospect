@@ -3,7 +3,7 @@ import json
 import logging
 import pprint
 
-from cuda_helpers.tools.architecture import NVIDIAArch
+from reprospect.tools.architecture import NVIDIAArch
 
 def full_image(*, name : str, tag : str, args : argparse.Namespace) -> str:
     """

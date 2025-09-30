@@ -48,9 +48,9 @@ class ResourceUsage(enum.StrEnum):
     Support for resource usage fields.
 
     Reference:
-        - https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html
-        - https://github.com/openwall/john/wiki/Parsing-nvidia-%27ptxas%27-output---memory-types
-        - https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#printing-code-generation-statistics
+        - :cite:`nvidia-cuda-binary-utilities`
+        - :cite:`openwall-wiki-parsing-nvidia`
+        - :cite:`nvidia-cuda-compiler-driver-nvcc-statistics`
     """
     # Registers.
     REGISTER = 'REG'
@@ -87,7 +87,7 @@ class CuObjDump:
     Use `cuobjdump` for extracting `SASS`, symbol table, and so on.
 
     References:
-        - https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html#cuobjdump
+        - :cite:`nvidia-cuda-binary-utility-cuobjdump`
     """
     @dataclasses.dataclass
     class Function:

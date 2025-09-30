@@ -9,6 +9,9 @@ function(add_pytest FILE)
     test_environment(tests_tools_${FILE} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
     test_environment(tests_tools_${FILE} CMAKE_CUDA_ARCHITECTURES set ${CMAKE_CUDA_ARCHITECTURES})
     test_environment(tests_tools_${FILE} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
+    test_environment(tests_tools_${FILE} CMAKE_CUDA_COMPILER set ${CMAKE_CUDA_COMPILER})
+    test_environment(tests_tools_${FILE} CMAKE_CUDA_COMPILER_ID set ${CMAKE_CUDA_COMPILER_ID})
+    test_environment(tests_tools_${FILE} CMAKE_CUDA_COMPILER_LAUNCHER set ${CMAKE_CUDA_COMPILER_LAUNCHER})
 
 endfunction()
 
@@ -17,7 +20,3 @@ add_pytest(binaries)
 add_pytest(device_properties)
 add_pytest(nsys)
 add_pytest(sass)
-
-test_environment(tests_tools_binaries CMAKE_CUDA_COMPILER set ${CMAKE_CUDA_COMPILER})
-test_environment(tests_tools_binaries CMAKE_CUDA_COMPILER_ID set ${CMAKE_CUDA_COMPILER_ID})
-test_environment(tests_tools_binaries CMAKE_CUDA_COMPILER_LAUNCHER set ${CMAKE_CUDA_COMPILER_LAUNCHER})

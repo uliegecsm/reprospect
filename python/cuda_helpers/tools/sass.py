@@ -134,6 +134,35 @@ class Instruction:
     hex : str
     control : ControlCode
 
+    OPCODES = {
+        '7a23' : 'FFMA',
+        '7a24' : 'IMAD',
+        '7625' : 'IMAD.WIDE.U32',
+        '720c' : 'ISETP.NE.U32.AND',
+    }
+
+    @staticmethod
+    @typeguard.typechecked
+    def decode(*, code : str) -> dict:
+        """
+        Decode an instruction from its *hex* representation.
+        Note that it should decipher similar information as `cuobjdump` would.
+
+        .. warning::
+
+            It might not work well for now.
+
+        References:
+            * https://people.cs.rutgers.edu/zz124/assets/pdf/cgo19.pdf
+            * https://zenodo.org/records/2339154
+        """
+        # 4 bits OPCODE.
+        suffix = code[-4:]
+
+        return {
+            'opcode' : Instruction.OPCODES[suffix],
+        }
+
 class Decoder:
     """
     `NVIDIA` `SASS` instruction decoder.

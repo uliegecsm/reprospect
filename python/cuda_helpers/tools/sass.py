@@ -142,7 +142,7 @@ class Decoder:
     """
     # Instruction is like:
     #   STG R1, R2
-    INSTRUCTION = r'[A-Z0-9a-z,\. \[\]]+'
+    INSTRUCTION = r'[A-Z0-9a-z,\. _\-!@\[\]]+'
 
     # HEX is like:
     #   0x00000a0000017a02
@@ -150,32 +150,61 @@ class Decoder:
 
     # Typical SASS line:
     #   /*0070*/ MOV R5, 0x4 ; /* 0x0000000400057802 */
-    MATCHER = rf'\/\*({HEX})\*\/\s+({INSTRUCTION})\s+;\s+\/\* ({HEX}) \*\/'
+    MATCHER = rf'\/\*({HEX})\*\/\s+({INSTRUCTION})\s*;\s+\/\* ({HEX}) \*\/'
 
     @typeguard.typechecked
-    def __init__(self, source : typing.Optional[pathlib.Path] = None, code : typing.Optional[str] = None) -> None:
+    def __init__(self, source : typing.Optional[pathlib.Path] = None, code : typing.Optional[str] = None, skip_until_headerflags : bool = True) -> None:
         """
         Initialize the decoder with the `SASS` contained in `source` or `code`.
         """
         self.source = source
         self.code   = code
         self.instructions: list[Instruction] = []
-        self._parse()
+        self._parse(skip_until_headerflags = skip_until_headerflags)
 
     @typeguard.typechecked
-    def _parse(self) -> None:
+    def _parse(self, skip_until_headerflags : bool) -> None:
         """
         Parse `SASS` lines.
         """
         if self.source:
-            lines = self.source.read_text().splitlines()
-        else:
-            lines = self.code.splitlines()
+            self.code = self.source.read_text()
+
+        lines = self.code.splitlines()
 
         iline = 0
 
+        headerflags = False
+
         while iline < len(lines):
             line = lines[iline].strip()
+
+            # The line containing '..........' means the end of the SASS code.
+            if skip_until_headerflags:
+                if '..........' in line:
+                    break
+
+            # Skip empty lines.
+            if not line:
+                iline += 1
+                continue
+
+            # Skip lines until '.headerflags' is met.
+            if skip_until_headerflags:
+                if not headerflags:
+                    headerflags = '.headerflags' in line
+                    iline += 1
+                    continue
+
+            # For a few architecture/compiler combinations, additional fields appear.
+            # For instance:
+            #   &wr=0x0          ?trans1;
+            #   &req={1}         ?WAIT5_END_GROUP
+            line = re.sub(pattern = r'&wr=[0-5x]+', repl = '', string = line)
+            line = re.sub(pattern = r'&rd=[0-5x]+', repl = '', string = line)
+            line = re.sub(pattern = r'\?trans[0-9]+', repl = '', string = line)
+            line = re.sub(pattern = r'&req={[0-9]+}', repl = '', string = line)
+            line = re.sub(pattern = r'\?WAIT[0-9]+_END_GROUP', repl = '', string = line)
 
             match = re.match(self.MATCHER, line)
 

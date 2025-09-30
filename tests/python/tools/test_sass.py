@@ -1,6 +1,14 @@
+import os
+import pathlib
+
+import pytest
 import typeguard
 
-from cuda_helpers.tools import sass
+from cuda_helpers.tools import sass, binaries
+
+from test_binaries import Parameters, PARAMETERS, get_compilation_output
+
+TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
 
 FFMA = \
 """\
@@ -41,12 +49,12 @@ class TestSASSDecoder:
         }
 
         for raw, expt in instructions.items():
-            decoder = sass.Decoder(code = raw)
+            decoder = sass.Decoder(code = raw, skip_until_headerflags = False)
 
             assert decoder.instructions == [expt], decoder.instructions
 
         fused = '\n'.join(instructions.keys())
-        decoder = sass.Decoder(code = fused)
+        decoder = sass.Decoder(code = fused, skip_until_headerflags = False)
         assert decoder.instructions == [v for v in instructions.values()], decoder.instructions
 
     @typeguard.typechecked
@@ -54,7 +62,7 @@ class TestSASSDecoder:
         """
         Check that it can decode `FFMA`.
         """
-        decoder = sass.Decoder(code = FFMA)
+        decoder = sass.Decoder(code = FFMA, skip_until_headerflags = False)
         assert decoder.instructions == [
             sass.Instruction(
                 offset = 192, instruction = 'FFMA R7, R2, c[0x0][0x160], R7',
@@ -67,7 +75,7 @@ class TestSASSDecoder:
         """
         Check that it can decode `ISETP`.
         """
-        decoder = sass.Decoder(code = ISETP_NE_U32_AND)
+        decoder = sass.Decoder(code = ISETP_NE_U32_AND, skip_until_headerflags = False)
         assert decoder.instructions == [
             sass.Instruction(
                 offset = 192, instruction = 'ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT',
@@ -75,3 +83,45 @@ class TestSASSDecoder:
                 control = sass.ControlCode(stall_count = 2, yield_flag = True, read = 7, write = 7, wait = [False] * 6, reuse = {'A' : True, 'B' : False, 'C' : False, 'D' : False})
             )
         ], decoder.instructions
+
+    @typeguard.typechecked
+    def test_from_source(self) -> None:
+        """
+        Read `SASS` from a source.
+        """
+        SOURCE = pathlib.Path(__file__).parent / 'test_sass' / 'saxpy.sass'
+
+        decoder = sass.Decoder(source = SOURCE)
+
+        assert len(decoder.instructions) == 32, len(decoder.instructions)
+
+    @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+    @typeguard.typechecked
+    def test_from_cuobjdump(self, parameters : Parameters) -> None:
+        """
+        Read `SASS` dumped from `cuobjdump`.
+        """
+        CUDA_FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
+        output, _ = get_compilation_output(
+            source = CUDA_FILE,
+            cwd = TMPDIR,
+            arch = parameters.arch,
+            object = True,
+        )
+
+        cuobjdump = binaries.CuObjDump(file = output, arch = parameters.arch, sass = True)
+
+        decoder = sass.Decoder(code = cuobjdump.sass)
+
+        if parameters.arch.compute_capability < 80:
+            expt_ninstrs = [16, 16]
+        elif parameters.arch.compute_capability < 90:
+            expt_ninstrs = [24, 16]
+        else:
+            expt_ninstrs = [32, 20]
+
+        assert len(decoder.instructions) == expt_ninstrs[0], len(decoder.instructions)
+
+        instructions_not_nop = list(filter(lambda inst: 'NOP' not in inst.instruction, decoder.instructions))
+
+        assert len(instructions_not_nop) == expt_ninstrs[1], len(instructions_not_nop)

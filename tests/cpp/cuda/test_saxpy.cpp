@@ -1,8 +1,8 @@
-#include <iostream>
 #include <stdexcept>
 #include <vector>
 
 #include "common/cuda_runtime.hpp"
+#include "cub/detail/nvtx3.hpp"
 
 /**
  * @file
@@ -20,13 +20,25 @@ void saxpy_kernel(const index_t size, const float factor, const float* __restric
         vec_y[index] += factor * vec_x[index];
 }
 
+struct MyAppDomain{ static constexpr char const* name {"application-domain"}; };
+
 int main()
 {
+    //! Mark the start of the application.
+    ::nvtx3::mark_in<MyAppDomain>("Starting my application.");
+
+    //! This one is superfluous but serves the tests.
+    const auto& outer = ::nvtx3::start_range_in<MyAppDomain>("outer-useless-range");
+
     constexpr index_t size = 1024;
 
+    //! Create streams.
     cudaStream_t stream_A = nullptr, stream_B = nullptr;
-    REPROSPECT_CHECK_CUDART_CALL(cudaStreamCreate(&stream_A));
-    REPROSPECT_CHECK_CUDART_CALL(cudaStreamCreate(&stream_B));
+    {
+        ::nvtx3::scoped_range_in<MyAppDomain> range{"create-streams"};
+        REPROSPECT_CHECK_CUDART_CALL(cudaStreamCreate(&stream_A));
+        REPROSPECT_CHECK_CUDART_CALL(cudaStreamCreate(&stream_B));
+    }
 
     float* vec_x = nullptr;
     float* vec_y = nullptr;
@@ -44,7 +56,10 @@ int main()
     constexpr index_t block_size = 128;
     constexpr index_t grid_size  = (size + block_size - 1) / block_size;
 
-    saxpy_kernel<<<dim3{grid_size, 1, 1}, dim3{block_size, 1, 1} , 0, stream_B>>>(size, 2.f, vec_x, vec_y);
+    {
+        ::nvtx3::scoped_range_in<MyAppDomain> range{"launch-saxpy-kernel"};
+        saxpy_kernel<<<dim3{grid_size, 1, 1}, dim3{block_size, 1, 1} , 0, stream_B>>>(size, 2.f, vec_x, vec_y);
+    }
 
     std::vector<float> result(size);
     REPROSPECT_CHECK_CUDART_CALL(cudaMemcpyAsync(result.data(), vec_y, size * sizeof(float), cudaMemcpyDeviceToHost, stream_B));
@@ -60,6 +75,8 @@ int main()
     for(const auto& elm : result) {
         if(elm != 4.f) throw std::runtime_error("wrong value");
     }
+
+    ::nvtx3::end_range_in<MyAppDomain>(outer);
 
     return 0;
 }

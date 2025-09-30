@@ -16,6 +16,7 @@ release = __version__
 extensions = [
     'sphinx.ext.apidoc',
     'sphinx.ext.autodoc',
+    'sphinx.ext.extlinks',
     'sphinx.ext.intersphinx',
     'sphinxcontrib.bibtex',
     'sphinx_github_style',
@@ -28,6 +29,11 @@ html_theme_options = {
 html_static_path = ['_static']
 html_logo = '_static/logo.svg'
 html_last_updated_fmt = str()
+
+# To the best of our knowledge, NVIDIA does not provide an object inventory.
+extlinks = {
+    'ncu_report': ('https://docs.nvidia.com/nsight-compute/PythonReportInterface/index.html#ncu_report.%s', '%s')
+}
 
 intersphinx_mapping = {
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),

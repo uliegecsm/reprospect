@@ -16,6 +16,18 @@ FFMA = \
                                                                                      /* 0x004fd00000000007 */
 """
 
+IMAD = \
+"""\
+        /*0040*/      IMAD R4, R4, c[0x0][0x0], R3 ;        /* 0x0000000004047a24 */
+                                                            /* 0x001fca00078e0203 */
+"""
+
+IMAD_WIDE_U32 = \
+"""\
+        /*0090*/      IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170] ; /* 0x00005c0004047625 */
+                                                                /* 0x000fc800078e0005 */
+"""
+
 ISETP_NE_U32_AND = \
 """\
         /*00c0*/                   ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT ;       /* 0x000000ff0000720c */
@@ -32,15 +44,13 @@ class TestSASSDecoder:
         Check that it can decode `IMAD`.
         """
         instructions = {
-            '        /*0040*/      IMAD R4, R4, c[0x0][0x0], R3 ;        /* 0x0000000004047a24 */' + '\n' +
-            '                                                            /* 0x001fca00078e0203 */' : sass.Instruction(
+            IMAD : sass.Instruction(
                 offset = 64,
                 instruction = 'IMAD R4, R4, c[0x0][0x0], R3',
                 hex = '0x0000000004047a24',
                 control = sass.ControlCode(stall_count = 5, yield_flag = False, read = 7, write = 7, wait = [True, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
             ),
-            '        /*0090*/      IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170] ; /* 0x00005c0004047625 */' + '\n' +
-            '                                                                /* 0x000fc800078e0005 */' : sass.Instruction(
+            IMAD_WIDE_U32 : sass.Instruction(
                 offset = 144,
                 instruction = 'IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170]',
                 hex = '0x00005c0004047625',
@@ -125,3 +135,43 @@ class TestSASSDecoder:
         instructions_not_nop = list(filter(lambda inst: 'NOP' not in inst.instruction, decoder.instructions))
 
         assert len(instructions_not_nop) == expt_ninstrs[1], len(instructions_not_nop)
+
+    def test_to_html(self):
+        """
+        Test :py:meth:`reprospect.tools.sass.Decoder.to_html`.
+        """
+        ARTIFACT_DIR = pathlib.Path(os.environ['ARTIFACT_DIR'])
+        ARTIFACT_DIR.mkdir(parents = True, exist_ok = True)
+
+        SOURCE = pathlib.Path(__file__).parent / 'test_sass' / 'saxpy.sass'
+
+        decoder = sass.Decoder(source = SOURCE)
+
+        with open(ARTIFACT_DIR / 'saxpy.html', 'w+') as fout:
+            fout.write(decoder.to_html())
+
+    @typeguard.typechecked
+    def test_from_128_to_130(self):
+        """
+        This test is related to an observation that, for the same
+        architecture (`120`), `nvcc 12.8.1` and `nvcc 13.0.0` write the same sequence of instructions,
+        but the barriers (scoreboard dependencies) are different.
+        """
+        cfd = pathlib.Path(__file__).parent
+
+        d1281 = sass.Decoder(source = cfd / 'test_sass' / '12.8.1.sass')
+        d1300 = sass.Decoder(source = cfd / 'test_sass' / '13.0.0.sass')
+
+        assert len(d1281.instructions) == len(d1300.instructions)
+
+        current = True
+
+        for d1281i, d1300i in zip(d1281.instructions, d1300.instructions):
+            assert d1281i.instruction == d1300i.instruction
+            assert d1281i.control.stall_count == d1300i.control.stall_count
+            assert d1281i.control.yield_flag == d1300i.control.yield_flag
+            assert d1281i.control.reuse == d1300i.control.reuse
+
+            current = current and (d1281i.control == d1300i.control)
+
+        assert current is False

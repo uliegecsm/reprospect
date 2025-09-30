@@ -14,6 +14,10 @@ function(add_pytest FILE)
     test_environment(tests_python_tools_${FILE} CMAKE_CUDA_COMPILER_ID set ${CMAKE_CUDA_COMPILER_ID})
     test_environment(tests_python_tools_${FILE} CMAKE_CUDA_COMPILER_LAUNCHER set ${CMAKE_CUDA_COMPILER_LAUNCHER})
 
+    # Directory for artifacts.
+    file(RELATIVE_PATH relative_path ${CMAKE_SOURCE_DIR} "${CMAKE_CURRENT_SOURCE_DIR}/test_${FILE}.py")
+    test_environment(tests_python_tools_${FILE} ARTIFACT_DIR set ${CMAKE_SOURCE_DIR}/artifacts/${relative_path})
+
 endfunction()
 
 add_pytest(architecture)

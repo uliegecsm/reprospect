@@ -6,4 +6,5 @@ ReProspect documentation
    :caption: Contents:
 
    api/modules
+   tests
    bibliography

@@ -6,6 +6,7 @@ function(add_pytest FILE)
     )
 
     test_environment(tests_tools_${FILE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR}/python)
+    test_environment(tests_tools_${FILE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
     test_environment(tests_tools_${FILE} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
     test_environment(tests_tools_${FILE} CMAKE_CUDA_ARCHITECTURES set ${CMAKE_CUDA_ARCHITECTURES})
     test_environment(tests_tools_${FILE} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})

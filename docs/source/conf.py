@@ -8,6 +8,7 @@ copyright = f'{datetime.datetime.now().year}, {author}'
 
 PROJECT_DIR = pathlib.Path(__file__).parent.parent.parent
 
+sys.path.append(str(PROJECT_DIR))
 sys.path.append(str(PROJECT_DIR / 'python'))
 from cuda_helpers import __version__
 release = __version__
@@ -33,6 +34,12 @@ intersphinx_mapping = {
     'python': ('https://docs.python.org/3', None),
 }
 
+autodoc_default_options = {
+    'members' : True,
+    'show-inheritance' : True,
+    'undoc-members' : True,
+}
+
 apidoc_modules = [
     {
         'path' : PROJECT_DIR / 'python' / 'cuda_helpers',
@@ -43,5 +50,10 @@ apidoc_modules = [
 ]
 
 bibtex_bibfiles = ['references.bib']
+
+# 'unittest.TestCase' is implemented in 'unittest.test.TestCase' but is documented
+# as 'unittest.TestCase', thus confusing 'intersphinx'.
+import unittest
+unittest.TestCase.__module__ = 'unittest'
 
 linkcode_url = 'https://github.com/uliegecsm/cuda-helpers'

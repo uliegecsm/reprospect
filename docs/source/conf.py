@@ -17,6 +17,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
     'sphinxcontrib.bibtex',
+    'sphinx_github_style',
 ]
 
 html_theme = 'sphinx_rtd_theme'
@@ -42,3 +43,5 @@ apidoc_modules = [
 ]
 
 bibtex_bibfiles = ['references.bib']
+
+linkcode_url = 'https://github.com/uliegecsm/cuda-helpers'

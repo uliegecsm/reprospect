@@ -16,6 +16,7 @@ extensions = [
     'sphinx.ext.apidoc',
     'sphinx.ext.autodoc',
     'sphinx.ext.intersphinx',
+    'sphinxcontrib.bibtex',
 ]
 
 html_theme = 'sphinx_rtd_theme'
@@ -39,3 +40,5 @@ apidoc_modules = [
         'implicit_namespaces' : True,
     }
 ]
+
+bibtex_bibfiles = ['references.bib']

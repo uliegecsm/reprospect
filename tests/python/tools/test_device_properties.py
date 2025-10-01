@@ -8,7 +8,7 @@ from cuda_helpers.tools import device_properties
 
 class TestCuda(unittest.TestCase):
     """
-    Test for :py:class:`toolbox.profiling.cuda.device_properties.Cuda`.
+    Test for :py:class:`cuda_helpers.tools.device_properties.Cuda`.
     """
     INCLUDE_DIR = pathlib.Path('/usr/local/cuda/include')
 

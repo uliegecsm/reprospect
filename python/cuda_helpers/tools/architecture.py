@@ -21,7 +21,7 @@ class NVIDIAFamily(enum.StrEnum):
         """
         Get the `NVIDIA` architecture family from a compute capability.
 
-        See: https://developer.nvidia.com/cuda-gpus
+        See :cite:`nvidia-cuda-gpu-compute-capability`.
         """
         cc = int(cc)
         if cc in [70, 72]:

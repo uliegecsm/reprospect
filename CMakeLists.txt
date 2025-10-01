@@ -11,6 +11,9 @@ project(
     LANGUAGES CXX CUDA
 )
 
+option(ReProspect_ENABLE_TESTS "Enable tests." OFF)
+option(ReProspect_ENABLE_EXAMPLES "Enable examples." OFF)
+
 set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -22,9 +25,14 @@ include(cmake/modules/Warnings.cmake)
 
 add_subdirectory(cpp)
 
-enable_testing()
+if(ReProspect_ENABLE_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
 
-add_subdirectory(tests)
+if(ReProspect_ENABLE_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 
 #---- Install.
 install(FILES LICENSE README.md DESTINATION .)

@@ -11,7 +11,7 @@ setup(
     name             = 'reprospect',
     version          = reprospect.__version__,
     license          = 'MIT',
-    url              = 'https://github.com/uliegecsm/cuda-helpers',
+    url              = 'https://github.com/uliegecsm/reprospect',
     install_requires = [
         *requirements,
     ],

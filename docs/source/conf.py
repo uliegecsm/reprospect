@@ -56,4 +56,4 @@ bibtex_bibfiles = ['references.bib']
 import unittest
 unittest.TestCase.__module__ = 'unittest'
 
-linkcode_url = 'https://github.com/uliegecsm/cuda-helpers'
+linkcode_url = 'https://github.com/uliegecsm/reprospect'

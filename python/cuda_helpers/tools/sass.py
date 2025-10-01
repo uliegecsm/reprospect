@@ -23,10 +23,15 @@ class ControlCode:
     | number of bits   | meaning                                     |
     +==================+=============================================+
     | 4                | stall count (0-15 cycles)                   |
+    +------------------+---------------------------------------------+
     | 1                | yield flag                                  |
+    +------------------+---------------------------------------------+
     | 3                | write barrier                               |
+    +------------------+---------------------------------------------+
     | 3                | read barrier                                |
+    +------------------+---------------------------------------------+
     | 6                | wait barrier mask (one bit per barrier 0-5) |
+    +------------------+---------------------------------------------+
     | 4                | reuse flags mask (for operands A, B, C, D)  |
     +------------------+---------------------------------------------+
 
@@ -44,6 +49,10 @@ class ControlCode:
     A write or read barrier value with the three bits set to 1, i.e., an integer value of 7, means that no such barrier is set.
 
     Note that barriers are related to [scoreboarding](https://en.wikipedia.org/wiki/Scoreboarding).
+
+    The reader can refer to the following references for further description of barriers and scoreboard dependencies:
+        * :cite:`jia-2018-dissecting-nvidia-volta-gpu` (section 2.1)
+        * :cite:`huerta-2025-analyzing-modern-nvidia-gpu` (figure 2).
 
     Stall count
     ===========

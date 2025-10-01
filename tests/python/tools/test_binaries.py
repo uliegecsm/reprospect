@@ -13,7 +13,7 @@ import typeguard
 from cuda_helpers.tools.architecture import NVIDIAArch
 from cuda_helpers.tools.binaries import get_arch_from_compile_command, CuObjDump, CuppFilt, ResourceUsage
 
-TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
+TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
 
 def test_get_arch_from_compile_command():
     """

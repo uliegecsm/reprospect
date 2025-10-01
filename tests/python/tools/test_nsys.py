@@ -13,8 +13,8 @@ class TestSession:
     """
     Test :py:class:`cuda_helpers.tools.nsys.Session`.
     """
-    TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
-    EXECUTABLE = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cuda_saxpy'
+    TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
+    EXECUTABLE = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
 
     @staticmethod
     @typeguard.typechecked
@@ -44,7 +44,7 @@ class TestSession:
 
     def test_cuda_api_trace(self):
         """
-        Collect all `Cuda` API calls of :cpp:file:`tests/cpp/cuda/test_saxpy.cpp`.
+        Collect all `Cuda` API calls of :file:`tests/cpp/cuda/test_saxpy.cpp`.
         """
         ns = self.run()
 

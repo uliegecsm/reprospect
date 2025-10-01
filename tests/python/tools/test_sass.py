@@ -8,7 +8,7 @@ from cuda_helpers.tools import sass, binaries
 
 from test_binaries import Parameters, PARAMETERS, get_compilation_output
 
-TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
+TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
 
 FFMA = \
 """\

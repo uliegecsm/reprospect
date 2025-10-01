@@ -112,7 +112,7 @@ class TestCuda(unittest.TestCase):
 
     def test_cuda_device_attribute_uptodate(self):
         """
-        Check that :py:enum:`CudaDeviceAttribute` is up-to-date with the content of `cuda.h`.
+        Check that :py:class:`cuda_helpers.tools.device_properties.CudaDeviceAttribute` is up-to-date with the content of `cuda.h`.
         """
         cuda_header = self.INCLUDE_DIR / 'cuda.h'
 

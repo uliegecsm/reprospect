@@ -9,7 +9,7 @@ import subprocess
 import pandas
 import typeguard
 
-from cuda_helpers.tools.architecture import NVIDIAArch
+from reprospect.tools.architecture import NVIDIAArch
 
 PATTERNS = [
     re.compile(r'-arch=sm_(\d+)'),

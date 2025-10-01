@@ -4,11 +4,11 @@ import pathlib
 import re
 import unittest
 
-from cuda_helpers.tools import device_properties
+from reprospect.tools import device_properties
 
 class TestCuda(unittest.TestCase):
     """
-    Test for :py:class:`cuda_helpers.tools.device_properties.Cuda`.
+    Test for :py:class:`reprospect.tools.device_properties.Cuda`.
     """
     INCLUDE_DIR = pathlib.Path('/usr/local/cuda/include')
 
@@ -112,7 +112,7 @@ class TestCuda(unittest.TestCase):
 
     def test_cuda_device_attribute_uptodate(self):
         """
-        Check that :py:class:`cuda_helpers.tools.device_properties.CudaDeviceAttribute` is up-to-date with the content of `cuda.h`.
+        Check that :py:class:`reprospect.tools.device_properties.CudaDeviceAttribute` is up-to-date with the content of `cuda.h`.
         """
         cuda_header = self.INCLUDE_DIR / 'cuda.h'
 

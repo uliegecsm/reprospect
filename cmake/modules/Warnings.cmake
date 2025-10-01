@@ -2,9 +2,9 @@
 include_guard(GLOBAL)
 
 # Host compiler flags that we always want.
-set(CUDA_HELPERS_COMPILE_WARNINGS -Wall -Wextra -Werror)
+set(REPROSPECT_COMPILE_WARNINGS -Wall -Wextra -Werror)
 
-foreach(flag IN LISTS CUDA_HELPERS_COMPILE_WARNINGS)
+foreach(flag IN LISTS REPROSPECT_COMPILE_WARNINGS)
     add_compile_options($<$<COMPILE_LANGUAGE:CXX>:${flag}>)
     if(CMAKE_CUDA_COMPILER_ID STREQUAL NVIDIA)
         add_compile_options($<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=${flag}>)

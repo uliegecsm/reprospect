@@ -1,4 +1,4 @@
-from cuda_helpers.tools.architecture import NVIDIAFamily, NVIDIAArch
+from reprospect.tools.architecture import NVIDIAFamily, NVIDIAArch
 
 class TestNVIDIAFamily:
 

@@ -7,11 +7,11 @@ import pandas
 import semantic_version
 import typeguard
 
-from cuda_helpers.tools.nsys import Report, Session, strip_cuda_api_suffix
+from reprospect.tools.nsys import Report, Session, strip_cuda_api_suffix
 
 class TestSession:
     """
-    Test :py:class:`cuda_helpers.tools.nsys.Session`.
+    Test :py:class:`reprospect.tools.nsys.Session`.
     """
     TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
     EXECUTABLE = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
@@ -84,7 +84,7 @@ class TestSession:
 
     def test_report(self):
         """
-        Process the `nsys` report with :py:class:`cuda_helpers.tools.nsys.Report`.
+        Process the `nsys` report with :py:class:`reprospect.tools.nsys.Report`.
         """
         ns = self.run()
 

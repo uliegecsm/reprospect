@@ -10,7 +10,7 @@ PROJECT_DIR = pathlib.Path(__file__).parent.parent.parent
 
 sys.path.append(str(PROJECT_DIR))
 sys.path.append(str(PROJECT_DIR / 'python'))
-from cuda_helpers import __version__
+from reprospect import __version__
 release = __version__
 
 extensions = [
@@ -42,7 +42,7 @@ autodoc_default_options = {
 
 apidoc_modules = [
     {
-        'path' : PROJECT_DIR / 'python' / 'cuda_helpers',
+        'path' : PROJECT_DIR / 'python' / 'reprospect',
         'destination' : 'api',
         'max_depth' : 4,
         'implicit_namespaces' : True,

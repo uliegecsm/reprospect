@@ -10,14 +10,14 @@ import pytest
 import semantic_version
 import typeguard
 
-from cuda_helpers.tools.architecture import NVIDIAArch
-from cuda_helpers.tools.binaries import get_arch_from_compile_command, CuObjDump, CuppFilt, ResourceUsage
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.binaries import get_arch_from_compile_command, CuObjDump, CuppFilt, ResourceUsage
 
 TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
 
 def test_get_arch_from_compile_command():
     """
-    Test :py:meth:`cuda_helpers.tools.binaries.get_arch_from_compile_command`.
+    Test :py:meth:`reprospect.tools.binaries.get_arch_from_compile_command`.
     """
     COMMANDS = {
         # For nvcc.
@@ -199,7 +199,7 @@ class TestResourceUsage:
 
 class TestCuppFilt:
     """
-    Test :py:class:`cuda_helpers.tools.binaries.CuppFilt`.
+    Test :py:class:`reprospect.tools.binaries.CuppFilt`.
     """
     def test_demangle(self):
         assert CuppFilt.demangle(s = '_Z5saxpyfPKfPfj') == 'saxpy(float, const float *, float *, unsigned int)'
@@ -207,7 +207,7 @@ class TestCuppFilt:
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestCuObjDump:
     """
-    Tests related to :py:class:`cuda_helpers.tools.binaries.CuObjDump`.
+    Tests related to :py:class:`reprospect.tools.binaries.CuObjDump`.
     """
     class TestSaxpy:
         """

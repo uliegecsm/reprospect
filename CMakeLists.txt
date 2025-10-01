@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
 # Retrieve the version.
-file(READ "${CMAKE_SOURCE_DIR}/python/cuda_helpers/__init__.py" VERSION_FILE_CONTENTS)
+file(READ "${CMAKE_SOURCE_DIR}/python/reprospect/__init__.py" VERSION_FILE_CONTENTS)
 string(REGEX MATCH "__version__ = '([^']+)'" _match "${VERSION_FILE_CONTENTS}")
 
 # Define the project.
 project(
-    cuda-helpers
+    reprospect
     VERSION "${CMAKE_MATCH_1}"
     LANGUAGES CXX CUDA
 )
@@ -30,7 +30,7 @@ add_subdirectory(tests)
 install(FILES LICENSE README.md DESTINATION .)
 
 #---- Package.
-set(CPACK_PACKAGE_NAME "cuda-helpers")
+set(CPACK_PACKAGE_NAME "reprospect")
 set(CPACK_PACKAGE_VENDOR "uliegecsm")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})

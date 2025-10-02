@@ -30,15 +30,15 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
 
     tag = f'{partial['cuda_version']}-devel-ubuntu24.04'
 
+    partial['nvidia_arch'] = str(NVIDIAArch.from_compute_capability(cc = partial['nvidia_compute_capability']))
+
     partial['base_image'] = f'nvidia/cuda:{tag}'
     partial[     'image'] = full_image(name = name, tag = tag, args = args)
-
-    partial['nvidia_arch'] = NVIDIAArch.from_compute_capability(cc = partial['nvidia_compute_capability'])
 
     partial['build_platforms'] = ','.join(['linux/amd64'] + partial['additional_build_platforms'] if 'additional_build_platforms' in partial else [])
 
     # Labels for testing runners.
-    runs_on = ['self-hosted', 'linux', 'docker', 'amd64', str(partial['nvidia_arch']).lower(), 'gpu:0']
+    runs_on = ['self-hosted', 'linux', 'docker', 'amd64', partial['nvidia_arch'].lower(), 'gpu:0']
     partial['runs-on'] = runs_on
 
     return partial

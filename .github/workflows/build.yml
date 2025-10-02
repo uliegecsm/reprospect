@@ -116,7 +116,7 @@ jobs:
 
             - uses: docker/setup-qemu-action@v3
               if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
-            
+
             - uses: docker/setup-buildx-action@v3
               if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
 
@@ -152,6 +152,7 @@ jobs:
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
                     -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.nvidia_compute_capability }} \
+                    -DReProspect_ENABLE_TESTS=ON \
                     -DCPACK_COMPONENTS_ALL=cpp
 
             - run: cmake --build --preset=${{ matrix.cmake_preset }}

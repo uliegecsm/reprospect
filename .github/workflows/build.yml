@@ -132,8 +132,8 @@ jobs:
                   cache-to: type=inline
                   build-args: |
                       BASE_IMAGE=${{ matrix.base_image }}
-                      COMPILER=${{ matrix.compiler_family[0][0] }}
-                      COMPILER_VERSION=${{ matrix.compiler_family[0][1] }}
+                      CXX_COMPILER=${{ matrix.compilers['CXX'][0] }}
+                      CXX_COMPILER_VERSION=${{ matrix.compilers['CXX'][1] }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     tests:

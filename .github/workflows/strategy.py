@@ -18,15 +18,18 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     logging.info(f'Completing job {partial}.')
 
     assert isinstance(partial['nvidia_compute_capability'], int)
-    assert all(isinstance(x, tuple) for x in partial['compiler_family'])
+    assert isinstance(partial['compilers'], dict)
+    assert all(k in ['CXX', 'CUDA'] and isinstance(v, tuple) for k, v in partial['compilers'].items())
 
-    name = 'cuda-' + '-'.join(partial['compiler_family'][0])
+    name = 'cuda-' + '-'.join(partial['compilers']['CXX'])
 
-    if len(partial['compiler_family']) > 1 and partial['compiler_family'][1][0] == 'nvcc':
+    if 'CUDA' in partial['compilers'] and partial['compilers']['CUDA'][0] == 'nvcc':
         name += '-nvcc'
-        partial['compiler_family'][1] = ('nvcc', partial['cuda_version'])
+        partial['compilers']['CUDA'] = ('nvcc', partial['cuda_version'])
+    else:
+        partial['compilers']['CUDA'] = partial['compilers']['CXX']
 
-    partial['cmake_preset'] = '-'.join([x[0] for x in partial['compiler_family']])
+    partial['cmake_preset'] = '-'.join(list(dict.fromkeys(map(lambda x: x[0], partial['compilers'].values()))))
 
     tag = f'{partial['cuda_version']}-devel-ubuntu24.04'
 
@@ -52,32 +55,32 @@ def main(*, args : argparse.Namespace) -> None:
 
     matrix.append(complete_job({
         'cuda_version' : '12.8.1',
-        'compiler_family' : [('gcc', '13'), ('nvcc',)],
+        'compilers' : {'CXX' : ('gcc', '13'), 'CUDA' : ('nvcc',)},
         'nvidia_compute_capability' : 70,
         'additional_build_platforms' : ['linux/arm64'],
     }, args = args))
 
     matrix.append(complete_job({
         'cuda_version' : '13.0.0',
-        'compiler_family' : [('gcc', '14'), ('nvcc',)],
+        'compilers' : {'CXX' : ('gcc', '14'), 'CUDA' : ('nvcc',)},
         'nvidia_compute_capability' : 120,
     }, args = args))
 
     matrix.append(complete_job({
         'cuda_version' : '12.8.1',
-        'compiler_family' : [('clang', '19'), ('nvcc',)],
+        'compilers' : {'CXX' : ('clang', '19'), 'CUDA' : ('nvcc',)},
         'nvidia_compute_capability' : 70,
     }, args = args))
 
     matrix.append(complete_job({
         'cuda_version' : '13.0.0',
-        'compiler_family' : [('clang', '19'), ('nvcc',)],
+        'compilers' : {'CXX' : ('clang', '19'), 'CUDA' : ('nvcc',)},
         'nvidia_compute_capability' : 120,
     }, args = args))
 
     matrix.append(complete_job({
         'cuda_version' : '12.8.1',
-        'compiler_family' : [('clang', '21')],
+        'compilers' : {'CXX' : ('clang', '21'),},
         'nvidia_compute_capability' : 120,
     }, args = args))
 

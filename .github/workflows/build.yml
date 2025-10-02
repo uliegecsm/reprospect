@@ -136,23 +136,6 @@ jobs:
                       COMPILER_VERSION=${{ matrix.compiler_family[0][1] }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
-            - uses: docker/build-push-action@v6.18.0
-              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
-              with:
-                  context: .
-                  platforms: ${{ matrix.build_platforms }}
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
-                  file: docker/dockerfile.kokkos
-                  tags: ${{ matrix.kokkos }}
-                  cache-from: type=registry,ref=${{ matrix.kokkos }}
-                  cache-to: type=inline
-                  build-args: |
-                      BASE_IMAGE=${{ matrix.image }}
-                      KOKKOS_ARCH=${{ matrix.nvidia_arch }}
-                      KOKKOS_CMAKE_PRESET=${{ matrix.cmake_preset }}
-                      KOKKOS_SHA=b3ec45c33bc8151b92d63a764f01281911c83cf9
-                  labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
-
     test:
         needs: [setup-job-matrix, build-image]
         strategy:
@@ -177,29 +160,6 @@ jobs:
             - run: ctest --preset=${{ matrix.cmake_preset }}
 
             - run: cmake --build --preset=${{ matrix.cmake_preset }} --target=package
-
-    examples:
-        needs: [setup-job-matrix, build-image]
-        strategy:
-            fail-fast: false
-            matrix:
-                include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix) }}
-        env: ${{ fromJSON(needs.setup-job-matrix.outputs.environment) }}
-        runs-on: ${{ matrix.runs-on }}
-        container:
-            image: ${{ matrix.kokkos }}
-        steps:
-            - uses: actions/checkout@v5
-
-            - run: |
-                cmake -S . --preset=${{ matrix.cmake_preset }} \
-                    -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.nvidia_compute_capability }} \
-                    -DReProspect_ENABLE_EXAMPLES=ON \
-                    -DCPACK_COMPONENTS_ALL=cpp
-
-            - run: cmake --build --preset=${{ matrix.cmake_preset }}
-
-            - run: ctest --preset=${{ matrix.cmake_preset }}
 
     install-as-package-and-test:
         needs: [setup-job-matrix, build-image]

@@ -1,0 +1,36 @@
+ARG BASE_IMAGE=ubuntu:24.04
+
+FROM ${BASE_IMAGE} AS base
+
+FROM base AS kokkos-install
+
+ARG KOKKOS_ARCH=?
+ARG KOKKOS_CXX_COMPILER=?
+ARG KOKKOS_CUDA_COMPILER=?
+ARG KOKKOS_INSTALL_SUFFIX=?
+ARG KOKKOS_SHA=?
+
+ADD https://github.com/kokkos/kokkos/archive/${KOKKOS_SHA}.tar.gz /opt/kokkos-sources/${KOKKOS_SHA}.tar.gz
+
+RUN --mount=target=/tmp/kokkos-install.sh,type=bind,source=docker/kokkos.sh <<EOF
+    set -ex
+
+    cd /opt/kokkos-sources
+
+    tar -zxf ${KOKKOS_SHA}.tar.gz
+
+    cd kokkos-${KOKKOS_SHA}
+
+    bash /tmp/kokkos-install.sh
+EOF
+
+FROM base AS final
+
+ARG KOKKOS_CXX_COMPILER=?
+ARG KOKKOS_CUDA_COMPILER=?
+ARG KOKKOS_INSTALL_SUFFIX=?
+ARG KOKKOS_SHA=?
+
+COPY --from=kokkos-install /opt/kokkos-${KOKKOS_SHA} /opt/kokkos-${KOKKOS_SHA}
+
+ENV Kokkos_ROOT=/opt/kokkos-${KOKKOS_SHA}/${KOKKOS_INSTALL_SUFFIX}

@@ -12,6 +12,7 @@ project(
 )
 
 option(ReProspect_ENABLE_TESTS "Enable tests." OFF)
+option(ReProspect_ENABLE_EXAMPLES "Enable examples." OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -27,3 +28,7 @@ if(ReProspect_ENABLE_TESTS)
     add_subdirectory(tests)
 endif()
 
+if(ReProspect_ENABLE_EXAMPLES)
+    enable_testing()
+    add_subdirectory(examples)
+endif()

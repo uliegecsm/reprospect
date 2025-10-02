@@ -1,5 +1,5 @@
-#ifndef REPROSPECT_ERRORS_CUDA_HPP
-#define REPROSPECT_ERRORS_CUDA_HPP
+#ifndef REPROSPECT_TESTS_CPP_CUDA_COMMON_CUDA_HPP
+#define REPROSPECT_TESTS_CPP_CUDA_COMMON_CUDA_HPP
 
 #include <source_location>
 #include <sstream>
@@ -7,7 +7,7 @@
 
 #include "cuda_runtime.h"
 
-namespace reprospect::errors
+namespace reprospect::tests
 {
 //! Check a @c Cuda driver call returns @c cudaError::cudaSuccess.
 inline void check_cuda_call(
@@ -30,9 +30,9 @@ inline void check_cuda_call(
         throw std::runtime_error(oss.str());
     }
 }
-} // namespace reprospect::errors
+} // namespace reprospect::tests
 
 #define REPROSPECT_CHECK_CUDA_CALL(statement) \
-    ::reprospect::errors::check_cuda_call((statement), #statement)
+    ::reprospect::tests::check_cuda_call((statement), #statement)
 
-#endif // REPROSPECT_ERRORS_CUDA_HPP
+#endif // REPROSPECT_TESTS_CPP_CUDA_COMMON_CUDA_HPP

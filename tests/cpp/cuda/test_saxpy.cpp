@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "reprospect/errors/cuda_runtime.hpp"
+#include "common/cuda_runtime.hpp"
 
 /**
  * @file

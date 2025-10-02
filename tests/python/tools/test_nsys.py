@@ -14,7 +14,7 @@ class TestSession:
     Test :py:class:`reprospect.tools.nsys.Session`.
     """
     TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
-    EXECUTABLE = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
+    EXECUTABLE = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
 
     @staticmethod
     @typeguard.typechecked

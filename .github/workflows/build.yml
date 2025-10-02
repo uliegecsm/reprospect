@@ -152,14 +152,11 @@ jobs:
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
                     -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.nvidia_compute_capability }} \
-                    -DReProspect_ENABLE_TESTS=ON \
-                    -DCPACK_COMPONENTS_ALL=cpp
+                    -DReProspect_ENABLE_TESTS=ON
 
             - run: cmake --build --preset=${{ matrix.cmake_preset }}
 
             - run: ctest --preset=${{ matrix.cmake_preset }}
-
-            - run: cmake --build --preset=${{ matrix.cmake_preset }} --target=package
 
     install-as-package-and-test:
         needs: [setup-job-matrix, build-image]

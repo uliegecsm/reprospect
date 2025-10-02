@@ -136,7 +136,7 @@ jobs:
                       COMPILER_VERSION=${{ matrix.compiler_family[0][1] }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
-    test:
+    tests:
         needs: [setup-job-matrix, build-image]
         strategy:
             fail-fast: false
@@ -157,6 +157,12 @@ jobs:
             - run: cmake --build --preset=${{ matrix.cmake_preset }}
 
             - run: ctest --preset=${{ matrix.cmake_preset }}
+
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: tests-${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
+                  path: artifacts
+                  retention-days: 1
 
     install-as-package-and-test:
         needs: [setup-job-matrix, build-image]
@@ -185,18 +191,24 @@ jobs:
                 reprospect-install-nsight-systems --help
 
     documentation:
-        needs: [setup-job-matrix, build-image]
+        needs: [setup-job-matrix, tests]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         steps:
             - uses: actions/checkout@v5
+
+            - uses: actions/download-artifact@v5
+              with:
+                  name: tests-gcc-nvcc-BLACKWELL120
+                  path: artifacts
+
             - run: |
                 cd docs
                 make html
 
     deploy:
-        needs: [setup-job-matrix, build-image, test, install-as-package-and-test, documentation]
+        needs: [setup-job-matrix, build-image, tests, install-as-package-and-test, documentation]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}

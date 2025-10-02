@@ -4,6 +4,7 @@ import pathlib
 import re
 import typing
 
+import pandas
 import typeguard
 
 @dataclasses.dataclass(frozen = True)
@@ -214,7 +215,7 @@ class Decoder:
             line = re.sub(pattern = r'&wr=[0-5x]+', repl = '', string = line)
             line = re.sub(pattern = r'&rd=[0-5x]+', repl = '', string = line)
             line = re.sub(pattern = r'\?trans[0-9]+', repl = '', string = line)
-            line = re.sub(pattern = r'&req={[0-9]+}', repl = '', string = line)
+            line = re.sub(pattern = r'&req={[0-9,]+}', repl = '', string = line)
             line = re.sub(pattern = r'\?WAIT[0-9]+_END_GROUP', repl = '', string = line)
 
             match = re.match(self.MATCHER, line)
@@ -244,3 +245,38 @@ class Decoder:
 
             self.instructions.append(instruction)
             iline += 1
+
+    @typeguard.typechecked
+    def to_html(self) -> str:
+        """
+        Visualize the decoded `SASS` in a nice `HTML` table.
+        """
+        data = {
+            'offset' : [],
+            'instruction' : [],
+            'stall' : [],
+            'yield' : [],
+            'b0' : [],
+            'b1' : [],
+            'b2' : [],
+            'b3' : [],
+            'b4' : [],
+            'b5' : [],
+        }
+
+        for instruction in self.instructions:
+            data['offset'].append(instruction.offset)
+            data['instruction'].append(instruction.instruction)
+            data['stall'].append(instruction.control.stall_count)
+            data['yield'].append(instruction.control.yield_flag)
+            for i in range(6):
+                value = []
+                if instruction.control.wait[i]:
+                    value.append('Wa')
+                if instruction.control.write == i:
+                    value.append('Wr')
+                if instruction.control.read == i:
+                    value.append('Re')
+                data[f'b{i}'].append('/'.join(value) if value else '')
+
+        return pandas.DataFrame(data).to_html()

@@ -24,4 +24,9 @@ Device properties
 `SASS`
 ~~~~~~
 
+Here is the output of :py:func:`tests.python.tools.test_sass.TestSASSDecoder.test_to_html`:
+
+.. raw:: html
+    :file: ../../../artifacts/tests/python/tools/test_sass.py/saxpy.html
+
 .. automodule:: tests.python.tools.test_sass

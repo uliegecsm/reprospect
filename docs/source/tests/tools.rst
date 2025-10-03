@@ -16,6 +16,11 @@ Device properties
 
 .. automodule:: tests.python.tools.test_device_properties
 
+`ncu`
+~~~~~
+
+.. automodule:: tests.python.tools.test_ncu
+
 `nsys`
 ~~~~~~
 

@@ -45,6 +45,10 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     runs_on = ['self-hosted', 'linux', 'docker', 'amd64', partial['nvidia_arch'].lower(), 'gpu:0']
     partial['runs-on'] = runs_on
 
+    # Testing is opt-out.
+    if 'tests' not in partial:
+        partial['tests'] = True
+
     return partial
 
 def main(*, args : argparse.Namespace) -> None:
@@ -68,6 +72,13 @@ def main(*, args : argparse.Namespace) -> None:
     }, args = args))
 
     matrix.append(complete_job({
+        'cuda_version' : '13.0.0',
+        'compilers' : {'CXX' : ('gcc', '14'), 'CUDA' : ('nvcc',)},
+        'nvidia_compute_capability' : 86,
+        'tests' : False,
+    }, args = args))
+
+    matrix.append(complete_job({
         'cuda_version' : '12.8.1',
         'compilers' : {'CXX' : ('clang', '19'), 'CUDA' : ('nvcc',)},
         'nvidia_compute_capability' : 70,
@@ -87,8 +98,14 @@ def main(*, args : argparse.Namespace) -> None:
 
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')
 
-    print(f'matrix={json.dumps(matrix, default = str)}')
+    # All jobs in the matrix build an image.
+    print(f'matrix_images={json.dumps(matrix, default = str)}')
+
+    # But some jobs in the matrix don't require running the tests, because we don't have resources for them.
+    print(f'matrix_tests={json.dumps([x for x in matrix if x['tests']], default = str)}')
+
     print(f'environment={json.dumps(environment, default = str)}')
+
     print(f'deploy_image={matrix[0]['image']}')
 
 if __name__ == '__main__':

@@ -221,6 +221,44 @@ class Report:
         logging.info(f'Retrieving table {name} in {self.db}.')
         return pandas.read_sql_query(f"SELECT * FROM {name};", self.conn)
 
+    @typeguard.typechecked
+    @staticmethod
+    def single_row(*, data : pandas.DataFrame) -> pandas.Series:
+        """
+        Check that `data` has one row, and squeeze it.
+        """
+        if len(data) != 1:
+             raise RuntimeError(data)
+        return data.squeeze()
+
+    @dataclasses.dataclass(frozen = True)
+    class PatternSelector:
+        """
+        A :py:class:`pandas.DataFrame` selector that returns which rows match a regex pattern
+        in a specific column.
+        """
+        pattern : str
+        column : str = 'Name'
+
+        @typeguard.typechecked
+        def __call__(self, table : pandas.DataFrame) -> pandas.Series:
+            return table[self.column].astype(str).str.contains(self.pattern, regex = True)
+
+    @typeguard.typechecked
+    @classmethod
+    def get_correlated_row(cls, *,
+        src : pandas.DataFrame | pandas.Series,
+        dst : pandas.DataFrame,
+        selector : typing.Optional[typing.Callable[[pandas.DataFrame], pandas.Series]] = None,
+    ) -> pandas.Series:
+        """
+        Select a row from `src`, and return the row from `dst` that matches by correlation ID.
+        """
+        if isinstance(src, pandas.Series) and selector is None:
+            return cls.single_row(data = dst[dst['correlationId'] == src['CorrID']])
+        else:
+            return cls.single_row(data = dst[dst['correlationId'] == src[selector(src)].squeeze()['CorrID']])
+
 @typeguard.typechecked
 def strip_cuda_api_suffix(call : str) -> str:
     """
@@ -252,8 +290,8 @@ class Cacher(cacher.Cacher):
     TABLE : str = 'nsys'
 
     @typeguard.typechecked
-    def __init__(self, *, session : Session, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, session : Session, directory : typing.Optional[str | pathlib.Path] = None):
+        super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.nsys-cache')
         self.session = session
 
     @typing.override
@@ -325,3 +363,22 @@ class Cacher(cacher.Cacher):
             shutil.copytree(entry.directory, self.session.output_dir, dirs_exist_ok = True)
 
         return entry
+
+    @typeguard.typechecked
+    def export_to_sqlite(
+        self,
+        entry : cacher.Cacher.Entry,
+        **kwargs,
+    ) -> None:
+        """
+        Export report to `.sqlite`.
+        """
+        cached = entry.directory / self.session.output_file_sqlite.name
+
+        if cached.is_file():
+            logging.info(f'Serving {self.session.output_file_sqlite} from the cache entry {entry}.')
+            shutil.copyfile(src = cached, dst = self.session.output_file_sqlite)
+        else:
+            logging.info(f'Populating the cache entry {entry} with {self.session.output_file_sqlite} from the cache entry {entry}.')
+            self.session.export_to_sqlite(**kwargs)
+            shutil.copyfile(src = self.session.output_file_sqlite, dst = cached)

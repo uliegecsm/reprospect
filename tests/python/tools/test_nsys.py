@@ -18,15 +18,6 @@ class TestSession:
     """
     EXECUTABLE = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
 
-    @staticmethod
-    @typeguard.typechecked
-    def single_row_to_dict(*, data : pandas.DataFrame) -> dict[str, typing.Any]:
-        """
-        Check that `data` has one row, and convert it to a `dict`.
-        """
-        assert len(data) == 1, data
-        return data.squeeze().to_dict()
-
     def run(self) -> Session:
         assert self.EXECUTABLE.is_file()
 
@@ -112,8 +103,8 @@ class TestSession:
             assert len(cuda_stream_synchronize) == 2
 
             # Each call to 'cudaStreamSynchronize' targets a distinct stream.
-            stream_id_A = self.single_row_to_dict(data = cupti_activity_kind_synchronization[cupti_activity_kind_synchronization['correlationId'] == cuda_stream_synchronize.iloc[0]['CorrID']])['streamId']
-            stream_id_B = self.single_row_to_dict(data = cupti_activity_kind_synchronization[cupti_activity_kind_synchronization['correlationId'] == cuda_stream_synchronize.iloc[1]['CorrID']])['streamId']
+            stream_id_A = report.get_correlated_row(src = cuda_stream_synchronize.iloc[0], dst = cupti_activity_kind_synchronization)['streamId']
+            stream_id_B = report.get_correlated_row(src = cuda_stream_synchronize.iloc[1], dst = cupti_activity_kind_synchronization)['streamId']
 
             assert stream_id_A != stream_id_B
 
@@ -138,15 +129,15 @@ class TestSession:
             # Check 'saxpy' kernels launch type.
             ENUM_CUDA_KERNEL_LAUNCH_TYPE = report.table(name = 'ENUM_CUDA_KERNEL_LAUNCH_TYPE')
 
-            CUDA_KERNEL_LAUNCH_TYPE_REGULAR = self.single_row_to_dict(data = ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])['id']
+            CUDA_KERNEL_LAUNCH_TYPE_REGULAR = report.single_row(data = ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])['id']
             assert saxpy_kernel_first ['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR
             assert saxpy_kernel_second['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR
 
             # Check 'saxpy' kernels mangled and demangled names.
             stringids = report.table(name = 'StringIds')
             for kernel in [saxpy_kernel_first, saxpy_kernel_second]:
-                assert self.single_row_to_dict(data = stringids[stringids['id'] == kernel['mangledName'  ]])['value'] == '_Z12saxpy_kerneljfPKfPf'
-                assert self.single_row_to_dict(data = stringids[stringids['id'] == kernel['demangledName']])['value'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
+                assert report.single_row(data = stringids[stringids['id'] == kernel['mangledName'  ]])['value'] == '_Z12saxpy_kerneljfPKfPf'
+                assert report.single_row(data = stringids[stringids['id'] == kernel['demangledName']])['value'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
 
 class TestCacher:
     """

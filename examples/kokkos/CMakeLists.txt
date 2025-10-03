@@ -14,10 +14,19 @@ function(add_one_example FILE)
 
     target_link_libraries(${EXECUTABLE} PRIVATE Kokkos::kokkoscore)
 
-    add_test(NAME ${EXECUTABLE} COMMAND $<TARGET_FILE:${EXECUTABLE}>)
+    add_test(
+        NAME ${EXECUTABLE}
+        COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/example_${FILE}.py
+                    -vvv -s --log-cli-level=info
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+    test_environment(${EXECUTABLE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR}/python)
+    test_environment(${EXECUTABLE} EXECUTABLE path_list_prepend $<TARGET_FILE:${EXECUTABLE}>)
+    test_environment(${EXECUTABLE} COMPILE_COMMANDS set ${CMAKE_BINARY_DIR}/compile_commands.json)
 
 endfunction()
 
 find_package(Kokkos REQUIRED COMPONENTS kokkoscore)
 
-add_one_example(integration)
+add_subdirectory(view)

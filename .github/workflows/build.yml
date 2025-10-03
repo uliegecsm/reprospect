@@ -136,6 +136,25 @@ jobs:
                       COMPILER_VERSION=${{ matrix.compilers['CXX'][1] }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
+            - uses: docker/build-push-action@v6.18.0
+              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
+              with:
+                  context: .
+                  platforms: ${{ matrix.build_platforms }}
+                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  file: docker/dockerfile.kokkos
+                  tags: ${{ matrix.kokkos }}
+                  cache-from: type=registry,ref=${{ matrix.kokkos }}
+                  cache-to: type=inline
+                  build-args: |
+                      BASE_IMAGE=${{ matrix.image }}
+                      KOKKOS_ARCH=${{ matrix.nvidia_arch }}
+                      KOKKOS_CXX_COMPILER=${{ matrix.compilers['CXX'][0] }}
+                      KOKKOS_CUDA_COMPILER=${{ matrix.compilers['CUDA'][0] }}
+                      KOKKOS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
+                      KOKKOS_SHA=4.7.01
+                  labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
+
     tests:
         needs: [setup-job-matrix, build-image]
         strategy:
@@ -163,6 +182,28 @@ jobs:
                   name: tests-${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                   path: artifacts
                   retention-days: 1
+
+    examples:
+        needs: [setup-job-matrix, build-image]
+        strategy:
+            fail-fast: false
+            matrix:
+                include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix) }}
+        env: ${{ fromJSON(needs.setup-job-matrix.outputs.environment) }}
+        runs-on: ${{ matrix.runs-on }}
+        container:
+            image: ${{ matrix.kokkos }}
+        steps:
+            - uses: actions/checkout@v5
+
+            - run: |
+                cmake -S . --preset=${{ matrix.cmake_preset }} \
+                    -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.nvidia_compute_capability }} \
+                    -DReProspect_ENABLE_EXAMPLES=ON
+
+            - run: cmake --build --preset=${{ matrix.cmake_preset }}
+
+            - run: ctest --preset=${{ matrix.cmake_preset }}
 
     install-as-package-and-test:
         needs: [setup-job-matrix, build-image]
@@ -208,7 +249,7 @@ jobs:
                 make html
 
     deploy:
-        needs: [setup-job-matrix, build-image, tests, install-as-package-and-test, documentation]
+        needs: [setup-job-matrix, build-image, tests, examples, install-as-package-and-test, documentation]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}

@@ -174,7 +174,7 @@ class CuObjDump:
         if len(files) != 1:
             raise RuntimeError(files)
 
-        file = cwd / re.match(r'Extracting ELF file [ ]+ 1: ([A-Za-z0-9_.]+.cubin)', files[0]).group(1)
+        file = cwd / re.match(r'Extracting ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+.cubin)', files[0]).group(1)
 
         return CuObjDump(file = file, arch = arch, **kwargs), file
 

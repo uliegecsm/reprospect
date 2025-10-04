@@ -1,5 +1,4 @@
 import argparse
-import functools
 import os
 import pathlib
 import sys
@@ -10,16 +9,19 @@ import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump
+from reprospect.tools.ncu          import Metric, MetricCorrelation, Report, Session
+from reprospect.tools.sass         import Decoder
 
 class Case(unittest.TestCase):
     """
     Base class for running a `ReProspect` case.
     """
-    def setUp(self):
-        self._args, _ = self._parse_args()
+    @classmethod
+    def setUpClass(cls):
+        cls._args, _ = cls._parse_args()
 
         # Environment that may be modified for running the case.
-        self._environ = os.environ.copy()
+        cls._environ = os.environ.copy()
 
     @staticmethod
     @typeguard.typechecked
@@ -36,27 +38,27 @@ class Case(unittest.TestCase):
 
         return parser.parse_known_args(args = sysargs)
     
-    @property
+    @classmethod
     @typeguard.typechecked
-    def output_path(self) -> pathlib.Path:
+    def output_path(cls) -> pathlib.Path:
         """
         Output path for the case.
         """
-        output_path = pathlib.Path(str(self._args.file) + "." + self._args.name)
+        output_path = pathlib.Path(str(cls._args.file) + "." + cls._args.name)
         output_path.mkdir(parents = True, exist_ok = True)
         return output_path
 
-    @property
+    @classmethod
     @typeguard.typechecked
-    def cwd(self) -> pathlib.Path:
+    def cwd(cls) -> pathlib.Path:
         """
         Working directory for the case.
         """
-        return self._args.cwd
-    
-    @functools.cached_property
+        return cls._args.cwd
+
+    @classmethod
     @typeguard.typechecked
-    def cuobjdump(self, *, arch : typing.Optional[NVIDIAArch] = None, sass : bool = True) -> CuObjDump:
+    def cuobjdump(cls, *, arch : typing.Optional[NVIDIAArch] = None, sass : bool = True) -> CuObjDump:
         """
         Return a `CuObjDump` instance for the case file.
         """
@@ -65,15 +67,41 @@ class Case(unittest.TestCase):
             arch = NVIDIAArch.from_str('BLACKWELL120')
             # todo: deduce from compile commands
 
-        cubin_file = self.output_path / f'{self._args.file.name}.2.{arch.as_sm}.cubin'
+        cubin_file = cls.output_path() / f'{cls._args.file.name}.2.{arch.as_sm}.cubin'
         # todo: should we check in the binaries whether the cubin is in the file?
 
         cubin, _ = CuObjDump.extract(
-            file = self._args.file,
-            arch   = arch,
-            cwd    = self.cwd,
-            cubin  = cubin_file.name,
-            sass   = sass,
+            file  = cls._args.file,
+            arch  = arch,
+            cwd   = cls.cwd(),
+            cubin = cubin_file.name,
+            sass  = sass,
         )
 
         return cubin
+
+    @classmethod
+    @typeguard.typechecked
+    def cuobjdump_and_decode(cls, *, arch : typing.Optional[NVIDIAArch] = None) -> (CuObjDump, Decoder):
+        """
+        Return a `CuObjDump` instance for the case file and decode the `SASS`.
+        """
+        cubin = cls.cuobjdump(arch = arch, sass = True)
+        return (cubin, Decoder(code = cubin.sass))
+
+    @classmethod
+    @typeguard.typechecked
+    def ncu(
+        cls,
+        *, 
+        nvtx_capture : typing.Optional[str] = None,
+        metrics      : typing.Optional[list[Metric | MetricCorrelation]] = None,
+    ) -> Report:
+        session = Session(output = cls.output_path() / cls._args.name)
+        session.run(
+            cmd = [cls._args.file],
+            nvtx_capture = nvtx_capture,
+            cwd = cls.cwd(),
+            metrics = metrics,
+        )
+        return Report(path = cls.output_path(), name = cls._args.name)

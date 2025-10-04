@@ -154,7 +154,7 @@ class Decoder:
     """
     # Instruction is like:
     #   STG R1, R2
-    INSTRUCTION = r'[A-Z0-9a-z,\. _\-!@\[\]]+'
+    INSTRUCTION = r'[A-Z0-9a-z,\. +_\-!@\[\]]+'
 
     # HEX is like:
     #   0x00000a0000017a02

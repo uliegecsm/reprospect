@@ -150,10 +150,12 @@ jobs:
                   build-args: |
                       BASE_IMAGE=${{ matrix.image }}
                       KOKKOS_ARCH=${{ matrix.nvidia_arch }}
-                      KOKKOS_CXX_COMPILER=${{ matrix.compilers['CXX'][0] }}
+                      KOKKOS_CXX_COMPILER=${{ matrix.compilers['CXX'][0] == 'gcc' && 'g++' || matrix.compilers['CXX'][0] == 'clang' && 'clang++' || 'not-defined'}}
                       KOKKOS_CUDA_COMPILER=${{ matrix.compilers['CUDA'][0] }}
                       KOKKOS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                       KOKKOS_SHA=4.7.01
+                      KOKKOS_TOOLS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}
+                      KOKKOS_TOOLS_SHA=3c7c734a4509cca06184bcdcc6e7034f6b88b030
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     tests:

@@ -1,19 +1,21 @@
 import logging
 import os
 import pathlib
+import tempfile
 import typing
 
 import pandas
 import semantic_version
 import typeguard
 
-from reprospect.tools.nsys import Report, Session, strip_cuda_api_suffix
+from reprospect.tools.nsys import Report, Session, strip_cuda_api_suffix, Cacher
+
+TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
 
 class TestSession:
     """
     Test :py:class:`reprospect.tools.nsys.Session`.
     """
-    TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
     EXECUTABLE = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
 
     @staticmethod
@@ -29,13 +31,13 @@ class TestSession:
         assert self.EXECUTABLE.is_file()
 
         ns = Session(
-            output_dir = self.TMPDIR,
+            output_dir = TMPDIR,
             output_file_prefix = self.EXECUTABLE.name,
         )
 
         ns.run(
-            cmd = [self.EXECUTABLE],
-            cwd = self.TMPDIR,
+            executable = self.EXECUTABLE,
+            cwd = TMPDIR,
         )
 
         ns.export_to_sqlite()
@@ -134,3 +136,60 @@ class TestSession:
             stringids = report.table(name = 'StringIds')
             assert self.single_row_to_dict(data = stringids[stringids['id'] == saxpy_kernel['mangledName'  ]])['value'] == '_Z12saxpy_kerneljfPKfPf'
             assert self.single_row_to_dict(data = stringids[stringids['id'] == saxpy_kernel['demangledName']])['value'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
+
+class TestCacher:
+    """
+    Tests for :py:class:`reprospect.tools.nsys.Cacher`.
+    """
+    GRAPH = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph' if 'CMAKE_BINARY_DIR' in os.environ else None
+    SAXPY = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
+
+    def test_hash_same(self):
+        """
+        Test :py:meth:`reprospect.tools.nsys.Cacher.hash`.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with Cacher(directory = tmpdir, session = Session(output_dir = pathlib.Path('I-dont-care'), output_file_prefix = 'osef')) as cacher:
+                hash_a = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
+                hash_b = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
+
+                assert hash_a.digest() == hash_b.digest()
+
+    def test_hash_different(self):
+        """
+        Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with Cacher(directory = tmpdir, session = Session(output_dir = pathlib.Path('I-dont-care'), output_file_prefix = 'osef')) as cacher:
+                hash_a = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
+                hash_b = cacher.hash(opts = ['--nvtx'], executable = self.SAXPY, args = ['--bla=42'])
+
+                assert hash_a.digest() != hash_b.digest()
+
+    def test_cache_hit(self):
+        """
+        The cacher should hit on the second call.
+        """
+        FILES = ['report-cached.nsys-rep']
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with Cacher(directory = tmpdir, session = Session(output_dir = TMPDIR, output_file_prefix = 'report-cached')) as cacher:
+                assert os.listdir(cacher.directory) == ['cache.db']
+
+                results_first = cacher.run(executable = self.GRAPH)
+
+                assert results_first.cached == False
+
+                assert all(x in os.listdir(cacher.session.output_dir) for x in FILES)
+
+                for file in FILES:
+                    (cacher.session.output_dir / file).unlink()
+
+                assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
+                assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
+
+                results_second = cacher.run(executable = self.GRAPH)
+
+                assert results_second.cached == True
+
+                assert all(x in os.listdir(cacher.session.output_dir) for x in FILES)

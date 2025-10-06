@@ -151,10 +151,9 @@ class CuObjDump:
     ) -> tuple['CuObjDump', pathlib.Path]:
         """
         Extract the `ELF` file whose name contains `cubin` from `file`, for the given `arch`.
-        The `file` can be inspected with the following command to list all `ELF` files:
-        ```
-        cuobjdump --list-elf <file>
-        ```
+        The `file` can be inspected with the following command to list all `ELF` files::
+
+            cuobjdump --list-elf <file>
 
         Note that extracting a `cubin` from `file` to extract a specific subset of the `SASS`
         instead of extracting the `SASS` straightforwardly from the whole `file` is

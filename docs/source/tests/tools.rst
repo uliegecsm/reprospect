@@ -11,6 +11,11 @@ Binaries
 
 .. automodule:: tests.python.tools.test_binaries
 
+Cacher
+~~~~~~
+
+.. automodule:: tests.python.tools.test_cacher
+
 Device properties
 ~~~~~~~~~~~~~~~~~
 

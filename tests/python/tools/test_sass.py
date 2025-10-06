@@ -38,8 +38,7 @@ class TestSASSDecoder:
     """
     Test :py:class:`reprospect.tools.sass.Decoder`.
     """
-    @typeguard.typechecked
-    def test_IMAD(self) -> None:
+    def test_IMAD(self):
         """
         Check that it can decode `IMAD`.
         """
@@ -67,8 +66,7 @@ class TestSASSDecoder:
         decoder = sass.Decoder(code = fused, skip_until_headerflags = False)
         assert decoder.instructions == [v for v in instructions.values()], decoder.instructions
 
-    @typeguard.typechecked
-    def test_FFMA(self) -> None:
+    def test_FFMA(self):
         """
         Check that it can decode `FFMA`.
         """
@@ -80,8 +78,7 @@ class TestSASSDecoder:
                 control = sass.ControlCode(stall_count = 8, yield_flag = False, read = 7, write = 7, wait = [False, False, True, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False}))
         ], decoder.instructions
 
-    @typeguard.typechecked
-    def test_ISETP(self) -> None:
+    def test_ISETP(self):
         """
         Check that it can decode `ISETP`.
         """
@@ -94,8 +91,7 @@ class TestSASSDecoder:
             )
         ], decoder.instructions
 
-    @typeguard.typechecked
-    def test_from_source(self) -> None:
+    def test_from_source(self):
         """
         Read `SASS` from a source.
         """
@@ -150,7 +146,6 @@ class TestSASSDecoder:
         with open(ARTIFACT_DIR / 'saxpy.html', 'w+') as fout:
             fout.write(decoder.to_html())
 
-    @typeguard.typechecked
     def test_from_128_to_130(self):
         """
         This test is related to an observation that, for the same

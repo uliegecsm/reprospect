@@ -1,13 +1,20 @@
+import dataclasses
 import functools
+import json
 import logging
-import os
 import pathlib
+import shlex
+import shutil
 import sqlite3
 import subprocess
 import typing
 
+import blake3
 import pandas
 import typeguard
+
+from reprospect.tools import cacher
+from reprospect.utils import ldd
 
 class Session:
     """
@@ -21,17 +28,47 @@ class Session:
         self.output_file_nsys_rep = (self.output_dir / self.output_file_prefix).with_suffix('.nsys-rep')
         self.output_file_sqlite   = (self.output_dir / self.output_file_prefix).with_suffix('.sqlite')
 
-    @typeguard.typechecked
-    def run(
-        self,
-        cmd : typing.List[str | pathlib.Path],
-        opts : typing.Optional[typing.List[str]] = None,
-        nvtx_capture : typing.Optional[str] = None,
-        cwd : typing.Optional[pathlib.Path] = None,
-        env : typing.Optional[typing.MutableMapping] = None,
-    ) -> None:
+    @dataclasses.dataclass(frozen = True)
+    class Command:
         """
-        Run `cmd` with `nsys`.
+        `nsys` command.
+        """
+        opts: list[str]
+        output: pathlib.Path
+        executable: pathlib.Path
+        args: list[str]
+
+        @functools.cached_property
+        @typeguard.typechecked
+        def to_list(self) -> list[str | pathlib.Path]:
+            """
+            Build the full `nsys` profile command.
+            """
+            cmd = ['nsys', 'profile']
+
+            cmd += self.opts
+
+            cmd += [
+                '--force-overwrite=true',
+                f'--output={self.output}',
+            ]
+
+            cmd += [self.executable]
+
+            if self.args:
+                cmd += self.args
+
+            return cmd
+
+    @typeguard.typechecked
+    def get_command(self, *,
+        executable : pathlib.Path,
+        opts : typing.Optional[list[str]] = None,
+        nvtx_capture : typing.Optional[str] = None,
+        args : typing.Optional[list[str | pathlib.Path]] = None,
+    ) -> 'Session.Command':
+        """
+        Create a :py:class:`Session.Command`.
         """
         if opts is None: opts = []
 
@@ -44,16 +81,39 @@ class Session:
             '--trace=nvtx,cuda',
         ] if nvtx_capture else ['--trace=cuda']
 
-        run_cmd = [
-            'nsys', 'profile',
-            # Disable collecting CPU samples.
+        # Disable collecting CPU samples.
+        opts += [
             '--sample=none',
             '--backtrace=none',
             '--cpuctxsw=none',
-            # Output.
-            '--force-overwrite=true',
-            f'--output={self.output_file_nsys_rep}',
-        ] + opts + cmd
+        ]
+
+        return Session.Command(
+            opts = opts,
+            output = self.output_file_nsys_rep,
+            executable = executable,
+            args = args,
+        )
+
+    @typeguard.typechecked
+    def run(
+        self,
+        executable : pathlib.Path,
+        opts : typing.Optional[list[str]] = None,
+        nvtx_capture : typing.Optional[str] = None,
+        args : typing.Optional[list[str | pathlib.Path]] = None,
+        cwd : typing.Optional[pathlib.Path] = None,
+        env : typing.Optional[typing.MutableMapping] = None,
+    ) -> 'Session.Command':
+        """
+        Run `cmd` with `nsys`.
+        """
+        command = self.get_command(
+            opts = opts,
+            nvtx_capture = nvtx_capture,
+            executable = executable,
+            args = args,
+        )
 
         # For '--capture-range=nvtx' to accept our custom strings, we need to allow unregistered
         # strings to be considered.
@@ -61,9 +121,11 @@ class Session:
         if nvtx_capture:
             env['NSYS_NVTX_PROFILER_REGISTER_ONLY'] = '0'
 
-        logging.info(f"Launching 'nsys' with {run_cmd}.")
+        logging.info(f"Launching 'nsys' with {command}.")
         self.output_file_nsys_rep.unlink(missing_ok = True)
-        subprocess.check_call(run_cmd, cwd = cwd, env = env)
+        subprocess.check_call(command.to_list, cwd = cwd, env = env)
+
+        return command
 
     @typeguard.typechecked
     def export_to_sqlite(
@@ -161,3 +223,101 @@ def strip_cuda_api_suffix(call : str) -> str:
     Strip suffix like `_v10000` or `_ptsz` from a `Cuda` API `call`.
     """
     return call.split('_')[0]
+
+class Cacher(cacher.Cacher):
+    """
+    Cacher tailored to `nsys` results.
+
+    `nsys` require quite some time to acquire results.
+
+    On a cache hit, the cacher will serve:
+        - `.nsys-rep` file
+        - `.sqlite` file
+
+    On a cache miss, `nsys` is launched and the cache entry populated accordingly.
+
+    .. note::
+
+        It is assumed that hashing is faster than running `nsys` itself.
+
+    .. warning::
+
+        The cache should not be shared between machines, since there may be differences between machines
+        that influence the results but are not included in the hashing.
+    """
+    TABLE : str = 'nsys'
+
+    @typeguard.typechecked
+    def __init__(self, *, session : Session, **kwargs):
+        super().__init__(**kwargs)
+        self.session = session
+
+    @typing.override
+    @typeguard.typechecked
+    def hash(self, *,
+        executable : pathlib.Path,
+        opts : typing.Optional[list[str]] = None,
+        nvtx_capture : typing.Optional[str] = None,
+        args : typing.Optional[list[str | pathlib.Path]] = None,
+        env : typing.Optional[typing.MutableMapping] = None,
+        **kwargs
+    ) -> blake3.blake3:
+        """
+        Hash based on:
+            * `nsys` version
+            * `nsys` options (but not the output files)
+            * executable content
+            * executable arguments
+            * linked libraries
+            * environment
+        """
+        hasher = blake3.blake3()
+
+        hasher.update(subprocess.check_output(['nsys', '--version']))
+
+        command = self.session.get_command(
+            opts = opts,
+            nvtx_capture = nvtx_capture,
+            executable = executable,
+            args = args,
+        )
+
+        if command.opts:
+            hasher.update(shlex.join(command.opts).encode())
+
+        hasher.update_mmap(command.executable)
+
+        if command.args:
+            hasher.update(shlex.join(command.args).encode())
+
+        for lib in ldd.get_shared_dependencies(file = command.executable):
+            hasher.update_mmap(lib)
+
+        if env:
+            hasher.update(json.dumps(env).encode())
+
+        return hasher
+
+    @typeguard.typechecked
+    def populate(self, directory : pathlib.Path, **kwargs) -> Session.Command:
+        """
+        When there is a cache miss, call :py:meth:`reprospect.tools.nsys.Session.run`.
+        Fill the `directory` with the artifacts.
+        """
+        command = self.session.run(**kwargs)
+
+        shutil.copy(dst = directory, src = command.output)
+
+        return command
+
+    @typeguard.typechecked
+    def run(self, **kwargs) -> cacher.Cacher.Entry:
+        """
+        On a cache hit, copy files from the cache entry.
+        """
+        entry = self.get(**kwargs)
+
+        if entry.cached:
+            shutil.copytree(entry.directory, self.session.output_dir, dirs_exist_ok = True)
+
+        return entry

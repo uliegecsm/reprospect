@@ -2,10 +2,13 @@ import collections
 import copy
 import dataclasses
 import enum
+import functools
 import importlib
+import json
 import logging
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -13,7 +16,11 @@ import time
 import types
 import typing
 
+import blake3
 import typeguard
+
+from reprospect.tools import cacher
+from reprospect.utils import ldd
 
 class Unit(enum.StrEnum):
     """
@@ -146,10 +153,9 @@ def counter_name_from(
     qualifier : typing.Optional[str] = None
 ) -> str:
     """
-    Based on metrics naming convention from https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure:
-    ```
-    unit__(subunit?)_(pipestage?)_quantity_(qualifiers?)
-    ```
+    Based on metrics naming convention from https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure::
+
+        unit__(subunit?)_(pipestage?)_quantity_(qualifiers?)
     """
     name = f'{unit}__'
     if pipestage:
@@ -311,18 +317,95 @@ class Session:
     def __init__(self, *, output : pathlib.Path):
         self.output = output
 
+    @dataclasses.dataclass(frozen = True)
+    class Command:
+        """
+        The command is split in:
+            * `ncu` options that do not involve paths
+            * `ncu` report file
+            * `ncu` log file
+            * `ncu` metrics
+            * executable
+            * executable arguments
+        """
+        opts: list[str]
+        output: pathlib.Path
+        log: pathlib.Path
+        metrics: list[Metric | MetricCorrelation]
+        executable: str | pathlib.Path
+        args: list[str | pathlib.Path]
+
+        @functools.cached_property
+        @typeguard.typechecked
+        def to_list(self) -> list[str | pathlib.Path]:
+            """
+            Build the full `ncu` command.
+            """
+            cmd = ['ncu']
+
+            if self.opts:
+                cmd += self.opts
+
+            cmd += ['--force-overwrite', '-o', self.output]
+            cmd += ['--log-file', self.log]
+
+            if self.metrics:
+                cmd.append(f'--metrics={",".join(gather(metrics = self.metrics))}')
+
+            cmd.append(self.executable)
+
+            if self.args:
+                cmd += self.args
+
+            return cmd
+
+    @typeguard.typechecked
+    def get_command(self, *,
+        executable : pathlib.Path,
+        opts : typing.Optional[list[str]] = None,
+        nvtx_capture : typing.Optional[str] = None,
+        metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
+        args : typing.Optional[list[str | pathlib.Path]] = None,
+    ) -> 'Session.Command':
+        """
+        Create a :py:class:`Session.Command`.
+        """
+        if not opts: opts = []
+
+        opts += [
+            '--print-summary=per-kernel',
+            '--warp-sampling-interval=0',
+        ]
+
+        if nvtx_capture:
+            opts += [
+                '--nvtx',
+                '--print-nvtx-rename=kernel',
+                f'--nvtx-include={nvtx_capture}'
+            ]
+
+        return Session.Command(
+            opts = opts,
+            output = self.output,
+            log = self.output.with_suffix('.log'),
+            metrics = metrics,
+            executable = executable,
+            args = args,
+        )
+
     @typeguard.typechecked
     def run(
         self,
-        cmd : list[str | pathlib.Path],
+        executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_capture : typing.Optional[str] = None,
+        metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
+        args : typing.Optional[list[str | pathlib.Path]] = None,
         cwd : typing.Optional[pathlib.Path] = None,
         env : typing.Optional[typing.MutableMapping] = None,
-        metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
         retries : typing.Optional[int] = None,
         sleep : typing.Callable[[int, int], float] = lambda retry, retries: 2. * (1. - retry / retries),
-    ) -> None:
+    ) -> 'Session.Command':
         """
         Run `cmd` with `ncu`.
 
@@ -344,56 +427,38 @@ class Session:
         References:
             * https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html#nvtx-filtering
         """
-        LOGFILE = self.output.with_suffix('.log')
-
-        run_cmd = [
-            'ncu', '-f', '-o', self.output,
-            '--print-summary=per-kernel',
-            '--log-file', LOGFILE,
-        ]
-
-        if opts:
-            run_cmd += opts
-
-        if metrics:
-            run_cmd.append(f'--metrics={",".join(gather(metrics = metrics))}')
-
-        if nvtx_capture:
-            run_cmd += [
-                '--nvtx',
-                '--print-nvtx-rename=kernel',
-                f'--nvtx-include={nvtx_capture}'
-            ]
-
-        run_cmd += [
-            '--warp-sampling-interval=0',
-            '--import-source=1',
-        ]
-
-        run_cmd += cmd
+        command = self.get_command(
+            opts = opts,
+            nvtx_capture = nvtx_capture,
+            metrics = metrics,
+            executable = executable,
+            args = args,
+        )
 
         for retry in reversed(range(retries if retries else 1)):
             try:
-                logging.info(f"Launching 'ncu' with {run_cmd} (log file at {LOGFILE}).")
-                subprocess.check_call(run_cmd, cwd = cwd, env = env)
-                return
+                logging.info(f"Launching 'ncu' with {command} (log file at {command.log}).")
+                subprocess.check_call(command.to_list, cwd = cwd, env = env)
+                break
             except subprocess.CalledProcessError:
                 retry_allowed = False
-                if retry > 0 and LOGFILE.is_file():
+                if retry > 0 and command.log.is_file():
                     with open(self.output.with_suffix('.log'), 'r') as fin:
                         for line in fin:
                             if line.startswith('==ERROR== Profiling failed because a driver resource was unavailable.'):
-                                logging.warning(f'Retrying because a driver resource was unavaiable.')
+                                logging.warning(f'Retrying because a driver resource was unavailable.')
                                 retry_allowed = True
                                 break
 
                 if not retry_allowed:
-                    logging.exception(f'Failed launching \'ncu\' with {run_cmd}.{'\n' + LOGFILE.read_text() if LOGFILE.is_file() else ''}')
+                    logging.exception(f'Failed launching \'ncu\' with {command}.{'\n' + command.log.read_text() if command.log.is_file() else ''}')
                     raise
                 else:
                     sleep_for = sleep(retry, retries)
                     logging.info(f'Sleeping {sleep_for} seconds before retrying.')
                     time.sleep(sleep_for)
+
+        return command
 
 class Range:
     """
@@ -689,3 +754,109 @@ class Report:
         if collected is None:
             raise RuntimeError(f"There was a problem retrieving metric '{metric}'. It probably does not exist.")
         return collected
+
+class Cacher(cacher.Cacher):
+    """
+    Cacher tailored to `ncu` results.
+
+    `ncu` require quite some time to acquire results, especially when there are many kernels to profile and/or
+    many metrics to collect.
+
+    On a cache hit, the cacher will serve:
+        - `.ncu-rep` file
+        - `.log` file
+
+    On a cache miss, `ncu` is launched and the cache entry populated accordingly.
+
+    .. note::
+
+        It is assumed that hashing is faster than running `ncu` itself.
+
+    .. warning::
+
+        The cache should not be shared between machines, since there may be differences between machines
+        that influence the results but are not included in the hashing.
+    """
+    TABLE : str = 'ncu'
+
+    @typeguard.typechecked
+    def __init__(self, *, session : Session, **kwargs):
+        super().__init__(**kwargs)
+        self.session = session
+
+    @typing.override
+    @typeguard.typechecked
+    def hash(self, *,
+        executable : pathlib.Path,
+        opts : typing.Optional[list[str]] = None,
+        nvtx_capture : typing.Optional[str] = None,
+        metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
+        args : typing.Optional[list[str | pathlib.Path]] = None,
+        env : typing.Optional[typing.MutableMapping] = None,
+        **kwargs
+    ) -> blake3.blake3:
+        """
+        Hash based on:
+            * `ncu` version
+            * `ncu` options (but not the output and log files)
+            * `ncu` metrics
+            * executable content
+            * executable arguments
+            * linked libraries
+            * environment
+        """
+        hasher = blake3.blake3()
+
+        hasher.update(subprocess.check_output(['ncu', '--version']))
+
+        command = self.session.get_command(
+            opts = opts,
+            nvtx_capture = nvtx_capture,
+            metrics = metrics,
+            executable = executable,
+            args = args,
+        )
+
+        if command.opts:
+            hasher.update(shlex.join(command.opts).encode())
+
+        if command.metrics:
+            hasher.update(''.join(gather(metrics = command.metrics)).encode())
+
+        hasher.update_mmap(command.executable)
+
+        if command.args:
+            hasher.update(shlex.join(command.args).encode())
+
+        for lib in ldd.get_shared_dependencies(file = command.executable):
+            hasher.update_mmap(lib)
+
+        if env:
+            hasher.update(json.dumps(env).encode())
+
+        return hasher
+
+    @typeguard.typechecked
+    def populate(self, directory : pathlib.Path, **kwargs) -> Session.Command:
+        """
+        When there is a cache miss, call :py:meth:`reprospect.tools.ncu.Session.run`.
+        Fill the `directory` with the artifacts.
+        """
+        command = self.session.run(**kwargs)
+
+        shutil.copy(dst = directory, src = command.output.with_suffix('.ncu-rep'))
+        shutil.copy(dst = directory, src = command.log)
+
+        return command
+
+    @typeguard.typechecked
+    def run(self, **kwargs) -> cacher.Cacher.Entry:
+        """
+        On a cache hit, copy files from the cache entry.
+        """
+        entry = self.get(**kwargs)
+
+        if entry.cached:
+            shutil.copytree(entry.directory, self.session.output.parent, dirs_exist_ok = True)
+
+        return entry

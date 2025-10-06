@@ -1,0 +1,33 @@
+ARG BASE_IMAGE=ubuntu:24.04
+
+FROM ${BASE_IMAGE} AS base
+
+FROM base AS kokkos-tools-install
+
+ARG KOKKOS_CXX_COMPILER
+ARG KOKKOS_CUDA_COMPILER
+ARG KOKKOS_TOOLS_INSTALL_SUFFIX
+ARG KOKKOS_TOOLS_SHA
+
+ADD https://github.com/kokkos/kokkos-tools/archive/${KOKKOS_TOOLS_SHA}.tar.gz /opt/kokkos-tools-sources/${KOKKOS_TOOLS_SHA}.tar.gz
+
+RUN --mount=target=/tmp/kokkos-tools-install.sh,type=bind,source=docker/kokkos-tools.sh <<EOF
+    set -ex
+
+    cd /opt/kokkos-tools-sources
+
+    tar -zxf ${KOKKOS_TOOLS_SHA}.tar.gz
+
+    cd kokkos-tools-${KOKKOS_TOOLS_SHA}
+
+    bash /tmp/kokkos-tools-install.sh
+EOF
+
+FROM base AS final
+
+ARG KOKKOS_TOOLS_INSTALL_SUFFIX
+ARG KOKKOS_TOOLS_SHA
+
+COPY --from=kokkos-tools-install /opt/kokkos-tools-${KOKKOS_TOOLS_SHA} /opt/kokkos-tools-${KOKKOS_TOOLS_SHA}
+
+ENV KokkosTools_ROOT=/opt/kokkos-tools-${KOKKOS_TOOLS_SHA}/${KOKKOS_TOOLS_INSTALL_SUFFIX}

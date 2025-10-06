@@ -155,6 +155,24 @@ jobs:
                       KOKKOS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                       KOKKOS_SHA=4.7.01
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
+            
+            - uses: docker/build-push-action@v6.18.0
+              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
+              with:
+                  context: .
+                  platforms: ${{ matrix.build_platforms }}
+                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  file: docker/dockerfile.kokkos-tools
+                  tags: ${{ matrix.kokkos-tools }}
+                  cache-from: type=registry,ref=${{ matrix.kokkos }}
+                  cache-to: type=inline
+                  build-args: |
+                      BASE_IMAGE=${{ matrix.kokkos }}
+                      KOKKOS_CXX_COMPILER=${{ matrix.compilers['CXX'][0] }}
+                      KOKKOS_CUDA_COMPILER=${{ matrix.compilers['CUDA'][0] }}
+                      KOKKOS_TOOLS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}
+                      KOKKOS_TOOLS_SHA=3c7c734a4509cca06184bcdcc6e7034f6b88b030
+                  labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     tests:
         needs: [setup-job-matrix, build-image]

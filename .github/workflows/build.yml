@@ -31,13 +31,16 @@ jobs:
 
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
+            - id: extract-mounts
+              run: sh .github/workflows/extract-mounts.sh docker/dockerfile.setup-job-matrix
+
             - id: changed-files
               uses: tj-actions/changed-files@v47
               with:
                   files: |
                       docker/**
                       .github/workflows/**
-                      requirements/**
+                      ${{ steps.extract-mounts.outputs.paths }}
 
             - uses: docker/login-action@v3
               if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
@@ -100,13 +103,16 @@ jobs:
 
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
+            - id: extract-mounts
+              run: sh .github/workflows/extract-mounts.sh docker/dockerfile docker/dockerfile.kokkos
+
             - id: changed-files
               uses: tj-actions/changed-files@v47
               with:
                   files: |
                       docker/**
                       .github/workflows/**
-                      requirements/**
+                      ${{ steps.extract-mounts.outputs.paths }}
 
             - uses: docker/login-action@v3
               if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])

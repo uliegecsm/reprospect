@@ -1,3 +1,4 @@
+blake3
 pandas
 semantic_version
 system-helpers @ git+https://github.com/uliegecsm/system-helpers@0.0.3

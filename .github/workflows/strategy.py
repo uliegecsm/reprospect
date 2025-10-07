@@ -36,8 +36,8 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     partial['nvidia_arch'] = str(NVIDIAArch.from_compute_capability(cc = partial['nvidia_compute_capability']))
 
     partial['base_image'] = f'nvidia/cuda:{tag}'
-    partial[     'image'] = full_image(name = name, tag = tag, args = args)
-    partial[    'kokkos'] = full_image(name = name, tag = f'{tag}-{partial['nvidia_arch']}'.lower(), args = args)
+    partial[     'image'] = full_image(name = name,             tag = tag,                                       args = args)
+    partial[    'kokkos'] = full_image(name = f'{name}-kokkos', tag = f'{tag}-{partial['nvidia_arch']}'.lower(), args = args)
 
     partial['build_platforms'] = ','.join(['linux/amd64'] + partial['additional_build_platforms'] if 'additional_build_platforms' in partial else [])
 

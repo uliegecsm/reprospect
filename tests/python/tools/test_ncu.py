@@ -101,7 +101,7 @@ class TestSession:
 
         session = ncu.Session(output = TMPDIR / 'report-saxpy-correlated')
 
-        session.run(executable = self.SAXPY, metrics = METRICS)
+        session.run(executable = self.SAXPY, metrics = METRICS, retries = 5)
 
         report = ncu.Report(session = session)
 
@@ -287,7 +287,7 @@ class TestCacher:
             with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = TMPDIR / 'report-cached')) as cacher:
                 assert os.listdir(cacher.directory) == ['cache.db']
 
-                results_first = cacher.run(executable = self.GRAPH, metrics = METRICS)
+                results_first = cacher.run(executable = self.GRAPH, metrics = METRICS, retries = 5)
 
                 assert results_first.cached == False
 

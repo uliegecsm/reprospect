@@ -56,7 +56,7 @@ class TestSaxpy(Case):
         def report(cls, target_file, cwd) -> Report:
             session = Session(output = cwd / 'ncu')
             session.run(
-                cmd = [target_file],
+                executable = target_file,
                 nvtx_capture = cls.NVTX_CAPTURE,
                 cwd = cwd,
                 metrics = cls.METRICS,

@@ -2,12 +2,14 @@ import logging
 import os
 import pathlib
 import subprocess
+import tempfile
 import unittest.mock
 
 import pytest
-import typeguard
 
 from reprospect.tools import ncu
+
+TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
 
 class TestSession:
     """
@@ -15,10 +17,8 @@ class TestSession:
     """
     GRAPH = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph' if 'CMAKE_BINARY_DIR' in os.environ else None
     SAXPY = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
-    TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
 
-    @typeguard.typechecked
-    def test_collect_basic_metrics_saxpy_with_nvtx_filtering(self) -> None:
+    def test_collect_basic_metrics_saxpy_with_nvtx_filtering(self):
         """
         Collect a few basic metrics for the `saxpy` executable and filter by `NVTX`.
         """
@@ -50,11 +50,11 @@ class TestSession:
             'demangled',
         ]
 
-        session = ncu.Session(output = self.TMPDIR / 'report-saxpy-basics')
+        session = ncu.Session(output = TMPDIR / 'report-saxpy-basics')
 
-        session.run(cmd = [self.SAXPY], metrics = METRICS, nvtx_capture = 'application-domain@outer-useless-range')
+        session.run(executable = self.SAXPY, metrics = METRICS, nvtx_capture = 'application-domain@outer-useless-range', retries = 5)
 
-        report = ncu.Report(path = self.TMPDIR, name = 'report-saxpy-basics')
+        report = ncu.Report(path = TMPDIR, name = 'report-saxpy-basics')
 
         assert report.report.num_ranges() == 1
 
@@ -93,16 +93,15 @@ class TestSession:
         for k, v in results_filtered['saxpy_kernel-0'].items():
             assert v == results['saxpy_kernel-0'][k]
 
-    @typeguard.typechecked
-    def test_collect_correlated_metrics_saxpy(self) -> None:
+    def test_collect_correlated_metrics_saxpy(self):
         """
         Collect a metric with correlations for the `saxpy` executable.
         """
         METRICS = [ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode')]
 
-        session = ncu.Session(output = self.TMPDIR / 'report-saxpy-correlated')
+        session = ncu.Session(output = TMPDIR / 'report-saxpy-correlated')
 
-        session.run(cmd = [self.SAXPY], metrics = METRICS)
+        session.run(executable = self.SAXPY, metrics = METRICS)
 
         report = ncu.Report(session = session)
 
@@ -132,8 +131,7 @@ class TestSession:
             case _:
                 raise ValueError(f'unsupported compiler ID {os.environ['CMAKE_CUDA_COMPILER_ID']}')
 
-    @typeguard.typechecked
-    def test_collect_basic_metrics_graph(self) -> None:
+    def test_collect_basic_metrics_graph(self):
         """
         Collect a few basic metrics for the `graph` executable.
         """
@@ -143,9 +141,9 @@ class TestSession:
             ncu.L1TEXCache.GlobalStore.Sectors(),
         ]
 
-        session = ncu.Session(output = self.TMPDIR / 'report-graph-basics')
+        session = ncu.Session(output = TMPDIR / 'report-graph-basics')
 
-        session.run(cmd = [self.GRAPH], metrics = METRICS)
+        session.run(executable = self.GRAPH, metrics = METRICS, retries = 5)
 
         report = ncu.Report(session = session)
 
@@ -233,14 +231,76 @@ class TestSession:
             case _:
                 raise ValueError(f'unsupported compiler ID {os.environ['CMAKE_CUDA_COMPILER_ID']}')
 
-    @typeguard.typechecked
-    def test_fails_correctly_with_retries(self) -> None:
+    def test_fails_correctly_with_retries(self):
         """
         When `retries` is given, but `ncu` fails for a good reason, it should not retry, *i.e.* it should not sleep.
         """
-        session = ncu.Session(output = self.TMPDIR / 'report-failure')
+        session = ncu.Session(output = TMPDIR / 'report-failure')
 
         with unittest.mock.patch('time.sleep') as mock_sleep:
             with pytest.raises(subprocess.CalledProcessError):
-                session.run(cmd = [self.GRAPH], opts = ['--something-ncu-does-not-know'], retries = 5)
+                session.run(executable = self.GRAPH, opts = ['--something-ncu-does-not-know'], retries = 5)
             mock_sleep.assert_not_called()
+
+class TestCacher:
+    """
+    Tests for :py:class:`reprospect.tools.ncu.Cacher`.
+    """
+    GRAPH = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph' if 'CMAKE_BINARY_DIR' in os.environ else None
+    SAXPY = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
+
+    def test_hash_same(self):
+        """
+        Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = pathlib.Path('I-dont-care'))) as cacher:
+                hash_a = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
+                hash_b = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
+
+                assert hash_a.digest() == hash_b.digest()
+
+    def test_hash_different(self):
+        """
+        Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = pathlib.Path('I-dont-care'))) as cacher:
+                hash_a = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
+                hash_b = cacher.hash(opts = ['--nvtx'], executable = self.SAXPY, args = ['--bla=42'])
+
+                assert hash_a.digest() != hash_b.digest()
+
+    def test_cache_hit(self):
+        """
+        The cacher should hit on the second call.
+        """
+        METRICS = [
+            # A few L1TEX cache metrics.
+            ncu.L1TEXCache.GlobalLoad.Sectors(),
+            ncu.L1TEXCache.GlobalStore.Sectors(),
+        ]
+
+        FILES = ['report-cached.log', 'report-cached.ncu-rep']
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = TMPDIR / 'report-cached')) as cacher:
+                assert os.listdir(cacher.directory) == ['cache.db']
+
+                results_first = cacher.run(executable = self.GRAPH, metrics = METRICS)
+
+                assert results_first.cached == False
+
+                assert all(x in os.listdir(cacher.session.output.parent) for x in FILES)
+
+                for file in FILES:
+                    (cacher.session.output.parent / file).unlink()
+
+                assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
+                assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
+
+                results_second = cacher.run(executable = self.GRAPH, metrics = METRICS, retries = 5)
+
+                assert results_second.cached == True
+
+                assert all(x in os.listdir(cacher.session.output.parent) for x in FILES)

@@ -63,3 +63,27 @@ import unittest
 unittest.TestCase.__module__ = 'unittest'
 
 linkcode_url = 'https://github.com/uliegecsm/reprospect'
+
+# Guard to ensure we encounter what we allow to be ignored.
+guards = {
+    'blake3.blake3' : 0
+}
+
+def ignore_missing_reference(app, env, node, contnode):
+    """
+    Proper way to ignore missing references.
+    """
+    if node.get('reftarget', '').startswith('blake3.blake3'):
+        guards['blake3.blake3'] += 1
+        return contnode
+    return None
+
+def on_build_finished(app, exception):
+    if exception is None:
+        for k, v in guards.items():
+            if v == 0:
+                raise RuntimeError(f'Fix {k} was never used.')
+
+def setup(app):
+    app.connect('missing-reference', ignore_missing_reference)
+    app.connect("build-finished", on_build_finished)

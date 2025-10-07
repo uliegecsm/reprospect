@@ -4,12 +4,12 @@ function(add_one_test FILE)
         NAME    tests_python_test_${FILE}
         COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_SOURCE_DIR}/tests/python/test/test_${FILE}.py
                     -vvv --log-cli-level=info
-                    --target-file       $<TARGET_FILE:tests_cpp_cuda_${FILE}>
-                    --compile-commands  ${CMAKE_BINARY_DIR}/compile_commands.json
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
     test_environment(tests_python_test_${FILE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR}/python)
+    test_environment(tests_python_test_${FILE} EXECUTABLE set $<TARGET_FILE:tests_cpp_cuda_${FILE}>)
+    test_environment(tests_python_test_${FILE} COMPILE_COMMANDS set ${CMAKE_BINARY_DIR}/compile_commands.json)
 
 endfunction()
 

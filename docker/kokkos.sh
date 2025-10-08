@@ -23,6 +23,7 @@ cmake_args_kokkos+=(
     "-DCMAKE_CXX_EXTENSIONS=OFF"
     "-DKokkos_ENABLE_SERIAL=ON"
     "-DKokkos_ENABLE_CUDA=ON"
+    "-DKokkos_ENABLE_IMPL_CUDA_MALLOC_ASYNC=ON"
     "-DKokkos_ARCH_${KOKKOS_ARCH}=ON"
     "-DCMAKE_INSTALL_PREFIX=/opt/kokkos-${KOKKOS_SHA}/${KOKKOS_INSTALL_SUFFIX}"
 )

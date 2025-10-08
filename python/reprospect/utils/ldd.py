@@ -5,13 +5,16 @@ import subprocess
 import typeguard
 
 @typeguard.typechecked
-def get_shared_dependencies(*, file : pathlib.Path) -> set[pathlib.Path]:
+def get_shared_dependencies(*, file : pathlib.Path) -> list[pathlib.Path]:
     """
-    Get the set of shared object dependencies.
+    Get the list of shared object dependencies.
+
+    It assumes that `ldd` output follows::
+
+        libname => /path/to/lib.so (address)
     """
-    libs = set()
+    libs = []
     for lib in subprocess.check_output(['ldd', file]).decode().splitlines():
-        match = re.search(r'[A-Za-z0-9.\+_\-]+ => ([A-Za-z0-9.\+_\-/]+) \(0x[0-9a-f]+\)', lib)
-        if match is not None:
-            libs.add(pathlib.Path(match.group(1)))
+        if (match := re.search(r'[A-Za-z0-9.\+_\-]+ => ([A-Za-z0-9.\+_\-/]+) \(0x[0-9a-f]+\)', lib)) is not None:
+            libs.append(pathlib.Path(match.group(1)))
     return libs

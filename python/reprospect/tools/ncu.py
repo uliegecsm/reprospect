@@ -829,7 +829,7 @@ class Cacher(cacher.Cacher):
         if command.args:
             hasher.update(shlex.join(command.args).encode())
 
-        for lib in ldd.get_shared_dependencies(file = command.executable):
+        for lib in sorted(ldd.get_shared_dependencies(file = command.executable)):
             hasher.update_mmap(lib)
 
         if env:

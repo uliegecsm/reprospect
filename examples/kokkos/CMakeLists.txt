@@ -1,14 +1,20 @@
 function(add_one_example FILE)
 
-    add_executable(examples_kokkos_${FILE})
+    set(FILENAME ${CMAKE_CURRENT_SOURCE_DIR}/example_${FILE}.cpp)
 
-    target_sources(examples_kokkos_${FILE} PRIVATE example_${FILE}.cpp)
+    get_parent_relpath_repr(DIRECTORY ${CMAKE_SOURCE_DIR} FILENAME ${FILENAME})
 
-    set_source_files_properties(example_${FILE}.cpp PROPERTIES LANGUAGE CUDA)
+    set(EXECUTABLE ${gprr_PARENT_RELPATH_REPR}_${FILE})
 
-    target_link_libraries(examples_kokkos_${FILE} PRIVATE Kokkos::kokkoscore)
+    add_executable(${EXECUTABLE})
 
-    add_test(NAME examples_kokkos_${FILE} COMMAND $<TARGET_FILE:examples_kokkos_${FILE}>)
+    target_sources(${EXECUTABLE} PRIVATE ${FILENAME})
+
+    set_source_files_properties(${FILENAME} PROPERTIES LANGUAGE CUDA)
+
+    target_link_libraries(${EXECUTABLE} PRIVATE Kokkos::kokkoscore)
+
+    add_test(NAME ${EXECUTABLE} COMMAND $<TARGET_FILE:${EXECUTABLE}>)
 
 endfunction()
 

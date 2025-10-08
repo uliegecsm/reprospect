@@ -363,7 +363,7 @@ class Session:
     def get_command(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
-        nvtx_capture : typing.Optional[str] = None,
+        nvtx_includes : typing.Optional[list[str]] = None,
         metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
     ) -> 'Session.Command':
@@ -377,11 +377,11 @@ class Session:
             '--warp-sampling-interval=0',
         ]
 
-        if nvtx_capture:
+        if nvtx_includes:
             opts += [
                 '--nvtx',
                 '--print-nvtx-rename=kernel',
-                f'--nvtx-include={nvtx_capture}'
+                *[f'--nvtx-include={x}' for x in nvtx_includes],
             ]
 
         return Session.Command(
@@ -398,17 +398,18 @@ class Session:
         self,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
-        nvtx_capture : typing.Optional[str] = None,
+        nvtx_includes : typing.Optional[list[str]] = None,
         metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
         cwd : typing.Optional[pathlib.Path] = None,
         env : typing.Optional[typing.MutableMapping] = None,
         retries : typing.Optional[int] = None,
-        sleep : typing.Callable[[int, int], float] = lambda retry, retries: 2. * (1. - retry / retries),
+        sleep : typing.Callable[[int, int], float] = lambda retry, retries: 3. * (1. - retry / retries),
     ) -> 'Session.Command':
         """
         Run `cmd` with `ncu`.
 
+        :param nvtx_includes: Refer to https://docs.nvidia.com/nsight-compute/2023.3/NsightComputeCli/index.html#nvtx-filtering.
         :param retries: `ncu` might fail acquiring some resources because other instances are running. Retry a few times.
                         See https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#faq (Profiling failed because a driver resource was unavailable).
 
@@ -429,7 +430,7 @@ class Session:
         """
         command = self.get_command(
             opts = opts,
-            nvtx_capture = nvtx_capture,
+            nvtx_includes = nvtx_includes,
             metrics = metrics,
             executable = executable,
             args = args,
@@ -437,7 +438,7 @@ class Session:
 
         for retry in reversed(range(retries if retries else 1)):
             try:
-                logging.info(f"Launching 'ncu' with {command} (log file at {command.log}).")
+                logging.info(f"Launching 'ncu' with {command.to_list} (log file at {command.log}).")
                 subprocess.check_call(command.to_list, cwd = cwd, env = env)
                 break
             except subprocess.CalledProcessError:
@@ -789,7 +790,7 @@ class Cacher(cacher.Cacher):
     def hash(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
-        nvtx_capture : typing.Optional[str] = None,
+        nvtx_includes : typing.Optional[list[str]] = None,
         metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
         env : typing.Optional[typing.MutableMapping] = None,
@@ -811,7 +812,7 @@ class Cacher(cacher.Cacher):
 
         command = self.session.get_command(
             opts = opts,
-            nvtx_capture = nvtx_capture,
+            nvtx_includes = nvtx_includes,
             metrics = metrics,
             executable = executable,
             args = args,

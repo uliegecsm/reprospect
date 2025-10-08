@@ -52,7 +52,15 @@ class TestSession:
 
         session = ncu.Session(output = TMPDIR / 'report-saxpy-basics')
 
-        session.run(executable = self.SAXPY, metrics = METRICS, nvtx_capture = 'application-domain@outer-useless-range', retries = 5)
+        session.run(
+            executable = self.SAXPY,
+            metrics = METRICS,
+            nvtx_includes = [
+                'application-domain@launch-saxpy-kernel-first-time/',
+                'application-domain@launch-saxpy-kernel-second-time/',
+            ],
+            retries = 5,
+        )
 
         report = ncu.Report(path = TMPDIR, name = 'report-saxpy-basics')
 
@@ -65,19 +73,27 @@ class TestSession:
 
         assert len(results) > 1
         assert 'saxpy_kernel-0' in results.keys()
+        assert 'saxpy_kernel-1' in results.keys()
         assert all(x in results['saxpy_kernel-0'] for x in EXPT_METRICS_AND_METADATA)
+        assert all(x in results['saxpy_kernel-1'] for x in EXPT_METRICS_AND_METADATA)
 
         # Extract results with NVTX filtering. Request only the 2 first metrics.
         with pytest.raises(RuntimeError, match = 'no action found'):
             results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ['outer-useless-range'])
 
-        results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ['application-domain@outer-useless-range'])['launch-saxpy-kernel']
+        results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ['application-domain@outer-useless-range'])
 
         logging.info(results_filtered)
 
-        assert len(results_filtered) == 1
-        assert 'saxpy_kernel-0' in results_filtered.keys()
-        assert all(x in results['saxpy_kernel-0'] for x in EXPT_METRICS_AND_METADATA[:2])
+        results_filtered_first  = results_filtered['launch-saxpy-kernel-first-time']
+        results_filtered_second = results_filtered['launch-saxpy-kernel-second-time']
+
+        assert len(results_filtered_first)  == 1
+        assert len(results_filtered_second) == 1
+        assert 'saxpy_kernel-0' in results_filtered_first .keys()
+        assert 'saxpy_kernel-1' in results_filtered_second.keys()
+        assert all(x in results_filtered_first ['saxpy_kernel-0'] for x in EXPT_METRICS_AND_METADATA[:2])
+        assert all(x in results_filtered_second['saxpy_kernel-1'] for x in EXPT_METRICS_AND_METADATA[:2])
 
         # A few checks.
         assert results['saxpy_kernel-0']['launch__block_dim_x'] == 128
@@ -90,8 +106,9 @@ class TestSession:
         assert results['saxpy_kernel-0']['mangled'] == '_Z12saxpy_kerneljfPKfPf'
         assert results['saxpy_kernel-0']['demangled'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
 
-        for k, v in results_filtered['saxpy_kernel-0'].items():
-            assert v == results['saxpy_kernel-0'][k]
+        for metric in EXPT_METRICS_AND_METADATA[:2]:
+            assert results_filtered_first ['saxpy_kernel-0'][metric] == results['saxpy_kernel-0'][metric]
+            assert results_filtered_second['saxpy_kernel-1'][metric] == results['saxpy_kernel-1'][metric]
 
     def test_collect_correlated_metrics_saxpy(self):
         """

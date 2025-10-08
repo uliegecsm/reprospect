@@ -3,7 +3,7 @@ function(add_one_test FILE)
     add_test(
         NAME    tests_python_test_${FILE}
         COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_SOURCE_DIR}/tests/python/test/test_${FILE}.py
-                    -vvv --log-cli-level=info
+                    -vvv -s --log-cli-level=info
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 

@@ -1,12 +1,20 @@
 function(add_one_test FILE)
 
-    add_executable(tests_cpp_cuda_${FILE} test_${FILE}.cpp)
+    set(FILENAME ${CMAKE_CURRENT_SOURCE_DIR}/test_${FILE}.cpp)
 
-    target_link_libraries(tests_cpp_cuda_${FILE} PRIVATE CUDA::cudart CUDA::nvtx3)
+    get_parent_relpath_repr(DIRECTORY ${CMAKE_SOURCE_DIR} FILENAME ${FILENAME})
 
-    set_source_files_properties(test_${FILE}.cpp PROPERTIES LANGUAGE CUDA)
+    set(EXECUTABLE ${gprr_PARENT_RELPATH_REPR}_${FILE})
 
-    add_test(NAME tests_cpp_cuda_${FILE} COMMAND $<TARGET_FILE:tests_cpp_cuda_${FILE}>)
+    add_executable(${EXECUTABLE})
+
+    target_sources(${EXECUTABLE} PRIVATE ${FILENAME})
+
+    target_link_libraries(${EXECUTABLE} PRIVATE CUDA::cudart CUDA::nvtx3)
+
+    set_source_files_properties(${FILENAME} PROPERTIES LANGUAGE CUDA)
+
+    add_test(NAME ${EXECUTABLE} COMMAND $<TARGET_FILE:${EXECUTABLE}>)
 
 endfunction()
 

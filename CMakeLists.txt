@@ -21,6 +21,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(Python 3.12 REQUIRED Interpreter)
 
 include(cmake/functions/environment.cmake)
+include(cmake/functions/path_helper.cmake)
 include(cmake/modules/Warnings.cmake)
 
 if(ReProspect_ENABLE_TESTS)

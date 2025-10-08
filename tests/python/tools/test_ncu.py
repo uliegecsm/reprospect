@@ -55,10 +55,10 @@ class TestSession:
         session.run(
             executable = self.SAXPY,
             metrics = METRICS,
-            nvtx_includes = [
-                'application-domain@launch-saxpy-kernel-first-time/',
-                'application-domain@launch-saxpy-kernel-second-time/',
-            ],
+            nvtx_includes = map(
+                lambda x: f'application-domain@{x}/',
+                ['launch-saxpy-kernel-first-time', 'launch-saxpy-kernel-second-time'],
+            ),
             retries = 5,
         )
 

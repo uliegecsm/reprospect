@@ -331,7 +331,7 @@ class Session:
         opts: list[str]
         output: pathlib.Path
         log: pathlib.Path
-        metrics: list[Metric | MetricCorrelation]
+        metrics: typing.Iterable[Metric | MetricCorrelation]
         executable: str | pathlib.Path
         args: list[str | pathlib.Path]
 
@@ -363,8 +363,8 @@ class Session:
     def get_command(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
-        nvtx_includes : typing.Optional[list[str]] = None,
-        metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
+        nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
+        metrics : typing.Optional[typing.Iterable[Metric | MetricCorrelation]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
     ) -> 'Session.Command':
         """
@@ -398,8 +398,8 @@ class Session:
         self,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
-        nvtx_includes : typing.Optional[list[str]] = None,
-        metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
+        nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
+        metrics : typing.Optional[typing.Iterable[Metric | MetricCorrelation]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
         cwd : typing.Optional[pathlib.Path] = None,
         env : typing.Optional[typing.MutableMapping] = None,

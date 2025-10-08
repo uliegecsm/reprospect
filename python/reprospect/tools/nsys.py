@@ -1,7 +1,9 @@
+import copy
 import dataclasses
 import functools
 import json
 import logging
+import os
 import pathlib
 import shlex
 import shutil
@@ -70,7 +72,7 @@ class Session:
         """
         Create a :py:class:`Session.Command`.
         """
-        if opts is None: opts = []
+        opts = [] if opts is None else copy.deepcopy(opts)
 
         # We want to start data collection when the first NVTX range is met.
         # This reduces the amount of data collected (and makes things faster).
@@ -119,9 +121,11 @@ class Session:
         # strings to be considered.
         # See https://docs.nvidia.com/nsight-systems/UserGuide/index.html#example-interactive-cli-command-sequences.
         if nvtx_capture:
+            if env is None:
+                env = os.environ.copy()
             env['NSYS_NVTX_PROFILER_REGISTER_ONLY'] = '0'
 
-        logging.info(f"Launching 'nsys' with {command}.")
+        logging.info(f"Launching 'nsys' with {command.to_list}.")
         self.output_file_nsys_rep.unlink(missing_ok = True)
         subprocess.check_call(command.to_list, cwd = cwd, env = env)
 
@@ -193,6 +197,11 @@ class Report:
         self.conn = sqlite3.connect(self.db)
         return self
 
+    @typeguard.typechecked
+    def __exit__(self, *args, **kwargs) -> None:
+        logging.info(f'Closing connection to {self.db}.')
+        self.conn.close()
+
     @functools.cached_property
     @typeguard.typechecked
     def tables(self) -> list[str]:
@@ -211,11 +220,6 @@ class Report:
         """
         logging.info(f'Retrieving table {name} in {self.db}.')
         return pandas.read_sql_query(f"SELECT * FROM {name};", self.conn)
-
-    @typeguard.typechecked
-    def __exit__(self, *args, **kwargs) -> None:
-        logging.info(f'Closing connection to {self.db}.')
-        self.conn.close()
 
 @typeguard.typechecked
 def strip_cuda_api_suffix(call : str) -> str:

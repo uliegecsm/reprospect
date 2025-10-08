@@ -5,9 +5,9 @@ import typeguard
 
 import reprospect
 
-from reprospect.tools.binaries     import CuObjDump
-from reprospect.tools.ncu          import Metric, Session, Report, ProfilingResults
-from reprospect.tools.sass         import Decoder
+from reprospect.tools.binaries import CuObjDump
+from reprospect.tools          import ncu
+from reprospect.tools.sass     import Decoder
 
 class TestSaxpy(reprospect.TestCase):
     """
@@ -44,33 +44,36 @@ class TestNCU(TestSaxpy):
     """
 
     METRICS = [
-        Metric(name = 'launch__registers_per_thread_allocated')
+        ncu.Metric(name = 'launch__registers_per_thread_allocated')
     ]
 
-    NVTX_CAPTURE = 'application-domain@outer-useless-range'
+    NVTX_INCLUDES = [
+        'application-domain@launch-saxpy-kernel-first-time/',
+        'application-domain@launch-saxpy-kernel-second-time/',
+    ]
 
     @pytest.fixture(scope = 'class')
     @typeguard.typechecked
-    def report(self) -> Report:
-        session = Session(output = self.cwd / 'ncu')
+    def report(self) -> ncu.Report:
+        session = ncu.Session(output = self.cwd / 'ncu')
         session.run(
             executable = self.EXECUTABLE,
-            nvtx_capture = self.NVTX_CAPTURE,
+            nvtx_includes = self.NVTX_INCLUDES,
             cwd = self.cwd,
             metrics = self.METRICS,
             retries = 5,
         )
-        return Report(session = session)
+        return ncu.Report(session = session)
 
     @pytest.fixture(scope = 'class')
     @typeguard.typechecked
-    def results(self, report : Report) -> ProfilingResults:
+    def results(self, report : ncu.Report) -> ncu.ProfilingResults:
         return report.extract_metrics_in_range(0, metrics = self.METRICS)
 
     @typeguard.typechecked
-    def test_result_count(self, report : Report, results : ProfilingResults) -> None:
+    def test_result_count(self, report : ncu.Report, results : ncu.ProfilingResults) -> None:
         """
         Check how many ranges and results there are in the report.
         """
         assert report.report.num_ranges() == 1
-        assert len(results) == 2
+        assert len(results) == 4

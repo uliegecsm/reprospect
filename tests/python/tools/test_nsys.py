@@ -72,6 +72,11 @@ class TestSession:
                 'cuKernelGetName',
             ]
 
+        expt += ['cudaLaunchKernel']
+
+        if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('>=13.0.0'):
+            expt += ['cuKernelGetName']
+
         expt += [
             'cudaLaunchKernel',
             'cudaMemcpyAsync',
@@ -112,30 +117,36 @@ class TestSession:
 
             assert stream_id_A != stream_id_B
 
-            # Check that the 'saxpy' kernel ran on stream B.
+            # Check that the 'saxpy' kernels ran on stream B.
             cupti_activity_kind_kernel = report.table(name = 'CUPTI_ACTIVITY_KIND_KERNEL')
-            saxpy_kernel = self.single_row_to_dict(data = cupti_activity_kind_kernel)
+            saxpy_kernel_first  = cupti_activity_kind_kernel.iloc[0]
+            saxpy_kernel_second = cupti_activity_kind_kernel.iloc[1]
 
-            assert saxpy_kernel['streamId'] == stream_id_B
+            assert saxpy_kernel_first ['streamId'] == stream_id_B
+            assert saxpy_kernel_second['streamId'] == stream_id_B
 
-            # Check 'saxpy' kernel launch block/grid configuration.
-            assert saxpy_kernel['gridX'] == 8
-            assert saxpy_kernel['gridY'] == 1
-            assert saxpy_kernel['gridZ'] == 1
+            # Check 'saxpy' kernels launch block/grid configuration.
+            for kernel in [saxpy_kernel_first, saxpy_kernel_second]:
+                assert kernel['gridX'] == 8
+                assert kernel['gridY'] == 1
+                assert kernel['gridZ'] == 1
 
-            assert saxpy_kernel['blockX'] == 128
-            assert saxpy_kernel['blockY'] == 1
-            assert saxpy_kernel['blockZ'] == 1
+                assert kernel['blockX'] == 128
+                assert kernel['blockY'] == 1
+                assert kernel['blockZ'] == 1
 
-            # Check 'saxpy' kernel launch type.
+            # Check 'saxpy' kernels launch type.
             ENUM_CUDA_KERNEL_LAUNCH_TYPE = report.table(name = 'ENUM_CUDA_KERNEL_LAUNCH_TYPE')
 
-            assert saxpy_kernel['launchType'] == self.single_row_to_dict(data = ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])['id']
+            CUDA_KERNEL_LAUNCH_TYPE_REGULAR = self.single_row_to_dict(data = ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])['id']
+            assert saxpy_kernel_first ['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR
+            assert saxpy_kernel_second['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR
 
-            # Check 'saxpy' kernel mangled and demangled names.
+            # Check 'saxpy' kernels mangled and demangled names.
             stringids = report.table(name = 'StringIds')
-            assert self.single_row_to_dict(data = stringids[stringids['id'] == saxpy_kernel['mangledName'  ]])['value'] == '_Z12saxpy_kerneljfPKfPf'
-            assert self.single_row_to_dict(data = stringids[stringids['id'] == saxpy_kernel['demangledName']])['value'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
+            for kernel in [saxpy_kernel_first, saxpy_kernel_second]:
+                assert self.single_row_to_dict(data = stringids[stringids['id'] == kernel['mangledName'  ]])['value'] == '_Z12saxpy_kerneljfPKfPf'
+                assert self.single_row_to_dict(data = stringids[stringids['id'] == kernel['demangledName']])['value'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
 
 class TestCacher:
     """

@@ -57,7 +57,11 @@ int main()
     constexpr index_t grid_size  = (size + block_size - 1) / block_size;
 
     {
-        ::nvtx3::scoped_range_in<MyAppDomain> range{"launch-saxpy-kernel"};
+        ::nvtx3::scoped_range_in<MyAppDomain> range{"launch-saxpy-kernel-first-time"};
+        saxpy_kernel<<<dim3{grid_size, 1, 1}, dim3{block_size, 1, 1} , 0, stream_B>>>(size, 2.f, vec_x, vec_y);
+    }
+    {
+        ::nvtx3::scoped_range_in<MyAppDomain> range{"launch-saxpy-kernel-second-time"};
         saxpy_kernel<<<dim3{grid_size, 1, 1}, dim3{block_size, 1, 1} , 0, stream_B>>>(size, 2.f, vec_x, vec_y);
     }
 
@@ -73,7 +77,7 @@ int main()
     REPROSPECT_CHECK_CUDART_CALL(cudaStreamDestroy(stream_B));
 
     for(const auto& elm : result) {
-        if(elm != 4.f) throw std::runtime_error("wrong value");
+        if(elm != 6.f) throw std::runtime_error("wrong value");
     }
 
     ::nvtx3::end_range_in<MyAppDomain>(outer);

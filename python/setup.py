@@ -19,11 +19,15 @@ setup(
     ],
     packages = [
         'reprospect.installers',
+        'reprospect.test',
         'reprospect.tools',
+        'reprospect.utils',
     ],
     package_dir = {
         'reprospect.installers' : 'reprospect/installers',
+        'reprospect.test' : 'reprospect/test',
         'reprospect.tools' : 'reprospect/tools',
+        'reprospect.utils' : 'reprospect/utils',
     },
     entry_points = {
         'console_scripts': [

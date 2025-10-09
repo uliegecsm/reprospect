@@ -6,6 +6,12 @@
     #error "KOKKOS_ENABLE_IMPL_CUDA_MALLOC_ASYNC is not defined."
 #endif
 
+/**
+ * @file
+ *
+ * Companion of @ref examples/kokkos/view/example_allocation.py.
+ */
+
 namespace reprospect::examples::kokkos::view
 {
 

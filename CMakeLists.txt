@@ -33,3 +33,7 @@ if(ReProspect_ENABLE_EXAMPLES)
     enable_testing()
     add_subdirectory(examples)
 endif()
+
+if(ReProspect_ENABLE_DOCS)
+    add_subdirectory(docs)
+endif()

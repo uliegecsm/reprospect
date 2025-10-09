@@ -139,8 +139,10 @@ jobs:
                   cache-to: type=inline
                   build-args: |
                       BASE_IMAGE=${{ matrix.base_image }}
-                      COMPILER=${{ matrix.compilers['CXX'][0] }}
-                      COMPILER_VERSION=${{ matrix.compilers['CXX'][1] }}
+                      CXX_COMPILER_ID=${{ matrix.compilers.CXX.ID }}
+                      CXX_COMPILER_VERSION=${{ matrix.compilers.CXX.version }}
+                      CXX_COMPILER=${{ matrix.compilers.CXX.path }}
+                      GOOGLEBENCHMARK_VERSION=1.9.4
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
             - uses: docker/build-push-action@v6.18.0
@@ -156,8 +158,8 @@ jobs:
                   build-args: |
                       BASE_IMAGE=${{ matrix.image }}
                       KOKKOS_ARCH=${{ matrix.nvidia_arch }}
-                      KOKKOS_CXX_COMPILER=${{ matrix.compilers['CXX'][0] == 'gcc' && 'g++' || matrix.compilers['CXX'][0] == 'clang' && 'clang++' || 'not-defined'}}
-                      KOKKOS_CUDA_COMPILER=${{ matrix.compilers['CUDA'][0] }}
+                      KOKKOS_CXX_COMPILER=${{ matrix.compilers.CXX.path }}
+                      KOKKOS_CUDA_COMPILER=${{ matrix.compilers.CUDA.path }}
                       KOKKOS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                       KOKKOS_SHA=4.7.01
                       KOKKOS_TOOLS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}
@@ -250,7 +252,7 @@ jobs:
 
             - uses: actions/download-artifact@v5
               with:
-                  name: tests-gcc-nvcc-BLACKWELL120
+                  name: tests-gnu-nvidia-BLACKWELL120
                   path: artifacts
 
             - run: |

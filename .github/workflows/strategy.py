@@ -60,7 +60,7 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     partial['cmake_preset'] = '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CUDA'].ID])))
 
     # Name and tag of the image.
-    name = 'cuda-' + partial['cmake_preset']
+    name = 'cuda-' + '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CXX'].version, partial['compilers']['CUDA'].ID])))
 
     tag = f'{partial['cuda_version']}-devel-ubuntu24.04'
 

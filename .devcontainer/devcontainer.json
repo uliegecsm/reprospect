@@ -1,13 +1,17 @@
 {
     "dockerFile": "dockerfile",
-    "extensions": [
-        "eamodio.gitlens",
-        "GitHub.vscode-pull-request-github",
-        "mhutchie.git-graph",
-        "ms-azuretools.vscode-docker",
-        "ms-python.python",
-        "ms-vscode.cmake-tools",
-    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "eamodio.gitlens",
+                "GitHub.vscode-pull-request-github",
+                "mhutchie.git-graph",
+                "ms-azuretools.vscode-docker",
+                "ms-python.python",
+                "ms-vscode.cmake-tools",
+            ],
+        }
+    },
     "runArgs": [
         "--privileged",
     ],

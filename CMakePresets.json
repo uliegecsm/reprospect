@@ -22,7 +22,7 @@
             }
         },
         {
-            "name" : "cxx-gcc",
+            "name" : "cxx-gnu",
             "hidden": true,
             "inherits" : "cxx-ccache",
             "cacheVariables": {
@@ -45,7 +45,7 @@
             }
         },
         {
-            "name" : "cuda-nvcc",
+            "name" : "cuda-nvidia",
             "hidden" : true,
             "inherits" : "cuda-ccache",
             "cacheVariables": {
@@ -61,15 +61,15 @@
             }
         },
         {
-            "name" : "gcc-nvcc",
-            "inherits" : ["default", "cxx-gcc", "cuda-nvcc"],
+            "name" : "gnu-nvidia",
+            "inherits" : ["default", "cxx-gnu", "cuda-nvidia"],
             "cacheVariables" : {
                 "CMAKE_CUDA_HOST_COMPILER" : "g++"
             }
         },
         {
-            "name" : "clang-nvcc",
-            "inherits" : ["default", "cxx-clang", "cuda-nvcc"],
+            "name" : "clang-nvidia",
+            "inherits" : ["default", "cxx-clang", "cuda-nvidia"],
             "cacheVariables" : {
                 "CMAKE_CUDA_HOST_COMPILER" : "clang"
             }
@@ -87,13 +87,13 @@
             "inheritConfigureEnvironment" : true
         },
         {
-            "name" : "gcc-nvcc",
-            "configurePreset" : "gcc-nvcc",
+            "name" : "gnu-nvidia",
+            "configurePreset" : "gnu-nvidia",
             "inherits" : "default"
         },
         {
-            "name" : "clang-nvcc",
-            "configurePreset" : "clang-nvcc",
+            "name" : "clang-nvidia",
+            "configurePreset" : "clang-nvidia",
             "inherits" : "default"
         },
         {
@@ -116,13 +116,13 @@
             }
         },
         {
-            "name" : "gcc-nvcc",
-            "configurePreset" : "gcc-nvcc",
+            "name" : "gnu-nvidia",
+            "configurePreset" : "gnu-nvidia",
             "inherits" : "default"
         },
         {
-            "name" : "clang-nvcc",
-            "configurePreset" : "clang-nvcc",
+            "name" : "clang-nvidia",
+            "configurePreset" : "clang-nvidia",
             "inherits" : "default"
         },
         {

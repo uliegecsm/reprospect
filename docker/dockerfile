@@ -1,6 +1,5 @@
 ARG BASE_IMAGE=ubuntu:24.04
-ARG COMPILER=gcc
-ARG COMPILER_VERSION=13
+ARG CXX_COMPILER_ID=gnu
 
 FROM ${BASE_IMAGE} AS base
 
@@ -26,15 +25,18 @@ RUN <<EOF
 EOF
 
 # System requirements.
+FROM base AS system-requirements
+
 RUN --mount=target=/requirements/requirements.system.txt,type=bind,source=requirements/requirements.system.txt <<EOF
     set -ex
 
     apt-helpers install-packages --update --clean --requirement /requirements/requirements.system.txt
 EOF
 
-FROM base AS requirements-compiler-clang
+# Install Clang compiler.
+FROM system-requirements AS requirements-compiler-clang
 
-ARG COMPILER_VERSION
+ARG CXX_COMPILER_VERSION
 
 RUN <<EOF
     set -ex
@@ -43,43 +45,45 @@ RUN <<EOF
 
     wget https://apt.llvm.org/llvm.sh
     chmod +x llvm.sh
-    ./llvm.sh ${COMPILER_VERSION}
+    ./llvm.sh ${CXX_COMPILER_VERSION}
     rm llvm.sh
 
     update-alternatives-helpers --prefix /usr/bin \
         --display --level=10 \
-        --for-each-of clang=clang-${COMPILER_VERSION} clang++=clang++-${COMPILER_VERSION}
+        --for-each-of clang=clang-${CXX_COMPILER_VERSION} clang++=clang++-${CXX_COMPILER_VERSION}
 
     clang --version
 
     apt-helpers clean
 EOF
 
-FROM base AS requirements-compiler-gcc
+# Install GNU compilers.
+FROM system-requirements AS requirements-compiler-gnu
 
-ARG COMPILER_VERSION
+ARG CXX_COMPILER_VERSION
 
 RUN <<EOF
     set -ex
 
-    apt-helpers install-packages --update --packages gcc-${COMPILER_VERSION} g++-${COMPILER_VERSION}
-    
+    apt-helpers install-packages --update --packages gcc-${CXX_COMPILER_VERSION} g++-${CXX_COMPILER_VERSION}
+
     update-alternatives-helpers --prefix /usr/bin \
         --display --level=10 \
         --for-each-of \
-            gcc=gcc-${COMPILER_VERSION} \
-            g++=g++-${COMPILER_VERSION} \
-            $(uname -m)-linux-gnu-gcc=$(uname -m)-linux-gnu-gcc-${COMPILER_VERSION} \
-            $(uname -m)-linux-gnu-g++=$(uname -m)-linux-gnu-g++-${COMPILER_VERSION}
+            gcc=gcc-${CXX_COMPILER_VERSION} \
+            g++=g++-${CXX_COMPILER_VERSION} \
+            $(uname -m)-linux-gnu-gcc=$(uname -m)-linux-gnu-gcc-${CXX_COMPILER_VERSION} \
+            $(uname -m)-linux-gnu-g++=$(uname -m)-linux-gnu-g++-${CXX_COMPILER_VERSION}
 
     gcc -dumpfullversion -dumpversion
+    g++ -dumpfullversion -dumpversion
 
     apt-helpers clean
 EOF
 
-FROM requirements-compiler-${COMPILER}
-
 # Python requirements.
+FROM requirements-compiler-${CXX_COMPILER_ID} AS python-requirements
+
 RUN --mount=target=/python/requirements.txt,type=bind,source=python/requirements.txt \
     --mount=target=/requirements/requirements.python.txt,type=bind,source=requirements/requirements.python.txt <<EOF
     set -ex
@@ -90,13 +94,17 @@ RUN --mount=target=/python/requirements.txt,type=bind,source=python/requirements
 EOF
 
 # Install Nsight Systems.
+FROM python-requirements AS nsight-systems
+
 RUN --mount=target=/python/reprospect/installers/nsight_systems.py,type=bind,source=python/reprospect/installers/nsight_systems.py <<EOF
     set -ex
 
     python3 /python/reprospect/installers/nsight_systems.py
 EOF
 
-# MinIO.
+# Install MinIO.
+FROM nsight-systems AS minio
+
 RUN <<EOF
     set -ex
 
@@ -109,3 +117,37 @@ RUN <<EOF
 EOF
 
 ENV PATH=/opt/aistor-binaries/:${PATH}
+
+# Install Google Benchmark.
+FROM requirements-compiler-${CXX_COMPILER_ID} AS google-benchmark
+
+ARG CXX_COMPILER
+ARG GOOGLEBENCHMARK_VERSION
+
+ADD https://github.com/google/benchmark/archive/refs/tags/v${GOOGLEBENCHMARK_VERSION}.tar.gz /opt/google-benchmark-sources/v${GOOGLEBENCHMARK_VERSION}.tar.gz
+
+RUN <<EOF
+    set -ex
+
+    cd /opt/google-benchmark-sources
+    tar -zxf v${GOOGLEBENCHMARK_VERSION}.tar.gz
+
+    cd benchmark-${GOOGLEBENCHMARK_VERSION}
+
+    cmake -S . -B build \
+        -DCMAKE_CXX_COMPILER=${CXX_COMPILER} \
+        -DCMAKE_INSTALL_PREFIX=/opt/google-benchmark-${GOOGLEBENCHMARK_VERSION} \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBENCHMARK_ENABLE_TESTING=OFF \
+        -DBENCHMARK_INSTALL_DOCS=OFF
+
+    cmake --build build -j4 --target install
+EOF
+
+FROM minio
+
+ARG GOOGLEBENCHMARK_VERSION
+
+COPY --from=google-benchmark /opt/google-benchmark-${GOOGLEBENCHMARK_VERSION} /opt/google-benchmark-${GOOGLEBENCHMARK_VERSION}
+
+ENV benchmark_ROOT=/opt/google-benchmark-${GOOGLEBENCHMARK_VERSION}

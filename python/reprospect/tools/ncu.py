@@ -18,6 +18,8 @@ import types
 import typing
 
 import blake3
+import rich.console
+import rich.tree
 import typeguard
 
 from reprospect.tools import cacher
@@ -581,6 +583,35 @@ class ProfilingResults(collections.UserDict):
             aggregate[key] = sum(map(lambda x: x[key], samples.values()))
 
         return aggregate
+
+    @typeguard.typechecked
+    def to_tree(self) -> rich.tree.Tree:
+        """
+        Convert to a :py:class:`rich.tree.Tree`.
+        """
+        @typeguard.typechecked
+        def add_branch(*, tree : rich.tree.Tree, data : dict) -> None:
+            for key, value in data.items():
+                if isinstance(value, dict):
+                    branch = tree.add(key)
+                    add_branch(tree = branch, data = value)
+                else:
+                    tree.add(f'{key}: {value}')
+
+        tree = rich.tree.Tree('Profiling results')
+        add_branch(tree = tree, data = self.data)
+
+        return tree
+
+    def __str__(self) -> str:
+        """
+        Rich representation with :py:meth:`to_tree`.
+        """
+        console = rich.console.Console()
+        with console.capture() as capture:
+            console.print(self.to_tree(), no_wrap = True)
+
+        return capture.get()
 
 @typeguard.typechecked
 def load_ncu_report() -> typing.Optional[types.ModuleType]:

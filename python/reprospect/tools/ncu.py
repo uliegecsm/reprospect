@@ -6,6 +6,7 @@ import functools
 import importlib
 import json
 import logging
+import os
 import pathlib
 import re
 import shlex
@@ -781,8 +782,8 @@ class Cacher(cacher.Cacher):
     TABLE : str = 'ncu'
 
     @typeguard.typechecked
-    def __init__(self, *, session : Session, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *, session : Session, directory : typing.Optional[str | pathlib.Path] = None):
+        super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.ncu-cache')
         self.session = session
 
     @typing.override

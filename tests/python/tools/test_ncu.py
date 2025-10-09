@@ -56,8 +56,8 @@ class TestSession:
             executable = self.SAXPY,
             metrics = METRICS,
             nvtx_includes = map(
-                lambda x: f'application-domain@{x}/',
-                ['launch-saxpy-kernel-first-time', 'launch-saxpy-kernel-second-time'],
+                lambda x: f'application_domain@{x}/',
+                ['launch_saxpy_kernel_first_time', 'launch_saxpy_kernel_second_time'],
             ),
             retries = 5,
         )
@@ -79,14 +79,14 @@ class TestSession:
 
         # Extract results with NVTX filtering. Request only the 2 first metrics.
         with pytest.raises(RuntimeError, match = 'no action found'):
-            results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ['outer-useless-range'])
+            results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ['outer_useless_range'])
 
-        results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ['application-domain@outer-useless-range'])
+        results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ['application_domain@outer_useless_range'])
 
         logging.info(results_filtered)
 
-        results_filtered_first  = results_filtered['launch-saxpy-kernel-first-time']
-        results_filtered_second = results_filtered['launch-saxpy-kernel-second-time']
+        results_filtered_first  = results_filtered['launch_saxpy_kernel_first_time']
+        results_filtered_second = results_filtered['launch_saxpy_kernel_second_time']
 
         assert len(results_filtered_first)  == 1
         assert len(results_filtered_second) == 1

@@ -67,6 +67,7 @@ class Session:
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_capture : typing.Optional[str] = None,
+        capture_range_end : str = 'stop',
         args : typing.Optional[list[str | pathlib.Path]] = None,
     ) -> 'Session.Command':
         """
@@ -78,7 +79,7 @@ class Session:
         # This reduces the amount of data collected (and makes things faster).
         opts += [
             '--capture-range=nvtx',
-            '--capture-range-end=none',
+            f'--capture-range-end={capture_range_end}',
             f'--nvtx-capture={nvtx_capture}',
             '--trace=nvtx,cuda',
         ] if nvtx_capture else ['--trace=cuda']

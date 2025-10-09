@@ -40,7 +40,7 @@ cudaGraphNode_t add_node(const cudaGraph_t graph, index_t* const counters, const
     return node;
 }
 
-struct MyAppDomain{ static constexpr char const* name {"application-domain"}; };
+struct MyAppDomain{ static constexpr char const* name {"application_domain"}; };
 
 int main()
 {
@@ -48,7 +48,7 @@ int main()
     ::nvtx3::mark_in<MyAppDomain>("Starting my application.");
 
     //! This one is superfluous but serves the tests.
-    const auto& outer = ::nvtx3::start_range_in<MyAppDomain>("outer-useless-range");
+    const auto& outer = ::nvtx3::start_range_in<MyAppDomain>("outer_useless_range");
 
     //! Create stream.
     cudaStream_t stream = nullptr;

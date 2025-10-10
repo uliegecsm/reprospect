@@ -259,6 +259,36 @@ class TestSession:
                 session.run(executable = self.GRAPH, opts = ['--something-ncu-does-not-know'], retries = 5)
             mock_sleep.assert_not_called()
 
+class TestProfilingResults:
+    """
+    Tests for :py:class:`reprospect.tools.ncu.ProfilingResults`.
+    """
+    def test_string_representation(self):
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.__str__`.
+        """
+        results = ncu.ProfilingResults()
+        
+        # Add nested data.
+        results.get(["nvtx_range_name", "global_function_name_a_idx_0"])["metric_i"] = 15
+        results.get(["nvtx_range_name", "global_function_name_a_idx_0"])["metric_ii"] = 7
+        results.get(["nvtx_range_name", "global_function_name_b_idx_1"])["metric_i"] = 15
+        results.get(["nvtx_range_name", "global_function_name_b_idx_1"])["metric_ii"] = 9
+
+        formatted_as_tree = str(results)
+        
+        expt_results_formatted_as_tree = """\
+Profiling results
+└── nvtx_range_name
+    ├── global_function_name_a_idx_0
+    │   ├── metric_i: 15
+    │   └── metric_ii: 7
+    └── global_function_name_b_idx_1
+        ├── metric_i: 15
+        └── metric_ii: 9
+        """
+        assert formatted_as_tree.rstrip() == expt_results_formatted_as_tree.rstrip()
+
 class TestCacher:
     """
     Tests for :py:class:`reprospect.tools.ncu.Cacher`.

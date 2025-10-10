@@ -5,5 +5,6 @@ Tests
    :maxdepth: 2
    :caption: Contents:
 
-   tests/tools
-   tests/utils
+   tests/nvtx
+   tests/python/tools
+   tests/python/utils

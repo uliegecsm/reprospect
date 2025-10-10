@@ -13,6 +13,8 @@ import typing
 
 import blake3
 import pandas
+import rich.console
+import rich.tree
 import typeguard
 
 from reprospect.tools import cacher
@@ -77,12 +79,19 @@ class Session:
 
         # We want to start data collection when the first NVTX range is met.
         # This reduces the amount of data collected (and makes things faster).
-        opts += [
-            '--capture-range=nvtx',
-            f'--capture-range-end={capture_range_end}',
-            f'--nvtx-capture={nvtx_capture}',
-            '--trace=nvtx,cuda',
-        ] if nvtx_capture else ['--trace=cuda']
+        if nvtx_capture is not None:
+            match nvtx_capture:
+                case '*':
+                    pass
+                case _:
+                    opts += [
+                        '--capture-range=nvtx',
+                        f'--capture-range-end={capture_range_end}',
+                        f'--nvtx-capture={nvtx_capture}',
+                    ]
+            opts += ['--trace=nvtx,cuda']
+        else:
+            opts += ['--trace=cuda']
 
         # Disable collecting CPU samples.
         opts += [
@@ -251,14 +260,173 @@ class Report:
         src : pandas.DataFrame | pandas.Series,
         dst : pandas.DataFrame,
         selector : typing.Optional[typing.Callable[[pandas.DataFrame], pandas.Series]] = None,
+        correlation_src : str = 'correlationId',
+        correlation_dst : str = 'correlationId',
     ) -> pandas.Series:
         """
         Select a row from `src`, and return the row from `dst` that matches by correlation ID.
         """
         if isinstance(src, pandas.Series) and selector is None:
-            return cls.single_row(data = dst[dst['correlationId'] == src['CorrID']])
+            return cls.single_row(data = dst[dst[correlation_dst] == src[correlation_src]])
         else:
-            return cls.single_row(data = dst[dst['correlationId'] == src[selector(src)].squeeze()['CorrID']])
+            return cls.single_row(data = dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
+
+    class NvtxEvents:
+        @typeguard.typechecked
+        def __init__(self, events : pandas.DataFrame) -> None:
+            self.events = events
+
+        @typeguard.typechecked
+        def get(self, accessors : typing.Iterable[str]) -> pandas.DataFrame:
+            """
+            Find all nested `NVTX` events matching `accessors`.
+            """
+            if not accessors:
+                return self.events
+
+            # Find events matching the first accessor.
+            previous = self.events[self.events['text'] == accessors[0]].index
+
+            # For each subsequent accessor, find matching children.
+            for accessor in accessors[1:]:
+                current = set()
+                for idx in previous:
+                    for child_idx in self.events.loc[idx, 'children']:
+                        if self.events.loc[child_idx, 'text'] == accessor:
+                            current.add(child_idx)
+                previous = current
+
+            return self.events.iloc[sorted(previous)]
+
+        @typeguard.typechecked
+        def to_tree(self) -> rich.tree.Tree:
+            """
+            Convert to a :py:class:`rich.tree.Tree`.
+            """
+            @typeguard.typechecked
+            def add_branch(*, tree : rich.tree.Tree, nodes : pandas.DataFrame) -> None:
+                for _, node in nodes.iterrows():
+                    branch = tree.add(f'{node['text']} ({node['eventTypeName']})')
+                    if node['children'].any():
+                        add_branch(tree = branch, nodes = self.events.loc[node['children']])
+
+            tree = rich.tree.Tree('NVTX events')
+            add_branch(tree = tree, nodes = self.events[self.events['level'] == 0])
+
+            return tree
+
+        def __str__(self) -> str:
+            """
+            Rich representation with :py:meth:`to_tree`.
+            """
+            with rich.console.Console() as console, console.capture() as capture:
+                console.print(self.to_tree(), no_wrap = True)
+            return capture.get()
+
+    @functools.cached_property
+    @typeguard.typechecked
+    def nvtx_events(self) -> 'Report.NvtxEvents':
+        """
+        Get all `NVTX` events from the `NVTX_EVENTS` table.
+
+        Add a `children` column that contains for each event a list of child indices,
+        preserving the hierarchy of the nested `NVTX` ranges.
+
+        Add a `level` column, starting from 0 for the root events.
+
+        .. note::
+
+            Nesting is determined based on `start` and `end` time points.
+
+        .. note::
+
+            Events recorded with registered strings will have there `text` field set to `NULL`,
+            and its `textId` field set.
+
+            We correlate the `textId` with the `StringIds` if need be.
+        """
+        # Get NVTX_EVENTS columns schema metadata, and remove the 'text'.
+        # It is the only way to query all columns, while avoiding that the 'COALESCE'
+        # duplicates the 'text' row (which would happen if selecting 'NVTX_EVENTS.*').
+        columns_but_text = ", ".join(map(
+            lambda x: f'NVTX_EVENTS.{x}',
+            filter(
+                lambda x: x != 'text',
+                pandas.read_sql_query("PRAGMA table_info(NVTX_EVENTS);", self.conn)['name']
+        )))
+
+        query = f"""
+SELECT {columns_but_text},
+       COALESCE(NVTX_EVENTS.text, StringIds.value) AS text,
+       ENUM_NSYS_EVENT_TYPE.name AS eventTypeName
+FROM NVTX_EVENTS
+LEFT JOIN ENUM_NSYS_EVENT_TYPE
+     ON NVTX_EVENTS.eventType = ENUM_NSYS_EVENT_TYPE.id
+LEFT JOIN StringIds
+     ON NVTX_EVENTS.textId = StringIds.id
+ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
+"""
+        events = pandas.read_sql_query(query, self.conn)
+
+        # Add a 'level' column.
+        events['level'] = -1
+
+        # We’ll build parent-child relationships using a stack.
+        stack = []
+        child_map = {i: [] for i in events.index}
+
+        for idx, event in events.iterrows():
+            # Pop any finished parents.
+            while stack and not (event['start'] >= events.loc[stack[-1], 'start']
+                                and event['end'] <= events.loc[stack[-1], 'end']):
+                stack.pop()
+
+            if stack:
+                # Current event is a child of the top of the stack.
+                parent_idx = stack[-1]
+                child_map[parent_idx].append(idx)
+                events.loc[idx, 'level'] = events.loc[parent_idx, 'level'] + 1
+            else:
+                events.loc[idx, 'level'] = 0
+
+            stack.append(idx)
+
+        events['children'] = [pandas.Series(children, dtype = int) for children in child_map.values()]
+
+        return Report.NvtxEvents(events = events)
+
+    @typeguard.typechecked
+    def get_events(self, table : str, accessors : typing.Iterable[str]) -> pandas.DataFrame:
+        """
+        Query all rows in `table` that happen between the `start`/`end` time points
+        of the nested `NVTX` range matching `accessors`.
+
+        .. note::
+
+            This replaces `nsys stats` whose `--filter-nvtx` is not powerful enough, as of `Cuda` 13.0.0.
+        """
+        logging.info(f'Retrieving events in {table} happening within the nested NVTX range {accessors}.')
+
+        filtered = self.nvtx_events.get(accessors = accessors)
+
+        if len(filtered) != 1:
+            raise RuntimeError('For now, only one NVTX event is supported.')
+
+        filtered = filtered.squeeze()
+
+        logging.info(f'Events will be filtered in the time frame {filtered['start']} -> {filtered['end']}.')
+
+        query = f"""
+SELECT
+    {table}.*,
+    StringIds.value AS name
+FROM {table}
+LEFT JOIN StringIds
+    ON {table}.nameId = StringIds.id
+WHERE {table}.start >= {filtered['start']} AND {table}.end <= {filtered['end']}
+ORDER BY {table}.start ASC
+        """
+        return pandas.read_sql_query(query, self.conn)
 
 @typeguard.typechecked
 def strip_cuda_api_suffix(call : str) -> str:
@@ -331,7 +499,7 @@ class Cacher(cacher.Cacher):
         hasher.update_mmap(command.executable)
 
         if command.args:
-            hasher.update(shlex.join(command.args).encode())
+            hasher.update(shlex.join(map(str, command.args)).encode())
 
         for lib in sorted(ldd.get_shared_dependencies(file = command.executable)):
             hasher.update_mmap(lib)

@@ -1,9 +1,11 @@
 import logging
 import os
 import pathlib
+import sys
 import tempfile
 import typing
 
+import pytest
 import semantic_version
 import typeguard
 
@@ -104,8 +106,8 @@ class TestSession:
             assert len(cuda_stream_synchronize) == 2
 
             # Each call to 'cudaStreamSynchronize' targets a distinct stream.
-            stream_id_A = report.get_correlated_row(src = cuda_stream_synchronize.iloc[0], dst = cupti_activity_kind_synchronization)['streamId']
-            stream_id_B = report.get_correlated_row(src = cuda_stream_synchronize.iloc[1], dst = cupti_activity_kind_synchronization)['streamId']
+            stream_id_A = report.get_correlated_row(src = cuda_stream_synchronize.iloc[0], dst = cupti_activity_kind_synchronization, correlation_src = 'CorrID')['streamId']
+            stream_id_B = report.get_correlated_row(src = cuda_stream_synchronize.iloc[1], dst = cupti_activity_kind_synchronization, correlation_src = 'CorrID')['streamId']
 
             assert stream_id_A != stream_id_B
 
@@ -196,3 +198,122 @@ class TestCacher:
                 assert results_second.cached == True
 
                 assert all(x in os.listdir(cacher.session.output_dir) for x in FILES)
+
+class TestReport:
+    """
+    Test :py:class:`reprospect.tools.nsys.Report`.
+    """
+    @pytest.fixture(scope = 'class')
+    @typeguard.typechecked
+    def report(self) -> Report:
+        with Cacher(session = Session(output_dir = TMPDIR, output_file_prefix = 'test-report')) as cacher:
+            entry = cacher.run(
+                executable = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy',
+                cwd = TMPDIR,
+                nvtx_capture = '*',
+            )
+
+            cacher.export_to_sqlite(entry = entry)
+
+            return Report(db = cacher.session.output_file_sqlite)
+
+    def test_get_events_within_nested_nvtx_ranges(self, report) -> None:
+        """
+        Check that we can retrieve from a table events that happen in a nested `NVTX` range.
+        """
+        with report:
+            events = report.nvtx_events
+
+            logging.info(events)
+
+            TOP_LEVEL = {
+                'application_domain' : 'NvtxDomainCreate',
+                'Starting my application.' : 'NvtxMark',
+                'outer_useless_range' : 'NvtxStartEndRange',
+            }
+
+            roots = events.events[events.events['level'] == 0]
+
+            assert len(roots) == len(TOP_LEVEL)
+
+            assert roots['text'].to_list() == list(TOP_LEVEL.keys())
+
+            for text, event_type_name in TOP_LEVEL.items():
+                assert roots[roots['text'] == text].squeeze()['eventTypeName'] == event_type_name
+
+            events = report.get_events(table = 'CUPTI_ACTIVITY_KIND_RUNTIME', accessors = ['outer_useless_range', 'create_streams'])
+
+            assert events['name'].apply(strip_cuda_api_suffix).tolist() == [
+                'cuModuleGetLoadingMode',
+                'cudaStreamCreate',
+                'cudaStreamCreate',
+            ]
+
+    class TestNvtxEvents:
+        """
+        Tests for :py:class:`reprospect.tools.nsys.Report.NvtxEvents`.
+        """
+        def test_get(self, report) -> None:
+            """
+            Test :py:meth:`reprospect.tools.nsys.Report.NvtxEvents.get`.
+            """
+            with report:
+                events = report.nvtx_events
+
+                assert len(events.events['text']) == 6
+
+                assert len(events.get(accessors = [])) == 6
+
+                assert len(events.get(accessors = ['outer'])) == 0
+
+                assert events.get(accessors = ['outer_useless_range'])['text'].tolist() == ['outer_useless_range']
+
+                assert events.get(accessors = ['outer_useless_range', 'create_streams'])['text'].tolist() == ['create_streams']
+
+        def test_string_representation(self, report) -> None:
+            """
+            Test :py:meth:`reprospect.tools.nsys.Report.NvtxEvents.__str__`.
+            """
+            with report:
+                assert str(report.nvtx_events) == """\
+NVTX events
+├── application_domain (NvtxDomainCreate)
+├── Starting my application. (NvtxMark)
+└── outer_useless_range (NvtxStartEndRange)
+    ├── create_streams (NvtxPushPopRange)
+    ├── launch_saxpy_kernel_first_time (NvtxPushPopRange)
+    └── launch_saxpy_kernel_second_time (NvtxPushPopRange)
+"""
+
+        def test_intricated(self) -> None:
+            """
+            Use :py:class:`tests.nvtx.test_nvtx.TestNVTX.intricated` to check that we can
+            build the hierarchy of `NVTX` events for arbitrarily complicated situations.
+            """
+            with Cacher(session = Session(output_dir = TMPDIR, output_file_prefix = 'test-report-nvtx')) as cacher:
+                entry = cacher.run(
+                    executable = pathlib.Path(sys.executable),
+                    args = [pathlib.Path(__file__).parent.parent.parent / 'nvtx' / 'test_nvtx.py'],
+                    cwd = TMPDIR,
+                    nvtx_capture = '*',
+                )
+
+                cacher.export_to_sqlite(entry = entry)
+
+                with Report(db = cacher.session.output_file_sqlite) as report:
+                    assert len(report.nvtx_events.events) == 7
+
+                    assert report.nvtx_events.get(
+                        accessors = ['start-end-level-0', 'push-pop-level-1', 'push-pop-level-2', 'push-pop-level-3']
+                    )['text'].tolist() == 3 * ['push-pop-level-3']
+
+                    assert str(report.nvtx_events) == """\
+NVTX events
+├── intricated (NvtxDomainCreate)
+└── start-end-level-0 (NvtxStartEndRange)
+    └── push-pop-level-1 (NvtxPushPopRange)
+        └── push-pop-level-2 (NvtxPushPopRange)
+            ├── push-pop-level-3 (NvtxPushPopRange)
+            ├── push-pop-level-3 (NvtxPushPopRange)
+            └── push-pop-level-3 (NvtxPushPopRange)
+"""

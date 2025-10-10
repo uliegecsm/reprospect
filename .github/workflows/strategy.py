@@ -143,6 +143,7 @@ def main(*, args : argparse.Namespace) -> None:
     print(f'environment={json.dumps(environment, default = str)}')
 
     print(f'deploy_image={matrix[0]['image']}')
+    print(f'doc_image={matrix[0]['kokkos']}')
 
 if __name__ == '__main__':
 

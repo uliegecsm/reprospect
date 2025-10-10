@@ -12,6 +12,11 @@
                 "uninitialized" : true,
                 "unusedCli" : true,
                 "deprecated": true
+            },
+            "cacheVariables": {
+                "ReProspect_ENABLE_DOCS" : "ON",
+                "ReProspect_ENABLE_EXAMPLES" : "ON",
+                "ReProspect_ENABLE_TESTS" : "ON"
             }
         },
         {

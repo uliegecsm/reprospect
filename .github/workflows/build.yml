@@ -71,6 +71,7 @@ jobs:
             image: ghcr.io/${{ github.repository }}/setup-job-matrix:latest
         outputs:
             deploy_image: ${{ steps.strategy.outputs.deploy_image }}
+            doc_image: ${{ steps.strategy.outputs.doc_image }}
             environment: ${{ steps.strategy.outputs.environment }}
             matrix_images: ${{ steps.strategy.outputs.matrix_images }}
             matrix_tests: ${{ steps.strategy.outputs.matrix_tests }}
@@ -183,6 +184,8 @@ jobs:
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
                     -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.nvidia_compute_capability }} \
+                    -DReProspect_ENABLE_DOCS=OFF \
+                    -DReProspect_ENABLE_EXAMPLES=OFF \
                     -DReProspect_ENABLE_TESTS=ON
 
             - run: cmake --build --preset=${{ matrix.cmake_preset }}
@@ -211,7 +214,9 @@ jobs:
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
                     -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.nvidia_compute_capability }} \
-                    -DReProspect_ENABLE_EXAMPLES=ON
+                    -DReProspect_ENABLE_DOCS=OFF \
+                    -DReProspect_ENABLE_EXAMPLES=ON \
+                    -DReProspect_ENABLE_TESTS=OFF
 
             - run: cmake --build --preset=${{ matrix.cmake_preset }}
 
@@ -247,9 +252,16 @@ jobs:
         needs: [setup-job-matrix, tests]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
-            image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
+            image: ${{ needs.setup-job-matrix.outputs.doc_image }}
         steps:
             - uses: actions/checkout@v5
+
+            - run: |
+                cmake -S . --preset=gnu-nvidia \
+                    -DReProspect_ENABLE_DOCS=ON \
+                    -DReProspect_ENABLE_EXAMPLES=ON \
+                    -DReProspect_ENABLE_TESTS=ON
+                cmake --build . --preset=gnu-nvidia --target=docs
 
             - uses: actions/download-artifact@v5
               with:

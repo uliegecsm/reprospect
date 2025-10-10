@@ -5,4 +5,5 @@ Tests
    :maxdepth: 2
    :caption: Contents:
 
+   tests/test
    tests/tools

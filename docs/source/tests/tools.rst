@@ -16,6 +16,11 @@ Cacher
 
 .. automodule:: tests.python.tools.test_cacher
 
+Clocks
+~~~~~~
+
+.. automodule:: tests.python.tools.test_clocks
+
 Device properties
 ~~~~~~~~~~~~~~~~~
 

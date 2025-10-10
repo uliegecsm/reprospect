@@ -33,5 +33,11 @@ echo "All mounted paths from $@: $MOUNT_PATHS"
 
 # Output for GitHub Actions.
 if [ -n "$GITHUB_OUTPUT" ]; then
-    echo "paths=$MOUNT_PATHS" >> "$GITHUB_OUTPUT"
+    {
+        echo "paths<<EOF"
+        for path in $MOUNT_PATHS; do
+            echo "$path"
+        done
+        echo "EOF"
+    } >> "$GITHUB_OUTPUT"
 fi

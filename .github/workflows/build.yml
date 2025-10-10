@@ -142,6 +142,7 @@ jobs:
                       CXX_COMPILER_ID=${{ matrix.compilers.CXX.ID }}
                       CXX_COMPILER_VERSION=${{ matrix.compilers.CXX.version }}
                       CXX_COMPILER=${{ matrix.compilers.CXX.path }}
+                      DOXYGEN_VERSION=1_14_0
                       GOOGLEBENCHMARK_VERSION=1.9.4
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 

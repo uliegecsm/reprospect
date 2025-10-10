@@ -118,6 +118,29 @@ EOF
 
 ENV PATH=/opt/aistor-binaries/:${PATH}
 
+# Install Doxygen.
+FROM requirements-compiler-${CXX_COMPILER_ID} AS doxygen
+
+ARG CXX_COMPILER
+ARG DOXYGEN_VERSION
+
+ADD https://github.com/doxygen/doxygen/archive/refs/tags/Release_${DOXYGEN_VERSION}.tar.gz /opt/doxygen-sources/Release_${DOXYGEN_VERSION}.tar.gz
+
+RUN <<EOF
+    set -ex
+
+    apt-helpers install-packages --clean --update --packages flex bison
+
+    cd /opt/doxygen-sources/
+    tar -zxf Release_${DOXYGEN_VERSION}.tar.gz
+
+    cd doxygen-Release_${DOXYGEN_VERSION}
+
+    cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/opt/doxygen-${DOXYGEN_VERSION}
+
+    cmake --build build -j4 --target install
+EOF
+
 # Install Google Benchmark.
 FROM requirements-compiler-${CXX_COMPILER_ID} AS google-benchmark
 
@@ -146,8 +169,12 @@ EOF
 
 FROM minio
 
+ARG DOXYGEN_VERSION
 ARG GOOGLEBENCHMARK_VERSION
+
+COPY --from=doxygen /opt/doxygen-${DOXYGEN_VERSION} /opt/doxygen-${DOXYGEN_VERSION}
 
 COPY --from=google-benchmark /opt/google-benchmark-${GOOGLEBENCHMARK_VERSION} /opt/google-benchmark-${GOOGLEBENCHMARK_VERSION}
 
 ENV benchmark_ROOT=/opt/google-benchmark-${GOOGLEBENCHMARK_VERSION}
+ENV Doxygen_ROOT=/opt/doxygen-${DOXYGEN_VERSION}

@@ -32,6 +32,7 @@ setup(
     entry_points = {
         'console_scripts': [
             'reprospect-install-nsight-systems = reprospect.installers.nsight_systems:main',
+            'reprospect-resource-acquisition = reprospect.test.resource_acquisition:main',
         ],
     },
 )

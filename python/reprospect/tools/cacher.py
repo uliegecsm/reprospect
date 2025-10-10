@@ -111,32 +111,31 @@ class Cacher:
 
         hexdigest = hash.hexdigest()
 
-        with self.database:
-            cursor = self.database.cursor()
+        cursor = self.database.cursor()
 
-            cursor.execute(f'SELECT timestamp FROM {self.TABLE} WHERE hash=?', (hexdigest,))
-            row = cursor.fetchone()
+        cursor.execute(f'SELECT timestamp FROM {self.TABLE} WHERE hash=?', (hexdigest,))
+        row = cursor.fetchone()
 
-            directory = self.directory / hexdigest
+        directory = self.directory / hexdigest
 
-            directory.mkdir(parents = True, exist_ok = True)
+        directory.mkdir(parents = True, exist_ok = True)
 
-            if row is None:
-                logging.info(f'Cache miss (with hash {hexdigest}).')
+        if row is None:
+            logging.info(f'Cache miss (with hash {hexdigest}).')
 
-                self.populate(directory = directory, **kwargs)
+            self.populate(directory = directory, **kwargs)
 
-                entry = Cacher.Entry(cached = False, digest = hexdigest, timestamp = datetime.datetime.now(datetime.UTC), directory = directory)
+            entry = Cacher.Entry(cached = False, digest = hexdigest, timestamp = datetime.datetime.now(datetime.UTC), directory = directory)
 
-                cursor.execute(
-                    f'REPLACE INTO {self.TABLE} (hash, timestamp) VALUES (?, ?)',
-                    (entry.digest, entry.timestamp.isoformat()),
-                )
-            else:
-                timestamp, = row
+            cursor.execute(
+                f'REPLACE INTO {self.TABLE} (hash, timestamp) VALUES (?, ?)',
+                (entry.digest, entry.timestamp.isoformat()),
+            )
+        else:
+            timestamp, = row
 
-                logging.info(f'Cache hit dating from {timestamp} (with hash {hexdigest}).')
+            logging.info(f'Cache hit dating from {timestamp} (with hash {hexdigest}).')
 
-                entry = Cacher.Entry(cached = True, digest = hexdigest, timestamp = datetime.datetime.fromisoformat(timestamp), directory = directory)
+            entry = Cacher.Entry(cached = True, digest = hexdigest, timestamp = datetime.datetime.fromisoformat(timestamp), directory = directory)
 
-            return entry
+        return entry

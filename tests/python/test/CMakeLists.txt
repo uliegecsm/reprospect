@@ -8,12 +8,16 @@ function(add_one_test FILE)
     )
 
     test_environment(tests_python_test_${FILE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR}/python)
-    test_environment(tests_python_test_${FILE} EXECUTABLE set $<TARGET_FILE:tests_cpp_cuda_${FILE}>)
     test_environment(tests_python_test_${FILE} COMPILE_COMMANDS set ${CMAKE_BINARY_DIR}/compile_commands.json)
+
+    if(TARGET tests_cpp_cuda_${FILE})
+        test_environment(tests_python_test_${FILE} EXECUTABLE set $<TARGET_FILE:tests_cpp_cuda_${FILE}>)
+    endif()
 
 endfunction()
 
 add_one_test(graph)
+add_one_test(resource_acquisition)
 add_one_test(saxpy)
 
 test_environment(tests_python_test_graph CMAKE_CUDA_COMPILER_ID set ${CMAKE_CUDA_COMPILER_ID})

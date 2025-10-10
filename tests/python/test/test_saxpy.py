@@ -48,8 +48,8 @@ class TestNCU(TestSaxpy):
     ]
 
     NVTX_INCLUDES = [
-        'application-domain@launch-saxpy-kernel-first-time/',
-        'application-domain@launch-saxpy-kernel-second-time/',
+        'application_domain@launch_saxpy_kernel_first_time/',
+        'application_domain@launch_saxpy_kernel_second_time/',
     ]
 
     @pytest.fixture(scope = 'class')

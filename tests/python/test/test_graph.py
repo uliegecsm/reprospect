@@ -61,7 +61,7 @@ class TestNCU(TestGraph):
         ncu.Metric(name = 'launch__registers_per_thread_allocated')
     ]
 
-    NVTX_INCLUDES = ['application-domain@outer-useless-range']
+    NVTX_INCLUDES = ['application_domain@outer_useless_range']
 
     @pytest.fixture(scope = 'class')
     @typeguard.typechecked

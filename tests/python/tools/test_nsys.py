@@ -4,7 +4,6 @@ import pathlib
 import tempfile
 import typing
 
-import pandas
 import semantic_version
 import typeguard
 
@@ -18,7 +17,8 @@ class TestSession:
     """
     EXECUTABLE = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
 
-    def run(self) -> Session:
+    @typeguard.typechecked
+    def run(self, nvtx_capture : typing.Optional[str] = None) -> Session:
         assert self.EXECUTABLE.is_file()
 
         ns = Session(
@@ -28,6 +28,7 @@ class TestSession:
 
         ns.run(
             executable = self.EXECUTABLE,
+            nvtx_capture = nvtx_capture,
             cwd = TMPDIR,
         )
 
@@ -39,7 +40,7 @@ class TestSession:
         """
         Collect all `Cuda` API calls of :file:`tests/cpp/cuda/test_saxpy.cpp`.
         """
-        ns = self.run()
+        ns = self.run(nvtx_capture = "outer_useless_range@application_domain")
 
         cuda_api_trace = ns.extract_statistical_report(report = 'cuda_api_trace')
 

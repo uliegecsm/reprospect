@@ -1,0 +1,107 @@
+\tikzstyle{box} = [
+    rectangle,
+    rounded corners=5pt,
+    draw=cyan,
+    fill=cyan!20,
+    line width=2pt,
+    minimum width=3.75cm,
+    minimum height=1.8cm,
+    align=center
+]
+
+\tikzstyle{arrow} = [
+    ->,
+    thick,
+    draw=NavyBlue,
+    line width=2.5pt
+]
+
+\tikzstyle{dasharrow} = [
+    ->,
+    thick,
+    draw=NavyBlue,
+    line width=2pt,
+    dashed
+]
+
+\begin{tikzpicture}[node distance=1.5cm]
+
+    % Sources.
+    \node[box] (sources) {
+        \textbf{\textcolor{NavyBlue}{Sources}}\\
+        {\small *.cu, *.cpp, *.h}
+    };
+
+    % Build system.
+    \node[box, right = 2.25cm of sources] (build) {
+        \textbf{\textcolor{NavyBlue}{Build system}}\\
+        {\small Compile database}
+    };
+
+    % Binaries.
+    \node[box, below = 1.5cm of build] (binaries) {
+        \textbf{\textcolor{NavyBlue}{Binaries}}\\
+        {\small Software stack}
+    };
+
+    % Runtime profiling.
+    \node[box, below = 1.5cm of binaries] (profiling) {
+        \textbf{\textcolor{NavyBlue}{Kernel profiling}}\\
+        {\small \emph{Nsight Compute}}\\
+        {\small Hardware counters.}
+    };
+
+    % Static analysis.
+    \node[box, left = 2.25cm of profiling] (static) {
+        \textbf{\textcolor{NavyBlue}{Binary analysis}}\\
+        {\small \texttt{Cuda} \emph{binary utilities}}\\
+        {\small SASS}
+    };
+
+    % Runtime tracing.
+    \node[box, right = 2.25cm of profiling] (tracing) {
+        \textbf{\textcolor{NavyBlue}{API tracing}}\\
+        {\small \emph{Nsight Systems}}\\
+        {\small Event records}
+    };
+
+    % Analysis results.
+    \node[box, below = 1.5cm of profiling] (analysis) {
+        \textbf{\textcolor{NavyBlue}{Collected data}}\\
+        {\small Assertions}
+    };
+
+    % ReProspect box.
+    \begin{scope}[on background layer]
+        \node[
+            rectangle,
+            draw = red,
+            fill = red!10,
+            rounded corners=5pt,
+            inner sep = 15pt,
+            fit=(static) (tracing) (profiling) (analysis)
+        ] (reprospect) {};
+    \end{scope}
+
+    \node[draw = black, fill = white, anchor = west] at ($(reprospect.south west)!0.5!(reprospect.south)$) {
+        \texttt{ReProspect} - Framework for ReProducible \texttt{Cuda} prospecting
+    };
+
+    % Generate arrow.
+    \draw[arrow] (sources) -- node[above, font = \small, text = NavyBlue] {Generate} (build);
+
+    % Compile arrow.
+    \draw[arrow] (build) -- node[right, font = \small, text = NavyBlue] {Compile} (binaries);
+
+    % Extract arraw.
+    \draw[arrow] (binaries) -- node[above, font = \small, text = NavyBlue, anchor = south east] {Extract} (static);
+
+    % Instrument arrows.
+    \draw[arrow] (binaries) -- node[above, font = \small, text = NavyBlue, anchor = south west] {Instrument} (profiling);
+    \draw[arrow] (binaries) -- node[above, font = \small, text = NavyBlue, anchor = south west] {Instrument} (tracing);
+
+    % Collect arrows.
+    \draw[dasharrow] (static) -- (analysis);
+    \draw[dasharrow] (profiling) -- (analysis);
+    \draw[dasharrow] (tracing) -- (analysis);
+\end{tikzpicture}

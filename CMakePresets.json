@@ -14,6 +14,7 @@
                 "deprecated": true
             },
             "cacheVariables": {
+                "CMAKE_BUILD_TYPE" : "Release",
                 "ReProspect_ENABLE_DOCS" : "ON",
                 "ReProspect_ENABLE_EXAMPLES" : "ON",
                 "ReProspect_ENABLE_TESTS" : "ON"

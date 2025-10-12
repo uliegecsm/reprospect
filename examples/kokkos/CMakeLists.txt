@@ -29,4 +29,10 @@ endfunction()
 
 find_package(Kokkos REQUIRED COMPONENTS kokkoscore)
 
+find_package(
+    KokkosTools
+    REQUIRED
+    COMPONENTS kp_nvtx_connector
+)
+
 add_subdirectory(view)

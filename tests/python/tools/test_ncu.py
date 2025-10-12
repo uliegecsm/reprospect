@@ -134,19 +134,13 @@ class TestSession:
 
         assert sum(results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated.values()) == results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].value
 
+        # Check that the executed instructions include FFMA and IMAD.
         assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['FFMA'] > 0
         assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['IMAD'] > 0
 
-        # nvcc will use LDG, but clang sticks to LD.
-        match os.environ['CMAKE_CUDA_COMPILER_ID']:
-            case 'NVIDIA':
-                assert 'LD' not in results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated
-                assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['LDG'] > 0
-            case 'Clang':
-                assert 'LDG' not in results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated
-                assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['LD'] > 0
-            case _:
-                raise ValueError(f'unsupported compiler ID {os.environ['CMAKE_CUDA_COMPILER_ID']}')
+        # Check load instructions.
+        assert 'LD' not in results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated
+        assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['LDG'] > 0
 
     def test_collect_basic_metrics_graph(self):
         """
@@ -187,66 +181,34 @@ class TestSession:
                 raise ValueError(f'unsupported compiler ID {os.environ['CMAKE_CUDA_COMPILER_ID']}')
 
         # Check global load/store for each node, and aggregated as well.
-        # For nvcc:
-        #   * node A makes one load and one store.
-        #   * nodes B and C make two loads and one store each.
-        #   * node D makes three loads and one store.
-        # For clang, it is much less efficient, as it performs the "fetch at index and add to other index" each
-        # time with a load/store from global memory instead of doing everything at once in a register.
-        # Therefore:
-        #   * nodes B and C make three loads and two stores each.
-        #   * node D makes five loads and three stores.
-        match os.environ['CMAKE_CUDA_COMPILER_ID']:
-            case 'NVIDIA':
-                expt_aggregate = {
-                    'L1/TEX cache global load sectors.sum': 8,
-                    'L1/TEX cache global store sectors.sum': 4,
-                }
-            case 'Clang':
-                expt_aggregate = {
-                    'L1/TEX cache global load sectors.sum': 12,
-                    'L1/TEX cache global store sectors.sum': 8,
-                }
-            case _:
-                raise ValueError(f'unsupported compiler ID {os.environ['CMAKE_CUDA_COMPILER_ID']}')
-
-        assert results.aggregate(accessors = [], keys = [
-            'L1/TEX cache global store sectors.sum',
-            'L1/TEX cache global load sectors.sum',
-        ]) == expt_aggregate
-
         metrics_node_A = next(filter(lambda x: x['mangled'] == NODE_A_MANGLED, results.values()))
         metrics_node_B = next(filter(lambda x: x['mangled'] == '_Z24add_and_increment_kernelILj1EJLj0EEEvPj', results.values()))
         metrics_node_C = next(filter(lambda x: x['mangled'] == '_Z24add_and_increment_kernelILj2EJLj0EEEvPj', results.values()))
         metrics_node_D = next(filter(lambda x: x['mangled'] == '_Z24add_and_increment_kernelILj3EJLj1ELj2EEEvPj', results.values()))
 
-        match os.environ['CMAKE_CUDA_COMPILER_ID']:
-            case 'NVIDIA':
-                assert metrics_node_A['L1/TEX cache global load sectors.sum'] == 1
-                assert metrics_node_A['L1/TEX cache global store sectors.sum'] == 1
+        metrics_aggregate = results.aggregate(accessors = [], keys = [
+            'L1/TEX cache global store sectors.sum',
+            'L1/TEX cache global load sectors.sum',
+        ])
 
-                assert metrics_node_B['L1/TEX cache global load sectors.sum'] == 2
-                assert metrics_node_B['L1/TEX cache global store sectors.sum'] == 1
+        # Node A makes one load and one store.
+        assert metrics_node_A['L1/TEX cache global load sectors.sum']  == 1
+        assert metrics_node_A['L1/TEX cache global store sectors.sum'] == 1
 
-                assert metrics_node_C['L1/TEX cache global load sectors.sum'] == 2
-                assert metrics_node_C['L1/TEX cache global store sectors.sum'] == 1
+        # Nodes B and C make two loads and one store each.
+        assert metrics_node_B['L1/TEX cache global load sectors.sum']  == 2
+        assert metrics_node_B['L1/TEX cache global store sectors.sum'] == 1
+        assert metrics_node_C['L1/TEX cache global load sectors.sum']  == 2
+        assert metrics_node_C['L1/TEX cache global store sectors.sum'] == 1
 
-                assert metrics_node_D['L1/TEX cache global load sectors.sum'] == 3
-                assert metrics_node_D['L1/TEX cache global store sectors.sum'] == 1
-            case 'Clang':
-                assert metrics_node_A['L1/TEX cache global load sectors.sum'] == 1
-                assert metrics_node_A['L1/TEX cache global store sectors.sum'] == 1
+        # Node D makes three loads and one store.
+        assert metrics_node_D['L1/TEX cache global load sectors.sum']  == 3
+        assert metrics_node_D['L1/TEX cache global store sectors.sum'] == 1
 
-                assert metrics_node_B['L1/TEX cache global load sectors.sum'] == 3
-                assert metrics_node_B['L1/TEX cache global store sectors.sum'] == 2
-
-                assert metrics_node_C['L1/TEX cache global load sectors.sum'] == 3
-                assert metrics_node_C['L1/TEX cache global store sectors.sum'] == 2
-
-                assert metrics_node_D['L1/TEX cache global load sectors.sum'] == 5
-                assert metrics_node_D['L1/TEX cache global store sectors.sum'] == 3
-            case _:
-                raise ValueError(f'unsupported compiler ID {os.environ['CMAKE_CUDA_COMPILER_ID']}')
+        assert metrics_aggregate == {
+            'L1/TEX cache global load sectors.sum':  8,
+            'L1/TEX cache global store sectors.sum': 4,
+        }
 
     def test_fails_correctly_with_retries(self):
         """
@@ -268,7 +230,7 @@ class TestProfilingResults:
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.__str__`.
         """
         results = ncu.ProfilingResults()
-        
+
         # Add nested data.
         results.get(["nvtx_range_name", "global_function_name_a_idx_0"])["metric_i"] = 15
         results.get(["nvtx_range_name", "global_function_name_a_idx_0"])["metric_ii"] = 7
@@ -276,7 +238,7 @@ class TestProfilingResults:
         results.get(["nvtx_range_name", "global_function_name_b_idx_1"])["metric_ii"] = 9
 
         formatted_as_tree = str(results)
-        
+
         expt_results_formatted_as_tree = """\
 Profiling results
 └── nvtx_range_name

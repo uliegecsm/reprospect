@@ -165,7 +165,7 @@ jobs:
                       KOKKOS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                       KOKKOS_SHA=4.7.01
                       KOKKOS_TOOLS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}
-                      KOKKOS_TOOLS_SHA=3c7c734a4509cca06184bcdcc6e7034f6b88b030
+                      KOKKOS_TOOLS_SHA=35c6aebf1499687f41d24d7f5dc0dbff57567070
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     tests:

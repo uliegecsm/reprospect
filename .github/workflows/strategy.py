@@ -122,7 +122,7 @@ def main(*, args : argparse.Namespace) -> None:
 
     matrix.append(complete_job({
         'cuda_version' : '13.0.0',
-        'compilers' : {'CXX' : Compiler(ID = 'clang', version = '19'), 'CUDA' : Compiler(ID = 'nvidia')},
+        'compilers' : {'CXX' : Compiler(ID = 'clang', version = '20'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 120,
     }, args = args))
 

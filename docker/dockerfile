@@ -50,7 +50,7 @@ RUN <<EOF
 
     update-alternatives-helpers --prefix /usr/bin \
         --display --level=10 \
-        --for-each-of clang=clang-${CXX_COMPILER_VERSION} clang++=clang++-${CXX_COMPILER_VERSION}
+        --for-each-of clang=clang-${CXX_COMPILER_VERSION} clang++=clang++-${CXX_COMPILER_VERSION} llvm-cxxfilt=llvm-cxxfilt-${CXX_COMPILER_VERSION}
 
     clang --version
 

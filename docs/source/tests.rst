@@ -6,3 +6,4 @@ Tests
    :caption: Contents:
 
    tests/tools
+   tests/utils

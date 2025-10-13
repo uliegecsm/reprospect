@@ -6,10 +6,20 @@ import tempfile
 import unittest.mock
 
 import pytest
+import typeguard
 
+from reprospect.utils import cmake
 from reprospect.tools import ncu
 
 TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
+
+@pytest.fixture(scope = 'session')
+@typeguard.typechecked
+def cmake_file_api() -> cmake.FileAPI:
+    return cmake.FileAPI(
+        build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
+        inspect = {'toolchains' : 1},
+    )
 
 class TestSession:
     """
@@ -142,7 +152,7 @@ class TestSession:
         assert 'LD' not in results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated
         assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['LDG'] > 0
 
-    def test_collect_basic_metrics_graph(self):
+    def test_collect_basic_metrics_graph(self, cmake_file_api : cmake.FileAPI):
         """
         Collect a few basic metrics for the `graph` executable.
         """
@@ -168,7 +178,7 @@ class TestSession:
         # There are 4 nodes.
         assert len(results) == 4
 
-        match os.environ['CMAKE_CUDA_COMPILER_ID']:
+        match cmake_file_api.toolchains['CUDA'].id:
             case 'NVIDIA':
                 NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0EJEEvPj'
                 assert all(f'add_and_increment_kernel-{idx}' == k for idx, k in enumerate(results.keys()))
@@ -178,7 +188,7 @@ class TestSession:
                 assert NODE_A_MANGLED + '-0' in results.keys()
                 assert all(f'add_and_increment_kernel-{idx}' in results.keys() for idx in range(1, 4))
             case _:
-                raise ValueError(f'unsupported compiler ID {os.environ['CMAKE_CUDA_COMPILER_ID']}')
+                raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA'].id}')
 
         # Check global load/store for each node, and aggregated as well.
         metrics_node_A = next(filter(lambda x: x['mangled'] == NODE_A_MANGLED, results.values()))

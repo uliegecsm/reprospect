@@ -10,17 +10,34 @@ import reprospect
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools          import ncu
 from reprospect.tools.sass     import Decoder
+from reprospect.utils          import cmake
 
 class TestGraph(reprospect.TestCase):
     """
     General test class.
     """
+    NAME = 'tests_cpp_cuda_graph'
+
     TARGET_SOURCE = pathlib.Path('tests') / 'cpp' / 'cuda' / 'test_graph.cpp'
 
     DEMANGLED_NODE_A = {
         'NVIDIA' : 'void add_and_increment_kernel<(unsigned int)0, >(unsigned int *)',
         'Clang' : '_Z24add_and_increment_kernelILj0ETpTnjJEEvPj',
     }
+
+    @property
+    @typeguard.typechecked
+    def executable(self) -> pathlib.Path:
+        return self.CMAKE_BINARY_DIR / self.TARGET_SOURCE.parent / self.NAME
+
+    @pytest.fixture(scope = 'session')
+    @classmethod
+    @typeguard.typechecked
+    def cmake_file_api(cls) -> cmake.FileAPI:
+        return cmake.FileAPI(
+            build_path = cls.CMAKE_BINARY_DIR,
+            inspect = {'toolchains' : 1},
+        )
 
 class TestSASS(TestGraph):
     """
@@ -34,7 +51,7 @@ class TestSASS(TestGraph):
     @pytest.fixture(scope = 'class')
     @typeguard.typechecked
     def cuobjdump(self) -> CuObjDump:
-        return CuObjDump.extract(file = self.EXECUTABLE, arch = self.arch, sass = True, cwd = self.cwd, cubin = self.cubin.name)[0]
+        return CuObjDump.extract(file = self.executable, arch = self.arch, sass = True, cwd = self.cwd, cubin = self.cubin.name)[0]
 
     @typeguard.typechecked
     def test_kernel_count(self, cuobjdump : CuObjDump) -> None:
@@ -45,11 +62,11 @@ class TestSASS(TestGraph):
         logging.info(cuobjdump.sass)
 
     @typeguard.typechecked
-    def test_instruction_count(self, cuobjdump : CuObjDump) -> None:
+    def test_instruction_count(self, cuobjdump : CuObjDump, cmake_file_api) -> None:
         """
         Check how many instructions there are in the first graph node kernel.
         """
-        decoder = Decoder(code = cuobjdump.functions[self.DEMANGLED_NODE_A[self.CMAKE_CUDA_COMPILER_ID]].code)
+        decoder = Decoder(code = cuobjdump.functions[self.DEMANGLED_NODE_A[cmake_file_api.toolchains['CUDA'].id]].code)
         assert len(decoder.instructions) >= 8
 
 class TestNCU(TestGraph):
@@ -68,7 +85,7 @@ class TestNCU(TestGraph):
     def report(self) -> ncu.Report:
         session = ncu.Session(output = self.cwd / 'ncu')
         session.run(
-            executable = self.EXECUTABLE,
+            executable = self.executable,
             nvtx_includes = self.NVTX_INCLUDES,
             cwd = self.cwd,
             metrics = self.METRICS,
@@ -90,11 +107,11 @@ class TestNCU(TestGraph):
         assert len(results) == 4
 
     @typeguard.typechecked
-    def test_launch_registers_per_thread_allocated_node_A(self, results : ncu.ProfilingResults) -> None:
+    def test_launch_registers_per_thread_allocated_node_A(self, results : ncu.ProfilingResults, cmake_file_api) -> None:
         """
         Check metric `launch__registers_per_thread_allocated` for graph node A.
         """
-        metrics = list(filter(lambda x: x['demangled'] == TestGraph.DEMANGLED_NODE_A[self.CMAKE_CUDA_COMPILER_ID], results.values()))
+        metrics = list(filter(lambda x: x['demangled'] == TestGraph.DEMANGLED_NODE_A[cmake_file_api.toolchains['CUDA'].id], results.values()))
         assert len(metrics) == 1
         metrics = metrics[0]
 

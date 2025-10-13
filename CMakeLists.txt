@@ -24,6 +24,13 @@ include(cmake/functions/environment.cmake)
 include(cmake/functions/path_helper.cmake)
 include(cmake/modules/Warnings.cmake)
 
+# Ask CMake to dump file-based detailed information about the build system.
+# See also https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html
+cmake_file_api(QUERY API_VERSION 1
+  CACHE 2
+  TOOLCHAINS 1
+)
+
 if(ReProspect_ENABLE_TESTS)
     enable_testing()
     add_subdirectory(tests)

@@ -1,3 +1,5 @@
+import pathlib
+
 import pandas
 import pytest
 import typeguard
@@ -10,6 +12,12 @@ class TestAllocation(reprospect.TestCase):
     """
     Explore the behavior of `Kokkos::View` allocation under different scenarios.
     """
+    NAME = 'examples_kokkos_view_allocation'
+
+    @property
+    @typeguard.typechecked
+    def executable(self) -> pathlib.Path:
+        return self.CMAKE_BINARY_DIR / 'examples' / 'kokkos' / 'view' / self.NAME
 
 class TestNSYS(TestAllocation):
     """
@@ -27,13 +35,13 @@ class TestNSYS(TestAllocation):
         with nsys.Cacher(
             session = nsys.Session(
                 output_dir = self.cwd,
-                output_file_prefix = self.EXECUTABLE.name,
+                output_file_prefix = self.executable.name,
             )
         ) as cacher:
             entry = cacher.run(
                 nvtx_capture = 'Allocation',
                 opts = ['--cuda-memory-usage=true'],
-                executable = self.EXECUTABLE,
+                executable = self.executable,
                 args = [
                     f"--kokkos-tools-libs={self.KOKKOS_TOOLS_NVTX_CONNECTOR_LIB}",
                 ],

@@ -29,19 +29,28 @@ def get_arch_from_compile_command(cmd : str) -> set[NVIDIAArch]:
 
     return {NVIDIAArch.from_compute_capability(m) for m in matches}
 
-class CuppFilt:
-    """
-    Convenient wrapper for `cu++filt`.
-    """
+class Demangler:
+    @classmethod
     @typeguard.typechecked
-    @staticmethod
-    def demangle(s: str) -> str:
+    def demangle(cls, s: str) -> str:
         """
         Demangle `s` (a symbol).
         """
         return subprocess.check_output([
-            'cu++filt', s
+            cls.EXECUTABLE, s
         ]).decode().strip()
+
+class CuppFilt(Demangler):
+    """
+    Convenient wrapper for `cu++filt`.
+    """
+    EXECUTABLE = 'cu++filt'
+
+class LlvmCppFilt(Demangler):
+    """
+    Convenient wrapper for `llvm-cxxfilt`.
+    """
+    EXECUTABLE = 'llvm-cxxfilt'
 
 class ResourceUsage(enum.StrEnum):
     """

@@ -18,8 +18,9 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.extlinks',
     'sphinx.ext.intersphinx',
-    'sphinxcontrib.bibtex',
     'sphinx_github_style',
+    'sphinxcontrib.bibtex',
+    'sphinxcontrib.tikz',
 ]
 
 html_theme = 'sphinx_rtd_theme'

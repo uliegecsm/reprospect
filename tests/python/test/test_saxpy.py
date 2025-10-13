@@ -13,7 +13,14 @@ class TestSaxpy(reprospect.TestCase):
     """
     General test class.
     """
+    NAME = 'tests_cpp_cuda_saxpy'
+
     TARGET_SOURCE = pathlib.Path('tests') / 'cpp' / 'cuda' / 'test_saxpy.cpp'
+
+    @property
+    @typeguard.typechecked
+    def executable(self) -> pathlib.Path:
+        return self.CMAKE_BINARY_DIR / self.TARGET_SOURCE.parent / self.NAME
 
 class TestSASS(TestSaxpy):
     """
@@ -27,7 +34,7 @@ class TestSASS(TestSaxpy):
     @pytest.fixture(scope = 'class')
     @typeguard.typechecked
     def cuobjdump(self) -> CuObjDump:
-        return CuObjDump.extract(file = self.EXECUTABLE, arch = self.arch, sass = True, cwd = self.cwd, cubin = self.cubin.name)[0]
+        return CuObjDump.extract(file = self.executable, arch = self.arch, sass = True, cwd = self.cwd, cubin = self.cubin.name)[0]
 
     @pytest.fixture(scope = 'class')
     @typeguard.typechecked
@@ -57,7 +64,7 @@ class TestNCU(TestSaxpy):
     def report(self) -> ncu.Report:
         session = ncu.Session(output = self.cwd / 'ncu')
         session.run(
-            executable = self.EXECUTABLE,
+            executable = self.executable,
             nvtx_includes = self.NVTX_INCLUDES,
             cwd = self.cwd,
             metrics = self.METRICS,

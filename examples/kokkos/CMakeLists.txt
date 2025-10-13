@@ -22,8 +22,8 @@ function(add_one_example FILE)
     )
 
     test_environment(${EXECUTABLE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR}/python)
-    test_environment(${EXECUTABLE} EXECUTABLE path_list_prepend $<TARGET_FILE:${EXECUTABLE}>)
-    test_environment(${EXECUTABLE} COMPILE_COMMANDS set ${CMAKE_BINARY_DIR}/compile_commands.json)
+    test_environment(${EXECUTABLE} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
+    test_environment(${EXECUTABLE} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
 
 endfunction()
 

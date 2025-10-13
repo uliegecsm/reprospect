@@ -4,6 +4,7 @@ import pathlib
 import pytest
 import typeguard
 
+from reprospect.utils import cmake
 from reprospect.tools import sass, binaries
 
 from tests.python.tools.test_binaries import Parameters, PARAMETERS, get_compilation_output
@@ -33,6 +34,14 @@ ISETP_NE_U32_AND = \
         /*00c0*/                   ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT ;       /* 0x000000ff0000720c */
                                                                                      /* 0x040fe40003f05070 */
 """
+
+@pytest.fixture(scope = 'session')
+@typeguard.typechecked
+def cmake_file_api() -> cmake.FileAPI:
+    return cmake.FileAPI(
+        build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
+        inspect = {'cache' : 2, 'toolchains' : 1},
+    )
 
 class TestSASSDecoder:
     """
@@ -103,7 +112,7 @@ class TestSASSDecoder:
 
     @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
     @typeguard.typechecked
-    def test_from_cuobjdump(self, parameters : Parameters) -> None:
+    def test_from_cuobjdump(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Read `SASS` dumped from `cuobjdump`.
         """
@@ -113,6 +122,7 @@ class TestSASSDecoder:
             cwd = TMPDIR,
             arch = parameters.arch,
             object = True,
+            cmake_file_api = cmake_file_api,
         )
 
         cuobjdump = binaries.CuObjDump(file = output, arch = parameters.arch, sass = True)

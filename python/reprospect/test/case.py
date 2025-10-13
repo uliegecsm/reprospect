@@ -46,9 +46,12 @@ class EnvironmentAware(metaclass = EnvironmentAwareMeta):
 class TestCase(EnvironmentAware):
     """
     Base class for carrying out analyses of a given executable.
+
+    The child class must define `NAME` (see :py:meth:`cwd`).
     """
     _TYPES = {
-        'EXECUTABLE' : pathlib.Path,
+        'CMAKE_BINARY_DIR' : pathlib.Path,
+        'CMAKE_CURRENT_BINARY_DIR' : pathlib.Path,
     }
 
     @functools.cached_property
@@ -57,7 +60,7 @@ class TestCase(EnvironmentAware):
         """
         The working directory for the analysis.
         """
-        cwd = cls.EXECUTABLE.parent / (cls.EXECUTABLE.name + '-case')
+        cwd = cls.CMAKE_CURRENT_BINARY_DIR / (cls.NAME + '-case')
         cwd.mkdir(parents = False, exist_ok = True)
         return cwd
 
@@ -71,7 +74,7 @@ class TestCase(EnvironmentAware):
 
         See also https://cmake.org/cmake/help/latest/variable/CMAKE_EXPORT_COMPILE_COMMANDS.html.
         """
-        with open(cls.COMPILE_COMMANDS, 'r') as fin:
+        with open(cls.CMAKE_BINARY_DIR / 'compile_commands.json', 'r') as fin:
             commands = json.load(fin)
         logging.info(f'Looking for {cls.TARGET_SOURCE} in {commands}')
         archs = get_arch_from_compile_command(cmd = next(filter(

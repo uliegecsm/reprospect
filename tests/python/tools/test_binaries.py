@@ -11,9 +11,18 @@ import semantic_version
 import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries import get_arch_from_compile_command, CuObjDump, CuppFilt, ResourceUsage
+from reprospect.tools.binaries     import get_arch_from_compile_command, CuObjDump, CuppFilt, ResourceUsage
+from reprospect.utils              import cmake
 
 TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
+
+@pytest.fixture(scope = 'session')
+@typeguard.typechecked
+def cmake_file_api() -> cmake.FileAPI:
+    return cmake.FileAPI(
+        build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
+        inspect = {'cache' : 2, 'toolchains' : 1},
+    )
 
 def test_get_arch_from_compile_command():
     """
@@ -42,6 +51,7 @@ def get_compilation_output(*,
     source : pathlib.Path,
     cwd : pathlib.Path,
     arch : NVIDIAArch,
+    cmake_file_api : cmake.FileAPI,
     object : bool = True,
     resource_usage : bool = False,
 ) -> typing.Tuple[pathlib.Path, str]:
@@ -51,25 +61,25 @@ def get_compilation_output(*,
     output = cwd / (source.stem + ('.o' if object else ''))
 
     cmd = [
-        os.environ.get('CMAKE_CUDA_COMPILER_LAUNCHER'),
-        os.environ.get('CMAKE_CUDA_COMPILER'),
+        cmake_file_api.cache['CMAKE_CUDA_COMPILER_LAUNCHER'].value,
+        cmake_file_api.toolchains['CUDA'].path,
         '-std=c++20',
     ]
 
     # For compiling an executable, if the source ends with '.cpp', we need '-x cu' for nvcc and '-x cuda' for clang.
     if not object and source.suffix == '.cpp':
-        match os.environ['CMAKE_CUDA_COMPILER_ID']:
+        match cmake_file_api.toolchains['CUDA'].id:
             case 'NVIDIA':
                 cmd += ['-x', 'cu']
             case 'Clang':
                 cmd += ['-x', 'cuda']
             case _:
-                raise ValueError(f'unsupported compiler ID {os.environ['CMAKE_CUDA_COMPILER_ID']}')
+                raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA'].id}')
 
     # Clang tends to add a lot of debug code otherwise.
     cmd.append('-O3')
 
-    match os.environ['CMAKE_CUDA_COMPILER_ID']:
+    match cmake_file_api.toolchains['CUDA'].id:
         case 'NVIDIA':
             cmd.append(f'-arch={arch.as_sm}')
             if resource_usage:
@@ -79,7 +89,7 @@ def get_compilation_output(*,
             if resource_usage:
                 cmd += ['-Xcuda-ptxas', '-v',]
         case _:
-            raise ValueError(f'unsupported compiler ID {os.environ['CMAKE_CUDA_COMPILER_ID']}')
+            raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA'].id}')
 
     cmd += [
         '-c', source,
@@ -120,7 +130,7 @@ class TestResourceUsage:
         FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'shared_memory.cu'
 
         @typeguard.typechecked
-        def test(self, parameters : Parameters) -> None:
+        def test(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Check how shared memory is reported in the compilation output.
             """
@@ -130,6 +140,7 @@ class TestResourceUsage:
                 arch = parameters.arch,
                 object = True,
                 resource_usage = True,
+                cmake_file_api = cmake_file_api,
             )
 
             assert f"Compiling entry function '_Z20shared_memory_kernelPfj' for '{parameters.arch.as_sm}'" in compilation, compilation
@@ -146,7 +157,7 @@ class TestResourceUsage:
         FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'wide_load_store.cu'
 
         @typeguard.typechecked
-        def test(self, parameters : Parameters) -> None:
+        def test(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Check how wide loads and stores influence the compilation result.
             """
@@ -156,6 +167,7 @@ class TestResourceUsage:
                 arch = parameters.arch,
                 object = True,
                 resource_usage = True,
+                cmake_file_api = cmake_file_api,
             )
 
             assert f"Compiling entry function '_Z22wide_load_store_kernelP15MyAlignedStructIdEPKS0_' for '{parameters.arch.as_sm}'" in compilation, compilation
@@ -166,7 +178,7 @@ class TestResourceUsage:
                 expt_regs = {
                     'NVIDIA' : 14,
                     'Clang' : 12,
-                }[os.environ['CMAKE_CUDA_COMPILER_ID']]
+                }[cmake_file_api.toolchains['CUDA'].id]
                 assert f'Used {expt_regs} registers, used 0 barriers' in compilation, compilation
             else:
                 assert 'Used 12 registers, used 0 barriers' in compilation, compilation
@@ -178,7 +190,7 @@ class TestResourceUsage:
         FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
 
         @typeguard.typechecked
-        def test(self, parameters : Parameters) -> None:
+        def test(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Check compilation result.
             """
@@ -188,6 +200,7 @@ class TestResourceUsage:
                 arch = parameters.arch,
                 object = True,
                 resource_usage = True,
+                cmake_file_api = cmake_file_api,
             )
 
             assert f"Compiling entry function '_Z12saxpy_kernelfPKfPfj' for '{parameters.arch.as_sm}'" in compilation, compilation
@@ -219,7 +232,7 @@ class TestCuObjDump:
         SIGNATURE = CuppFilt.demangle(SYMBOL)
 
         @typeguard.typechecked
-        def test_sass_from_object(self, parameters : Parameters) -> None:
+        def test_sass_from_object(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Compile `CUDA_FILE` as object, extract `SASS` and analyse resource usage.
             """
@@ -228,6 +241,7 @@ class TestCuObjDump:
                 cwd = TMPDIR,
                 arch = parameters.arch,
                 object = True,
+                cmake_file_api = cmake_file_api,
             )
 
             cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = True)
@@ -257,7 +271,7 @@ class TestCuObjDump:
             }, cuobjdump.functions[self.SIGNATURE].ru
 
         @typeguard.typechecked
-        def test_extract_cubin_from_file(self, parameters : Parameters) -> None:
+        def test_extract_cubin_from_file(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Compile `CPP_FILE` as an executable, and extract the `cubin` from it.
             """
@@ -266,6 +280,7 @@ class TestCuObjDump:
                 cwd = TMPDIR,
                 arch = parameters.arch,
                 object = False,
+                cmake_file_api = cmake_file_api,
             )
 
             cuobjdump, cubin = CuObjDump.extract(
@@ -281,7 +296,7 @@ class TestCuObjDump:
             assert self.SIGNATURE in cuobjdump.functions.keys()
 
         @typeguard.typechecked
-        def test_extract_symbol_table(self, parameters:  Parameters) -> None:
+        def test_extract_symbol_table(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Compile `CPP_FILE` as an executable, and extract the symbol table from it.
             """
@@ -290,6 +305,7 @@ class TestCuObjDump:
                 cwd = TMPDIR,
                 arch = parameters.arch,
                 object = False,
+                cmake_file_api = cmake_file_api,
             )
 
             cuobjdump, cubin = CuObjDump.extract(

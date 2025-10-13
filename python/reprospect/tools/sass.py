@@ -5,6 +5,8 @@ import re
 import typing
 
 import pandas
+import rich.console
+import rich.table
 import typeguard
 
 @dataclasses.dataclass(frozen = True)
@@ -172,7 +174,8 @@ class Decoder:
         self.source = source
         self.code   = code
         self.instructions: list[Instruction] = []
-        self._parse(skip_until_headerflags = skip_until_headerflags)
+        if source or code:
+            self._parse(skip_until_headerflags = skip_until_headerflags)
 
     @typeguard.typechecked
     def _parse(self, skip_until_headerflags : bool) -> None:
@@ -247,9 +250,9 @@ class Decoder:
             iline += 1
 
     @typeguard.typechecked
-    def to_html(self) -> str:
+    def to_df(self) -> pandas.DataFrame:
         """
-        Visualize the decoded `SASS` in a nice `HTML` table.
+        Convert the decoded `SASS` to a :py:class:`pandas.DataFrame`.
         """
         data = {
             'offset' : [],
@@ -279,4 +282,37 @@ class Decoder:
                     value.append('Re')
                 data[f'b{i}'].append('/'.join(value) if value else '')
 
-        return pandas.DataFrame(data).to_html()
+        return pandas.DataFrame(data)
+
+    @typeguard.typechecked
+    def to_table(self) -> rich.table.Table:
+        """
+        Convert the decoded `SASS` to a :py:class:`rich.table.Table`.
+        """
+        pd = self.to_df()
+
+        rt = rich.table.Table()
+
+        for column in pd.columns:
+            rt.add_column(column)
+
+        for values in pd.values:
+            rt.add_row(*[str(x) for x in values])
+
+        return rt
+
+    @typeguard.typechecked
+    def __str__(self) -> str:
+        """
+        Rich representation with :py:meth:`to_table`.
+        """
+        with rich.console.Console() as console, console.capture() as capture:
+            console.print(self.to_table(), no_wrap = True)
+        return capture.get()
+
+    @typeguard.typechecked
+    def to_html(self) -> str:
+        """
+        Visualize the decoded `SASS` in a nice `HTML` table.
+        """
+        return self.to_df().to_html()

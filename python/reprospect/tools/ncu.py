@@ -607,10 +607,8 @@ class ProfilingResults(collections.UserDict):
         """
         Rich representation with :py:meth:`to_tree`.
         """
-        console = rich.console.Console()
-        with console.capture() as capture:
+        with rich.console.Console() as console, console.capture() as capture:
             console.print(self.to_tree(), no_wrap = True)
-
         return capture.get()
 
 @typeguard.typechecked

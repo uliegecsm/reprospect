@@ -247,9 +247,7 @@ class TestProfilingResults:
         results.get(["nvtx_range_name", "global_function_name_b_idx_1"])["metric_i"] = 15
         results.get(["nvtx_range_name", "global_function_name_b_idx_1"])["metric_ii"] = 9
 
-        formatted_as_tree = str(results)
-
-        expt_results_formatted_as_tree = """\
+        assert str(results) == """\
 Profiling results
 └── nvtx_range_name
     ├── global_function_name_a_idx_0
@@ -258,8 +256,7 @@ Profiling results
     └── global_function_name_b_idx_1
         ├── metric_i: 15
         └── metric_ii: 9
-        """
-        assert formatted_as_tree.rstrip() == expt_results_formatted_as_tree.rstrip()
+"""
 
 class TestCacher:
     """

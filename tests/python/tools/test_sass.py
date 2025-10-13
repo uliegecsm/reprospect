@@ -142,6 +142,43 @@ class TestSASSDecoder:
 
         assert len(instructions_not_nop) == expt_ninstrs[1], len(instructions_not_nop)
 
+    def test_string_representation(self):
+        """
+        Test :py:meth:`reprospect.tools.sass.Decoder.__str__`.
+        """
+        decoder = sass.Decoder()
+
+        decoder.instructions = [
+            sass.Instruction(
+                offset = 0,
+                instruction = 'LDC R1, c[0x0][0x37c]',
+                hex = '0x0000df00ff017b82',
+                control = sass.ControlCode(stall_count = 1, yield_flag = True, read = 7, write = 0, wait = [False, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
+            ),
+            sass.Instruction(
+                offset = 16,
+                instruction = 'S2R R0, SR_TID.X',
+                hex = '0x0000000000007919',
+                control = sass.ControlCode(stall_count = 7, yield_flag = False, read = 7, write = 1, wait = [False, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
+            ),
+            sass.Instruction(
+                offset = 112,
+                instruction = '@P0 EXIT',
+                hex = '0x000000000000094d',
+                control = sass.ControlCode(stall_count = 5, yield_flag = True, read = 2, write = 7, wait = [True, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
+            ),
+        ]
+
+        assert str(decoder) == """\
+┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━┳━━━━┳━━━━┳━━━━┳━━━━┳━━━━┓
+┃ offset ┃ instruction           ┃ stall ┃ yield ┃ b0 ┃ b1 ┃ b2 ┃ b3 ┃ b4 ┃ b5 ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━╇━━━━╇━━━━╇━━━━╇━━━━╇━━━━┩
+│ 0      │ LDC R1, c[0x0][0x37c] │ 1     │ True  │ Wr │    │    │    │    │    │
+│ 16     │ S2R R0, SR_TID.X      │ 7     │ False │    │ Wr │    │    │    │    │
+│ 112    │ @P0 EXIT              │ 5     │ True  │ Wa │    │ Re │    │    │    │
+└────────┴───────────────────────┴───────┴───────┴────┴────┴────┴────┴────┴────┘
+"""
+
     def test_to_html(self):
         """
         Test :py:meth:`reprospect.tools.sass.Decoder.to_html`.

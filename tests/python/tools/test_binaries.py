@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import pathlib
+import shutil
 import subprocess
 import typing
 
@@ -11,7 +12,7 @@ import semantic_version
 import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import get_arch_from_compile_command, CuObjDump, CuppFilt, ResourceUsage
+from reprospect.tools.binaries     import get_arch_from_compile_command, CuObjDump, CuppFilt, LlvmCppFilt, ResourceUsage
 from reprospect.utils              import cmake
 
 TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
@@ -216,6 +217,19 @@ class TestCuppFilt:
     """
     def test_demangle(self):
         assert CuppFilt.demangle(s = '_Z5saxpyfPKfPfj') == 'saxpy(float, const float *, float *, unsigned int)'
+
+@pytest.mark.skipif(
+    shutil.which(LlvmCppFilt.EXECUTABLE) is None, reason = "requires that llvm-cxxfilt is installed"
+)
+class TestLlvmCppFilt:
+    """
+    Test :py:class:`reprospect.tools.binaries.LlvmCppFilt`.
+    """
+    def test_demangle(self):
+        MANGLED = '_Z24add_and_increment_kernelILj0ETpTnjJEEvPj'
+        assert LlvmCppFilt.demangle(s = MANGLED) == 'void add_and_increment_kernel<0u>(unsigned int*)'
+        # cu++filt cannot demangle this symbol.
+        assert CuppFilt.demangle(s = MANGLED).startswith('_Z')
 
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestCuObjDump:

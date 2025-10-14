@@ -1,4 +1,5 @@
 matplotlib
+nvtx
 sphinx>=8.2
 sphinx-rtd-theme>=3.0.2
 sphinx-github-style>=1.2.2

@@ -5,6 +5,7 @@ import logging
 import pathlib
 import re
 import subprocess
+import typing
 
 import pandas
 import typeguard
@@ -104,14 +105,20 @@ class CuObjDump:
         ru : dict = None
 
     @typeguard.typechecked
-    def __init__(self, file : pathlib.Path, arch : NVIDIAArch, sass : bool = True) -> None:
+    def __init__(
+        self,
+        file : pathlib.Path,
+        arch : NVIDIAArch,
+        sass : bool = True,
+        demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = CuppFilt,
+    ) -> None:
         self.file = file
         self.arch = arch
         if sass:
-            self.extract_and_parse_sass(demangle = True)
+            self.sass(demangler = demangler)
 
     @typeguard.typechecked
-    def extract_and_parse_sass(self, demangle : bool) -> None:
+    def sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None) -> None:
         """
         Extract `SASS` from `file`. Optionally demangle functions.
         """
@@ -128,9 +135,9 @@ class CuObjDump:
 
         assert self.sass is not None
 
-        if demangle:
+        if demangler:
             for mangled in re.finditer(pattern = r'\t\tFunction : ([A-Za-z0-9_]+)', string = self.sass):
-                self.sass = self.sass.replace(mangled.group(1), CuppFilt.demangle(mangled.group(1)))
+                self.sass = self.sass.replace(mangled.group(1), demangler.demangle(mangled.group(1)))
 
         self.functions = {}
 

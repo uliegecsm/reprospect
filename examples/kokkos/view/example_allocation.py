@@ -1,12 +1,20 @@
+import enum
+import logging
+import math
 import pathlib
+import typing
 
-import pandas
+import numpy
 import pytest
 import typeguard
 
 import reprospect
 
 from reprospect.tools import nsys
+
+class Memory(enum.StrEnum):
+    DEVICE = 'DEVICE'
+    SHARED = 'MANAGED'
 
 class TestAllocation(reprospect.TestCase):
     """
@@ -39,7 +47,7 @@ class TestNSYS(TestAllocation):
             )
         ) as cacher:
             entry = cacher.run(
-                nvtx_capture = 'Allocation',
+                nvtx_capture = 'AllocationProfiling',
                 opts = ['--cuda-memory-usage=true'],
                 executable = self.executable,
                 args = [
@@ -57,100 +65,179 @@ class TestNSYS(TestAllocation):
     def report(self, session : nsys.Session) -> nsys.Report:
         return nsys.Report(db = session.output_file_sqlite)
 
-    @pytest.fixture(scope = 'class')
+    @staticmethod
     @typeguard.typechecked
-    def memory_kind(self, report : nsys.Report) -> pandas.Series:
+    def get_memory_id(report : nsys.Report, memory : Memory) -> numpy.int64:
         """
-        Retrieve the expected memory kind for `CUDA_MEMOPR_MEMORY_KIND_DEVICE`.
+        Retrieve the `id` from `ENUM_CUDA_MEM_KIND` whose `name` matches `memory`.
         """
-        with report:
-            enum_cuda_mem_kind = report.table(name = 'ENUM_CUDA_MEM_KIND')
+        enum_cuda_mem_kind = report.table(name = 'ENUM_CUDA_MEM_KIND')
 
-        return report.single_row(data = enum_cuda_mem_kind[enum_cuda_mem_kind['name'] == 'CUDA_MEMOPR_MEMORY_KIND_DEVICE'])
+        return report.single_row(
+            data = enum_cuda_mem_kind[enum_cuda_mem_kind['name'] == f'CUDA_MEMOPR_MEMORY_KIND_{memory}']
+        )['id']
 
-    def test_under_39000(self, session : nsys.Session, report : nsys.Report, memory_kind) -> None:
-        """
-        Check what happens under the threshold (requested size is 39000).
-        """
-        cuda_api_trace_allocation   = session.extract_statistical_report(report = 'cuda_api_trace', filter_nvtx = f'allocation/0')
-        cuda_api_trace_deallocation = session.extract_statistical_report(report = 'cuda_api_trace', filter_nvtx = f'deallocation/0')
-
-        # Allocation goes through these calls.
-        exptd_api_calls_allocation = [
-            'cudaMalloc',
-            'cudaMemcpyAsync',
-        ]
-        assert len(cuda_api_trace_allocation['Name']) == len(exptd_api_calls_allocation)
-        assert cuda_api_trace_allocation['Name'].apply(nsys.strip_cuda_api_suffix).tolist() == exptd_api_calls_allocation
-
-        # Deallocation goes through these calls.
-        exptd_api_calls_deallocation = ['cudaFree']
-        assert len(cuda_api_trace_deallocation['Name']) == len(exptd_api_calls_deallocation)
-        assert cuda_api_trace_deallocation['Name'].apply(nsys.strip_cuda_api_suffix).tolist() == exptd_api_calls_deallocation
+    def checks(self, *,
+        report : nsys.Report,
+        expt_cuda_api_calls_allocation : typing.Iterable[str],
+        expt_cuda_api_calls_deallocation : typing.Iterable[str],
+        selectors : dict[str, nsys.Report.PatternSelector],
+        memory : Memory,
+        size : int,
+    ) -> None:
+        match memory:
+            case Memory.SHARED:
+                memory_space = 'Kokkos::CudaUVMSpace'
+            case Memory.DEVICE:
+                memory_space = 'Kokkos::CudaSpace'
+            case _:
+                raise ValueError(f'unsupported memory {memory}')
 
         with report:
+            logging.info(report.nvtx_events)
+
+            cuda_api_trace_allocation   = report.get_events(table = 'CUPTI_ACTIVITY_KIND_RUNTIME', accessors = ['AllocationProfiling', memory_space, str(size), 'allocation'])
+            cuda_api_trace_deallocation = report.get_events(table = 'CUPTI_ACTIVITY_KIND_RUNTIME', accessors = ['AllocationProfiling', memory_space, str(size), 'deallocation'])
+
+            logging.info(f'Events during allocation: {cuda_api_trace_allocation['name']}.')
+            logging.info(f'Events during deallocation: {cuda_api_trace_deallocation['name']}.')
+
+            # Allocation goes through the expected Cuda API calls.
+            assert len(cuda_api_trace_allocation['name']) == len(expt_cuda_api_calls_allocation)
+            assert cuda_api_trace_allocation['name'].apply(nsys.strip_cuda_api_suffix).tolist() == expt_cuda_api_calls_allocation
+
+            # Deallocation goes through the expected Cuda API calls.
+            assert len(cuda_api_trace_deallocation['name']) == len(expt_cuda_api_calls_deallocation)
+            assert cuda_api_trace_deallocation['name'].apply(nsys.strip_cuda_api_suffix).tolist() == expt_cuda_api_calls_deallocation
+
+            # Check size and kind of allocation.
             cuda_gpu_memory_usage_events = report.table(name = 'CUDA_GPU_MEMORY_USAGE_EVENTS')
-            cupti_activity_kind_memcpy   = report.table(name = 'CUPTI_ACTIVITY_KIND_MEMCPY')
 
-            # Check size of allocation.
-            cuda_malloc = report.get_correlated_row(src = cuda_api_trace_allocation, selector = report.PatternSelector(pattern = r'^cudaMalloc'), dst = cuda_gpu_memory_usage_events)
+            malloc = report.get_correlated_row(src = cuda_api_trace_allocation, selector = selectors['malloc'], dst = cuda_gpu_memory_usage_events)
 
-            assert cuda_malloc['bytes'] == 39000 + self.HEADER_SIZE
-            assert cuda_malloc['memKind'] == memory_kind['id']
+            assert malloc['bytes']   == size + self.HEADER_SIZE
+            assert malloc['memKind'] == self.get_memory_id(report = report, memory = memory)
 
-            # There is a copy of the shared allocation header.
-            cuda_memcpy_async = report.get_correlated_row(src = cuda_api_trace_allocation, selector = report.PatternSelector(pattern = r'^cudaMemcpyAsync'), dst = cupti_activity_kind_memcpy)
+            match memory:
+                case Memory.DEVICE:
+                    # Kokkos copies the shared allocation header.
+                    cupti_activity_kind_memcpy = report.table(name = 'CUPTI_ACTIVITY_KIND_MEMCPY')
 
-            assert cuda_memcpy_async['bytes'] == self.HEADER_SIZE
+                    memcpy = report.get_correlated_row(src = cuda_api_trace_allocation, selector = selectors['memcpy'], dst = cupti_activity_kind_memcpy)
+
+                    assert memcpy['bytes'] == self.HEADER_SIZE
+                    if not math.isnan(malloc['streamId']):
+                        assert 'cudaMallocAsync' in expt_cuda_api_calls_allocation
+                        assert memcpy['streamId'] == malloc['streamId']
+                    else:
+                        assert 'cudaMalloc' in expt_cuda_api_calls_allocation
+
+                case Memory.SHARED:
+                    # There is no need to copy the header when the memory is managed.
+                    assert selectors['memcpy'] is None
+
+                case _:
+                    raise ValueError(f'unsupported memory {memory}')
 
             # Check that 'malloc' and 'free' work on the same pointer address.
-            cuda_free = report.get_correlated_row(src = cuda_api_trace_deallocation, selector = report.PatternSelector(pattern = r'^cudaFree'), dst = cuda_gpu_memory_usage_events)
+            free = report.get_correlated_row(src = cuda_api_trace_deallocation, selector = selectors['free'], dst = cuda_gpu_memory_usage_events)
 
-            assert cuda_malloc['address'] == cuda_free['address']
+            assert malloc['address']  == free['address']
+            assert malloc['streamId'] != free['streamId']
 
-    def test_above_41000(self, session : nsys.Session, report : nsys.Report, memory_kind) -> None:
+    def test_under_39000_CudaSpace(self, report : nsys.Report) -> None:
         """
-        Check what happens above the threshold (requested size is 41000).
+        Check what happens under the threshold for `Kokkos::CudaSpace` (requested size is 39000).
         """
-        cuda_api_trace_allocation   = session.extract_statistical_report(report = 'cuda_api_trace', filter_nvtx = f'allocation/1')
-        cuda_api_trace_deallocation = session.extract_statistical_report(report = 'cuda_api_trace', filter_nvtx = f'deallocation/1')
+        self.checks(
+            report = report,
+            size = 39000,
+            memory = Memory.DEVICE,
+            expt_cuda_api_calls_allocation = [
+                'cudaMalloc',
+                'cudaMemcpyAsync',
+            ],
+            expt_cuda_api_calls_deallocation = [
+                'cudaFree',
+            ],
+            selectors = {
+                'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMalloc'),
+                'memcpy' : report.PatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
+                'free'   : report.PatternSelector(column = 'name', pattern = r'^cudaFree'),
+            },
+        )
 
-        # Allocation goes through these calls.
-        exptd_api_calls_allocation = [
-            'cudaMallocAsync',
-            'cudaStreamSynchronize',
-            'cudaMemcpyAsync',
-        ]
-        assert len(cuda_api_trace_allocation['Name']) == len(exptd_api_calls_allocation)
-        assert cuda_api_trace_allocation['Name'].apply(nsys.strip_cuda_api_suffix).tolist() == exptd_api_calls_allocation
+    def test_under_39000_CudaUVMSpace(self, report : nsys.Report) -> None:
+        """
+        Check what happens under the threshold for `Kokkos::CudaUVMSpace` (requested size is 39000).
+        """
+        self.checks(
+            report = report,
+            size = 39000,
+            memory = Memory.SHARED,
+            expt_cuda_api_calls_allocation = [
+                'cudaDeviceSynchronize',
+                'cudaMallocManaged',
+                'cudaDeviceSynchronize',
+            ],
+            expt_cuda_api_calls_deallocation = [
+                'cudaDeviceSynchronize',
+                'cudaFree',
+                'cudaDeviceSynchronize',
+            ],
+            selectors = {
+                'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMallocManaged'),
+                'memcpy' : None,
+                'free'   : report.PatternSelector(column = 'name', pattern = r'^cudaFree'),
+            },
+        )
 
-        # Deallocation goes through these calls.
-        exptd_api_calls_deallocation = [
-            'cudaDeviceSynchronize',
-            'cudaFreeAsync',
-            'cudaDeviceSynchronize',
-        ]
-        assert len(cuda_api_trace_deallocation['Name']) == len(exptd_api_calls_deallocation)
-        assert cuda_api_trace_deallocation['Name'].apply(nsys.strip_cuda_api_suffix).tolist() == exptd_api_calls_deallocation
+    def test_above_41000_CudaSpace(self, report : nsys.Report) -> None:
+        """
+        Check what happens above the threshold for `Kokkos::CudaSpace` (requested size is 41000).
+        """
+        self.checks(
+            report = report,
+            size = 41000,
+            memory = Memory.DEVICE,
+            expt_cuda_api_calls_allocation = [
+                'cudaMallocAsync',
+                'cudaStreamSynchronize',
+                'cudaMemcpyAsync',
+            ],
+            expt_cuda_api_calls_deallocation = [
+                'cudaDeviceSynchronize',
+                'cudaFreeAsync',
+                'cudaDeviceSynchronize',
+            ],
+            selectors = {
+                'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMallocAsync'),
+                'memcpy' : report.PatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
+                'free'   : report.PatternSelector(column = 'name', pattern = r'^cudaFreeAsync'),
+            },
+        )
 
-        with report:
-            cuda_gpu_memory_usage_events = report.table(name = 'CUDA_GPU_MEMORY_USAGE_EVENTS')
-            cupti_activity_kind_memcpy   = report.table(name = 'CUPTI_ACTIVITY_KIND_MEMCPY')
-
-            # Check size of allocation.
-            cuda_malloc_async = report.get_correlated_row(src = cuda_api_trace_allocation, selector = report.PatternSelector(pattern = r'^cudaMallocAsync'), dst = cuda_gpu_memory_usage_events)
-
-            assert cuda_malloc_async['bytes'] == 41000 + self.HEADER_SIZE
-            assert cuda_malloc_async['memKind'] == memory_kind['id']
-
-            # There is a copy of the shared allocation header.
-            cuda_memcpy_async = report.get_correlated_row(src = cuda_api_trace_allocation, selector = report.PatternSelector(pattern = r'^cudaMemcpyAsync'), dst = cupti_activity_kind_memcpy)
-
-            assert cuda_memcpy_async['bytes'] == self.HEADER_SIZE
-            assert cuda_memcpy_async['streamId'] == cuda_malloc_async['streamId']
-
-            # Check that 'malloc' and 'free' work on the same pointer address.
-            cuda_free_async = report.get_correlated_row(src = cuda_api_trace_deallocation, selector = report.PatternSelector(pattern = r'^cudaFreeAsync'), dst = cuda_gpu_memory_usage_events)
-
-            assert cuda_malloc_async['address']  == cuda_free_async['address']
-            assert cuda_malloc_async['streamId'] != cuda_free_async['streamId']
+    def test_above_41000_CudaUVMSpace(self, report : nsys.Report) -> None:
+        """
+        Check what happens above the threshold for `Kokkos::CudaUVMSpace` (requested size is 41000).
+        """
+        self.checks(
+            report = report,
+            size = 41000,
+            memory = Memory.SHARED,
+            expt_cuda_api_calls_allocation = [
+                'cudaDeviceSynchronize',
+                'cudaMallocManaged',
+                'cudaDeviceSynchronize',
+            ],
+            expt_cuda_api_calls_deallocation = [
+                'cudaDeviceSynchronize',
+                'cudaFree',
+                'cudaDeviceSynchronize',
+            ],
+            selectors = {
+                'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMallocManaged'),
+                'memcpy' : None,
+                'free'   : report.PatternSelector(column = 'name', pattern = r'^cudaFree'),
+            },
+        )

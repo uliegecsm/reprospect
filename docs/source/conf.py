@@ -69,7 +69,8 @@ linkcode_url = 'https://github.com/uliegecsm/reprospect'
 
 # Guard to ensure we encounter what we allow to be ignored.
 guards = {
-    'blake3.blake3' : 0
+    'blake3.blake3' : 0,
+    'nvtx._lib.lib' : 0,
 }
 
 def ignore_missing_reference(app, env, node, contnode):
@@ -79,7 +80,11 @@ def ignore_missing_reference(app, env, node, contnode):
     if node.get('reftarget', '').startswith('blake3.blake3'):
         guards['blake3.blake3'] += 1
         return contnode
-    return None
+    elif node.get('reftarget', '').startswith('nvtx._lib.lib'):
+        guards['nvtx._lib.lib'] += 1
+        return contnode
+    else:
+        return None
 
 def on_build_finished(app, exception):
     if exception is None:

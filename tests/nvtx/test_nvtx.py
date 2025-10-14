@@ -1,11 +1,12 @@
 import contextlib
+import logging
 
 import nvtx
 import typeguard
 
 @contextlib.contextmanager
 @typeguard.typechecked
-def push_pop_range(domain : nvtx._lib.lib.DummyDomain, **kwargs):
+def push_pop_range(domain : nvtx.Domain, **kwargs):
     domain.push_range(attributes = domain.get_event_attributes(**kwargs))
     try:
         yield
@@ -14,7 +15,7 @@ def push_pop_range(domain : nvtx._lib.lib.DummyDomain, **kwargs):
 
 @contextlib.contextmanager
 @typeguard.typechecked
-def start_end_range(domain : nvtx._lib.lib.DummyDomain, **kwargs):
+def start_end_range(domain : nvtx.Domain, **kwargs):
     range_id = domain.start_range(attributes = domain.get_event_attributes(**kwargs))
     try:
         yield
@@ -28,8 +29,9 @@ class TestNVTX:
     References:
         * https://nvidia.github.io/NVTX/python/
     """
-    def function(self) -> None:
-        pass
+    @classmethod
+    def function(cls) -> None:
+        logging.info(cls)
 
     def test_sanity(self):
         assert nvtx.enabled()
@@ -45,32 +47,47 @@ class TestNVTX:
         """
         Push/pop range in a domain.
         """
-        with push_pop_range(domain = nvtx.Domain(name = request.node.name), message = 'osef'):
+        with push_pop_range(domain = nvtx.get_domain(name = request.node.name), message = 'osef'):
             self.function()
 
     def test_start_end_range_in_domain(self, request) -> None:
         """
         Start/end range in a domain.
         """
-        with start_end_range(domain = nvtx.Domain(name = request.node.name), message = 'osef'):
+        with start_end_range(domain = nvtx.get_domain(name = request.node.name), message = 'osef'):
             self.function()
 
     def test_registered_string(self, request) -> None:
         """
         Registered string.
         """
-        domain = nvtx.Domain(request.node.name)
+        domain = nvtx.get_domain(name = request.node.name)
 
         reg = domain.get_registered_string(string = 'my very long string that is better made a registered string')
+
+        assert reg is not None
+
+    @classmethod
+    @typeguard.typechecked
+    def intricated(cls, domain) -> None:
+        """
+        Build a situation with many intricated ranges.
+        """
+        with start_end_range(domain = domain, message = 'start-end-level-0'):
+            with push_pop_range(domain = domain, message = 'push-pop-level-1'):
+                with push_pop_range(domain = domain, message = 'push-pop-level-2'):
+                    for _ in range(3):
+                        with push_pop_range(domain = domain, message = 'push-pop-level-3'):
+                            cls.function()
 
     def test_intricated(self, request) -> None:
         """
         Build a situation with many intricated ranges.
         """
-        domain = nvtx.Domain(name = request.node.name)
+        self.intricated(domain = nvtx.get_domain(name = request.node.name))
 
-        with start_end_range(domain = domain, message = 'start-end-level-0'):
-            with push_pop_range(domain = domain, message = 'push-pop-level-1'):
-                with push_pop_range(domain = domain, message = 'push-pop-level-2'):
-                    with push_pop_range(domain = domain, message = 'push-pop-level-3'):
-                        self.function()
+if __name__ == '__main__':
+
+    logging.basicConfig(level = logging.INFO)
+
+    TestNVTX.intricated(domain = nvtx.get_domain('intricated'))

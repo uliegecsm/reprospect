@@ -1,3 +1,4 @@
+import logging
 import os
 import pathlib
 
@@ -190,7 +191,11 @@ class TestSASSDecoder:
 
         decoder = sass.Decoder(source = SOURCE)
 
-        with open(ARTIFACT_DIR / 'saxpy.html', 'w+') as fout:
+        file = ARTIFACT_DIR / 'saxpy.html'
+
+        logging.info(f'Writing SASS decoded table to {file}.')
+
+        with file.open('w+') as fout:
             fout.write(decoder.to_html())
 
     def test_from_128_to_130(self):

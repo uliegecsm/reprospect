@@ -10,6 +10,7 @@ import typeguard
 
 from reprospect.utils import cmake
 from reprospect.tools import ncu
+from reprospect.utils import detect
 
 TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
 
@@ -21,6 +22,7 @@ def cmake_file_api() -> cmake.FileAPI:
         inspect = {'toolchains' : 1},
     )
 
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:
     """
     Test :py:class:`reprospect.tools.ncu.Session`.
@@ -287,6 +289,7 @@ class TestCacher:
 
                 assert hash_a.digest() != hash_b.digest()
 
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_cache_hit(self):
         """
         The cacher should hit on the second call.

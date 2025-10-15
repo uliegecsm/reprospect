@@ -14,8 +14,11 @@ function(add_one_test FILE)
 
     set_source_files_properties(${FILENAME} PROPERTIES LANGUAGE CUDA)
 
-    add_test(NAME ${EXECUTABLE} COMMAND $<TARGET_FILE:${EXECUTABLE}>)
-
+    if(ReProspect_ENABLED_CUDA_ARCHITECTURE IN_LIST ReProspect_DETECTED_GPUS)
+        add_test(NAME ${EXECUTABLE} COMMAND $<TARGET_FILE:${EXECUTABLE}>)
+    else()
+        message(WARNING "Not adding test '${EXECUTABLE}' because ${ReProspect_ENABLED_CUDA_ARCHITECTURE} is not in the detected GPUs (${ReProspect_DETECTED_GPUS}).")
+    endif()
 endfunction()
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvtx3)

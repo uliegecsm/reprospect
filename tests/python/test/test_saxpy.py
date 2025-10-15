@@ -8,6 +8,7 @@ import reprospect
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools          import ncu
 from reprospect.tools.sass     import Decoder
+from reprospect.utils          import detect
 
 class TestSaxpy(reprospect.TestCase):
     """
@@ -45,6 +46,7 @@ class TestSASS(TestSaxpy):
     def test_instruction_count(self, decoder : Decoder) -> None:
         assert len(decoder.instructions) >= 16
 
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestNCU(TestSaxpy):
     """
     `ncu`-focused analysis.

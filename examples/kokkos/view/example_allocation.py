@@ -11,6 +11,7 @@ import typeguard
 import reprospect
 
 from reprospect.tools import nsys
+from reprospect.utils import detect
 
 class Memory(enum.StrEnum):
     DEVICE = 'DEVICE'
@@ -27,6 +28,7 @@ class TestAllocation(reprospect.TestCase):
     def executable(self) -> pathlib.Path:
         return self.CMAKE_BINARY_DIR / 'examples' / 'kokkos' / 'view' / self.NAME
 
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestNSYS(TestAllocation):
     """
     `nsys`-focused analysis.

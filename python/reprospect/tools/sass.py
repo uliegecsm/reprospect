@@ -138,7 +138,7 @@ class ControlCode:
             reuse = reuse_flags,
         )
 
-@dataclasses.dataclass(frozen = True)
+@dataclasses.dataclass(frozen = True, slots = True)
 class Instruction:
     """
     Represents a single `SASS` instruction with its components.

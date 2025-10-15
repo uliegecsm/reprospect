@@ -1,13 +1,18 @@
 import logging
+import os
 import pathlib
+import re
 import subprocess
 import typing
 
+import elftools.elf.sections
 import pytest
+import semantic_version
 
+from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump
-from reprospect.tools.binaries.elf import ELF
-from reprospect.utils              import cmake
+from reprospect.tools.binaries.elf import ELF, TkInfo, CuInfo
+from reprospect.utils              import cmake, nvcc
 
 from tests.python.compilation import get_compilation_output
 from tests.python.cublas      import CuBLAS
@@ -80,6 +85,58 @@ class TestCUDART:
             tuple(CuObjDump.list_elf(file = cudart))
         assert 'does not contain device code' in exc.value.stderr
 
+def get_cubin(arch : NVIDIAArch, cublas : CuBLAS, workdir : pathlib.Path) -> pathlib.Path:
+    try:
+        [cubin] = cublas.extract(arch = arch, cwd = workdir, randomly = True)
+    except IndexError:
+        pytest.skip(f'{cublas} does not contain an embedded cubin for {arch}.')
+    assert cubin.is_file()
+    return cubin
+
+def get_cuinfo_and_tkinfo(*, arch : NVIDIAArch, file : pathlib.Path, version : semantic_version.Version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> tuple[CuInfo | None, TkInfo | None]:
+    """
+    Extract `cuinfo` and `tkinfo` note sections.
+
+    It takes care of checking if each note section has to exist or not, given the `arch` and CUDA `version`.
+    """
+    with ELF(file = file) as elf:
+
+        def has(*, name : str) -> bool:
+            return elf.elf.has_section(section_name = '.note.nv.' + name)
+
+        def get(*, name : str) -> elftools.elf.sections.NoteSection:
+            section = elf.elf.get_section_by_name(name = '.note.nv.' + name)
+            assert isinstance(section, elftools.elf.sections.NoteSection)
+            return section
+
+        cuinfos : tuple[CuInfo, ...] | None = tuple(note for note in CuInfo.decode(note = get(name = 'cuinfo'))) if has(name = 'cuinfo') else None
+        tkinfos : tuple[TkInfo, ...] | None = tuple(note for note in TkInfo.decode(note = get(name = 'tkinfo'))) if has(name = 'tkinfo') else None
+
+        cuinfo : CuInfo | None = None
+        if version in semantic_version.SimpleSpec('<13.0.0'):
+            assert cuinfos is None
+        else:
+            logging.info(cuinfos)
+            assert cuinfos is not None
+            assert len(cuinfos) == 1
+            cuinfo = cuinfos[0]
+            assert cuinfo.virtual_sm == arch.compute_capability.as_int
+
+        tkinfo : TkInfo | None = None
+        if version in semantic_version.SimpleSpec('<13.0.0') \
+            and arch.compute_capability <= 90:
+            assert tkinfos is None
+        else:
+            logging.info(tkinfos)
+            assert tkinfos is not None
+            assert len(tkinfos) == 1
+            tkinfo = tkinfos[0]
+
+        if cuinfo is not None and tkinfo is not None:
+            assert cuinfo.note_version == tkinfo.note_version
+
+        return cuinfo, tkinfo
+
 class TestCuBLAS:
     """
     Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using the cuBLAS shared library.
@@ -103,19 +160,36 @@ class TestCuBLAS:
         """
         The cuBLAS shared library contains embedded cubins for many, but not all, architectures.
         """
-        try:
-            [cubin] = cublas.extract(arch = parameters.arch, cwd = workdir, randomly = True)
-        except IndexError:
-            pytest.skip(f"cuBLAS shared library does not contain an embedded cubin for arch {parameters.arch}")
-
-        assert cubin.is_file()
-
+        cubin = get_cubin(arch = parameters.arch, cublas = cublas, workdir = workdir)
         with ELF(file = cubin) as elf:
             logging.info(elf.header)
 
             assert elf.header['e_type'] == 'ET_EXEC'
             assert elf.is_cuda
             assert elf.arch == parameters.arch
+
+    @pytest.fixture(scope = 'class')
+    @staticmethod
+    def version() -> semantic_version.Version:
+        return nvcc.get_version()
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    def test_embedded_cubin_cuinfo_and_tkinfo(self, version : semantic_version.Version, parameters : Parameters, cublas : CuBLAS, workdir : pathlib.Path) -> None:
+        """
+        Retrieve the `cuinfo` and `tkinfo` note sections from a cuBLAS cubin.
+        """
+        cubin = get_cubin(arch = parameters.arch, cublas = cublas, workdir = workdir)
+
+        cuinfo, tkinfo = get_cuinfo_and_tkinfo(arch = parameters.arch, file = cubin)
+
+        if cuinfo is not None:
+            assert cuinfo.toolkit_version == int(f'{version.major}{version.minor}')
+
+        if tkinfo is not None:
+            assert tkinfo.tool_name == 'ptxas'
+            assert f'-arch {parameters.arch.as_sm}' in tkinfo.tool_options
+            assert '-m 64' in tkinfo.tool_options
+            assert f'{version.major}.{version.minor}' in tkinfo.tool_version
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestSaxpy:
@@ -163,3 +237,34 @@ class TestSaxpy:
             assert elf.header['e_type'] == 'ET_EXEC'
             assert elf.is_cuda
             assert elf.arch == parameters.arch
+
+    def test_embedded_cubin_cuinfo_and_tkinfo(self, parameters : Parameters, object_file : pathlib.Path, workdir : pathlib.Path, cmake_file_api : cmake.FileAPI) -> None:
+        """
+        Retrieve the `cuinfo` and `tkinfo` note sections from a compiled output.
+        """
+        [name] = CuObjDump.extract_elf(file = object_file, arch = parameters.arch, name = 'saxpy', cwd = workdir)
+        cubin = workdir / name
+        assert cubin.is_file()
+
+        cuinfo, tkinfo = get_cuinfo_and_tkinfo(arch = parameters.arch, file = cubin)
+
+        if cuinfo is not None:
+            assert cuinfo.virtual_sm == parameters.arch.compute_capability.as_int
+
+        if tkinfo is not None:
+            output            = subprocess.check_output(('nvcc', '--version')).decode()
+            expt_tool_branch  = re.search(r'Build cuda_[0-9.r]+/compiler.[0-9_]+', output).group()
+            expt_tool_version = re.search(r'Cuda compilation tools, release [0-9.]+, V[0-9.]+', output).group()
+            expt_tool_options = ['-v', f'-arch {parameters.arch.as_sm}', '-m 64']
+
+            match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+                case 'Clang':
+                    expt_tool_options.append('-O 3')
+                case _:
+                    pass
+
+            assert tkinfo.tool_branch  == expt_tool_branch
+            assert tkinfo.tool_name    == 'ptxas'
+            assert tkinfo.tool_version == expt_tool_version
+
+            assert all(x in tkinfo.tool_options for x in expt_tool_options)

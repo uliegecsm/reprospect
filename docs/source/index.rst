@@ -7,5 +7,6 @@ ReProspect documentation
 
    caching
    api/modules
+   examples
    tests
    bibliography

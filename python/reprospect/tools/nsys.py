@@ -224,12 +224,12 @@ class Report:
         return [row[0] for row in cursor.fetchall()]
 
     @typeguard.typechecked
-    def table(self, *, name : str) -> pandas.DataFrame:
+    def table(self, *, name : str, **kwargs) -> pandas.DataFrame:
         """
         Get a table from the report.
         """
         logging.info(f'Retrieving table {name} in {self.db}.')
-        return pandas.read_sql_query(f"SELECT * FROM {name};", self.conn)
+        return pandas.read_sql_query(f"SELECT * FROM {name};", self.conn, **kwargs)
 
     @typeguard.typechecked
     @staticmethod

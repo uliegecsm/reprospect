@@ -7,6 +7,8 @@ import typing
 
 import typeguard
 
+from reprospect.tools import architecture
+
 @dataclasses.dataclass(frozen = True, eq = True)
 class CudaRuntimeError:
     """
@@ -301,7 +303,7 @@ class Cuda:
         return value.value
 
     @typeguard.typechecked
-    def get_device_compute_capability(self, *, device : int) -> typing.Tuple[int, int]:
+    def get_device_compute_capability(self, *, device : int) -> architecture.ComputeCapability:
         """
         Get compute capability of `device`.
         """
@@ -312,7 +314,7 @@ class Cuda:
             ctypes.byref(cc_minor),
             ctypes.c_int(device),
         )
-        return (cc_major.value, cc_minor.value)
+        return architecture.ComputeCapability(major = cc_major.value, minor = cc_minor.value)
 
     @typeguard.typechecked
     def get_device_name(self, *, device : int, length : int = 150) -> str:

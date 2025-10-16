@@ -48,7 +48,7 @@ def test_get_arch_from_compile_command(cmake_file_api) -> None:
 
     command = [x for x in compile_commands if x['file'].endswith('tests/cpp/cuda/test_saxpy.cpp')]
     assert len(command) == 1
-    assert get_arch_from_compile_command(cmd = command[0]['command']) == {NVIDIAArch.from_compute_capability(cc = cmake_file_api.cache['CMAKE_CUDA_ARCHITECTURES'].value.split('-')[0])}
+    assert get_arch_from_compile_command(cmd = command[0]['command']) == {NVIDIAArch.from_compute_capability(cc = int(cmake_file_api.cache['CMAKE_CUDA_ARCHITECTURES'].value.split('-')[0]))}
 
 @typeguard.typechecked
 def get_compilation_output(*,

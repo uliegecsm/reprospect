@@ -72,7 +72,6 @@ jobs:
         outputs:
             deploy_image: ${{ steps.strategy.outputs.deploy_image }}
             doc_image: ${{ steps.strategy.outputs.doc_image }}
-            environment: ${{ steps.strategy.outputs.environment }}
             matrix_images: ${{ steps.strategy.outputs.matrix_images }}
             matrix_tests: ${{ steps.strategy.outputs.matrix_tests }}
         steps:
@@ -96,7 +95,7 @@ jobs:
             fail-fast: false
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_images) }}
-        env: ${{ fromJSON(needs.setup-job-matrix.outputs.environment) }}
+        env: ${{ matrix.environment }}
         steps:
             - uses: actions/checkout@v5
               with:
@@ -174,7 +173,7 @@ jobs:
             fail-fast: false
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
-        env: ${{ fromJSON(needs.setup-job-matrix.outputs.environment) }}
+        env: ${{ matrix.environment }}
         runs-on: ${{ matrix.runs-on }}
         container:
             image: ${{ matrix.image }}
@@ -204,7 +203,7 @@ jobs:
             fail-fast: false
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
-        env: ${{ fromJSON(needs.setup-job-matrix.outputs.environment) }}
+        env: ${{ matrix.environment }}
         runs-on: ${{ matrix.runs-on }}
         container:
             image: ${{ matrix.kokkos }}
@@ -228,7 +227,7 @@ jobs:
             fail-fast: false
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
-        env: ${{ fromJSON(needs.setup-job-matrix.outputs.environment) }}
+        env: ${{ matrix.environment }}
         runs-on: ${{ matrix.runs-on }}
         container:
             image: ${{ matrix.image }}

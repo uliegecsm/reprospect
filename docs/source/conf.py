@@ -37,6 +37,7 @@ extlinks = {
 }
 
 intersphinx_mapping = {
+    'numpy' : ('https://numpy.org/doc/stable/', None),
     'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'python': ('https://docs.python.org/3', None),
     'rich'  : ("https://rich.readthedocs.io/en/stable/", None),
@@ -67,31 +68,10 @@ unittest.TestCase.__module__ = 'unittest'
 
 linkcode_url = 'https://github.com/uliegecsm/reprospect'
 
-# Guard to ensure we encounter what we allow to be ignored.
-guards = {
-    'blake3.blake3' : 0,
-    'nvtx._lib.lib' : 0,
-}
-
-def ignore_missing_reference(app, env, node, contnode):
-    """
-    Proper way to ignore missing references.
-    """
-    if node.get('reftarget', '').startswith('blake3.blake3'):
-        guards['blake3.blake3'] += 1
-        return contnode
-    elif node.get('reftarget', '').startswith('nvtx._lib.lib'):
-        guards['nvtx._lib.lib'] += 1
-        return contnode
-    else:
-        return None
-
-def on_build_finished(app, exception):
-    if exception is None:
-        for k, v in guards.items():
-            if v == 0:
-                raise RuntimeError(f'Fix {k} was never used.')
-
-def setup(app):
-    app.connect('missing-reference', ignore_missing_reference)
-    app.connect("build-finished", on_build_finished)
+# Some references are broken, or the package does not provide an object inventory file.
+# See also https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpick_ignore_regex.
+nitpick_ignore_regex = [
+    ('py:class', r'blake3.blake3.*'),
+    ('py:class', r'nvtx._lib.lib.*'),
+    ('py:class', r'numpy.int64'),
+]

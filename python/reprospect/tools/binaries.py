@@ -14,6 +14,8 @@ from reprospect.tools.architecture import NVIDIAArch
 
 PATTERNS = [
     re.compile(r'-arch=sm_(\d+)'),
+    re.compile(r'--gpu-architecture=compute_(\d+) --gpu-code=sm_(\d+)'),
+    re.compile(r'--generate-code=arch=compute_(\d+),code=\[sm_(\d+)\]'),
     re.compile(r'--generate-code=arch=compute_(\d+),code=\[compute_(\d+),sm_(\d+)\]'),
     re.compile(r'--cuda-gpu-arch=sm_(\d+)'),
 ]

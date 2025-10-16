@@ -19,7 +19,7 @@ inline void check_cudart_call(
     {
         std::ostringstream oss;
         oss << statement << " failed: "
-            << status << " (" << cudaGetErrorName(status) << ')'
+            << status << " (" << cudaGetErrorName(status) << "): "
             << cudaGetErrorString(status)
             << " (" << loc.file_name() << ":" << loc.line() << ")";
 

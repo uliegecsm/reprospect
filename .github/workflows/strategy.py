@@ -88,6 +88,9 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     for lang in partial['compilers']:
         partial['compilers'][lang] = dataclasses.asdict(partial['compilers'][lang])
 
+    # Environment of the job.
+    partial['environment'] = {'REGISTRY' : args.registry}
+
     return partial
 
 @typeguard.typechecked
@@ -96,7 +99,6 @@ def main(*, args : argparse.Namespace) -> None:
     Generate the strategy matrix.
     """
     matrix = []
-    environment = {'REGISTRY' : args.registry}
 
     matrix.append(complete_job({
         'cuda_version' : '12.8.1',
@@ -143,8 +145,6 @@ def main(*, args : argparse.Namespace) -> None:
 
     # But some jobs in the matrix don't require running the tests, because we don't have resources for them.
     print(f'matrix_tests={json.dumps([x for x in matrix if x['tests']], default = str)}')
-
-    print(f'environment={json.dumps(environment, default = str)}')
 
     print(f'deploy_image={matrix[0]['image']}')
     print(f'doc_image={matrix[0]['kokkos']}')

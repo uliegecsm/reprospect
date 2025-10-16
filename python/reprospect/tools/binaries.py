@@ -5,9 +5,13 @@ import logging
 import pathlib
 import re
 import subprocess
+import textwrap
 import typing
 
 import pandas
+import rich.console
+import rich.text
+import rich.table
 import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
@@ -94,6 +98,37 @@ class ResourceUsage(enum.StrEnum):
                     res[t] = int(token[2])
         return res
 
+@dataclasses.dataclass(slots = True)
+class Function:
+    code : str = None
+    ru : dict = None
+
+    @typeguard.typechecked
+    def to_table(self, *, max_code_length: int = 130) -> rich.table.Table:
+        """
+        Convert to a :py:class:`rich.table.Table`.
+        """
+        table = rich.table.Table(width = 15 + max_code_length + 7, show_header = False, padding = (0, 1))
+        table.add_column(width = 15)
+        table.add_column(width = max_code_length, overflow = "ellipsis", no_wrap = True)
+
+        # Code.
+        table.add_row("Code", rich.text.Text(textwrap.dedent(self.code.expandtabs()).rstrip()), end_section = True)
+
+        # Resouce usage.
+        table.add_row("Resource usage", ", ".join([f"{key}: {value}" for key, value in self.ru.items()]))
+
+        return table
+
+    @typeguard.typechecked
+    def __str__(self) -> str:
+        """
+        Rich representation with :py:meth:`to_table`.
+        """
+        with rich.console.Console(width = 200) as console, console.capture() as capture:
+            console.print(self.to_table(), no_wrap = True)
+        return capture.get()
+
 class CuObjDump:
     """
     Use `cuobjdump` for extracting `SASS`, symbol table, and so on.
@@ -101,11 +136,6 @@ class CuObjDump:
     References:
         - :cite:`nvidia-cuda-binary-utility-cuobjdump`
     """
-    @dataclasses.dataclass
-    class Function:
-        code : str = None
-        ru : dict = None
-
     @typeguard.typechecked
     def __init__(
         self,
@@ -149,7 +179,7 @@ class CuObjDump:
         for match in re.finditer(rf'{START}(.*?){STOP}', self.sass, flags = re.DOTALL):
             function = match.group(1)
             name, code = function.split(sep = '\n', maxsplit = 1)
-            self.functions[name] = CuObjDump.Function(code = code)
+            self.functions[name] = Function(code = code)
 
         # Retrieve other function information.
         lines = iter(self.sass.splitlines())

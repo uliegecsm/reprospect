@@ -183,7 +183,7 @@ jobs:
 
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
-                    -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.nvidia_compute_capability }} \
+                    -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.cmake_cuda_architectures }} \
                     -DReProspect_ENABLE_DOCS=OFF \
                     -DReProspect_ENABLE_EXAMPLES=OFF \
                     -DReProspect_ENABLE_TESTS=ON
@@ -213,7 +213,7 @@ jobs:
 
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
-                    -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.nvidia_compute_capability }} \
+                    -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.cmake_cuda_architectures }} \
                     -DReProspect_ENABLE_DOCS=OFF \
                     -DReProspect_ENABLE_EXAMPLES=ON \
                     -DReProspect_ENABLE_TESTS=OFF

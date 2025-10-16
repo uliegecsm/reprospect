@@ -59,10 +59,12 @@ int main()
     {
         ::nvtx3::scoped_range_in<MyAppDomain> range{"launch_saxpy_kernel_first_time"};
         saxpy_kernel<<<dim3{grid_size, 1, 1}, dim3{block_size, 1, 1} , 0, stream_B>>>(size, 2.f, vec_x, vec_y);
+        REPROSPECT_CHECK_CUDART_CALL(cudaGetLastError());
     }
     {
         ::nvtx3::scoped_range_in<MyAppDomain> range{"launch_saxpy_kernel_second_time"};
         saxpy_kernel<<<dim3{grid_size, 1, 1}, dim3{block_size, 1, 1} , 0, stream_B>>>(size, 2.f, vec_x, vec_y);
+        REPROSPECT_CHECK_CUDART_CALL(cudaGetLastError());
     }
 
     std::vector<float> result(size);

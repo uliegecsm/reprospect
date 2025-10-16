@@ -25,17 +25,19 @@ def cmake_file_api() -> cmake.FileAPI:
         inspect = {'cache' : 2, 'toolchains' : 1},
     )
 
-def test_get_arch_from_compile_command():
+def test_get_arch_from_compile_command(cmake_file_api) -> None:
     """
     Test :py:meth:`reprospect.tools.binaries.get_arch_from_compile_command`.
     """
-    COMMANDS = {
+    COMMANDS : dict[str, set] = {
         # For nvcc.
-        '-arch=sm_86' : set([NVIDIAArch.from_compute_capability(cc = 86)]),
-        '--generate-code=arch=compute_90,code=[compute_90,sm_90]' : set([NVIDIAArch.from_str('HOPPER90')]),
+        '-arch=sm_86' : {NVIDIAArch.from_compute_capability(cc = 86)},
+        '--gpu-architecture=compute_70 --gpu-code=sm_70' : {NVIDIAArch.from_str('VOLTA70')},
+        '--generate-code=arch=compute_90,code=[sm_90]' : {NVIDIAArch.from_str('HOPPER90')},
+        '--generate-code=arch=compute_90,code=[compute_90,sm_90]' : {NVIDIAArch.from_str('HOPPER90')},
         # For clang.
-        '--cuda-gpu-arch=sm_120' : set([NVIDIAArch.from_str('BLACKWELL120')]),
-        '--cuda-gpu-arch=sm_120 --cuda-gpu-arch=sm_86' : set([NVIDIAArch.from_str('BLACKWELL120'), NVIDIAArch.from_str('AMPERE86')]),
+        '--cuda-gpu-arch=sm_120' : {NVIDIAArch.from_str('BLACKWELL120')},
+        '--cuda-gpu-arch=sm_120 --cuda-gpu-arch=sm_86' : {NVIDIAArch.from_str('BLACKWELL120'), NVIDIAArch.from_str('AMPERE86')},
     }
 
     for command, arch in COMMANDS.items():
@@ -44,8 +46,9 @@ def test_get_arch_from_compile_command():
     with open(pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'compile_commands.json', 'r') as fin:
         compile_commands = json.load(fin)
 
-    for command in filter(lambda x: x['file'].endswith('tests/cuda/test_saxpy.cpp'), compile_commands):
-        assert get_arch_from_compile_command(cmd = command['command']) == set([NVIDIAArch.from_compute_capability(cc = os.environ['CMAKE_CUDA_ARCHITECTURES'])])
+    command = [x for x in compile_commands if x['file'].endswith('tests/cpp/cuda/test_saxpy.cpp')]
+    assert len(command) == 1
+    assert get_arch_from_compile_command(cmd = command[0]['command']) == {NVIDIAArch.from_compute_capability(cc = cmake_file_api.cache['CMAKE_CUDA_ARCHITECTURES'].value.split('-')[0])}
 
 @typeguard.typechecked
 def get_compilation_output(*,
@@ -82,7 +85,10 @@ def get_compilation_output(*,
 
     match cmake_file_api.toolchains['CUDA'].id:
         case 'NVIDIA':
-            cmd.append(f'-arch={arch.as_sm}')
+            cmd += [
+                '--gpu-architecture=' + arch.as_compute,
+                '--gpu-code='         + arch.as_sm,
+            ]
             if resource_usage:
                 cmd.append('--resource-usage')
         case 'Clang':

@@ -268,6 +268,17 @@ jobs:
                 cd docs
                 make html
 
+    papers:
+        needs: []
+        runs-on: [self-hosted, linux, docker, amd64]
+        container:
+            image: openjournals/inara
+        steps:
+            - uses: actions/checkout@v5
+            - run: |
+                cd papers/joss
+                inara -o pdf -p -v paper.md
+
     deploy:
         needs: [setup-job-matrix, build-image, tests, examples, install-as-package-and-test, documentation]
         runs-on: [self-hosted, linux, docker, amd64]

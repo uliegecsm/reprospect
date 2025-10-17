@@ -152,6 +152,7 @@ def main(*, args : argparse.Namespace) -> None:
         'cuda_version' : '13.0.0',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 120,
+        'additional_build_platforms' : ['linux/arm64'],
     }, args = args))
 
     matrix.append(complete_job({

@@ -21,6 +21,7 @@ extensions = [
     'sphinx_github_style',
     'sphinxcontrib.bibtex',
     'sphinxcontrib.tikz',
+    'sphinxemoji.sphinxemoji',
 ]
 
 html_theme = 'sphinx_rtd_theme'
@@ -45,7 +46,7 @@ intersphinx_mapping = {
 
 autodoc_default_options = {
     'members' : True,
-    'special-members' : True,
+    'special-members' : '__str__,__init__,__enter__,__exit__',
     'show-inheritance' : True,
     'undoc-members' : True,
 }
@@ -60,6 +61,16 @@ apidoc_modules = [
 ]
 
 bibtex_bibfiles = ['references.bib']
+
+rst_prolog = '''
+.. _Kokkos: http://kokkos.org
+.. _Cuda binary utilities: https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html
+.. _Nsight Compute: https://developer.nvidia.com/nsight-compute
+.. _Nsight Systems: https://developer.nvidia.com/nsight-systems
+.. _CMake: https://cmake.org
+'''
+
+tikz_latex_preamble = r'\usepackage[dvipsnames]{xcolor}'
 
 # 'unittest.TestCase' is implemented in 'unittest.test.TestCase' but is documented
 # as 'unittest.TestCase', thus confusing 'intersphinx'.

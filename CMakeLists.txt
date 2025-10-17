@@ -13,7 +13,6 @@ project(
 
 option(ReProspect_ENABLE_TESTS "Enable tests." OFF)
 option(ReProspect_ENABLE_EXAMPLES "Enable examples." OFF)
-option(ReProspect_EXAMPLES_WITH_SOURCES "Force the PYTHONPATH so examples run with the sources, i.e. ignore any installed 'reprospect' package." ON)
 
 set(CMAKE_CXX_STANDARD 20)
 

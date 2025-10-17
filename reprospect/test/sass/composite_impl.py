@@ -7,6 +7,8 @@ import itertools
 import sys
 import typing
 
+import mypy_extensions
+
 from reprospect.test.sass.instruction import InstructionMatcher, InstructionMatch
 from reprospect.tools.sass            import Instruction
 
@@ -15,6 +17,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
+@mypy_extensions.mypyc_attr(allow_interpreted_subclasses = True)
 class SequenceMatcher(abc.ABC):
     """
     Base class for matchers of a sequence of instructions.

@@ -8,11 +8,12 @@ import subprocess
 import typing
 
 import pytest
+import rich.console
 import semantic_version
 import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import get_arch_from_compile_command, CuObjDump, CuppFilt, LlvmCppFilt, ResourceUsage
+from reprospect.tools.binaries     import get_arch_from_compile_command, CuObjDump, CuppFilt, LlvmCppFilt, ResourceUsage, Function
 from reprospect.utils              import cmake
 
 TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
@@ -236,6 +237,62 @@ class TestLlvmCppFilt:
         assert LlvmCppFilt.demangle(s = MANGLED) == 'void add_and_increment_kernel<0u>(unsigned int*)'
         # cu++filt cannot demangle this symbol.
         assert CuppFilt.demangle(s = MANGLED).startswith('_Z')
+
+class TestFunction:
+    """
+    Tests related to :py:class:`reprospect.tools.binaries.Function`.
+    """
+    def test_string_representation(self) -> None:
+        """
+        Test :py:meth:`reprospect.tools.binaries.Function.__str__`.
+        """
+        CODE = """\
+        .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"
+        /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */
+                                                                                                            /* 0x000e220000000800 */
+        /*0010*/                   S2R R0, SR_TID.X                     &wr=0x1          ?trans7;           /* 0x0000000000007919 */
+                                                                                                            /* 0x000e6e0000002100 */
+"""
+        RU = {
+            ResourceUsage.REGISTER : 10,
+            ResourceUsage.STACK    : 0,
+            ResourceUsage.SHARED   : 0,
+            ResourceUsage.LOCAL    : 0,
+            ResourceUsage.CONSTANT : {0: 924},
+            ResourceUsage.TEXTURE  : 0,
+            ResourceUsage.SURFACE  : 0,
+            ResourceUsage.SAMPLER  : 0
+        }
+        function = Function(code = CODE, ru = RU)
+
+        # Check that the conversion to a table with truncation of long lines works as expected.
+        with rich.console.Console(width = 200) as console, console.capture() as capture:
+            console.print(function.to_table(max_code_length = 120), no_wrap = True)
+
+        assert capture.get() == """\
+┌─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Code            │ .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"                                                       │
+│                 │ /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b… │
+│                 │                                                                                                     /* 0x000e2200000008… │
+│                 │ /*0010*/                   S2R R0, SR_TID.X                     &wr=0x1          ?trans7;           /* 0x00000000000079… │
+│                 │                                                                                                     /* 0x000e6e00000021… │
+├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Resource usage  │ REG: 10, STACK: 0, SHARED: 0, LOCAL: 0, CONSTANT: {0: 924}, TEXTURE: 0, SURFACE: 0, SAMPLER: 0                           │
+└─────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+"""
+        
+        # Check the rich representation with the default table size.
+        assert str(function) == """\
+┌─────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Code            │ .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"                                                                 │
+│                 │ /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */       │
+│                 │                                                                                                     /* 0x000e220000000800 */       │
+│                 │ /*0010*/                   S2R R0, SR_TID.X                     &wr=0x1          ?trans7;           /* 0x0000000000007919 */       │
+│                 │                                                                                                     /* 0x000e6e0000002100 */       │
+├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Resource usage  │ REG: 10, STACK: 0, SHARED: 0, LOCAL: 0, CONSTANT: {0: 924}, TEXTURE: 0, SURFACE: 0, SAMPLER: 0                                     │
+└─────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+"""
 
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestCuObjDump:

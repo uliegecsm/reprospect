@@ -2,4 +2,4 @@
 
 # reprospect
 
-`reprospect` is a low-overhead reproducibility-centric profiling framework for `CUDA`-based applications in high-performance computing (HPC), built on top of the `NVIDIA` profiling and binary utilities.
+`ReProspect` provides a framework and tools for reproducible prospecting of `Cuda` applications.

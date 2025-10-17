@@ -175,8 +175,7 @@ jobs:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
         env: ${{ matrix.environment }}
         runs-on: ${{ matrix.runs-on }}
-        container:
-            image: ${{ matrix.image }}
+        container: ${{ matrix.tests.container }}
         steps:
             - uses: actions/checkout@v5
 

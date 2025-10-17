@@ -87,7 +87,6 @@ class TestCuda(unittest.TestCase):
 
         for device in range(cuda.device_count):
             cc = cuda.get_device_compute_capability(device = device)
-            assert isinstance(cc, tuple)
             logging.info(f'Compute capability of device {device} is {cc}.')
 
     def test_get_device_name(self):

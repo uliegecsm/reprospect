@@ -68,7 +68,8 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
 
     tag = f'{partial['cuda_version']}-devel-ubuntu24.04'
 
-    partial['nvidia_arch'] = str(NVIDIAArch.from_compute_capability(cc = partial['nvidia_compute_capability']))
+    arch = NVIDIAArch.from_compute_capability(cc = partial['nvidia_compute_capability'])
+    partial['nvidia_arch'] = str(arch)
 
     partial['base_image'] = f'nvidia/cuda:{tag}'
     partial[     'image'] = full_image(name = name,             tag = tag,                                       args = args)
@@ -80,16 +81,28 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     runs_on = ['self-hosted', 'linux', 'docker', 'amd64', partial['nvidia_arch'].lower(), 'gpu:0']
     partial['runs-on'] = runs_on
 
-    # Testing is opt-out.
-    if 'tests' not in partial:
-        partial['tests'] = True
-
     # Write compilers as dictionaries.
     for lang in partial['compilers']:
         partial['compilers'][lang] = dataclasses.asdict(partial['compilers'][lang])
 
     # Environment of the job.
     partial['environment'] = {'REGISTRY' : args.registry}
+
+    # Specifics to the 'tests' job. Testing is opt-out.
+    if 'tests' not in partial or partial['tests']:
+        partial['tests'] = {
+            'container' : {
+                'image' : partial['image'],
+            }
+        }
+
+        # Enforce GPU compute capability. See also
+        # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-require-constraints.
+        partial['tests']['container']['env'] = {
+            'NVIDIA_REQUIRE_ARCH' : f'arch={arch.compute_capability.major}.{arch.compute_capability.minor}'
+        }
+    else:
+        partial['tests'] = None
 
     return partial
 

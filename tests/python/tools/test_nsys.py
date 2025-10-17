@@ -10,9 +10,11 @@ import semantic_version
 import typeguard
 
 from reprospect.tools.nsys import Report, Session, strip_cuda_api_suffix, Cacher
+from reprospect.utils      import detect
 
 TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
 
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:
     """
     Test :py:class:`reprospect.tools.nsys.Session`.
@@ -171,6 +173,7 @@ class TestCacher:
 
                 assert hash_a.digest() != hash_b.digest()
 
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_cache_hit(self):
         """
         The cacher should hit on the second call.
@@ -199,6 +202,7 @@ class TestCacher:
 
                 assert all(x in os.listdir(cacher.session.output_dir) for x in FILES)
 
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestReport:
     """
     Test :py:class:`reprospect.tools.nsys.Report`.

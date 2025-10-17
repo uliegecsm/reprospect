@@ -83,7 +83,7 @@ class NVIDIAFamily(enum.StrEnum):
         else:
             raise ValueError(f"unsupported compute capability {cc}")
 
-@dataclasses.dataclass(frozen = True, eq = True, match_args = True)
+@dataclasses.dataclass(frozen = True, eq = True, match_args = True, slots = True)
 class NVIDIAArch:
     """
     `NVIDIA` architecture.

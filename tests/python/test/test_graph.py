@@ -1,5 +1,4 @@
 import logging
-import os
 import pathlib
 
 import pytest
@@ -11,6 +10,7 @@ from reprospect.tools.binaries import CuObjDump
 from reprospect.tools          import ncu
 from reprospect.tools.sass     import Decoder
 from reprospect.utils          import cmake
+from reprospect.utils          import detect
 
 class TestGraph(reprospect.TestCase):
     """
@@ -69,6 +69,7 @@ class TestSASS(TestGraph):
         decoder = Decoder(code = cuobjdump.functions[self.DEMANGLED_NODE_A[cmake_file_api.toolchains['CUDA'].id]].code)
         assert len(decoder.instructions) >= 8
 
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestNCU(TestGraph):
     """
     `ncu`-focused analysis.

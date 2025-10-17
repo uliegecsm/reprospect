@@ -204,8 +204,7 @@ jobs:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
         env: ${{ matrix.environment }}
         runs-on: ${{ matrix.runs-on }}
-        container:
-            image: ${{ matrix.kokkos }}
+        container: ${{ matrix.examples.container }}
         steps:
             - uses: actions/checkout@v5
 
@@ -228,8 +227,7 @@ jobs:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
         env: ${{ matrix.environment }}
         runs-on: ${{ matrix.runs-on }}
-        container:
-            image: ${{ matrix.image }}
+        container: ${{ matrix.install-as-package-and-test.container }}
         steps:
             # Since it is still a private repository, let's avoid authentication burden by
             # installing from the files directly.
@@ -241,7 +239,7 @@ jobs:
                 rm -rf install-from/
 
             - run: |
-                python -c "import reprospect.tools.device_properties as u; print(u.Cuda().get_device_name(device = 0))"
+                python -c "from reprospect.utils.detect import GPUDetector as u; print(u.get())"
 
             - run: |
                 reprospect-install-nsight-systems --help

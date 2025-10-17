@@ -10,6 +10,11 @@ import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
 
+AVAILABLE_RUNNER_ARCHES = (
+    NVIDIAArch.from_str('VOLTA70'),
+    NVIDIAArch.from_str('BLACKWELL120'),
+)
+
 @dataclasses.dataclass
 class Compiler:
     ID : str
@@ -72,13 +77,17 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     partial['nvidia_arch'] = str(arch)
 
     partial['base_image'] = f'nvidia/cuda:{tag}'
-    partial[     'image'] = full_image(name = name,             tag = tag,                                       args = args)
-    partial[    'kokkos'] = full_image(name = f'{name}-kokkos', tag = f'{tag}-{partial['nvidia_arch']}'.lower(), args = args)
+    partial[     'image'] = full_image(name = name,             tag = tag,                     args = args)
+    partial[    'kokkos'] = full_image(name = f'{name}-kokkos', tag = f'{tag}-{arch}'.lower(), args = args)
 
     partial['build_platforms'] = ','.join(['linux/amd64'] + partial['additional_build_platforms'] if 'additional_build_platforms' in partial else [])
 
     # Labels for testing runners.
-    runs_on = ['self-hosted', 'linux', 'docker', 'amd64', partial['nvidia_arch'].lower(), 'gpu:0']
+    # We do require the architecture as a label if the architecture is part of our
+    # available runner fleet.
+    runs_on = ['self-hosted', 'linux', 'docker', 'amd64']
+    if arch in AVAILABLE_RUNNER_ARCHES:
+        runs_on += [f'{arch}'.lower(), 'gpu:0']
     partial['runs-on'] = runs_on
 
     # Write compilers as dictionaries.
@@ -88,21 +97,40 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     # Environment of the job.
     partial['environment'] = {'REGISTRY' : args.registry}
 
-    # Specifics to the 'tests' job. Testing is opt-out.
+    # Specifics to the 'tests' and 'examples' jobs.
+    # Testing is opt-out.
+    # Examples are enabled if tests are enabled.
     if 'tests' not in partial or partial['tests']:
-        partial['tests'] = {
-            'container' : {
-                'image' : partial['image'],
-            }
-        }
+        partial['tests'   ] = {'container' : {'image' : partial['image']}}
+        partial['examples'] = {'container' : {'image' : partial['kokkos']}}
 
-        # Enforce GPU compute capability. See also
-        # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-require-constraints.
-        partial['tests']['container']['env'] = {
-            'NVIDIA_REQUIRE_ARCH' : f'arch={arch.compute_capability.major}.{arch.compute_capability.minor}'
-        }
+        if arch in AVAILABLE_RUNNER_ARCHES:
+            # Enforce GPU compute capability. See also
+            # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-require-constraints.
+            env = {'NVIDIA_REQUIRE_ARCH' : f'arch={arch.compute_capability.major}.{arch.compute_capability.minor}'}
+            partial['tests'   ]['container']['env'] = env
+            partial['examples']['container']['env'] = env
+        else:
+            # Any runner can pick up this job, even those with incompatible CUDA drivers.
+            # Since no executable will actually run, we allow such runners to proceed.
+            # To prevent any GPU-related issues or convoluted conditional skips based on driver version in the tests,
+            # we explicitly hide all GPUs.
+            env = {'NVIDIA_VISIBLE_DEVICES': ''}
+            partial['tests'   ]['container']['env'] = env
+            partial['examples']['container']['env'] = env
     else:
-        partial['tests'] = None
+        partial['tests'   ] = None
+        partial['examples'] = None
+
+    # Specifics to the 'install-as-package-and-test' job.
+    # We don't run anything on GPU.
+    # See also https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-disable-require-environment-variable
+    partial['install-as-package-and-test'] = {'container' : {
+        'image' : partial['kokkos'],
+        'env' : {
+            'NVIDIA_DISABLE_REQUIRE' : '1',
+        }
+    }}
 
     return partial
 
@@ -130,7 +158,7 @@ def main(*, args : argparse.Namespace) -> None:
         'cuda_version' : '13.0.0',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 86,
-        'tests' : False,
+        'tests' : True,
     }, args = args))
 
     matrix.append(complete_job({

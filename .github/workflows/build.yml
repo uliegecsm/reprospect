@@ -274,8 +274,20 @@ jobs:
         container:
             image: openjournals/inara
         steps:
+            - run: apk add git
+
             - uses: actions/checkout@v5
-            - run: |
+              with:
+                  set-safe-directory: true
+
+            - id: changed-files
+              uses: tj-actions/changed-files@v47
+              with:
+                  files: |
+                      papers/joss/**
+
+            - if : steps.changed-files.outputs.any_changed == 'true'
+              run: |
                 cd papers/joss
                 inara -o pdf -p -v paper.md
 

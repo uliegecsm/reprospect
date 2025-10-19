@@ -30,7 +30,8 @@ class Unit(enum.StrEnum):
     Available units.
 
     References:
-        * https://docs.nvidia.com/nsight-compute/ProfilingGuide/#metrics-decoder
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/#metrics-decoder
     """
     L1TEX = 'l1tex'
     SM    = 'sm'
@@ -39,6 +40,10 @@ class Unit(enum.StrEnum):
 class PipeStage(enum.StrEnum):
     """
     Available pipe stages.
+
+    References:
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-decoder
     """
     TAG = 't'
     TAG_OUTPUT = 't_output'
@@ -48,7 +53,8 @@ class Quantity(enum.StrEnum):
     Available quantities.
 
     References:
-        * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-decoder
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-decoder
     """
     INSTRUCTION = 'inst'
     REQUEST     = 'requests'
@@ -58,10 +64,11 @@ class Quantity(enum.StrEnum):
 @dataclasses.dataclass(frozen = False)
 class Metric:
     """
-    Used to represent a `ncu` metric.
+    Used to represent a ``ncu`` metric.
 
     References:
-        * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
     #: The base name of the metric.
     name : str
@@ -81,7 +88,7 @@ class Metric:
     ) -> None:
         """
         If `subs` is not given, it is assumed that `name` is a valid metric
-        that can be directly evaluated by `ncu`.
+        that can be directly evaluated by ``ncu``.
         """
         self.name  = name
         self.human = human if human else self.name
@@ -93,13 +100,17 @@ class Metric:
     @typeguard.typechecked
     def gather(self) -> list[str]:
         """
-        Get the list of sub-metric names.
+        Get the list of sub-metric names or the metric name itself if no sub-metrics are defined.
         """
         return [f'{self.name}{sub}' for sub in self.subs.keys()]
 
 class MetricCounter(Metric):
     """
     A counter metric.
+
+    References:
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
     class RollUp(enum.StrEnum):
         SUM = '.sum'
@@ -110,6 +121,10 @@ class MetricCounter(Metric):
 class MetricRatio(Metric):
     """
     A ratio metric.
+
+    References:
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
     class RollUp(enum.StrEnum):
         PCT      = '.pct'
@@ -118,10 +133,11 @@ class MetricRatio(Metric):
 
 class XYZBase:
     """
-    Used to represent a triplet of metrics in x, y and z dimensions.
+    Base class for factories used to represent a triplet of metrics in `x`, `y` and `z` dimensions.
 
     References:
-        * https://docs.nvidia.com/nsight-compute/ProfilingGuide/#metrics-reference
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/#metrics-reference
     """
     @classmethod
     @typeguard.typechecked
@@ -131,18 +147,28 @@ class XYZBase:
         return (Metric(name = cls.prefix + dim) for dim in dims) # pylint: disable=no-member
 
 class LaunchBlock(XYZBase):
+    """
+    Factory of metrics ``launch__block_dim_x``, ``launch__block_dim_y`` and ``launch__block_dim_z``.
+    """
     prefix = 'launch__block_dim_'
 
 class LaunchGrid(XYZBase):
+    """
+    Factory of metrics ``launch__grid_dim_x``, ``launch__grid_dim_y`` and ``launch__grid_dim_z``.
+    """
     prefix = 'launch__grid_dim_'
 
 @dataclasses.dataclass(frozen = False)
 class MetricCorrelation:
     """
-    A metric with correlations, like `sass__inst_executed_per_opcode`.
+    A metric with correlations, like ``sass__inst_executed_per_opcode``.
+
+    References:
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
     name : str
-    correlated : dict[str, float] = None
+    correlated : dict[str, int] = None
     value : float = None
 
     @typeguard.typechecked
@@ -158,9 +184,13 @@ def counter_name_from(
     qualifier : typing.Optional[str] = None
 ) -> str:
     """
-    Based on metrics naming convention from https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure::
+    Based on ``ncu`` metrics naming convention:
 
-        unit__(subunit?)_(pipestage?)_quantity_(qualifiers?)
+        ``unit__(subunit?)_(pipestage?)_quantity_(qualifiers?)``
+
+    References:
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
     name = f'{unit}__'
     if pipestage:
@@ -183,6 +213,9 @@ class L1TEXCache:
         name = 'global load'
 
         class Instructions(MetricCounter):
+            """
+            Counter metric ``(unit)__(sass?)_inst_executed_op_global_ld``.
+            """
             @typeguard.typechecked
             def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
                 MetricCounter.__init__(self,
@@ -195,6 +228,9 @@ class L1TEXCache:
                 )
 
         class Requests(MetricCounter):
+            """
+            Counter metric ``l1tex__t_requests_pipe_lsu_mem_global_op_ld``.
+            """
             @typeguard.typechecked
             def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
@@ -208,6 +244,9 @@ class L1TEXCache:
                 )
 
         class Sectors(MetricCounter):
+            """
+            Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld``.
+            """
             @typeguard.typechecked
             def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
@@ -221,6 +260,9 @@ class L1TEXCache:
                 )
 
         class SectorHits(MetricCounter):
+            """
+            Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_hit``.
+            """
             @typeguard.typechecked
             def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
@@ -234,6 +276,9 @@ class L1TEXCache:
                 )
 
         class SectorMisses(MetricCounter):
+            """
+            Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_miss``.
+            """
             @typeguard.typechecked
             def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
@@ -247,6 +292,9 @@ class L1TEXCache:
                 )
 
         class Wavefronts(MetricCounter):
+            """
+            Counter metric ``l1tex__t_wavefronts_pipe_lsu_mem_global_op_ld``.
+            """
             @typeguard.typechecked
             def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
@@ -264,6 +312,9 @@ class L1TEXCache:
         name = 'global store'
 
         class Instructions(MetricCounter):
+            """
+            Counter metric ``(unit)__(sass?)_inst_executed_op_global_st``.
+            """
             @typeguard.typechecked
             def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
                 MetricCounter.__init__(self,
@@ -276,6 +327,9 @@ class L1TEXCache:
                 )
 
         class Sectors(MetricCounter):
+            """
+            Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_st``.
+            """
             @typeguard.typechecked
             def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
@@ -293,6 +347,9 @@ class L1TEXCache:
         name = 'local store'
 
         class Instructions(MetricCounter):
+            """
+            Counter metric ``(unit)__(sass?)_inst_executed_op_local_st``.
+            """
             @typeguard.typechecked
             def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
                 MetricCounter.__init__(self,
@@ -307,7 +364,7 @@ class L1TEXCache:
 @typeguard.typechecked
 def gather(metrics : list[Metric | MetricCorrelation]) -> list[str]:
     """
-    Retrieve all sub-metric names, e.g. to pass them to `ncu`.
+    Retrieve all sub-metric names, e.g. to pass them to ``ncu``.
     """
     result = []
     for metric in metrics:
@@ -316,7 +373,7 @@ def gather(metrics : list[Metric | MetricCorrelation]) -> list[str]:
 
 class Session:
     """
-    `ncu` session.
+    `Nsight Compute` session interface.
     """
     @typeguard.typechecked
     def __init__(self, *, output : pathlib.Path):
@@ -325,26 +382,20 @@ class Session:
     @dataclasses.dataclass(frozen = True)
     class Command:
         """
-        The command is split in:
-            * `ncu` options that do not involve paths
-            * `ncu` report file
-            * `ncu` log file
-            * `ncu` metrics
-            * executable
-            * executable arguments
+        The command.
         """
-        opts: list[str]
-        output: pathlib.Path
-        log: pathlib.Path
-        metrics: typing.Iterable[Metric | MetricCorrelation]
-        executable: str | pathlib.Path
-        args: list[str | pathlib.Path]
+        opts: list[str]                                      #: ``ncu`` options that do not involve paths.
+        output: pathlib.Path                                 #: ``ncu`` report file.
+        log: pathlib.Path                                    #: ``ncu`` log file.
+        metrics: typing.Iterable[Metric | MetricCorrelation] #: ``ncu`` metrics.
+        executable: str | pathlib.Path                       #: Executable to run.
+        args: list[str | pathlib.Path]                       #: Arguments to pass to the executable.
 
         @functools.cached_property
         @typeguard.typechecked
         def to_list(self) -> list[str | pathlib.Path]:
             """
-            Build the full `ncu` command.
+            Build the full ``ncu`` command.
             """
             cmd = ['ncu']
 
@@ -413,10 +464,10 @@ class Session:
         sleep : typing.Callable[[int, int], float] = lambda retry, retries: 3. * (1. - retry / retries),
     ) -> 'Session.Command':
         """
-        Run `cmd` with `ncu`.
+        Run ``ncu``.
 
         :param nvtx_includes: Refer to https://docs.nvidia.com/nsight-compute/2023.3/NsightComputeCli/index.html#nvtx-filtering.
-        :param retries: `ncu` might fail acquiring some resources because other instances are running. Retry a few times.
+        :param retries: ``ncu`` might fail acquiring some resources because other instances are running. Retry a few times.
                         See https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#faq (Profiling failed because a driver resource was unavailable).
 
         :param sleep: The time to sleep between successive retries.
@@ -429,10 +480,11 @@ class Session:
 
         .. note::
 
-            As of `ncu` `2025.1.1.0`, a note tells us that specified `NVTX` include expressions match only start/end ranges.
+            As of ``ncu`` `2025.1.1.0`, a note tells us that specified NVTX include expressions match only start/end ranges.
 
         References:
-            * https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html#nvtx-filtering
+
+        * https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html#nvtx-filtering
         """
         command = self.get_command(
             opts = opts,
@@ -603,13 +655,14 @@ class ProfilingResults(rich_helpers.TreeMixin, collections.UserDict):
 @typeguard.typechecked
 def load_ncu_report() -> typing.Optional[types.ModuleType]:
     """
-    Attempt to load the Nsight Compute `Python` interface (`ncu_report`).
+    Attempt to load the `Nsight Compute` `Python` interface (``ncu_report``).
 
     Priority:
-        1. If `ncu_report` is already imported, return it.
-        2. Try a regular `import ncu_report` (for users who set `PYTHONPATH`).
-        3. Try to locate `ncu` via `shutil.which`, deduce version, and load
-           the bundled `Python` module from Nsight Compute installation path.
+
+    #. If ``ncu_report`` is already imported, return it.
+    #. Try a regular ``import ncu_report`` (for users who set ``PYTHONPATH``).
+    #. Try to locate ``ncu`` via ``shutil.which``, deduce version, and load
+       the bundled `Python` module from `Nsight Compute` installation path.
     """
     if 'ncu_report' in sys.modules:
         return sys.modules['ncu_report']
@@ -646,17 +699,24 @@ def load_ncu_report() -> typing.Optional[types.ModuleType]:
 
 class Report:
     """
-    This class is a wrapper around the `Python` tool provided by Nvidia Nsight Compute
+    This class is a wrapper around the `Python` tool provided by NVIDIA `Nsight Compute`
     to parse its reports.
 
+    In particular, the NVIDIA Python tool (``ncu_report``) provides low-level access to
+    the collected data by iterating over ranges and actions. This class uses these functionalities
+    to extract all the collected data into a custom data structure of type :py:class:`ProfilingResults`.
+    This data structures is a nested dictionary that provides a more direct access to the data
+    of interest by NVTX range (if NVTX is used) and by demangled kernel name.
+
     References:
-        * https://docs.nvidia.com/nsight-compute/CustomizationGuide/index.html#python-report-interface
-        * https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
+
+    * https://docs.nvidia.com/nsight-compute/CustomizationGuide/index.html#python-report-interface
+    * https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
     """
     @typeguard.typechecked
     def __init__(self, *, path : typing.Optional[pathlib.Path] = None, name : typing.Optional[str] = None, session : typing.Optional[Session] = None) -> None:
         """
-        Load the report `<path>/<name>.ncu-rep` or the report generated by `session`.
+        Load the report ``<path>/<name>.ncu-rep`` or the report generated by :py:class:`Session`.
         """
         self.ncu_report = load_ncu_report()
 
@@ -684,7 +744,7 @@ class Report:
     ) -> ProfilingResults:
         """
         Extract the `metrics` of the actions in the range with ID `range_idx`.
-        Possibly filter by `NVTX` with `includes` and `excludes`.
+        Possibly filter by NVTX with `includes` and `excludes`.
         """
         logging.info(f'Collecting metrics {metrics} in report {self.path} for range {range_idx} with include filters {includes} and exclude filters {excludes}.')
 
@@ -724,8 +784,9 @@ class Report:
         Collect values of the `metrics` in the `action`.
 
         References:
-            * https://github.com/shunting314/gpumisc/blob/37bbb827ae2ed6f5777daff06956c7a10aafe34d/ncu-related/official-sections/FPInstructions.py#L51
-            * https://github.com/NVIDIA/nsight-training/blob/2d680f7f8368b945bc00b22834808af24eff4c3d/cuda/nsight_compute/python_report_interface/Opcode_instanced_metrics.ipynb
+
+        * https://github.com/shunting314/gpumisc/blob/37bbb827ae2ed6f5777daff06956c7a10aafe34d/ncu-related/official-sections/FPInstructions.py#L51
+        * https://github.com/NVIDIA/nsight-training/blob/2d680f7f8368b945bc00b22834808af24eff4c3d/cuda/nsight_compute/python_report_interface/Opcode_instanced_metrics.ipynb
         """
         results = {}
 
@@ -777,20 +838,21 @@ class Report:
 
 class Cacher(cacher.Cacher):
     """
-    Cacher tailored to `ncu` results.
+    Cacher tailored to ``ncu`` results.
 
-    `ncu` require quite some time to acquire results, especially when there are many kernels to profile and/or
+    ``ncu`` require quite some time to acquire results, especially when there are many kernels to profile and/or
     many metrics to collect.
 
     On a cache hit, the cacher will serve:
-        - `.ncu-rep` file
-        - `.log` file
 
-    On a cache miss, `ncu` is launched and the cache entry populated accordingly.
+    - ``<cache_key>.ncu-rep`` file
+    - ``.log`` file
+
+    On a cache miss, ``ncu`` is launched and the cache entry populated accordingly.
 
     .. note::
 
-        It is assumed that hashing is faster than running `ncu` itself.
+        It is assumed that hashing is faster than running ``ncu`` itself.
 
     .. warning::
 
@@ -817,13 +879,14 @@ class Cacher(cacher.Cacher):
     ) -> blake3.blake3:
         """
         Hash based on:
-            * `ncu` version
-            * `ncu` options (but not the output and log files)
-            * `ncu` metrics
-            * executable content
-            * executable arguments
-            * linked libraries
-            * environment
+
+        * ``ncu`` version
+        * ``ncu`` options (but not the output and log files)
+        * ``ncu`` metrics
+        * executable content
+        * executable arguments
+        * linked libraries
+        * environment
         """
         hasher = blake3.blake3() # pylint: disable=not-callable
 

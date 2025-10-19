@@ -40,13 +40,14 @@ def install(*, args = argparse.Namespace) -> None:
 @typeguard.typechecked
 def detect_cuda_version() -> str:
     """
-    Detect `Cuda` version using the following strategies:
-        1. `CUDA_VERSION` environment variable
-        2. `nvidia-smi`
-        3. `nvcc`
+    Detect CUDA version using the following strategies:
+
+    #. ``CUDA_VERSION`` environment variable
+    #. ``nvidia-smi --query``
+    #. ``nvcc --version``
     """
     def convert(version : str) -> str:
-        logging.info(f"Detected Cuda version is {version.group(0)}.")
+        logging.info(f"Detected CUDA version is {version.group(0)}.")
         version = f'{version.group(1)}-{version.group(2)}'
         return version
 
@@ -62,7 +63,7 @@ def detect_cuda_version() -> str:
         output = subprocess.check_output(['nvcc', '--version']).decode()
         return convert(version = re.search(pattern = r'release ([0-9]+).([0-9]+)', string = output))
     else:
-        raise RuntimeError("Could not deduce Cuda version.")
+        raise RuntimeError("Could not deduce CUDA version.")
 
 def main() -> None:
 

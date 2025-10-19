@@ -28,7 +28,7 @@ PATTERNS = [
 @typeguard.typechecked
 def get_arch_from_compile_command(cmd : str) -> set[NVIDIAArch]:
     """
-    Get `NVIDIA` architecture from compile command.
+    Get NVIDIA architecture from compile command.
     """
     matches : set[str] = set()
     for pattern in PATTERNS:
@@ -55,7 +55,7 @@ class DemanglerMixin(abc.ABC):
 
 class CuppFilt(DemanglerMixin):
     """
-    Convenient wrapper for `cu++filt`.
+    Convenient wrapper for ``cu++filt``.
     """
     @typing.override
     @classmethod
@@ -65,7 +65,7 @@ class CuppFilt(DemanglerMixin):
 
 class LlvmCppFilt(DemanglerMixin):
     """
-    Convenient wrapper for `llvm-cxxfilt`.
+    Convenient wrapper for ``llvm-cxxfilt``.
     """
     @typing.override
     @classmethod
@@ -77,10 +77,11 @@ class ResourceUsage(enum.StrEnum):
     """
     Support for resource usage fields.
 
-    Reference:
-        - :cite:`nvidia-cuda-binary-utilities`
-        - :cite:`openwall-wiki-parsing-nvidia`
-        - :cite:`nvidia-cuda-compiler-driver-nvcc-statistics`
+    References:
+
+    * :cite:`nvidia-cuda-binary-utilities`
+    * :cite:`openwall-wiki-parsing-nvidia`
+    * :cite:`nvidia-cuda-compiler-driver-nvcc-statistics`
     """
     # Registers.
     REGISTER = 'REG'
@@ -99,7 +100,7 @@ class ResourceUsage(enum.StrEnum):
     @typeguard.typechecked
     def parse(line : str) -> dict:
         """
-        Parse a resource usage line, such as produced by `cuobjdump` with `--dump-resource-usage`.
+        Parse a resource usage line, such as produced by ``cuobjdump`` with ``--dump-resource-usage``.
         """
         res = {}
         for token in re.findall(r'([A-Z]+)(?:\[([0-9]+)\])?:([0-9]+)', line):
@@ -115,8 +116,11 @@ class ResourceUsage(enum.StrEnum):
 
 @dataclasses.dataclass(slots = True)
 class Function:
-    code : str = None
-    ru : dict = None
+    """
+    Data structure holding the SASS code and resource usage of a kernel, as extracted from a binary.
+    """
+    code : str = None #: The SASS code.
+    ru : dict = None  #: The resource usage.
 
     @typeguard.typechecked
     def to_table(self, *, max_code_length: int = 130) -> rich.table.Table:
@@ -146,10 +150,11 @@ class Function:
 
 class CuObjDump:
     """
-    Use `cuobjdump` for extracting `SASS`, symbol table, and so on.
+    Use ``cuobjdump`` for extracting SASS, symbol table, and so on.
 
     References:
-        - :cite:`nvidia-cuda-binary-utility-cuobjdump`
+
+    * :cite:`nvidia-cuda-binary-utility-cuobjdump`
     """
     @typeguard.typechecked
     def __init__(
@@ -159,7 +164,7 @@ class CuObjDump:
         sass : bool = True,
         demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = CuppFilt,
     ) -> None:
-        self.file = file
+        self.file = file #: The binary file.
         self.arch = arch
         self.functions = {}
         if sass:
@@ -168,7 +173,7 @@ class CuObjDump:
     @typeguard.typechecked
     def sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None) -> None:
         """
-        Extract `SASS` from `file`. Optionally demangle functions.
+        Extract SASS from :py:attr:`file`. Optionally demangle functions.
         """
         cmd = [
             'cuobjdump',
@@ -217,8 +222,8 @@ class CuObjDump:
 
             cuobjdump --list-elf <file>
 
-        Note that extracting a `cubin` from `file` to extract a specific subset of the `SASS`
-        instead of extracting the `SASS` straightforwardly from the whole `file` is
+        Note that extracting a CUDA binary from a file to extract a specific subset of the SASS
+        instead of extracting the SASS straightforwardly from the whole `file` is
         significantly faster.
         """
         cmd = [

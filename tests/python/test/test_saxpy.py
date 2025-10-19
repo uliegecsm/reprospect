@@ -25,7 +25,7 @@ class TestSaxpy(reprospect.TestCase):
 
 class TestSASS(TestSaxpy):
     """
-    `SASS`-focused analysis.
+    SASS-focused analysis.
     """
     @property
     @typeguard.typechecked

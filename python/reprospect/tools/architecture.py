@@ -13,7 +13,8 @@ class ComputeCapability:
     Compute capability.
 
     References:
-        * https://docs.nvidia.com/cuda/cuda-c-programming-guide/#compute-capability
+
+    * https://docs.nvidia.com/cuda/cuda-c-programming-guide/#compute-capability
     """
     major : int
     minor : int
@@ -21,6 +22,11 @@ class ComputeCapability:
     @property
     @typeguard.typechecked
     def as_int(self) -> int:
+        """
+        >>> from reprospect.tools.architecture import ComputeCapability
+        >>> ComputeCapability(major = 8, minor = 6).as_int
+        86
+        """
         return self.major * 10 + self.minor
 
     def __str__(self) -> str:
@@ -43,12 +49,17 @@ class ComputeCapability:
     @staticmethod
     @typeguard.typechecked
     def from_int(value : int) -> 'ComputeCapability':
+        """
+        >>> from reprospect.tools.architecture import ComputeCapability
+        >>> ComputeCapability.from_int(86)
+        ComputeCapability(major=8, minor=6)
+        """
         major, minor = divmod(value, 10)
         return ComputeCapability(major = major, minor = minor)
 
 class NVIDIAFamily(enum.StrEnum):
     """
-    Supported `NVIDIA` architecture families.
+    Supported NVIDIA architecture families.
     """
     VOLTA = 'VOLTA'
     TURING = 'TURING'
@@ -61,7 +72,7 @@ class NVIDIAFamily(enum.StrEnum):
     @typeguard.typechecked
     def from_compute_capability(cc : ComputeCapability | int) -> "NVIDIAFamily":
         """
-        Get the `NVIDIA` architecture family from a compute capability.
+        Get the NVIDIA architecture family from a compute capability.
 
         See :cite:`nvidia-cuda-gpu-compute-capability`.
         """
@@ -83,9 +94,9 @@ class NVIDIAFamily(enum.StrEnum):
 @dataclasses.dataclass(frozen = True, eq = True, match_args = True, slots = True)
 class NVIDIAArch:
     """
-    `NVIDIA` architecture.
+    NVIDIA architecture.
 
-    It models `NVIDIA` GPU hardware identifiers — i.e., the microarchitecture family and compute capability.
+    It models NVIDIA GPU hardware identifiers — i.e., the microarchitecture family and compute capability.
     """
     family : NVIDIAFamily
     compute_capability : ComputeCapability
@@ -103,7 +114,7 @@ class NVIDIAArch:
     @typeguard.typechecked
     def as_compute(self) -> str:
         """
-        Convert to `Cuda` "virtual architecture" (`compute_`).
+        Convert to CUDA "virtual architecture" (``compute_``).
         """
         return f'compute_{self.compute_capability.as_int}'
 
@@ -111,7 +122,7 @@ class NVIDIAArch:
     @typeguard.typechecked
     def as_sm(self) -> str:
         """
-        Convert to `Cuda` "real architecture" (`sm_`).
+        Convert to CUDA "real architecture" (``sm_``).
         """
         return f'sm_{self.compute_capability.as_int}'
 

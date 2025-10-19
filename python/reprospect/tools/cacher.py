@@ -22,10 +22,10 @@ class Cacher:
         │   └── ...
         └── cache.db
 
-    Available `hash`es are stored in a `SQLITE` database (`cache.db`) that
+    Available hashes are stored in a `SQLITE` database (``cache.db``) that
     also stores the timestamp at which the entry was populated.
 
-    Inspired by `ccache`, see also https://ccache.dev/manual/4.12.1.html#_how_ccache_works.
+    Inspired by ``ccache``, see also https://ccache.dev/manual/4.12.1.html#_how_ccache_works.
     """
     #: Name of the table.
     TABLE : str = None

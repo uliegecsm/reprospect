@@ -311,7 +311,7 @@ class TestCuObjDump:
         @typeguard.typechecked
         def test_sass_from_object(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
-            Compile `CUDA_FILE` as object, extract `SASS` and analyse resource usage.
+            Compile :py:attr:`CUDA_FILE` as object, extract SASS and analyse resource usage.
             """
             output, _ = get_compilation_output(
                 source = self.CUDA_FILE,
@@ -350,7 +350,7 @@ class TestCuObjDump:
         @typeguard.typechecked
         def test_extract_cubin_from_file(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
-            Compile `CPP_FILE` as an executable, and extract the `cubin` from it.
+            Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
             """
             output, _ = get_compilation_output(
                 source = self.CPP_FILE,
@@ -375,7 +375,7 @@ class TestCuObjDump:
         @typeguard.typechecked
         def test_extract_symbol_table(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
-            Compile `CPP_FILE` as an executable, and extract the symbol table from it.
+            Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.
             """
             output, _ = get_compilation_output(
                 source = self.CPP_FILE,

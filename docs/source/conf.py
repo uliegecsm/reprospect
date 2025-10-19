@@ -65,7 +65,7 @@ bibtex_bibfiles = ['references.bib']
 
 rst_prolog = '''
 .. _Kokkos: http://kokkos.org
-.. _Cuda binary utilities: https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html
+.. _CUDA binary utilities: https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html
 .. _Nsight Compute: https://developer.nvidia.com/nsight-compute
 .. _Nsight Systems: https://developer.nvidia.com/nsight-systems
 .. _CMake: https://cmake.org

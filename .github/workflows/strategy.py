@@ -15,6 +15,22 @@ AVAILABLE_RUNNER_ARCHES = (
     NVIDIAArch.from_str('BLACKWELL120'),
 )
 
+@typeguard.typechecked
+def get_base_name_tag_digest(version : str) -> tuple[str, str, str]:
+    """
+    Get `Docker` base image name, tag and digest.
+    """
+    match version:
+        case '12.8.1':
+            tag = f'{version}-devel-ubuntu24.04'
+            digest = 'sha256:520292dbb4f755fd360766059e62956e9379485d9e073bbd2f6e3c20c270ed66'
+        case '13.0.0':
+            tag = f'{version}-devel-ubuntu24.04'
+            digest = 'sha256:1e8ac7a54c184a1af8ef2167f28fa98281892a835c981ebcddb1fad04bdd452d'
+        case _:
+            raise ValueError(version)
+    return ('nvidia/cuda', tag, digest)
+
 @dataclasses.dataclass
 class Compiler:
     ID : str
@@ -71,14 +87,14 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     # Name and tag of the image.
     name = 'cuda-' + '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CXX'].version, partial['compilers']['CUDA'].ID])))
 
-    tag = f'{partial['cuda_version']}-devel-ubuntu24.04'
+    base_name, base_tag, base_digest = get_base_name_tag_digest(version = partial['cuda_version'])
 
     arch = NVIDIAArch.from_compute_capability(cc = partial['nvidia_compute_capability'])
     partial['nvidia_arch'] = str(arch)
 
-    partial['base_image'] = f'nvidia/cuda:{tag}'
-    partial[     'image'] = full_image(name = name,             tag = tag,                     args = args)
-    partial[    'kokkos'] = full_image(name = f'{name}-kokkos', tag = f'{tag}-{arch}'.lower(), args = args)
+    partial['base_image'] = f'{base_name}:{base_tag}@{base_digest}'
+    partial[     'image'] = full_image(name = name,             tag = base_tag,                     args = args)
+    partial[    'kokkos'] = full_image(name = f'{name}-kokkos', tag = f'{base_tag}-{arch}'.lower(), args = args)
 
     partial['build_platforms'] = ','.join(['linux/amd64'] + partial['additional_build_platforms'] if 'additional_build_platforms' in partial else [])
 

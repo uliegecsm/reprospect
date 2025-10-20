@@ -1,0 +1,11 @@
+included-dirs:
+
+excluded-dirs:
+  - .git
+
+included-files:
+  - "**/*"
+
+excluded-files:
+  - "*.sass"
+  - "Makefile"

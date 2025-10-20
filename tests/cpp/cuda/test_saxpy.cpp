@@ -43,7 +43,7 @@ int main()
     float* vec_x = nullptr;
     float* vec_y = nullptr;
 
-    REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&vec_x, size * sizeof(float), stream_A)); 
+    REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&vec_x, size * sizeof(float), stream_A));
     REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&vec_y, size * sizeof(float), stream_B));
 
     {

@@ -1,6 +1,6 @@
 add_test(
     NAME tests_nvtx_nvtx
-    COMMAND nsys profile 
+    COMMAND nsys profile
                 --trace=nvtx
                 --sample=none
                 --backtrace=none

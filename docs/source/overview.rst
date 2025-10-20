@@ -42,5 +42,5 @@ The main steps in a typical `ReProspect` case are illustrated in the following s
    :include: schematic.tikz
 
 The `ReProspect` repository includes several examples relevant to the Kokkos_ :cite:`kokkos` performance portability library,
-and in particular its `Cuda` backend. These examples demonstrate `ReProspect` capabilities 
+and in particular its `Cuda` backend. These examples demonstrate `ReProspect` capabilities
 by examining several specific implementation details of Kokkos_.

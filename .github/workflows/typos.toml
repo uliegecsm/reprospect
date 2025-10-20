@@ -1,0 +1,7 @@
+[default]
+extend-ignore-identifiers-re = [
+    ".*_PER_BLOCK_OPTIN"
+]
+
+[default.extend-identifiers]
+NervanaSystems = "NervanaSystems"

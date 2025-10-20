@@ -1,0 +1,15 @@
+name: Check spelling.
+
+permissions:
+    contents: read
+
+on: [pull_request]
+
+jobs:
+    spelling:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v5
+            - uses: crate-ci/typos@v1.38.1
+              with:
+                  config: .github/workflows/typos.toml

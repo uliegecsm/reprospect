@@ -56,17 +56,17 @@ class TestCase(EnvironmentAware):
 
     @functools.cached_property
     @typeguard.typechecked
-    def cwd(cls) -> pathlib.Path:
+    def cwd(self) -> pathlib.Path:
         """
         The working directory for the analysis.
         """
-        cwd = cls.CMAKE_CURRENT_BINARY_DIR / (cls.NAME + '-case')
+        cwd = self.CMAKE_CURRENT_BINARY_DIR / (self.NAME + '-case')
         cwd.mkdir(parents = False, exist_ok = True)
         return cwd
 
     @functools.cached_property
     @typeguard.typechecked
-    def arch(cls) -> NVIDIAArch:
+    def arch(self) -> NVIDIAArch:
         """
         Retrieve the GPU architecture from the compile command database.
 
@@ -74,11 +74,11 @@ class TestCase(EnvironmentAware):
 
         See also https://cmake.org/cmake/help/latest/variable/CMAKE_EXPORT_COMPILE_COMMANDS.html.
         """
-        with open(cls.CMAKE_BINARY_DIR / 'compile_commands.json', 'r') as fin:
+        with open(self.CMAKE_BINARY_DIR / 'compile_commands.json', mode = 'r', encoding = 'utf-8') as fin:
             commands = json.load(fin)
-        logging.info(f'Looking for {cls.TARGET_SOURCE} in {commands}')
+        logging.info(f'Looking for {self.TARGET_SOURCE} in {commands}')
         archs = get_arch_from_compile_command(cmd = next(filter(
-            lambda x: str(cls.TARGET_SOURCE) in x['file'],
+            lambda x: str(self.TARGET_SOURCE) in x['file'],
             commands))['command']
         )
         assert len(archs) == 1

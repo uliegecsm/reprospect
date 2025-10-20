@@ -200,6 +200,7 @@ class Report:
     @typeguard.typechecked
     def __init__(self, *, db : pathlib.Path) -> None:
         self.db = db
+        self.conn : sqlite3.Connection = None
 
     @typeguard.typechecked
     def __enter__(self) -> 'Report':
@@ -238,7 +239,7 @@ class Report:
         Check that `data` has one row, and squeeze it.
         """
         if len(data) != 1:
-             raise RuntimeError(data)
+            raise RuntimeError(data)
         return data.squeeze()
 
     @dataclasses.dataclass(frozen = True)
@@ -268,8 +269,7 @@ class Report:
         """
         if isinstance(src, pandas.Series) and selector is None:
             return cls.single_row(data = dst[dst[correlation_dst] == src[correlation_src]])
-        else:
-            return cls.single_row(data = dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
+        return cls.single_row(data = dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
 
     class NvtxEvents(rich_helpers.TreeMixin):
         @typeguard.typechecked
@@ -455,7 +455,7 @@ class Cacher(cacher.Cacher):
 
     @typing.override
     @typeguard.typechecked
-    def hash(self, *,
+    def hash(self, *, # pylint: disable=arguments-differ
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_capture : typing.Optional[str] = None,
@@ -472,7 +472,7 @@ class Cacher(cacher.Cacher):
             * linked libraries
             * environment
         """
-        hasher = blake3.blake3()
+        hasher = blake3.blake3() # pylint: disable=not-callable
 
         hasher.update(subprocess.check_output(['nsys', '--version']))
 

@@ -49,7 +49,7 @@ class CudaDriverError:
         error_name = ctypes.c_char_p()
         cuda.cuGetErrorString(self.value, ctypes.byref(error_msg))
         cuda.cuGetErrorName  (self.value, ctypes.byref(error_name))
-        return error_name.value.decode(), error_msg.value.decode()
+        return error_name.value.decode(), error_msg.value.decode() # pylint: disable=no-member
 
 class CudaDeviceAttribute(enum.IntEnum):
     """
@@ -274,13 +274,6 @@ class Cuda:
     @typeguard.typechecked
     def __init__(self, flags : int = 0) -> None:
         self.load()
-        self.cuInit(flags = flags)
-
-    @typeguard.typechecked
-    def cuInit(self, *, flags : int) -> None:
-        """
-        Wrap `cuInit`.
-        """
         self.check_driver_api_call(func = self.cuda.cuInit)(flags)
 
     @functools.cached_property

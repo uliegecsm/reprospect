@@ -48,7 +48,7 @@ class GPUDetector:
         """
         Implementation of the detection.
         """
-        CMD = ['nvidia-smi', '--query-gpu=' + ','.join(cls.COLUMNS.keys()), '--format=csv']
+        CMD = ['nvidia-smi', '--query-gpu=' + ','.join(cls.COLUMNS.keys()), '--format=csv'] # pylint: disable=invalid-name
 
         if shutil.which('nvidia-smi') is not None:
             gpus = pandas.read_csv(
@@ -64,9 +64,8 @@ class GPUDetector:
                     lambda x: architecture.NVIDIAArch.from_compute_capability(int(x.replace('.', '')))
                 )
             return gpus
-        else:
-            logging.warning("'nvidia-smi' not found.")
-            return pandas.DataFrame(columns = cls.COLUMNS)
+        logging.warning("'nvidia-smi' not found.")
+        return pandas.DataFrame(columns = cls.COLUMNS)
 
     @classmethod
     @typeguard.typechecked

@@ -39,7 +39,7 @@ class Cacher:
         digest : bytes
 
         #: Timestamp at which the entry was populated.
-        timestamp : str
+        timestamp : datetime.datetime
 
         # Directory wherein files are stored.
         directory : pathlib.Path
@@ -55,6 +55,8 @@ class Cacher:
             self.directory.mkdir(parents = True, exist_ok = True)
 
         self.file = self.directory / 'cache.db'
+
+        self.database : sqlite3.Connection = None
 
     @typeguard.typechecked
     def __enter__(self) -> 'Cacher':
@@ -90,12 +92,12 @@ class Cacher:
         """
         This method is intended to be overridden in a child class with the specifics of your case.
         """
-        hash = blake3.blake3()
+        hasher = blake3.blake3() # pylint: disable=not-callable
 
         for key, value in kwargs.items():
-            hash.update(pickle.dumps((key, value)))
+            hasher.update(pickle.dumps((key, value)))
 
-        return hash
+        return hasher
 
     @abc.abstractmethod
     @typeguard.typechecked
@@ -107,9 +109,9 @@ class Cacher:
         """
         Serve cached entry on cache hit, populate on cache miss.
         """
-        hash = self.hash(**kwargs)
+        hasher = self.hash(**kwargs)
 
-        hexdigest = hash.hexdigest()
+        hexdigest = hasher.hexdigest()
 
         with self.database:
             cursor = self.database.cursor()

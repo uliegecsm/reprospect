@@ -230,7 +230,8 @@ class Decoder:
             # Extract instruction components.
             offset      = match.group(1).strip()
             instruction = match.group(2).strip()
-            hex         = match.group(3).strip()
+            hex_        = match.group(3).strip()
+            control     = None
 
             # Check if next line contains the second hex word.
             if iline + 1 < len(lines):
@@ -242,7 +243,7 @@ class Decoder:
             instruction = Instruction(
                 offset = int(offset, base = 16),
                 instruction = instruction,
-                hex = hex,
+                hex = hex_,
                 control = control,
             )
 

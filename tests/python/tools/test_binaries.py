@@ -226,7 +226,7 @@ class TestCuppFilt:
         assert CuppFilt.demangle(s = '_Z5saxpyfPKfPfj') == 'saxpy(float, const float *, float *, unsigned int)'
 
 @pytest.mark.skipif(
-    shutil.which(LlvmCppFilt.EXECUTABLE) is None, reason = "requires that llvm-cxxfilt is installed"
+    shutil.which(LlvmCppFilt.get_executable()) is None, reason = f'requires that {LlvmCppFilt.get_executable()} is installed'
 )
 class TestLlvmCppFilt:
     """

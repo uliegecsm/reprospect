@@ -1,0 +1,15 @@
+name: Check style.
+
+on: [pull_request]
+
+jobs:
+    example-workflow:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v5
+
+          - uses: andreasabel/fix-whitespace-action@v1.2.0
+            with:
+                configfile: .github/workflows/fix-whitespace.yml
+                fix: false
+                verbose: true

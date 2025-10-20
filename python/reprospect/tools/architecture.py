@@ -130,5 +130,11 @@ class NVIDIAArch:
     @staticmethod
     @typeguard.typechecked
     def from_str(arch : str) -> 'NVIDIAArch':
-        family, cc = re.match(r'([A-Za-z]+)([0-9]+)', arch).groups()
-        return NVIDIAArch(family = NVIDIAFamily(family.upper()), compute_capability = ComputeCapability.from_int(int(cc)))
+        """
+        >>> from reprospect.tools.architecture import NVIDIAArch
+        >>> NVIDIAArch.from_str('AMPERE86')
+        NVIDIAArch(family=<NVIDIAFamily.AMPERE: 'AMPERE'>, compute_capability=ComputeCapability(major=8, minor=6))
+        """
+        if (matched := re.match(r'^([A-Za-z]+)([0-9]+)$', arch)) is None:
+            raise ValueError(f'unsupported architecture {arch}')
+        return NVIDIAArch(family = NVIDIAFamily(matched.group(1).upper()), compute_capability = ComputeCapability.from_int(int(matched.group(2))))

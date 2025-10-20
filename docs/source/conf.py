@@ -16,6 +16,7 @@ release = __version__
 extensions = [
     'sphinx.ext.apidoc',
     'sphinx.ext.autodoc',
+    'sphinx.ext.doctest',
     'sphinx.ext.extlinks',
     'sphinx.ext.intersphinx',
     'sphinx_github_style',

@@ -264,9 +264,8 @@ jobs:
                   name: tests-gnu-nvidia-BLACKWELL120
                   path: artifacts
 
-            - run: |
-                cd docs
-                make html
+            - run: cd docs && make -j4 doctest
+            - run: cd docs && make -j4 html
 
     papers:
         needs: []

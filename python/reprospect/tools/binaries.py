@@ -115,7 +115,7 @@ class Function:
         # Code.
         table.add_row("Code", rich.text.Text(textwrap.dedent(self.code.expandtabs()).rstrip()), end_section = True)
 
-        # Resouce usage.
+        # Resource usage.
         table.add_row("Resource usage", ", ".join([f"{key}: {value}" for key, value in self.ru.items()]))
 
         return table

@@ -10,6 +10,6 @@ jobs:
 
           - uses: andreasabel/fix-whitespace-action@v1.2.0
             with:
-                configfile: .github/workflows/fix-whitespace.yml
+                configfile: .github/config/fix-whitespace.yml
                 fix: false
                 verbose: true

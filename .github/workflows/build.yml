@@ -82,7 +82,7 @@ jobs:
                       --registry=ghcr.io \
                       --repository=${{ github.repository }} >> $GITHUB_OUTPUT
 
-    build-image:
+    build-images:
         needs: [setup-job-matrix]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
@@ -168,7 +168,7 @@ jobs:
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     tests:
-        needs: [setup-job-matrix, build-image]
+        needs: [setup-job-matrix, build-images]
         strategy:
             fail-fast: false
             matrix:
@@ -197,7 +197,7 @@ jobs:
                   retention-days: 1
 
     examples:
-        needs: [setup-job-matrix, build-image]
+        needs: [setup-job-matrix, build-images]
         strategy:
             fail-fast: false
             matrix:
@@ -220,7 +220,7 @@ jobs:
             - run: ctest --preset=${{ matrix.cmake_preset }}
 
     install-as-package-and-test:
-        needs: [setup-job-matrix, build-image]
+        needs: [setup-job-matrix, build-images]
         strategy:
             fail-fast: false
             matrix:
@@ -291,7 +291,7 @@ jobs:
                 inara -o pdf -p -v paper.md
 
     deploy:
-        needs: [setup-job-matrix, build-image, tests, examples, install-as-package-and-test, documentation]
+        needs: [setup-job-matrix, build-images, tests, examples, install-as-package-and-test, documentation]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}

@@ -1,3 +1,5 @@
+import pytest
+
 from reprospect.tools.architecture import ComputeCapability, NVIDIAFamily, NVIDIAArch
 
 class TestComputeCapability:
@@ -45,6 +47,9 @@ class TestNVIDIAArch:
 
     def test_from_str(self):
         assert NVIDIAArch.from_str('AMPERE86') == NVIDIAArch(family = NVIDIAFamily.AMPERE, compute_capability = ComputeCapability(major = 8, minor = 6))
+
+        with pytest.raises(ValueError, match = 'unsupported architecture AMPERE86dd'):
+            NVIDIAArch.from_str('AMPERE86dd')
 
     def test_as_compute(self):
         assert NVIDIAArch.from_str('HOPPER90').as_compute == 'compute_90'

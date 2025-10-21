@@ -239,7 +239,7 @@ class TestProfilingResults:
     """
     def test_string_representation(self):
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.__str__`.
+        Test the string representation of :py:meth:`reprospect.tools.ncu.ProfilingResults`.
         """
         results = ncu.ProfilingResults()
 

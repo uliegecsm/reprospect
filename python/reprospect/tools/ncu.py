@@ -18,12 +18,12 @@ import types
 import typing
 
 import blake3
-import rich.console
 import rich.tree
 import typeguard
 
 from reprospect.tools import cacher
 from reprospect.utils import ldd
+from reprospect.utils import rich_helpers
 
 class Unit(enum.StrEnum):
     """
@@ -538,7 +538,7 @@ class NvtxDomain:
             return getattr(self.nvtx_domain, attr)
         raise AttributeError(attr)
 
-class ProfilingResults(collections.UserDict):
+class ProfilingResults(rich_helpers.TreeMixin, collections.UserDict):
     """
     Data structure for storing profiling results.
 
@@ -584,11 +584,9 @@ class ProfilingResults(collections.UserDict):
 
         return aggregate
 
+    @typing.override
     @typeguard.typechecked
     def to_tree(self) -> rich.tree.Tree:
-        """
-        Convert to a :py:class:`rich.tree.Tree`.
-        """
         @typeguard.typechecked
         def add_branch(*, tree : rich.tree.Tree, data : dict) -> None:
             for key, value in data.items():
@@ -602,14 +600,6 @@ class ProfilingResults(collections.UserDict):
         add_branch(tree = tree, data = self.data)
 
         return tree
-
-    def __str__(self) -> str:
-        """
-        Rich representation with :py:meth:`to_tree`.
-        """
-        with rich.console.Console() as console, console.capture() as capture:
-            console.print(self.to_tree(), no_wrap = True)
-        return capture.get()
 
 @typeguard.typechecked
 def load_ncu_report() -> typing.Optional[types.ModuleType]:

@@ -276,7 +276,7 @@ class TestReport:
 
         def test_string_representation(self, report) -> None:
             """
-            Test :py:meth:`reprospect.tools.nsys.Report.NvtxEvents.__str__`.
+            Test the string representation of :py:meth:`reprospect.tools.nsys.Report.NvtxEvents`.
             """
             with report:
                 assert str(report.nvtx_events) == """\

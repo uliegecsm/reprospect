@@ -13,12 +13,12 @@ import typing
 
 import blake3
 import pandas
-import rich.console
 import rich.tree
 import typeguard
 
 from reprospect.tools import cacher
 from reprospect.utils import ldd
+from reprospect.utils import rich_helpers
 
 class Session:
     """
@@ -271,7 +271,7 @@ class Report:
         else:
             return cls.single_row(data = dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
 
-    class NvtxEvents:
+    class NvtxEvents(rich_helpers.TreeMixin):
         @typeguard.typechecked
         def __init__(self, events : pandas.DataFrame) -> None:
             self.events = events
@@ -298,11 +298,9 @@ class Report:
 
             return self.events.iloc[sorted(previous)]
 
+        @typing.override
         @typeguard.typechecked
         def to_tree(self) -> rich.tree.Tree:
-            """
-            Convert to a :py:class:`rich.tree.Tree`.
-            """
             @typeguard.typechecked
             def add_branch(*, tree : rich.tree.Tree, nodes : pandas.DataFrame) -> None:
                 for _, node in nodes.iterrows():
@@ -314,14 +312,6 @@ class Report:
             add_branch(tree = tree, nodes = self.events[self.events['level'] == 0])
 
             return tree
-
-        def __str__(self) -> str:
-            """
-            Rich representation with :py:meth:`to_tree`.
-            """
-            with rich.console.Console() as console, console.capture() as capture:
-                console.print(self.to_tree(), no_wrap = True)
-            return capture.get()
 
     @functools.cached_property
     @typeguard.typechecked

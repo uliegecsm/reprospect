@@ -44,21 +44,21 @@
         {\small Software stack}
     };
 
-    % Runtime profiling.
+    % Kernel profiling.
     \node[box, below = 1.5cm of binaries] (profiling) {
         \textbf{\textcolor{NavyBlue}{Kernel profiling}}\\
         {\small \emph{Nsight Compute}}\\
         {\small Hardware counters.}
     };
 
-    % Static analysis.
+    % Binary analysis.
     \node[box, left = 2.25cm of profiling] (static) {
         \textbf{\textcolor{NavyBlue}{Binary analysis}}\\
         {\small \texttt{Cuda} \emph{binary utilities}}\\
         {\small SASS}
     };
 
-    % Runtime tracing.
+    % API tracing.
     \node[box, right = 2.25cm of profiling] (tracing) {
         \textbf{\textcolor{NavyBlue}{API tracing}}\\
         {\small \emph{Nsight Systems}}\\

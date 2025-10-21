@@ -1,5 +1,6 @@
 import datetime
 import pathlib
+import os
 import sys
 
 project = 'ReProspect'
@@ -9,7 +10,15 @@ copyright = f'{datetime.datetime.now().year}, {author}'
 PROJECT_DIR = pathlib.Path(__file__).parent.parent.parent
 
 sys.path.append(str(PROJECT_DIR))
-sys.path.append(str(PROJECT_DIR / 'python'))
+
+PATH_TO_REPROSPECT = PROJECT_DIR / 'python'
+
+# Allow Sphinx to find it.
+sys.path.append(str(PATH_TO_REPROSPECT))
+
+# Allow subprocesses launched by Sphinx to find it.
+os.environ['PYTHONPATH'] = str(PATH_TO_REPROSPECT) + os.path.pathsep + os.environ.get('PYTHONPATH', '')
+
 from reprospect import __version__
 release = __version__
 
@@ -23,6 +32,7 @@ extensions = [
     'sphinxcontrib.bibtex',
     'sphinxcontrib.tikz',
     'sphinxemoji.sphinxemoji',
+    'myst_nb',
 ]
 
 html_theme = 'sphinx_rtd_theme'
@@ -87,3 +97,7 @@ nitpick_ignore_regex = [
     ('py:class', r'nvtx._lib.lib.*'),
     ('py:class', r'numpy.int64'),
 ]
+
+# Configuration for 'myst_nb', see also https://myst-nb.readthedocs.io/en/latest/configuration.html.
+nb_merge_streams = True
+nb_execution_in_temp = True

@@ -38,14 +38,23 @@ class Compiler:
     path : typing.Optional[str] = None
 
 @typeguard.typechecked
-def full_image(*, name : str, tag : str, args : argparse.Namespace) -> str:
+def full_image(*, name : str, tag : str, platform : str, args : argparse.Namespace) -> str:
     """
     Full image from its `name` and `tag`, with remote.
+
+    For now, `linux/arm64` are suffixed with `-arm64`, and we don't build a manifest for multi-arch images.
     """
-    return f'{args.registry}/{args.repository}/{name}:{tag}'
+    value = f'{args.registry}/{args.repository}/{name}:{tag}'
+    match platform:
+        case 'linux/amd64':
+            return value
+        case 'linux/arm64':
+            return value + '-arm64'
+        case _:
+            raise ValueError(f'unsupported platform {platform!r}')
 
 @typeguard.typechecked
-def complete_job(partial : dict, args : argparse.Namespace) -> dict:
+def complete_job_impl(*, partial : dict, args : argparse.Namespace) -> dict:
     """
     Add fields to a job.
     """
@@ -93,11 +102,8 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     partial['nvidia_arch'] = str(arch)
 
     partial['base_image'] = f'{base_name}:{base_tag}@{base_digest}'
-    partial[     'image'] = full_image(name = name,             tag = base_tag,                     args = args)
-    partial[    'kokkos'] = full_image(name = f'{name}-kokkos', tag = f'{base_tag}-{arch}'.lower(), args = args)
-
-    partial['build_platforms'] = ','.join(['linux/amd64'] + partial['additional_build_platforms'] if 'additional_build_platforms' in partial else [])
-
+    partial[     'image'] = full_image(name = name,             tag = base_tag,                     platform = partial['platform'], args = args)
+    partial[    'kokkos'] = full_image(name = f'{name}-kokkos', tag = f'{base_tag}-{arch}'.lower(), platform = partial['platform'], args = args)
 
     # Write compilers as dictionaries.
     for lang in partial['compilers']:
@@ -108,7 +114,8 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
 
     # Specifics to the 'tests', 'examples' and 'install-as-package-and-test' jobs.
     # Testing is opt-out.
-    if 'tests' not in partial or partial['tests']:
+    # We only test for 'linux/amd64'.
+    if ('tests' not in partial or partial['tests']) and partial['platform'] == 'linux/amd64':
         partial['tests'                      ] = {'container' : {'image' : partial['image']}}
         partial['examples'                   ] = {'container' : {'image' : partial['kokkos']}}
         partial['install-as-package-and-test'] = {'container' : {'image' : partial['kokkos']}}
@@ -148,49 +155,73 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     return partial
 
 @typeguard.typechecked
+def complete_job(partial : dict, args : argparse.Namespace) -> list[dict]:
+    """
+    Each platform is a separate job, because multi-arch builds are too slow due to emulation.
+    """
+    jobs = []
+
+    for platform in partial.pop('platforms'):
+        job = copy.deepcopy(partial)
+        job['platform'] = platform
+
+        job = complete_job_impl(partial = job, args = args)
+        job['build-images'] = {
+            'runs-on' : ['self-hosted', 'linux', 'docker', platform.split('/')[1]],
+        }
+
+        jobs.append(job)
+
+    return jobs
+
+@typeguard.typechecked
 def main(*, args : argparse.Namespace) -> None:
     """
     Generate the strategy matrix.
     """
     matrix = []
 
-    matrix.append(complete_job({
+    matrix.extend(complete_job({
         'cuda_version' : '12.8.1',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '13'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 70,
-        'additional_build_platforms' : ['linux/arm64'],
+        'platforms' : ['linux/amd64', 'linux/arm64'],
     }, args = args))
 
-    matrix.append(complete_job({
+    matrix.extend(complete_job({
         'cuda_version' : '13.0.0',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 120,
-        'additional_build_platforms' : ['linux/arm64'],
+        'platforms' : ['linux/amd64', 'linux/arm64'],
     }, args = args))
 
-    matrix.append(complete_job({
+    matrix.extend(complete_job({
         'cuda_version' : '13.0.0',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 86,
+        'platforms' : ['linux/amd64'],
         'tests' : True,
     }, args = args))
 
-    matrix.append(complete_job({
+    matrix.extend(complete_job({
         'cuda_version' : '12.8.1',
         'compilers' : {'CXX' : Compiler(ID = 'clang', version = '19'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 70,
+        'platforms' : ['linux/amd64'],
     }, args = args))
 
-    matrix.append(complete_job({
+    matrix.extend(complete_job({
         'cuda_version' : '13.0.0',
         'compilers' : {'CXX' : Compiler(ID = 'clang', version = '20'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 120,
+        'platforms' : ['linux/amd64'],
     }, args = args))
 
-    matrix.append(complete_job({
+    matrix.extend(complete_job({
         'cuda_version' : '12.8.1',
         'compilers' : {'CXX' : Compiler(ID = 'clang', version = '21')},
         'nvidia_compute_capability' : 120,
+        'platforms' : ['linux/amd64'],
     }, args = args))
 
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')

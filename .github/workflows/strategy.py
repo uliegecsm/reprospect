@@ -89,7 +89,7 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
 
     base_name, base_tag, base_digest = get_base_name_tag_digest(version = partial['cuda_version'])
 
-    arch = NVIDIAArch.from_compute_capability(cc = partial['nvidia_compute_capability'])
+    arch = NVIDIAArch.from_compute_capability(cc = partial.pop('nvidia_compute_capability'))
     partial['nvidia_arch'] = str(arch)
 
     partial['base_image'] = f'{base_name}:{base_tag}@{base_digest}'
@@ -98,13 +98,6 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
 
     partial['build_platforms'] = ','.join(['linux/amd64'] + partial['additional_build_platforms'] if 'additional_build_platforms' in partial else [])
 
-    # Labels for testing runners.
-    # We do require the architecture as a label if the architecture is part of our
-    # available runner fleet.
-    runs_on = ['self-hosted', 'linux', 'docker', 'amd64']
-    if arch in AVAILABLE_RUNNER_ARCHES:
-        runs_on += [f'{arch}'.lower(), 'gpu:0']
-    partial['runs-on'] = runs_on
 
     # Write compilers as dictionaries.
     for lang in partial['compilers']:
@@ -113,12 +106,12 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
     # Environment of the job.
     partial['environment'] = {'REGISTRY' : args.registry}
 
-    # Specifics to the 'tests' and 'examples' jobs.
+    # Specifics to the 'tests', 'examples' and 'install-as-package-and-test' jobs.
     # Testing is opt-out.
-    # Examples are enabled if tests are enabled.
     if 'tests' not in partial or partial['tests']:
-        partial['tests'   ] = {'container' : {'image' : partial['image']}}
-        partial['examples'] = {'container' : {'image' : partial['kokkos']}}
+        partial['tests'                      ] = {'container' : {'image' : partial['image']}}
+        partial['examples'                   ] = {'container' : {'image' : partial['kokkos']}}
+        partial['install-as-package-and-test'] = {'container' : {'image' : partial['kokkos']}}
 
         if arch in AVAILABLE_RUNNER_ARCHES:
             # Enforce GPU compute capability. See also
@@ -134,19 +127,23 @@ def complete_job(partial : dict, args : argparse.Namespace) -> dict:
             env = {'NVIDIA_VISIBLE_DEVICES': ''}
             partial['tests'   ]['container']['env'] = env
             partial['examples']['container']['env'] = env
-    else:
-        partial['tests'   ] = None
-        partial['examples'] = None
 
-    # Specifics to the 'install-as-package-and-test' job.
-    # We don't run anything on GPU.
-    # See also https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-disable-require-environment-variable
-    partial['install-as-package-and-test'] = {'container' : {
-        'image' : partial['kokkos'],
-        'env' : {
+        # We don't run anything on GPU.
+        # See also https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-disable-require-environment-variable
+        partial['install-as-package-and-test']['container']['env'] = {
             'NVIDIA_DISABLE_REQUIRE' : '1',
         }
-    }}
+
+        # We do require the architecture as a label if the architecture is part of our
+        # available runner fleet.
+        runs_on = ['self-hosted', 'linux', 'docker', 'amd64']
+        if arch in AVAILABLE_RUNNER_ARCHES:
+            runs_on += [f'{arch}'.lower(), 'gpu:0']
+        for name in ['tests', 'examples', 'install-as-package-and-test']:
+            partial[name]['runs-on'] = runs_on
+    else:
+        for name in ['tests', 'examples', 'install-as-package-and-test']:
+            partial[name] = None
 
     return partial
 

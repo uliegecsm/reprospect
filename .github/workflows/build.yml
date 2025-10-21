@@ -174,7 +174,7 @@ jobs:
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
         env: ${{ matrix.environment }}
-        runs-on: ${{ matrix.runs-on }}
+        runs-on: ${{ matrix.tests.runs-on }}
         container: ${{ matrix.tests.container }}
         steps:
             - uses: actions/checkout@v5
@@ -203,7 +203,7 @@ jobs:
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
         env: ${{ matrix.environment }}
-        runs-on: ${{ matrix.runs-on }}
+        runs-on: ${{ matrix.examples.runs-on }}
         container: ${{ matrix.examples.container }}
         steps:
             - uses: actions/checkout@v5
@@ -226,7 +226,7 @@ jobs:
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
         env: ${{ matrix.environment }}
-        runs-on: ${{ matrix.runs-on }}
+        runs-on: ${{ matrix.install-as-package-and-test.runs-on }}
         container: ${{ matrix.install-as-package-and-test.container }}
         steps:
             # Since it is still a private repository, let's avoid authentication burden by

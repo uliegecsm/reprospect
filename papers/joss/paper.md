@@ -1,5 +1,5 @@
 ---
-title: 'ReProspect - A Framework for Reproducible prospecting of `Cuda` applications'
+title: 'ReProspect - A Framework for Reproducible prospecting of CUDA applications'
 tags:
   - cuda
   - profiling

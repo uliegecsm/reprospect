@@ -1,4 +1,4 @@
-FROM python:3.12
+FROM python:3.12@sha256:7ee0551f806ec3e202be724af69e0c35af5d70b124a593336de2ad5af2033ef4
 
 RUN --mount=target=/python/requirements.txt,type=bind,source=python/requirements.txt <<EOF
     set -ex

@@ -20,10 +20,13 @@ on:
 
 jobs:
 
-    setup-job-matrix-image:
+    setup-skips:
         runs-on: [self-hosted, linux, docker, amd64]
         container:
-            image: docker:latest
+            image: alpine/git:2.49.1@sha256:26f8647ec43523c2511b99064cb45b48f4535bce956b9377a94b289fb021e819
+        outputs:
+            build-images: ${{ steps.build-images.outputs.build-images }}
+            setup-job-matrix-image: ${{ steps.setup-job-matrix-image.outputs.setup-job-matrix-image }}
         steps:
             - uses: actions/checkout@v5
               with:
@@ -31,10 +34,41 @@ jobs:
 
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-            - id: extract-mounts
+            # Images generally need a rebuild either because of file changes or it was requested during the workflow dispatch.
+            # Otherwise, the jobs can be skipped, thus speeding up the workflow.
+
+            # For the 'setup-job-matrix-image' job.
+            - id: setup-job-matrix-image-extract-mounts
               run: sh .github/workflows/extract-mounts.sh docker/dockerfile.setup-job-matrix
 
-            - id: changed-files
+            - id: setup-job-matrix-image-changed-files
+              uses: tj-actions/changed-files@v47
+              with:
+                  files: |
+                      docker/**
+                      .github/workflows/**
+                      ${{ steps.setup-job-matrix-image-extract-mounts.outputs.paths }}
+
+            - id: setup-job-matrix-image
+              env:
+                  ANY_CHANGED: ${{ steps.setup-job-matrix-image-changed-files.outputs.any_changed == 'true' }}
+                  FORCE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'] }}
+              run: |
+                  if [ "$ANY_CHANGED" = "true" ] || [ "$FORCE" = "true" ]; then
+                      SETUP_JOB_MATRIX_IMAGE=true
+                  else
+                      SETUP_JOB_MATRIX_IMAGE=false
+                  fi
+                  echo "SETUP_JOB_MATRIX_IMAGE set to ${SETUP_JOB_MATRIX_IMAGE} because:"
+                  echo "    - any changed: ${ANY_CHANGED}"
+                  echo "    - force      : ${FORCE}"
+                  echo "setup-job-matrix-image=${SETUP_JOB_MATRIX_IMAGE}" >> $GITHUB_OUTPUT
+
+            # For the 'build-images' job.
+            - id: build-images-extract-mounts
+              run: sh .github/workflows/extract-mounts.sh docker/dockerfile docker/dockerfile.kokkos
+
+            - id: build-images-changed-files
               uses: tj-actions/changed-files@v47
               with:
                   files: |
@@ -42,18 +76,39 @@ jobs:
                       .github/workflows/**
                       ${{ steps.extract-mounts.outputs.paths }}
 
+            - id: build-images
+              env:
+                  ANY_CHANGED: ${{ steps.build-images-changed-files.outputs.any_changed == 'true' }}
+                  FORCE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'] }}
+              run: |
+                  if [ "$ANY_CHANGED" = "true" ] || [ "$FORCE" = "true" ]; then
+                      BUILD_IMAGES=true
+                  else
+                      BUILD_IMAGES=false
+                  fi
+                  echo "BUILD_IMAGES set to ${BUILD_IMAGES} because:"
+                  echo "    - any changed: ${ANY_CHANGED}"
+                  echo "    - force      : ${FORCE}"
+                  echo "build-images=${BUILD_IMAGES}" >> $GITHUB_OUTPUT
+
+    setup-job-matrix-image:
+        runs-on: [self-hosted, linux, docker, amd64]
+        container:
+            image: docker:latest
+        needs: [setup-skips]
+        if: ${{ needs.setup-skips.outputs.setup-job-matrix-image == 'true' }}
+        steps:
+            - uses: actions/checkout@v5
+
             - uses: docker/login-action@v3
-              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
                   password: ${{ secrets.GITHUB_TOKEN }}
 
             - uses: docker/setup-buildx-action@v3
-              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
 
             - uses: docker/build-push-action@v6.18.0
-              if  : steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'])
               with:
                   context: .
                   platforms: linux/amd64
@@ -70,24 +125,13 @@ jobs:
         container:
             image: ghcr.io/${{ github.repository }}/setup-job-matrix:latest
         outputs:
-            build-images: ${{ steps.changed-files.outputs.any_changed == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
             deploy_image: ${{ steps.strategy.outputs.deploy_image }}
             doc_image: ${{ steps.strategy.outputs.doc_image }}
             matrix_images: ${{ steps.strategy.outputs.matrix_images }}
             matrix_tests: ${{ steps.strategy.outputs.matrix_tests }}
+        if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v5
-
-            - id: extract-mounts
-              run: sh .github/workflows/extract-mounts.sh docker/dockerfile docker/dockerfile.kokkos
-
-            - id: changed-files
-              uses: tj-actions/changed-files@v47
-              with:
-                  files: |
-                      docker/**
-                      .github/workflows/**
-                      ${{ steps.extract-mounts.outputs.paths }}
 
             - id  : strategy
               run : |
@@ -96,7 +140,7 @@ jobs:
                       --repository=${{ github.repository }} >> $GITHUB_OUTPUT
 
     build-images:
-        needs: [setup-job-matrix]
+        needs: [setup-job-matrix, setup-skips]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: docker:latest
@@ -109,7 +153,7 @@ jobs:
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_images) }}
         env: ${{ matrix.environment }}
-        if: ${{ needs.setup-job-matrix.outputs.build-images }}
+        if: ${{ ! failure() && ! cancelled() && needs.setup-skips.outputs.build-images == 'true' }}
         steps:
             - uses: actions/checkout@v5
               with:
@@ -172,6 +216,7 @@ jobs:
         env: ${{ matrix.environment }}
         runs-on: ${{ matrix.tests.runs-on }}
         container: ${{ matrix.tests.container }}
+        if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v5
 
@@ -201,6 +246,7 @@ jobs:
         env: ${{ matrix.environment }}
         runs-on: ${{ matrix.examples.runs-on }}
         container: ${{ matrix.examples.container }}
+        if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v5
 
@@ -224,6 +270,7 @@ jobs:
         env: ${{ matrix.environment }}
         runs-on: ${{ matrix.install-as-package-and-test.runs-on }}
         container: ${{ matrix.install-as-package-and-test.container }}
+        if: ${{ ! failure() && ! cancelled() }}
         steps:
             # Since it is still a private repository, let's avoid authentication burden by
             # installing from the files directly.
@@ -245,6 +292,7 @@ jobs:
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ${{ needs.setup-job-matrix.outputs.doc_image }}
+        if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v5
 
@@ -291,6 +339,7 @@ jobs:
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
+        if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v5
             - run: |

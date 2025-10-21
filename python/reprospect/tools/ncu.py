@@ -125,8 +125,10 @@ class XYZBase:
     """
     @classmethod
     @typeguard.typechecked
-    def get(cls, dims : list[str] = ['x', 'y', 'z']) -> list[Metric]:
-        return [Metric(name = cls.prefix + x) for x in dims]
+    def get(cls, dims : typing.Optional[list[str]] = None) -> typing.Iterable[Metric]:
+        if not dims:
+            dims = ['x', 'y', 'z']
+        return (Metric(name = cls.prefix + dim) for dim in dims) # pylint: disable=no-member
 
 class LaunchBlock(XYZBase):
     prefix = 'launch__block_dim_'
@@ -182,78 +184,78 @@ class L1TEXCache:
 
         class Instructions(MetricCounter):
             @typeguard.typechecked
-            def __init__(self, subs = [MetricCounter.RollUp.SUM], unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
+            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
                 MetricCounter.__init__(self,
                     name  = counter_name_from(
                         unit = unit,
                         quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
                         qualifier = 'executed_op_global_ld',
-                    ), subs = subs,
+                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
                     human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'instructions', mode or '']),
                 )
 
         class Requests(MetricCounter):
             @typeguard.typechecked
-            def __init__(self, subs = [MetricCounter.RollUp.SUM]) -> None:
+            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
                     name  = counter_name_from(
                         unit = Unit.L1TEX,
                         pipestage = PipeStage.TAG,
                         quantity = Quantity.REQUEST,
                         qualifier = 'pipe_lsu_mem_global_op_ld',
-                    ), subs = subs,
+                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
                     human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'requests']),
                 )
 
         class Sectors(MetricCounter):
             @typeguard.typechecked
-            def __init__(self, subs = [MetricCounter.RollUp.SUM]) -> None:
+            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
                     name  = counter_name_from(
                         unit = Unit.L1TEX,
                         pipestage = PipeStage.TAG,
                         quantity = Quantity.SECTOR,
                         qualifier = 'pipe_lsu_mem_global_op_ld',
-                    ), subs = subs,
+                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
                     human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'sectors']),
                 )
 
         class SectorHits(MetricCounter):
             @typeguard.typechecked
-            def __init__(self, subs = [MetricCounter.RollUp.SUM]) -> None:
+            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
                     name  = counter_name_from(
                         unit = Unit.L1TEX,
                         pipestage = PipeStage.TAG,
                         quantity = Quantity.SECTOR,
                         qualifier = 'pipe_lsu_mem_global_op_ld_lookup_hit',
-                    ), subs = subs,
+                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
                     human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'sector hits']),
                 )
 
         class SectorMisses(MetricCounter):
             @typeguard.typechecked
-            def __init__(self, subs = [MetricCounter.RollUp.SUM]) -> None:
+            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
                     name  = counter_name_from(
                         unit = Unit.L1TEX,
                         pipestage = PipeStage.TAG,
                         quantity = Quantity.SECTOR,
                         qualifier = 'pipe_lsu_mem_global_op_ld_lookup_miss',
-                    ), subs = subs,
+                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
                     human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'sector misses']),
                 )
 
         class Wavefronts(MetricCounter):
             @typeguard.typechecked
-            def __init__(self, subs = [MetricCounter.RollUp.SUM]) -> None:
+            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
                     name  = counter_name_from(
                         unit = Unit.L1TEX,
                         pipestage = PipeStage.TAG_OUTPUT,
                         quantity = Quantity.WAVEFRONT,
                         qualifier = 'pipe_lsu_mem_global_op_ld',
-                    ), subs = subs,
+                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
                     human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'wavefronts']),
                 )
 
@@ -263,26 +265,26 @@ class L1TEXCache:
 
         class Instructions(MetricCounter):
             @typeguard.typechecked
-            def __init__(self, subs = [MetricCounter.RollUp.SUM], unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
+            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
                 MetricCounter.__init__(self,
                     name  = counter_name_from(
                         unit = unit,
                         quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
                         qualifier = 'executed_op_global_st',
-                    ), subs = subs,
+                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
                     human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalStore.name, 'instructions', mode or '']),
                 )
 
         class Sectors(MetricCounter):
             @typeguard.typechecked
-            def __init__(self, subs = [MetricCounter.RollUp.SUM]) -> None:
+            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
                 MetricCounter.__init__(self,
                     name  = counter_name_from(
                         unit = Unit.L1TEX,
                         pipestage = PipeStage.TAG,
                         quantity = Quantity.SECTOR,
                         qualifier = 'pipe_lsu_mem_global_op_st',
-                    ), subs = subs,
+                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
                     human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalStore.name, 'sectors']),
                 )
 
@@ -292,13 +294,13 @@ class L1TEXCache:
 
         class Instructions(MetricCounter):
             @typeguard.typechecked
-            def __init__(self, subs = [MetricCounter.RollUp.SUM], unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
+            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
                 MetricCounter.__init__(self,
                     name  = counter_name_from(
                         unit = unit,
                         quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
                         qualifier = 'executed_op_local_st',
-                    ), subs = subs,
+                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
                     human = ' '.join([L1TEXCache.name, L1TEXCache.LocalStore.name, 'instructions', mode or '']),
                 )
 
@@ -373,7 +375,8 @@ class Session:
         """
         Create a :py:class:`Session.Command`.
         """
-        if not opts: opts = []
+        if not opts:
+            opts = []
 
         opts += [
             '--print-summary=per-kernel',
@@ -447,20 +450,19 @@ class Session:
             except subprocess.CalledProcessError:
                 retry_allowed = False
                 if retry > 0 and command.log.is_file():
-                    with open(self.output.with_suffix('.log'), 'r') as fin:
+                    with open(self.output.with_suffix('.log'), mode = 'r', encoding = 'utf-8') as fin:
                         for line in fin:
                             if line.startswith('==ERROR== Profiling failed because a driver resource was unavailable.'):
-                                logging.warning(f'Retrying because a driver resource was unavailable.')
+                                logging.warning('Retrying because a driver resource was unavailable.')
                                 retry_allowed = True
                                 break
 
                 if not retry_allowed:
-                    logging.exception(f'Failed launching \'ncu\' with {command}.{'\n' + command.log.read_text() if command.log.is_file() else ''}')
+                    logging.exception(f'Failed launching \'ncu\' with {command}.{'\n' + command.log.read_text(encoding = 'utf-8') if command.log.is_file() else ''}')
                     raise
-                else:
-                    sleep_for = sleep(retry, retries)
-                    logging.info(f'Sleeping {sleep_for} seconds before retrying.')
-                    time.sleep(sleep_for)
+                sleep_for = sleep(retry, retries)
+                logging.info(f'Sleeping {sleep_for} seconds before retrying.')
+                time.sleep(sleep_for)
 
         return command
 
@@ -486,10 +488,10 @@ class Range:
         """
         if not includes and not excludes:
             for iaction in range(self.range.num_actions()):
-                self.actions.append(Action(range = self.range, index = iaction))
+                self.actions.append(Action(nvtx_range = self.range, index = iaction))
         else:
             for iaction in self.range.actions_by_nvtx(includes if includes else [], excludes if excludes else []):
-                self.actions.append(Action(range = self.range, index = iaction))
+                self.actions.append(Action(nvtx_range = self.range, index = iaction))
 
     def __repr__(self) -> str:
         return f'{self.range} (index {self.index})'
@@ -499,9 +501,9 @@ class Action:
     Wrapper around :ncu_report:`IAction`.
     """
     @typeguard.typechecked
-    def __init__(self, range, index : int) -> None:
+    def __init__(self, nvtx_range, index : int) -> None:
         self.index  = index
-        self.action = range.action_by_idx(index)
+        self.action = nvtx_range.action_by_idx(index)
 
         self.nvtx_state = self.action.nvtx_state()
 
@@ -550,8 +552,9 @@ class ProfilingResults(rich_helpers.TreeMixin, collections.UserDict):
 
         self.data = collections.OrderedDict()
 
+    @typing.override
     @typeguard.typechecked
-    def get(self, accessors : typing.Iterable) -> dict:
+    def get(self, accessors : typing.Iterable) -> dict: # pylint: disable=arguments-differ
         """
         Get (nested) value from the `accessors` path.
         It is created if needed.
@@ -575,14 +578,10 @@ class ProfilingResults(rich_helpers.TreeMixin, collections.UserDict):
 
         # Create the aggregate results.
         # Get keys of the first sample if no keys provided. We assume all samples have the same keys.
-        aggregate = dict.fromkeys(
-            samples[next(iter(samples.keys()))].keys() if keys is None else keys
-        )
+        if keys is None:
+            keys = samples[next(iter(samples.keys()))].keys()
 
-        for key in aggregate.keys():
-            aggregate[key] = sum(map(lambda x: x[key], samples.values()))
-
-        return aggregate
+        return {key: sum(s[key] for s in samples.values()) for key in keys}
 
     @typing.override
     @typeguard.typechecked
@@ -616,7 +615,7 @@ def load_ncu_report() -> typing.Optional[types.ModuleType]:
         return sys.modules['ncu_report']
 
     try:
-        import ncu_report
+        importlib.import_module('ncu_report')
         return sys.modules['ncu_report']
     except ImportError:
         pass
@@ -807,7 +806,7 @@ class Cacher(cacher.Cacher):
 
     @typing.override
     @typeguard.typechecked
-    def hash(self, *,
+    def hash(self, *, # pylint: disable=arguments-differ
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_includes : typing.Optional[list[str]] = None,
@@ -826,7 +825,7 @@ class Cacher(cacher.Cacher):
             * linked libraries
             * environment
         """
-        hasher = blake3.blake3()
+        hasher = blake3.blake3() # pylint: disable=not-callable
 
         hasher.update(subprocess.check_output(['ncu', '--version']))
 

@@ -1,3 +1,4 @@
+import abc
 import dataclasses
 import enum
 import io
@@ -36,7 +37,12 @@ def get_arch_from_compile_command(cmd : str) -> set[NVIDIAArch]:
 
     return {NVIDIAArch.from_compute_capability(cc = int(m)) for m in matches}
 
-class Demangler:
+class DemanglerMixin(abc.ABC):
+    @classmethod
+    @abc.abstractmethod
+    def get_executable(cls) -> pathlib.Path | str:
+        pass
+
     @classmethod
     @typeguard.typechecked
     def demangle(cls, s: str) -> str:
@@ -44,20 +50,28 @@ class Demangler:
         Demangle `s` (a symbol).
         """
         return subprocess.check_output([
-            cls.EXECUTABLE, s
+            cls.get_executable(), s,
         ]).decode().strip()
 
-class CuppFilt(Demangler):
+class CuppFilt(DemanglerMixin):
     """
     Convenient wrapper for `cu++filt`.
     """
-    EXECUTABLE = 'cu++filt'
+    @typing.override
+    @classmethod
+    @typeguard.typechecked
+    def get_executable(cls) -> str:
+        return 'cu++filt'
 
-class LlvmCppFilt(Demangler):
+class LlvmCppFilt(DemanglerMixin):
     """
     Convenient wrapper for `llvm-cxxfilt`.
     """
-    EXECUTABLE = 'llvm-cxxfilt'
+    @typing.override
+    @classmethod
+    @typeguard.typechecked
+    def get_executable(cls) -> str:
+        return 'llvm-cxxfilt'
 
 class ResourceUsage(enum.StrEnum):
     """
@@ -92,7 +106,8 @@ class ResourceUsage(enum.StrEnum):
             t = ResourceUsage(token[0])
             match t:
                 case ResourceUsage.CONSTANT:
-                    if t not in res: res[t] = {}
+                    if t not in res:
+                        res[t] = {}
                     res[t][int(token[1])] = int(token[2])
                 case _:
                     res[t] = int(token[2])
@@ -146,6 +161,7 @@ class CuObjDump:
     ) -> None:
         self.file = file
         self.arch = arch
+        self.functions = {}
         if sass:
             self.sass(demangler = demangler)
 
@@ -171,11 +187,9 @@ class CuObjDump:
             for mangled in re.finditer(pattern = r'\t\tFunction : ([A-Za-z0-9_]+)', string = self.sass):
                 self.sass = self.sass.replace(mangled.group(1), demangler.demangle(mangled.group(1)))
 
-        self.functions = {}
-
         # Retrieve SASS code for each function.
-        START = '\t\tFunction : '
-        STOP = '\t\t.....'
+        START = '\t\tFunction : ' # pylint: disable=invalid-name
+        STOP = '\t\t.....' # pylint: disable=invalid-name
         for match in re.finditer(rf'{START}(.*?){STOP}', self.sass, flags = re.DOTALL):
             function = match.group(1)
             name, code = function.split(sep = '\n', maxsplit = 1)
@@ -184,7 +198,7 @@ class CuObjDump:
         # Retrieve other function information.
         lines = iter(self.sass.splitlines())
         for line in lines:
-            if line.startswith(' Function ') and any(x in line for x in self.functions.keys()) and line.endswith(':'):
+            if line.startswith(' Function ') and line.endswith(':') and any(x in line for x in self.functions):
                 function = line.replace(' Function ', '').rstrip(':')
                 self.functions[function].ru = ResourceUsage.parse(line = next(lines))
 

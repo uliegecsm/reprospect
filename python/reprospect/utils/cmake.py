@@ -31,7 +31,7 @@ class FileAPI:
         By default, https://github.com/madebr/python-cmake-file-api/blob/3caf111d1ba10f5f9ae624336b55d3e7ca33f9e6/cmake_file_api/reply/v1/api.py#L70
         will return a list of cache entries, which is impractical for name-based access.
         """
-        path = reader._create_reply_path() / reader.index().reply.stateless[(cmake_file_api.kinds.kind.ObjectKind.CACHE, version)].jsonFile
+        path = reader._create_reply_path() / reader.index().reply.stateless[(cmake_file_api.kinds.kind.ObjectKind.CACHE, version)].jsonFile # pylint: disable=protected-access
 
         with path.open() as file:
             dikt = json.load(file)

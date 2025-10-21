@@ -29,18 +29,16 @@ class ComputeCapability:
     def __eq__(self, other: typing.Union[int, 'ComputeCapability']) -> bool:
         if isinstance(other, ComputeCapability):
             return (self.major, self.minor) == (other.major, other.minor)
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.as_int == other
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def __lt__(self, other : typing.Union[int, 'ComputeCapability']) -> bool:
         if isinstance(other, ComputeCapability):
             return (self.major, self.minor) < (other.major, other.minor)
-        elif isinstance(other, int):
+        if isinstance(other, int):
             return self.as_int < other
-        else:
-            return NotImplemented
+        return NotImplemented
 
     @staticmethod
     @typeguard.typechecked
@@ -70,18 +68,17 @@ class NVIDIAFamily(enum.StrEnum):
         value = cc.as_int if isinstance(cc, ComputeCapability) else cc
         if value in [70, 72]:
             return NVIDIAFamily.VOLTA
-        elif value == 75:
+        if value == 75:
             return NVIDIAFamily.TURING
-        elif value in [80, 86, 87]:
+        if value in [80, 86, 87]:
             return NVIDIAFamily.AMPERE
-        elif value == 89:
+        if value == 89:
             return NVIDIAFamily.ADA
-        elif value == 90:
+        if value == 90:
             return NVIDIAFamily.HOPPER
-        elif value in [100, 103, 110, 120]:
+        if value in [100, 103, 110, 120]:
             return NVIDIAFamily.BLACKWELL
-        else:
-            raise ValueError(f"unsupported compute capability {cc}")
+        raise ValueError(f"unsupported compute capability {cc}")
 
 @dataclasses.dataclass(frozen = True, eq = True, match_args = True, slots = True)
 class NVIDIAArch:

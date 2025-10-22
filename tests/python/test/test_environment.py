@@ -39,4 +39,4 @@ class TestEnvironmentAwareMixin:
         The instance does not have the attribute, and it is not in the environment.
         """
         with pytest.raises(AttributeError, match = 'MyClass has no attribute \'this_will_RAISE\' and there is no environment variable \'this_will_RAISE\''):
-            instance.this_will_RAISE
+            assert instance.this_will_RAISE == 666

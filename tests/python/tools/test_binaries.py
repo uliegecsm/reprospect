@@ -43,7 +43,7 @@ def test_get_arch_from_compile_command(cmake_file_api) -> None:
     for command, arch in COMMANDS.items():
         assert get_arch_from_compile_command(cmd = command) == arch
 
-    with open(pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'compile_commands.json', 'r') as fin:
+    with open(pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'compile_commands.json', 'r', encoding = 'utf-8') as fin:
         compile_commands = json.load(fin)
 
     command = [x for x in compile_commands if x['file'].endswith('tests/cpp/cuda/test_saxpy.cpp')]
@@ -57,7 +57,7 @@ def get_compilation_output(*,
     cwd : pathlib.Path,
     arch : NVIDIAArch,
     cmake_file_api : cmake.FileAPI,
-    object : bool = True,
+    object : bool = True, # pylint: disable=redefined-builtin
     resource_usage : bool = False,
 ) -> typing.Tuple[pathlib.Path, str]:
     """
@@ -370,7 +370,7 @@ class TestCuObjDump:
             assert cubin.is_file()
 
             assert len(cuobjdump.functions) == 1
-            assert self.SIGNATURE in cuobjdump.functions.keys()
+            assert self.SIGNATURE in cuobjdump.functions
 
         @typeguard.typechecked
         def test_extract_symbol_table(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:

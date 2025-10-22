@@ -307,7 +307,7 @@ class TestCacher:
 
                 results_first = cacher.run(executable = self.GRAPH, metrics = METRICS, retries = 5)
 
-                assert results_first.cached == False
+                assert results_first.cached is False
 
                 assert all(x in os.listdir(cacher.session.output.parent) for x in FILES)
 
@@ -319,6 +319,6 @@ class TestCacher:
 
                 results_second = cacher.run(executable = self.GRAPH, metrics = METRICS, retries = 5)
 
-                assert results_second.cached == True
+                assert results_second.cached is True
 
                 assert all(x in os.listdir(cacher.session.output.parent) for x in FILES)

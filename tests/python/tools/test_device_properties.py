@@ -29,8 +29,8 @@ class TestCuda(unittest.TestCase):
         """
         device_properties.Cuda.load()
 
-        assert type(device_properties.Cuda.cuda)   is ctypes.CDLL
-        assert type(device_properties.Cuda.cudart) is ctypes.CDLL
+        assert isinstance(device_properties.Cuda.cuda,   ctypes.CDLL)
+        assert isinstance(device_properties.Cuda.cudart, ctypes.CDLL)
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_check_driver_status(self):
@@ -111,7 +111,7 @@ class TestCuda(unittest.TestCase):
             logging.info(f'Name of device {device} is {cc}.')
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
-    def test_get_device_total_memory(sell):
+    def test_get_device_total_memory(self):
         """
         Get the device total memory.
         """

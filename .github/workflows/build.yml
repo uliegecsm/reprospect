@@ -370,6 +370,7 @@ jobs:
         needs: [setup-job-matrix, build-images]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
+        if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v5
 

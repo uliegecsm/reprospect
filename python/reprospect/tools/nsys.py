@@ -22,7 +22,7 @@ from reprospect.utils import rich_helpers
 
 class Session:
     """
-    Helper for interacting with an `nsys` session.
+    `Nsight Systems` session interface.
     """
     @typeguard.typechecked
     def __init__(self, output_dir : pathlib.Path, output_file_prefix : str) -> None:
@@ -35,18 +35,18 @@ class Session:
     @dataclasses.dataclass(frozen = True)
     class Command:
         """
-        `nsys` command.
+        ``nsys`` command.
         """
-        opts: list[str]
-        output: pathlib.Path
-        executable: pathlib.Path
-        args: list[str]
+        opts: list[str]          #: ``nsys`` options that do not involve paths.
+        output: pathlib.Path     #: ``nsys`` report file.
+        executable: pathlib.Path #: Executable to run.
+        args: list[str]          #: Arguments to pass to the executable.
 
         @functools.cached_property
         @typeguard.typechecked
         def to_list(self) -> list[str | pathlib.Path]:
             """
-            Build the full `nsys` profile command.
+            Build the full ``nsys`` profile command.
             """
             cmd = ['nsys', 'profile']
 
@@ -118,7 +118,7 @@ class Session:
         env : typing.Optional[typing.MutableMapping] = None,
     ) -> 'Session.Command':
         """
-        Run `cmd` with `nsys`.
+        Run ``nsys``.
         """
         command = self.get_command(
             opts = opts,
@@ -147,7 +147,7 @@ class Session:
         cwd : pathlib.Path = pathlib.Path.cwd(),
     ) -> None:
         """
-        Export report to `.sqlite`.
+        Export report to ``.sqlite``.
         """
         cmd = [
             'nsys', 'stats',
@@ -169,7 +169,7 @@ class Session:
         cwd : pathlib.Path = pathlib.Path.cwd(),
     ) -> pandas.DataFrame:
         """
-        Extract the `Cuda` `API` call stats, filtering the database with `filter_nvtx`.
+        Extract the CUDA `API` call stats, filtering the database with `filter_nvtx`.
         """
         cmd = [
             'nsys', 'stats',
@@ -195,7 +195,7 @@ class Session:
 
 class Report:
     """
-    Helper for reading the `SQLite` export of a `nsys` report.
+    Helper for reading the `SQLite` export of a ``nsys`` report.
     """
     @typeguard.typechecked
     def __init__(self, *, db : pathlib.Path) -> None:
@@ -279,7 +279,7 @@ class Report:
         @typeguard.typechecked
         def get(self, accessors : typing.Iterable[str]) -> pandas.DataFrame:
             """
-            Find all nested `NVTX` events matching `accessors`.
+            Find all nested NVTX events matching `accessors`.
             """
             if not accessors:
                 return self.events
@@ -317,10 +317,10 @@ class Report:
     @typeguard.typechecked
     def nvtx_events(self) -> 'Report.NvtxEvents':
         """
-        Get all `NVTX` events from the `NVTX_EVENTS` table.
+        Get all NVTX events from the `NVTX_EVENTS` table.
 
         Add a `children` column that contains for each event a list of child indices,
-        preserving the hierarchy of the nested `NVTX` ranges.
+        preserving the hierarchy of the nested NVTX ranges.
 
         Add a `level` column, starting from 0 for the root events.
 
@@ -389,11 +389,11 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
     def get_events(self, table : str, accessors : typing.Iterable[str]) -> pandas.DataFrame:
         """
         Query all rows in `table` that happen between the `start`/`end` time points
-        of the nested `NVTX` range matching `accessors`.
+        of the nested NVTX range matching `accessors`.
 
         .. note::
 
-            This replaces `nsys stats` whose `--filter-nvtx` is not powerful enough, as of `Cuda` 13.0.0.
+            This replaces `nsys stats` whose `--filter-nvtx` is not powerful enough, as of CUDA 13.0.0.
         """
         logging.info(f'Retrieving events in {table} happening within the nested NVTX range {accessors}.')
 
@@ -421,25 +421,26 @@ ORDER BY {table}.start ASC
 @typeguard.typechecked
 def strip_cuda_api_suffix(call : str) -> str:
     """
-    Strip suffix like `_v10000` or `_ptsz` from a `Cuda` API `call`.
+    Strip suffix like `_v10000` or `_ptsz` from a CUDA API `call`.
     """
     return call.split('_')[0]
 
 class Cacher(cacher.Cacher):
     """
-    Cacher tailored to `nsys` results.
+    Cacher tailored to ``nsys`` results.
 
-    `nsys` require quite some time to acquire results.
+    ``nsys`` runs require quite some time to acquire results.
 
     On a cache hit, the cacher will serve:
-        - `.nsys-rep` file
-        - `.sqlite` file
 
-    On a cache miss, `nsys` is launched and the cache entry populated accordingly.
+    - ``.nsys-rep`` file
+    - ``.sqlite`` file
+
+    On a cache miss, ``nsys`` is launched and the cache entry populated accordingly.
 
     .. note::
 
-        It is assumed that hashing is faster than running `nsys` itself.
+        It is assumed that hashing is faster than running ``nsys`` itself.
 
     .. warning::
 
@@ -465,12 +466,13 @@ class Cacher(cacher.Cacher):
     ) -> blake3.blake3:
         """
         Hash based on:
-            * `nsys` version
-            * `nsys` options (but not the output files)
-            * executable content
-            * executable arguments
-            * linked libraries
-            * environment
+
+        * ``nsys`` version
+        * ``nsys`` options (but not the output files)
+        * executable content
+        * executable arguments
+        * linked libraries
+        * environment
         """
         hasher = blake3.blake3() # pylint: disable=not-callable
 
@@ -530,7 +532,7 @@ class Cacher(cacher.Cacher):
         **kwargs,
     ) -> None:
         """
-        Export report to `.sqlite`.
+        Export report to ``.sqlite``.
         """
         cached = entry.directory / self.session.output_file_sqlite.name
 

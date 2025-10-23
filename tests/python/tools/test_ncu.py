@@ -32,7 +32,7 @@ class TestSession:
 
     def test_collect_basic_metrics_saxpy_with_nvtx_filtering(self):
         """
-        Collect a few basic metrics for the `saxpy` executable and filter by `NVTX`.
+        Collect a few basic metrics for the :py:attr:`SAXPY` executable and filter by NVTX.
         """
         METRICS = [
             # Metric with full name provided.
@@ -124,7 +124,7 @@ class TestSession:
 
     def test_collect_correlated_metrics_saxpy(self):
         """
-        Collect a metric with correlations for the `saxpy` executable.
+        Collect a metric with correlations for the :py:attr:`SAXPY` executable.
         """
         METRICS = [ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode')]
 
@@ -156,7 +156,7 @@ class TestSession:
 
     def test_collect_basic_metrics_graph(self, cmake_file_api : cmake.FileAPI):
         """
-        Collect a few basic metrics for the `graph` executable.
+        Collect a few basic metrics for the :py:attr:`GRAPH` executable.
         """
         METRICS = [
             # A few L1TEX cache metrics.

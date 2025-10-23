@@ -12,7 +12,7 @@ from reprospect.tools import architecture
 @dataclasses.dataclass(frozen = True, eq = True)
 class CudaRuntimeError:
     """
-    `CUDA` runtime error code.
+    CUDA runtime error code.
     """
     value : int
 
@@ -32,7 +32,7 @@ class CudaRuntimeError:
 @dataclasses.dataclass(frozen = True, eq = True)
 class CudaDriverError:
     """
-    `CUDA` driver error code.
+    CUDA driver error code.
     """
     value : int
 
@@ -53,7 +53,7 @@ class CudaDriverError:
 
 class CudaDeviceAttribute(enum.IntEnum):
     """
-    `CUDA` device attribute, copied from `cuda.h`.
+    CUDA device attribute, copied from ``cuda.h``.
     """
     MAX_THREADS_PER_BLOCK = 1
     MAX_BLOCK_DIM_X = 2
@@ -211,7 +211,7 @@ class Cuda:
     @typeguard.typechecked
     def load(cls) -> None:
         """
-        Load `CUDA` library.
+        Load CUDA library.
         """
         if not cls.cuda:
             cls.cuda   = ctypes.CDLL('libcuda.so')
@@ -249,7 +249,7 @@ class Cuda:
     @typeguard.typechecked
     def check_driver_api_call(cls, *, func : typing.Callable) -> typing.Any:
         """
-        Wrap `CUDA` driver API call `func` to raise an exception if the call is not successful.
+        Wrap CUDA driver API call `func` to raise an exception if the call is not successful.
         """
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -262,7 +262,7 @@ class Cuda:
     @typeguard.typechecked
     def check_runtime_api_call(cls, *, func : typing.Callable) -> typing.Any:
         """
-        Wrap `CUDA` runtime API call `func` to raise an exception if the call is not successful.
+        Wrap CUDA runtime API call `func` to raise an exception if the call is not successful.
         """
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -280,7 +280,7 @@ class Cuda:
     @typeguard.typechecked
     def device_count(self) -> int:
         """
-        Wrap `cudaGetDeviceCount`.
+        Wrap ``cudaGetDeviceCount``.
         """
         count = ctypes.c_int()
         self.check_runtime_api_call(func = self.cudart.cudaGetDeviceCount)(ctypes.byref(count))

@@ -103,7 +103,7 @@ class TestSASSDecoder:
 
     def test_from_source(self):
         """
-        Read `SASS` from a source.
+        Read SASS from a source.
         """
         SOURCE = pathlib.Path(__file__).parent / 'test_sass' / 'saxpy.sass'
 
@@ -115,7 +115,7 @@ class TestSASSDecoder:
     @typeguard.typechecked
     def test_from_cuobjdump(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
-        Read `SASS` dumped from `cuobjdump`.
+        Read SASS dumped from ``cuobjdump``.
         """
         CUDA_FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
         output, _ = get_compilation_output(

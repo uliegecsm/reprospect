@@ -3,11 +3,6 @@
 Analysis workflow |:test_tube:|
 ===============================
 
-From sources to binaries |:bricks:|
------------------------------------
-
-* :py:class:`reprospect.utils.cmake.FileAPI`
-
 Analysis is 3-fold |:mag:|
 --------------------------
 
@@ -34,3 +29,9 @@ API tracing |:movie_camera:|
 See for example:
 
 * :py:class:`examples.kokkos.view.example_allocation.TestNSYS`
+
+From sources to binaries |:bricks:|
+-----------------------------------
+
+* :py:class:`reprospect.utils.cmake.FileAPI`
+

@@ -35,7 +35,7 @@ class TestCuda(unittest.TestCase):
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_check_driver_status(self):
         """
-        Check the proper handling of `Cuda` driver API error codes.
+        Check the proper handling of CUDA driver API error codes.
         """
         device_properties.Cuda.load()
 
@@ -47,7 +47,7 @@ class TestCuda(unittest.TestCase):
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_check_runtime_status(self):
         """
-        Check the proper handling of `Cuda` runtime API error codes.
+        Check the proper handling of CUDA runtime API error codes.
         """
         device_properties.Cuda.load()
 

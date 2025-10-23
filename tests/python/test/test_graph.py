@@ -41,7 +41,7 @@ class TestGraph(reprospect.TestCase):
 
 class TestSASS(TestGraph):
     """
-    `SASS`-focused analysis.
+    SASS-focused analysis.
     """
     @property
     @typeguard.typechecked

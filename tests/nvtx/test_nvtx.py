@@ -24,10 +24,11 @@ def start_end_range(domain : nvtx.Domain, **kwargs):
 
 class TestNVTX:
     """
-    Use the `Python` interface of `NVTX` to create intricated situations.
+    Use the `Python` interface of NVTX to create intricated situations.
 
     References:
-        * https://nvidia.github.io/NVTX/python/
+
+    * https://nvidia.github.io/NVTX/python/
     """
     @classmethod
     def function(cls) -> None:

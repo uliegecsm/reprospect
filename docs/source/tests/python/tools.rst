@@ -21,18 +21,18 @@ Device properties
 
 .. automodule:: tests.python.tools.test_device_properties
 
-`ncu`
-~~~~~
+`Nsight Compute`
+~~~~~~~~~~~~~~~~
 
 .. automodule:: tests.python.tools.test_ncu
 
-`nsys`
-~~~~~~
+`Nsight Systems`
+~~~~~~~~~~~~~~~~
 
 .. automodule:: tests.python.tools.test_nsys
 
-`SASS`
-~~~~~~
+SASS
+~~~~
 
 Here is the output of :py:func:`tests.python.tools.test_sass.TestSASSDecoder.test_to_html`:
 

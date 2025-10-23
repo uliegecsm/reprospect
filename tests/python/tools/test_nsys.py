@@ -42,7 +42,7 @@ class TestSession:
 
     def test_cuda_api_trace(self):
         """
-        Collect all `Cuda` API calls of :file:`tests/cpp/cuda/test_saxpy.cpp`.
+        Collect all CUDA API calls of :file:`tests/cpp/cuda/test_saxpy.cpp`.
         """
         ns = self.run(nvtx_capture = "outer_useless_range@application_domain")
 
@@ -223,7 +223,7 @@ class TestReport:
 
     def test_get_events_within_nested_nvtx_ranges(self, report) -> None:
         """
-        Check that we can retrieve from a table events that happen in a nested `NVTX` range.
+        Check that we can retrieve from a table events that happen in a nested NVTX range.
         """
         with report:
             events = report.nvtx_events
@@ -292,7 +292,7 @@ NVTX events
         def test_intricated(self) -> None:
             """
             Use :py:class:`tests.nvtx.test_nvtx.TestNVTX.intricated` to check that we can
-            build the hierarchy of `NVTX` events for arbitrarily complicated situations.
+            build the hierarchy of NVTX events for arbitrarily complicated situations.
             """
             with Cacher(session = Session(output_dir = TMPDIR, output_file_prefix = 'test-report-nvtx')) as cacher:
                 entry = cacher.run(

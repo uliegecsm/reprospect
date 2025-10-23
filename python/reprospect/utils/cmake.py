@@ -1,42 +1,44 @@
-import json
+import functools
 import pathlib
-import typing
 
 import cmake_file_api
+import ijson
 import typeguard
 
 class FileAPI:
     """
     Thin wrapper for https://github.com/madebr/python-cmake-file-api.
     """
-    @typeguard.typechecked
-    def __init__(self, build_path : pathlib.Path, inspect : typing.Dict[str, int]) -> None:
+    CACHE_VERSION = 2
+    TOOLCHAINS_VERSION = 1
+
+    typeguard.typechecked
+    def __init__(self, build_path : pathlib.Path) -> None:
         """
         Use our wrapper for cache variables and toolchain information.
         """
-        reader = cmake_file_api.reply.v1.api.CMakeFileApiV1(build_path = build_path)
+        self.reader = cmake_file_api.reply.v1.api.CMakeFileApiV1(build_path = build_path)
 
-        for kind, version in inspect.items():
-            match kind:
-                case 'cache':
-                    self.cache = self.inspect_cache(reader = reader, version = version)
-                case 'toolchains':
-                    self.toolchains = {x.language: x.compiler for x in reader.inspect(kind = cmake_file_api.kinds.kind.ObjectKind(kind), kind_version = version).toolchains}
-                case _:
-                    setattr(self, kind, reader.inspect(kind = cmake_file_api.kinds.kind.ObjectKind(kind), kind_version = version))
-
+    @functools.cached_property
     @typeguard.typechecked
-    def inspect_cache(self, reader, version : int) -> dict:
-        """
-        By default, https://github.com/madebr/python-cmake-file-api/blob/3caf111d1ba10f5f9ae624336b55d3e7ca33f9e6/cmake_file_api/reply/v1/api.py#L70
-        will return a list of cache entries, which is impractical for name-based access.
-        """
-        path = reader._create_reply_path() / reader.index().reply.stateless[(cmake_file_api.kinds.kind.ObjectKind.CACHE, version)].jsonFile # pylint: disable=protected-access
+    def cache(self) -> dict:
+        cache_json = self.reader._create_reply_path() / self.reader.index().reply.stateless[(cmake_file_api.kinds.kind.ObjectKind.CACHE, self.CACHE_VERSION)].jsonFile
 
-        with path.open() as file:
-            dikt = json.load(file)
+        with cache_json.open('rb') as file:
+            entries = ijson.items(file, 'entries.item')
+            return {
+                entry['name']: {k: v for k, v in entry.items() if k != 'name'}
+                for entry in entries
+            }
 
-        if dikt['kind'] != cmake_file_api.kinds.kind.ObjectKind.CACHE.value:
-            raise ValueError(f'unexpected kind {dikt['kind']}')
+    @functools.cached_property
+    @typeguard.typechecked
+    def toolchains(self) -> dict:
+        toolchains_json = self.reader._create_reply_path() / self.reader.index().reply.stateless[(cmake_file_api.kinds.kind.ObjectKind.TOOLCHAINS, self.TOOLCHAINS_VERSION)].jsonFile
 
-        return {ce.name: ce for ce in map(cmake_file_api.kinds.cache.v2.CacheEntry.from_dict, dikt['entries'])}
+        with toolchains_json.open('rb') as file:
+            toolchains = ijson.items(file, 'toolchains.item')
+            return {
+                toolchain['language']: {k: v for k, v in toolchain.items() if k != 'language'}
+                for toolchain in toolchains
+            }

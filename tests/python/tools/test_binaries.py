@@ -23,7 +23,6 @@ TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_
 def cmake_file_api() -> cmake.FileAPI:
     return cmake.FileAPI(
         build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
-        inspect = {'cache' : 2, 'toolchains' : 1},
     )
 
 def test_get_arch_from_compile_command(cmake_file_api) -> None:
@@ -49,7 +48,8 @@ def test_get_arch_from_compile_command(cmake_file_api) -> None:
 
     command = [x for x in compile_commands if x['file'].endswith('tests/cpp/cuda/test_saxpy.cpp')]
     assert len(command) == 1
-    assert get_arch_from_compile_command(cmd = command[0]['command']) == {NVIDIAArch.from_compute_capability(cc = int(cmake_file_api.cache['CMAKE_CUDA_ARCHITECTURES'].value.split('-')[0]))}
+    cmake_cuda_architecture = int(cmake_file_api.cache['CMAKE_CUDA_ARCHITECTURES']['value'].split('-')[0])
+    assert get_arch_from_compile_command(cmd = command[0]['command']) == {NVIDIAArch.from_compute_capability(cc = cmake_cuda_architecture)}
 
 @typeguard.typechecked
 def get_compilation_output(*,
@@ -66,25 +66,25 @@ def get_compilation_output(*,
     output = cwd / (source.stem + ('.o' if object else ''))
 
     cmd = [
-        cmake_file_api.cache['CMAKE_CUDA_COMPILER_LAUNCHER'].value,
-        cmake_file_api.toolchains['CUDA'].path,
+        cmake_file_api.cache['CMAKE_CUDA_COMPILER_LAUNCHER']['value'],
+        cmake_file_api.toolchains['CUDA']['compiler']['path'],
         '-std=c++20',
     ]
 
     # For compiling an executable, if the source ends with '.cpp', we need '-x cu' for nvcc and '-x cuda' for clang.
     if not object and source.suffix == '.cpp':
-        match cmake_file_api.toolchains['CUDA'].id:
+        match cmake_file_api.toolchains['CUDA']['compiler']['id']:
             case 'NVIDIA':
                 cmd += ['-x', 'cu']
             case 'Clang':
                 cmd += ['-x', 'cuda']
             case _:
-                raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA'].id}')
+                raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA']['compiler']['id']}')
 
     # Clang tends to add a lot of debug code otherwise.
     cmd.append('-O3')
 
-    match cmake_file_api.toolchains['CUDA'].id:
+    match cmake_file_api.toolchains['CUDA']['compiler']['id']:
         case 'NVIDIA':
             cmd += [
                 '--gpu-architecture=' + arch.as_compute,
@@ -97,7 +97,7 @@ def get_compilation_output(*,
             if resource_usage:
                 cmd += ['-Xcuda-ptxas', '-v',]
         case _:
-            raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA'].id}')
+            raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA']['compiler']['id']}')
 
     cmd += [
         '-c', source,
@@ -186,7 +186,7 @@ class TestResourceUsage:
                 expt_regs = {
                     'NVIDIA' : 14,
                     'Clang' : 12,
-                }[cmake_file_api.toolchains['CUDA'].id]
+                }[cmake_file_api.toolchains['CUDA']['compiler']['id']]
                 assert f'Used {expt_regs} registers, used 0 barriers' in compilation, compilation
             else:
                 assert 'Used 12 registers, used 0 barriers' in compilation, compilation

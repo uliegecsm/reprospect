@@ -2,34 +2,41 @@ import logging
 import os
 import pathlib
 
+import pytest
+import typeguard
+
 from reprospect.utils import cmake
 
 class TestFileAPI:
     """
     Tests for :py:class:`reprospect.utils.cmake.FileAPI`.
     """
-    def test_cache(self) -> None:
+    @pytest.fixture(scope = 'session')
+    @typeguard.typechecked
+    def cmake_file_api(self) -> cmake.FileAPI:
+        return cmake.FileAPI(
+            build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
+        )
+
+    def test_cache(self, cmake_file_api) -> None:
         """
         Check that cache variables are read correctly.
         """
-        reader = cmake.FileAPI(build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']), inspect = {'cache' : 2})
+        assert 'name' not in cmake_file_api.cache['ReProspect_ENABLE_TESTS']
+        assert cmake_file_api.cache['ReProspect_ENABLE_TESTS']['value'] == 'ON'
 
-        assert reader.cache['ReProspect_ENABLE_TESTS'].name  == 'ReProspect_ENABLE_TESTS'
-        assert reader.cache['ReProspect_ENABLE_TESTS'].value == 'ON'
-
-    def test_toolchains(self) -> None:
+    def test_toolchains(self, cmake_file_api) -> None:
         """
         Check toolchain information.
         """
-        reader = cmake.FileAPI(build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']), inspect = {'toolchains' : 1})
+        assert 'CUDA' in cmake_file_api.toolchains
+        assert 'CXX'  in cmake_file_api.toolchains
 
-        assert 'CUDA' in reader.toolchains
-        assert 'CXX'  in reader.toolchains
+        assert cmake_file_api.toolchains['CUDA']['compiler']['id'] in ['NVIDIA', 'Clang']
 
-        assert reader.toolchains['CUDA'].id in ['NVIDIA', 'Clang']
-
-        for language, compiler in reader.toolchains.items():
+        for language, toolchain in cmake_file_api.toolchains.items():
+            compiler = toolchain['compiler']
             logging.info(f'For language {language}:')
-            logging.info(f'\t- compiler ID     : {compiler.id}')
-            logging.info(f'\t- compiler path   : {compiler.path}')
-            logging.info(f'\t- compiler version: {compiler.version}')
+            logging.info(f'\t- compiler ID     : {compiler['id']}')
+            logging.info(f'\t- compiler path   : {compiler['path']}')
+            logging.info(f'\t- compiler version: {compiler['version']}')

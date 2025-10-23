@@ -33,11 +33,10 @@ class TestGraph(reprospect.TestCase):
     @pytest.fixture(scope = 'session')
     @classmethod
     @typeguard.typechecked
-    def cmake_file_api(cls) -> cmake.FileAPI:
+    def cmake_cuda_compiler(cls) -> dict:
         return cmake.FileAPI(
-            build_path = cls.CMAKE_BINARY_DIR,
-            inspect = {'toolchains' : 1},
-        )
+            build_path = cls.CMAKE_BINARY_DIR
+        ).toolchains['CUDA']['compiler']
 
 class TestSASS(TestGraph):
     """
@@ -62,11 +61,11 @@ class TestSASS(TestGraph):
         logging.info(cuobjdump.sass)
 
     @typeguard.typechecked
-    def test_instruction_count(self, cuobjdump : CuObjDump, cmake_file_api) -> None:
+    def test_instruction_count(self, cuobjdump : CuObjDump, cmake_cuda_compiler) -> None:
         """
         Check how many instructions there are in the first graph node kernel.
         """
-        decoder = Decoder(code = cuobjdump.functions[self.DEMANGLED_NODE_A[cmake_file_api.toolchains['CUDA'].id]].code)
+        decoder = Decoder(code = cuobjdump.functions[self.DEMANGLED_NODE_A[cmake_cuda_compiler['id']]].code)
         assert len(decoder.instructions) >= 8
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
@@ -108,11 +107,11 @@ class TestNCU(TestGraph):
         assert len(results) == 4
 
     @typeguard.typechecked
-    def test_launch_registers_per_thread_allocated_node_A(self, results : ncu.ProfilingResults, cmake_file_api) -> None:
+    def test_launch_registers_per_thread_allocated_node_A(self, results : ncu.ProfilingResults, cmake_cuda_compiler) -> None:
         """
         Check metric `launch__registers_per_thread_allocated` for graph node A.
         """
-        metrics = list(filter(lambda x: x['demangled'] == TestGraph.DEMANGLED_NODE_A[cmake_file_api.toolchains['CUDA'].id], results.values()))
+        metrics = list(filter(lambda x: x['demangled'] == TestGraph.DEMANGLED_NODE_A[cmake_cuda_compiler['id']], results.values()))
         assert len(metrics) == 1
         metrics = metrics[0]
 

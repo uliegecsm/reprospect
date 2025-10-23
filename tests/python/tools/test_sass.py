@@ -40,8 +40,7 @@ ISETP_NE_U32_AND = \
 @typeguard.typechecked
 def cmake_file_api() -> cmake.FileAPI:
     return cmake.FileAPI(
-        build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
-        inspect = {'cache' : 2, 'toolchains' : 1},
+        build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR'])
     )
 
 class TestSASSDecoder:

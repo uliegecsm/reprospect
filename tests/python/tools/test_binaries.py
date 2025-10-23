@@ -22,7 +22,7 @@ TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_
 @typeguard.typechecked
 def cmake_file_api() -> cmake.FileAPI:
     return cmake.FileAPI(
-        build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
+        cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
     )
 
 def test_get_arch_from_compile_command(cmake_file_api) -> None:

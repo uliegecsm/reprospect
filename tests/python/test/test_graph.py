@@ -35,7 +35,7 @@ class TestGraph(reprospect.TestCase):
     @typeguard.typechecked
     def cmake_cuda_compiler(cls) -> dict:
         return cmake.FileAPI(
-            build_path = cls.CMAKE_BINARY_DIR
+            cmake_build_directory = cls.CMAKE_BINARY_DIR
         ).toolchains['CUDA']['compiler']
 
 class TestSASS(TestGraph):

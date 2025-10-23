@@ -15,16 +15,23 @@ class TestFileAPI:
     @typeguard.typechecked
     def cmake_file_api(self) -> cmake.FileAPI:
         return cmake.FileAPI(
-            build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
+            cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
         )
 
+    @typeguard.typechecked
     def test_cache(self, cmake_file_api) -> None:
         """
         Check that cache variables are read correctly.
         """
-        assert 'name' not in cmake_file_api.cache['ReProspect_ENABLE_TESTS']
-        assert cmake_file_api.cache['ReProspect_ENABLE_TESTS']['value'] == 'ON'
+        assert cmake_file_api.cache['ReProspect_ENABLE_TESTS'] == {
+            'properties' : [
+                {'name' : 'HELPSTRING', 'value' : 'Enable tests.'},
+            ],
+            'type' : 'BOOL',
+            'value' : 'ON',
+        }
 
+    @typeguard.typechecked
     def test_toolchains(self, cmake_file_api) -> None:
         """
         Check toolchain information.
@@ -40,3 +47,32 @@ class TestFileAPI:
             logging.info(f'\t- compiler ID     : {compiler['id']}')
             logging.info(f'\t- compiler path   : {compiler['path']}')
             logging.info(f'\t- compiler version: {compiler['version']}')
+
+    @typeguard.typechecked
+    def test_codemodel_configuration(self, cmake_file_api) -> None:
+        """
+        Check codemodel configuration information.
+        """
+        assert cmake_file_api.codemodel_configuration['name'] == 'Release'
+
+        assert len(cmake_file_api.codemodel_configuration['projects']) == 1
+        assert cmake_file_api.codemodel_configuration['projects'][0]['name'] == 'reprospect'
+
+        assert 'targets' in cmake_file_api.codemodel_configuration
+
+    @typeguard.typechecked
+    def test_target(self, cmake_file_api) -> None:
+        """
+        Check target information.
+        """
+        for name in ['tests_cpp_cuda_graph', 'tests_cpp_cuda_saxpy']:
+            target = cmake_file_api.target(name = name)
+
+            assert target['name'] == name
+            assert 'paths' in target
+            assert 'build'  in target['paths']
+            assert 'source' in target['paths']
+            assert 'nameOnDisk' in target
+
+        with pytest.raises(ValueError, match = 'Target \'some-random-name\' not found.'):
+            cmake_file_api.target(name = 'some-random-name')

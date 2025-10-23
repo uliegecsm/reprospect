@@ -16,11 +16,10 @@ TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_
 
 @pytest.fixture(scope = 'session')
 @typeguard.typechecked
-def cmake_file_api() -> cmake.FileAPI:
+def cmake_cuda_compiler() -> dict:
     return cmake.FileAPI(
-        build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
-        inspect = {'toolchains' : 1},
-    )
+        cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR'])
+    ).toolchains['CUDA']['compiler']
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:
@@ -154,7 +153,7 @@ class TestSession:
         assert 'LD' not in results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated
         assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['LDG'] > 0
 
-    def test_collect_basic_metrics_graph(self, cmake_file_api : cmake.FileAPI):
+    def test_collect_basic_metrics_graph(self, cmake_cuda_compiler : dict):
         """
         Collect a few basic metrics for the :py:attr:`GRAPH` executable.
         """
@@ -180,7 +179,7 @@ class TestSession:
         # There are 4 nodes.
         assert len(results) == 4
 
-        match cmake_file_api.toolchains['CUDA'].id:
+        match cmake_cuda_compiler['id']:
             case 'NVIDIA':
                 NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0EJEEvPj'
                 assert all(f'add_and_increment_kernel-{idx}' == k for idx, k in enumerate(results.keys()))
@@ -190,7 +189,7 @@ class TestSession:
                 assert NODE_A_MANGLED + '-0' in results.keys()
                 assert all(f'add_and_increment_kernel-{idx}' in results.keys() for idx in range(1, 4))
             case _:
-                raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA'].id}')
+                raise ValueError(f'unsupported compiler ID {cmake_cuda_compiler['id']}')
 
         # Check global load/store for each node, and aggregated as well.
         metrics_node_A = next(filter(lambda x: x['mangled'] == NODE_A_MANGLED, results.values()))

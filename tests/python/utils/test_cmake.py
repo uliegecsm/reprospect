@@ -2,34 +2,77 @@ import logging
 import os
 import pathlib
 
+import pytest
+import typeguard
+
 from reprospect.utils import cmake
 
 class TestFileAPI:
     """
     Tests for :py:class:`reprospect.utils.cmake.FileAPI`.
     """
-    def test_cache(self) -> None:
+    @pytest.fixture(scope = 'session')
+    @typeguard.typechecked
+    def cmake_file_api(self) -> cmake.FileAPI:
+        return cmake.FileAPI(
+            cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
+        )
+
+    @typeguard.typechecked
+    def test_cache(self, cmake_file_api) -> None:
         """
         Check that cache variables are read correctly.
         """
-        reader = cmake.FileAPI(build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']), inspect = {'cache' : 2})
+        assert cmake_file_api.cache['ReProspect_ENABLE_TESTS'] == {
+            'properties' : [
+                {'name' : 'HELPSTRING', 'value' : 'Enable tests.'},
+            ],
+            'type' : 'BOOL',
+            'value' : 'ON',
+        }
 
-        assert reader.cache['ReProspect_ENABLE_TESTS'].name  == 'ReProspect_ENABLE_TESTS'
-        assert reader.cache['ReProspect_ENABLE_TESTS'].value == 'ON'
-
-    def test_toolchains(self) -> None:
+    @typeguard.typechecked
+    def test_toolchains(self, cmake_file_api) -> None:
         """
         Check toolchain information.
         """
-        reader = cmake.FileAPI(build_path = pathlib.Path(os.environ['CMAKE_BINARY_DIR']), inspect = {'toolchains' : 1})
+        assert 'CUDA' in cmake_file_api.toolchains
+        assert 'CXX'  in cmake_file_api.toolchains
 
-        assert 'CUDA' in reader.toolchains
-        assert 'CXX'  in reader.toolchains
+        assert cmake_file_api.toolchains['CUDA']['compiler']['id'] in ['NVIDIA', 'Clang']
 
-        assert reader.toolchains['CUDA'].id in ['NVIDIA', 'Clang']
-
-        for language, compiler in reader.toolchains.items():
+        for language, toolchain in cmake_file_api.toolchains.items():
+            compiler = toolchain['compiler']
             logging.info(f'For language {language}:')
-            logging.info(f'\t- compiler ID     : {compiler.id}')
-            logging.info(f'\t- compiler path   : {compiler.path}')
-            logging.info(f'\t- compiler version: {compiler.version}')
+            logging.info(f'\t- compiler ID     : {compiler['id']}')
+            logging.info(f'\t- compiler path   : {compiler['path']}')
+            logging.info(f'\t- compiler version: {compiler['version']}')
+
+    @typeguard.typechecked
+    def test_codemodel_configuration(self, cmake_file_api) -> None:
+        """
+        Check codemodel configuration information.
+        """
+        assert cmake_file_api.codemodel_configuration['name'] == 'Release'
+
+        assert len(cmake_file_api.codemodel_configuration['projects']) == 1
+        assert cmake_file_api.codemodel_configuration['projects'][0]['name'] == 'reprospect'
+
+        assert 'targets' in cmake_file_api.codemodel_configuration
+
+    @typeguard.typechecked
+    def test_target(self, cmake_file_api) -> None:
+        """
+        Check target information.
+        """
+        for name in ['tests_cpp_cuda_graph', 'tests_cpp_cuda_saxpy']:
+            target = cmake_file_api.target(name = name)
+
+            assert target['name'] == name
+            assert 'paths' in target
+            assert 'build'  in target['paths']
+            assert 'source' in target['paths']
+            assert 'nameOnDisk' in target
+
+        with pytest.raises(ValueError, match = 'Target \'some-random-name\' not found.'):
+            cmake_file_api.target(name = 'some-random-name')

@@ -30,6 +30,7 @@ include(cmake/modules/Warnings.cmake)
 cmake_file_api(QUERY API_VERSION 1
   CACHE 2
   TOOLCHAINS 1
+  CODEMODEL 2
 )
 
 if(ReProspect_ENABLE_TESTS)

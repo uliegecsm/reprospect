@@ -1,5 +1,6 @@
 matplotlib
-nvtx
+myst-nb>=1.3.0
+nvtx>=0.2.13
 pylint>=4.0.1
 sphinx>=8.2
 sphinx-rtd-theme>=3.0.2

@@ -13,3 +13,13 @@ jobs:
                 configfile: .github/config/fix-whitespace.yml
                 fix: false
                 verbose: true
+
+    check-python-notebooks:
+        runs-on: python:3.12
+        steps:
+            - uses: actions/checkout@v5
+
+            - run: pip install nbstripout
+
+            - run: |
+                nbstripout --verify $(find . -name *.ipynb)

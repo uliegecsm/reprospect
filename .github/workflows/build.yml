@@ -74,7 +74,7 @@ jobs:
                   files: |
                       docker/**
                       .github/workflows/**
-                      ${{ steps.extract-mounts.outputs.paths }}
+                      ${{ steps.build-images-extract-mounts.outputs.paths }}
 
             - id: build-images
               env:

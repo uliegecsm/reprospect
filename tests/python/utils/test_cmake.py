@@ -73,6 +73,9 @@ class TestFileAPI:
             assert 'build'  in target['paths']
             assert 'source' in target['paths']
             assert 'nameOnDisk' in target
+            assert 'sources' in target
+            assert len(target['sources']) == 1
+            assert 'path' in target['sources'][0]
 
         with pytest.raises(ValueError, match = 'Target \'some-random-name\' not found.'):
             cmake_file_api.target(name = 'some-random-name')

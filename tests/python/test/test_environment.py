@@ -2,20 +2,20 @@ import os
 
 import pytest
 
-from reprospect.test.case import EnvironmentAware
+from reprospect.test.environment import EnvironmentAwareMixin
 
-class TestEnvironmentAware:
+class TestEnvironmentAwareMixin:
     """
-    Tests for :py:class:`reprospect.test.case.EnvironmentAware`.
+    Tests for :py:class:`reprospect.test.environment.EnvironmentAwareMixin`.
     """
-    class MyClass(EnvironmentAware):
+    class MyClass(EnvironmentAwareMixin):
         def __init__(self):
             self.my_var = 42
 
     @pytest.fixture(scope = 'function')
     @staticmethod
     def instance():
-        return TestEnvironmentAware.MyClass()
+        return TestEnvironmentAwareMixin.MyClass()
 
     def test_is_attribute(self, instance):
         """

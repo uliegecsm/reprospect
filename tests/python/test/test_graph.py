@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import typing
 
 import pytest
 import typeguard
@@ -9,34 +10,22 @@ import reprospect
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools          import ncu
 from reprospect.tools.sass     import Decoder
-from reprospect.utils          import cmake
 from reprospect.utils          import detect
 
-class TestGraph(reprospect.TestCase):
+class TestGraph(reprospect.CMakeAwareTestCase):
     """
     General test class.
     """
-    NAME = 'tests_cpp_cuda_graph'
-
-    TARGET_SOURCE = pathlib.Path('tests') / 'cpp' / 'cuda' / 'test_graph.cpp'
+    @classmethod
+    @typing.override
+    @typeguard.typechecked
+    def get_target_name(cls) -> str:
+        return 'tests_cpp_cuda_graph'
 
     DEMANGLED_NODE_A = {
         'NVIDIA' : 'void add_and_increment_kernel<(unsigned int)0, >(unsigned int *)',
         'Clang' : '_Z24add_and_increment_kernelILj0ETpTnjJEEvPj',
     }
-
-    @property
-    @typeguard.typechecked
-    def executable(self) -> pathlib.Path:
-        return self.CMAKE_BINARY_DIR / self.TARGET_SOURCE.parent / self.NAME
-
-    @pytest.fixture(scope = 'session')
-    @classmethod
-    @typeguard.typechecked
-    def cmake_cuda_compiler(cls) -> dict:
-        return cmake.FileAPI(
-            cmake_build_directory = cls.CMAKE_BINARY_DIR
-        ).toolchains['CUDA']['compiler']
 
 class TestSASS(TestGraph):
     """
@@ -61,11 +50,11 @@ class TestSASS(TestGraph):
         logging.info(cuobjdump.sass)
 
     @typeguard.typechecked
-    def test_instruction_count(self, cuobjdump : CuObjDump, cmake_cuda_compiler) -> None:
+    def test_instruction_count(self, cuobjdump : CuObjDump) -> None:
         """
         Check how many instructions there are in the first graph node kernel.
         """
-        decoder = Decoder(code = cuobjdump.functions[self.DEMANGLED_NODE_A[cmake_cuda_compiler['id']]].code)
+        decoder = Decoder(code = cuobjdump.functions[self.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]].code)
         assert len(decoder.instructions) >= 8
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
@@ -107,11 +96,11 @@ class TestNCU(TestGraph):
         assert len(results) == 4
 
     @typeguard.typechecked
-    def test_launch_registers_per_thread_allocated_node_A(self, results : ncu.ProfilingResults, cmake_cuda_compiler) -> None:
+    def test_launch_registers_per_thread_allocated_node_A(self, results : ncu.ProfilingResults) -> None:
         """
         Check metric `launch__registers_per_thread_allocated` for graph node A.
         """
-        metrics = list(filter(lambda x: x['demangled'] == TestGraph.DEMANGLED_NODE_A[cmake_cuda_compiler['id']], results.values()))
+        metrics = list(filter(lambda x: x['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']], results.values()))
         assert len(metrics) == 1
         metrics = metrics[0]
 

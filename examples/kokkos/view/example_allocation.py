@@ -1,7 +1,6 @@
 import enum
 import logging
 import math
-import pathlib
 import typing
 
 import numpy
@@ -17,16 +16,15 @@ class Memory(enum.StrEnum):
     DEVICE = 'DEVICE'
     SHARED = 'MANAGED'
 
-class TestAllocation(reprospect.TestCase):
+class TestAllocation(reprospect.CMakeAwareTestCase):
     """
     Explore the behavior of `Kokkos::View` allocation under different scenarios.
     """
-    NAME = 'examples_kokkos_view_allocation'
-
-    @property
+    @classmethod
+    @typing.override
     @typeguard.typechecked
-    def executable(self) -> pathlib.Path:
-        return self.CMAKE_BINARY_DIR / 'examples' / 'kokkos' / 'view' / self.NAME
+    def get_target_name(cls) -> str:
+        return 'examples_kokkos_view_allocation'
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestNSYS(TestAllocation):

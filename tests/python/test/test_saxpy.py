@@ -1,4 +1,5 @@
 import pathlib
+import typing
 
 import pytest
 import typeguard
@@ -10,7 +11,7 @@ from reprospect.tools          import ncu
 from reprospect.tools.sass     import Decoder
 from reprospect.utils          import detect
 
-class TestSaxpy(reprospect.TestCase):
+class TestSaxpy(reprospect.CMakeAwareTestCase):
     """
     General test class.
     """
@@ -18,10 +19,11 @@ class TestSaxpy(reprospect.TestCase):
 
     TARGET_SOURCE = pathlib.Path('tests') / 'cpp' / 'cuda' / 'test_saxpy.cpp'
 
-    @property
+    @classmethod
+    @typing.override
     @typeguard.typechecked
-    def executable(self) -> pathlib.Path:
-        return self.CMAKE_BINARY_DIR / self.TARGET_SOURCE.parent / self.NAME
+    def get_target_name(cls) -> str:
+        return 'tests_cpp_cuda_saxpy'
 
 class TestSASS(TestSaxpy):
     """

@@ -15,7 +15,9 @@ jobs:
                 verbose: true
 
     check-python-notebooks:
-        runs-on: python:3.12
+        runs-on: ubuntu-latest
+        container:
+            image: python:3.12
         steps:
             - uses: actions/checkout@v5
 

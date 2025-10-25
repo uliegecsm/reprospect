@@ -50,7 +50,7 @@ class TestCacher:
             with Cacher(directory = tmpdir) as cacher:
                 results = cacher.get(opts = ['--nvtx'], exe = 'test-exec', args = ['--bla=42'])
 
-                assert results.cached == False
+                assert results.cached is False
 
     def test_cache_hit(self):
         """
@@ -60,11 +60,11 @@ class TestCacher:
             with Cacher(directory = tmpdir) as cacher:
                 results_first = cacher.get(opts = ['--nvtx'], exe = 'exec-666', args = ['--bla=42'], env = {'my' : 'env'}, anything_you_want = {4: 2})
 
-                assert results_first.cached == False
+                assert results_first.cached is False
 
                 results_second = cacher.get(opts = ['--nvtx'], exe = 'exec-666', args = ['--bla=42'], env = {'my' : 'env'}, anything_you_want = {4: 2})
 
-                assert results_second.cached == True
+                assert results_second.cached is True
                 assert results_second.digest == results_first.digest
                 assert results_second.timestamp == results_first.timestamp
                 assert results_second.directory == results_first.directory

@@ -108,18 +108,18 @@ class TestSession:
             assert len(cuda_stream_synchronize) == 2
 
             # Each call to 'cudaStreamSynchronize' targets a distinct stream.
-            stream_id_A = report.get_correlated_row(src = cuda_stream_synchronize.iloc[0], dst = cupti_activity_kind_synchronization, correlation_src = 'CorrID')['streamId']
-            stream_id_B = report.get_correlated_row(src = cuda_stream_synchronize.iloc[1], dst = cupti_activity_kind_synchronization, correlation_src = 'CorrID')['streamId']
+            stream_id_a = report.get_correlated_row(src = cuda_stream_synchronize.iloc[0], dst = cupti_activity_kind_synchronization, correlation_src = 'CorrID')['streamId']
+            stream_id_b = report.get_correlated_row(src = cuda_stream_synchronize.iloc[1], dst = cupti_activity_kind_synchronization, correlation_src = 'CorrID')['streamId']
 
-            assert stream_id_A != stream_id_B
+            assert stream_id_a != stream_id_b
 
             # Check that the 'saxpy' kernels ran on stream B.
             cupti_activity_kind_kernel = report.table(name = 'CUPTI_ACTIVITY_KIND_KERNEL')
             saxpy_kernel_first  = cupti_activity_kind_kernel.iloc[0]
             saxpy_kernel_second = cupti_activity_kind_kernel.iloc[1]
 
-            assert saxpy_kernel_first ['streamId'] == stream_id_B
-            assert saxpy_kernel_second['streamId'] == stream_id_B
+            assert saxpy_kernel_first ['streamId'] == stream_id_b
+            assert saxpy_kernel_second['streamId'] == stream_id_b
 
             # Check 'saxpy' kernels launch block/grid configuration.
             for kernel in [saxpy_kernel_first, saxpy_kernel_second]:
@@ -186,7 +186,7 @@ class TestCacher:
 
                 results_first = cacher.run(executable = self.GRAPH)
 
-                assert results_first.cached == False
+                assert results_first.cached is False
 
                 assert all(x in os.listdir(cacher.session.output_dir) for x in FILES)
 
@@ -198,7 +198,7 @@ class TestCacher:
 
                 results_second = cacher.run(executable = self.GRAPH)
 
-                assert results_second.cached == True
+                assert results_second.cached is True
 
                 assert all(x in os.listdir(cacher.session.output_dir) for x in FILES)
 

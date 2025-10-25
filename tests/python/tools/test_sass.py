@@ -73,7 +73,7 @@ class TestSASSDecoder:
 
         fused = '\n'.join(instructions.keys())
         decoder = sass.Decoder(code = fused, skip_until_headerflags = False)
-        assert decoder.instructions == [v for v in instructions.values()], decoder.instructions
+        assert decoder.instructions == list(instructions.values()), decoder.instructions
 
     def test_FFMA(self):
         """

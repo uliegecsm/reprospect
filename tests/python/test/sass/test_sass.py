@@ -5,13 +5,14 @@ import pathlib
 
 import pytest
 import regex
+import semantic_version
 import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump
 from reprospect.tools.sass         import Decoder
 from reprospect.utils              import cmake
-from reprospect.test.sass          import FloatAddMatcher, LoadGlobalMatcher, PatternBuilder, ReductionMatcher, StoreGlobalMatcher
+from reprospect.test.sass          import AtomicMatcher, FloatAddMatcher, LoadGlobalMatcher, PatternBuilder, ReductionMatcher, StoreGlobalMatcher
 
 from tests.python.tools.test_binaries import Parameters, PARAMETERS, get_compilation_output
 
@@ -562,7 +563,11 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('S', 64), scope = 'DEVICE', consistency = 'STRONG')
+        if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<12.8'):
+            matcher_type = AtomicMatcher
+        else:
+            matcher_type = ReductionMatcher
+        matcher = matcher_type(arch = parameters.arch, operation = 'MAX', dtype = ('S', 64), scope = 'DEVICE', consistency = 'STRONG')
         red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
         assert len(red) == 1
 
@@ -583,7 +588,11 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('U', 64), scope = 'DEVICE', consistency = 'STRONG')
+        if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<12.8'):
+            matcher_type = AtomicMatcher
+        else:
+            matcher_type = ReductionMatcher
+        matcher = matcher_type(arch = parameters.arch, operation = 'MAX', dtype = ('U', 64), scope = 'DEVICE', consistency = 'STRONG')
         red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
         assert len(red) == 1
 

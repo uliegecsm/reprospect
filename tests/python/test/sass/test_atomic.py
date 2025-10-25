@@ -5,6 +5,7 @@ import subprocess
 
 import pytest
 import regex
+import semantic_version
 import typeguard
 
 from reprospect.tools.sass import Instruction
@@ -126,7 +127,6 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 """
 
     @staticmethod
-    @typeguard.typechecked
     def match_one(*, decoder, **kwargs) -> tuple[AtomicMatcher, Instruction, regex.Match]:
         """
         Match exactly one instruction.
@@ -225,7 +225,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
 
         # Find the atomic add.
-        _, _, matched = self.match_one(
+        matcher, _, matched = self.match_one(
             decoder = decoder,
             arch = parameters.arch,
             operation = 'ADD',
@@ -240,7 +240,10 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         # In the PTX, we can see the '.relaxed'.
         output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
 
-        assert 'atom.add.relaxed.cta.s32' in output
+        if matcher.version in semantic_version.SimpleSpec('<12.8'):
+            assert 'atom.add.relaxed.cta.u32' in output
+        else:
+            assert 'atom.add.relaxed.cta.s32' in output
 
     def test_add_relaxed_block_unsigned_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """

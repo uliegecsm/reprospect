@@ -21,6 +21,9 @@ def get_base_name_tag_digest(version : str) -> tuple[str, str, str]:
     Get `Docker` base image name, tag and digest.
     """
     match version:
+        case '12.6.3':
+            tag = f'{version}-devel-ubuntu24.04'
+            digest = 'sha256:badf6c452e8b1efea49d0bb956bef78adcf60e7f87ac77333208205f00ac9ade'
         case '12.8.1':
             tag = f'{version}-devel-ubuntu24.04'
             digest = 'sha256:520292dbb4f755fd360766059e62956e9379485d9e073bbd2f6e3c20c270ed66'
@@ -196,6 +199,14 @@ def main(*, args : argparse.Namespace) -> None:
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 120,
         'platforms' : ['linux/amd64', 'linux/arm64'],
+    }, args = args))
+
+    matrix.extend(complete_job({
+        'cuda_version' : '12.6.3',
+        'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '13'), 'CUDA' : Compiler(ID = 'nvidia')},
+        'nvidia_compute_capability' : 89,
+        'platforms' : ['linux/amd64'],
+        'tests' : True,
     }, args = args))
 
     matrix.extend(complete_job({

@@ -117,14 +117,15 @@ class Parameters:
     arch : NVIDIAArch
 
 PARAMETERS = [
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc=80)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc=86)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc=90)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc=100)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc=120)),
+    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 80)),
+    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 86)),
+    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 89)),
+    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 90)),
+    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 100)),
+    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 120)),
 ]
 if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.0.0'):
-    PARAMETERS.append(Parameters(arch = NVIDIAArch.from_compute_capability(cc=70)))
+    PARAMETERS.append(Parameters(arch = NVIDIAArch.from_compute_capability(cc = 70)))
 
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestResourceUsage:

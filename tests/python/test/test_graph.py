@@ -24,7 +24,7 @@ class TestGraph(reprospect.CMakeAwareTestCase):
 
     DEMANGLED_NODE_A = {
         'NVIDIA' : 'void add_and_increment_kernel<(unsigned int)0, >(unsigned int *)',
-        'Clang' : '_Z24add_and_increment_kernelILj0ETpTnjJEEvPj',
+        'Clang' : 'void add_and_increment_kernel<0u>(unsigned int*)',
     }
 
 class TestSASS(TestGraph):
@@ -39,7 +39,14 @@ class TestSASS(TestGraph):
     @pytest.fixture(scope = 'class')
     @typeguard.typechecked
     def cuobjdump(self) -> CuObjDump:
-        return CuObjDump.extract(file = self.executable, arch = self.arch, sass = True, cwd = self.cwd, cubin = self.cubin.name)[0]
+        return CuObjDump.extract(
+            file = self.executable,
+            arch = self.arch,
+            sass = True,
+            cwd = self.cwd,
+            cubin = self.cubin.name,
+            demangler = self.demangler,
+        )[0]
 
     @typeguard.typechecked
     def test_kernel_count(self, cuobjdump : CuObjDump) -> None:
@@ -85,7 +92,7 @@ class TestNCU(TestGraph):
     @pytest.fixture(scope = 'class')
     @typeguard.typechecked
     def results(self, report : ncu.Report) -> ncu.ProfilingResults:
-        return report.extract_metrics_in_range(0, metrics = self.METRICS)
+        return report.extract_metrics_in_range(0, metrics = self.METRICS, demangler = self.demangler)
 
     @typeguard.typechecked
     def test_result_count(self, report : ncu.Report, results : ncu.ProfilingResults) -> None:

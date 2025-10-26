@@ -7,8 +7,21 @@ import typing
 import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import get_arch_from_compile_command
+from reprospect.tools.binaries     import get_arch_from_compile_command, CuppFilt, LlvmCppFilt
 from reprospect.utils              import cmake
+
+@typeguard.typechecked
+def get_demangler_for_compiler(compiler_id : str) -> typing.Type[CuppFilt | LlvmCppFilt]:
+    """
+    Get demangler for compiler with given id.
+    """
+    match compiler_id:
+        case 'NVIDIA':
+            return CuppFilt
+        case 'Clang':
+            return LlvmCppFilt
+        case _:
+            raise ValueError(f'unsupported compiler ID {compiler_id}')
 
 class CMakeMixin(abc.ABC):
     """
@@ -90,3 +103,8 @@ class CMakeMixin(abc.ABC):
         Retrieve the toolchains information from the read CMake file API.
         """
         return self.cmake_file_api.toolchains
+
+    @functools.cached_property
+    @typeguard.typechecked
+    def demangler(self) -> typing.Type[CuppFilt | LlvmCppFilt]:
+        return get_demangler_for_compiler(self.toolchains['CUDA']['compiler']['id'])

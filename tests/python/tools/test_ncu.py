@@ -1,12 +1,15 @@
 import logging
 import os
 import pathlib
+import re
 import subprocess
 import tempfile
 import unittest.mock
 
 import pytest
 import typeguard
+
+from reprospect.test.cmake import get_demangler_for_compiler
 
 from reprospect.utils import cmake
 from reprospect.tools import ncu
@@ -172,7 +175,8 @@ class TestSession:
         assert report.report.num_ranges() == 1
 
         # Extract results.
-        results = report.extract_metrics_in_range(0, metrics = METRICS)
+        # For some reason, ncu cannot demangle the signature of node A when compiling with clang 21.1.3.
+        results = report.extract_metrics_in_range(0, metrics = METRICS, demangler = get_demangler_for_compiler(cmake_cuda_compiler['id']))
 
         logging.info(results)
 
@@ -192,10 +196,17 @@ class TestSession:
                 raise ValueError(f'unsupported compiler ID {cmake_cuda_compiler['id']}')
 
         # Check global load/store for each node, and aggregated as well.
-        metrics_node_A = next(filter(lambda x: x['mangled'] == NODE_A_MANGLED, results.values()))
-        metrics_node_B = next(filter(lambda x: x['mangled'] == '_Z24add_and_increment_kernelILj1EJLj0EEEvPj', results.values()))
-        metrics_node_C = next(filter(lambda x: x['mangled'] == '_Z24add_and_increment_kernelILj2EJLj0EEEvPj', results.values()))
-        metrics_node_D = next(filter(lambda x: x['mangled'] == '_Z24add_and_increment_kernelILj3EJLj1ELj2EEEvPj', results.values()))
+        SIGNATURES = {
+            'node_A' : lambda x : re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)0, |0u)>\(unsigned int\s*\*\)', x['demangled']),
+            'node_B' : lambda x : re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)1, \(unsigned int\)0|1u, 0u)>\(unsigned int\s*\*\)', x['demangled']),
+            'node_C' : lambda x : re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)2, \(unsigned int\)0|2u, 0u)>\(unsigned int\s*\*\)', x['demangled']),
+            'node_D' : lambda x : re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)3, \(unsigned int\)1, \(unsigned int\)2|3u, 1u, 2u)>\(unsigned int\s*\*\)', x['demangled']),
+        }
+
+        metrics_node_A = next(filter(SIGNATURES['node_A'], results.values()))
+        metrics_node_B = next(filter(SIGNATURES['node_B'], results.values()))
+        metrics_node_C = next(filter(SIGNATURES['node_C'], results.values()))
+        metrics_node_D = next(filter(SIGNATURES['node_D'], results.values()))
 
         metrics_aggregate = results.aggregate(accessors = [], keys = [
             'L1/TEX cache global store sectors.sum',

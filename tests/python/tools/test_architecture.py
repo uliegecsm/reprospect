@@ -1,4 +1,10 @@
+import logging
+import os
+import re
+import subprocess
+
 import pytest
+import semantic_version
 
 from reprospect.tools.architecture import ComputeCapability, NVIDIAFamily, NVIDIAArch
 
@@ -19,6 +25,26 @@ class TestComputeCapability:
         assert cc <= 90 and cc <= ComputeCapability(major = 9, minor = 0)
 
         assert cc == 86 and cc == ComputeCapability(major = 8, minor = 6)
+
+    def test_supported(self):
+        """
+        Test :py:meth:`reprospect.tools.architecture.ComputeCapability.supported`.
+        """
+        # Use 'nvcc' to get the supported list of GPU code.
+        supported = map(
+            lambda x: ComputeCapability.from_int(int(re.match(r'sm_([0-9]+)', x).group(1))),
+            subprocess.check_output(['nvcc', '--list-gpu-code']).decode().splitlines(),
+        )
+        CUDA_VERSION = semantic_version.Version(os.environ['CUDA_VERSION'])
+        for cc in supported:
+            if cc not in ComputeCapability.CUDA_SUPPORT:
+                continue
+            logging.info(f'Checking that {cc!r} is supported by CUDA {CUDA_VERSION}.')
+            assert CUDA_VERSION in ComputeCapability.CUDA_SUPPORT[cc.as_int]
+            assert cc.supported(version = CUDA_VERSION)
+
+        # VOLTA70 is supported until CUDA 13.
+        assert not ComputeCapability.from_int(70).supported(version = semantic_version.Version('13.0.0'))
 
 class TestNVIDIAFamily:
     """

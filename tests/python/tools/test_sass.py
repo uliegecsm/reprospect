@@ -1,6 +1,7 @@
 import logging
 import os
 import pathlib
+import re
 
 import pytest
 import typeguard
@@ -47,6 +48,44 @@ class TestSASSDecoder:
     """
     Test :py:class:`reprospect.tools.sass.Decoder`.
     """
+    def test_matchers(self):
+        """
+        Simple tests for the matchers.
+        """
+        assert re.match(sass.Decoder.INSTRUCTION, 'STG R1, R2') is not None
+        assert re.match(sass.Decoder.INSTRUCTION, 'LDG.E.128 R4, [R12]') is not None
+        assert re.match(sass.Decoder.INSTRUCTION, 'FFMA.FTZ R8, R6, R9, R10') is not None
+        assert re.match(sass.Decoder.INSTRUCTION, 'ISETP.GE.U32.AND P0, PT, R0, UR9, PT') is not None
+        assert re.match(sass.Decoder.INSTRUCTION, 'LDC.64 R10, c[0x0][0x3a0]') is not None
+
+        assert re.match(sass.Decoder.HEX, '0x00000a0000017a02') is not None
+
+        # Complete SASS line (offset, instruction and hex), without noise.
+        matched = re.match(sass.Decoder.MATCHER, '/*0090*/                   ISETP.GE.U32.AND P0, PT, R0, UR9, PT ;           /* 0x0000000900007c0c */')
+        assert matched is not None
+        assert matched.group(1) == '0090'
+        assert matched.group(2) == 'ISETP.GE.U32.AND P0, PT, R0, UR9, PT '
+        assert matched.group(3) == '0x0000000900007c0c'
+
+        matched = re.match(sass.Decoder.MATCHER, '/*01d0*/              @!P0 BRA 0x100 ;                                      /* 0xfffffffc00c88947 */')
+        assert matched is not None
+        assert matched.group(1) == '01d0'
+        assert matched.group(2) == '@!P0 BRA 0x100 '
+        assert matched.group(3) == '0xfffffffc00c88947'
+
+        # With noise.
+        matched = re.match(sass.Decoder.MATCHER, '/*00e0*/                   LDC.64 R10, c[0x0][0x3a0]                     &wr=0x2               ?trans8;           /* 0x0000e800ff0a7b82 */')
+        assert matched is not None
+        assert matched.group(1) == '00e0'
+        assert matched.group(2) == 'LDC.64 R10, c[0x0][0x3a0]'
+        assert matched.group(3) == '0x0000e800ff0a7b82'
+
+        matched = re.match(sass.Decoder.MATCHER, '/*00b0*/                   ATOM.E.ADD.F64.RN.STRONG.SM P0, RZ, desc[UR4][R2.64], R4  &wr_early=0x1 ;           /* 0x8000000402ff79a2 */')
+        assert matched is not None
+        assert matched.group(1) == '00b0'
+        assert matched.group(2) == 'ATOM.E.ADD.F64.RN.STRONG.SM P0, RZ, desc[UR4][R2.64], R4'
+        assert matched.group(3) == '0x8000000402ff79a2'
+
     def test_IMAD(self):
         """
         Check that it can decode `IMAD`.

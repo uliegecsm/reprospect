@@ -129,12 +129,17 @@ class TestSASSDecoder:
 
         decoder = sass.Decoder(code = cuobjdump.sass)
 
-        if parameters.arch.compute_capability < 80:
-            expt_ninstrs = [16, 16]
-        elif parameters.arch.compute_capability < 90:
-            expt_ninstrs = [24, 16]
-        else:
-            expt_ninstrs = [32, 20]
+        match parameters.arch.compute_capability.as_int:
+            case 70:
+                expt_ninstrs = [16, 16]
+            case 75:
+                expt_ninstrs = [16, 15]
+            case 80 | 86 | 89:
+                expt_ninstrs = [24, 16]
+            case 90 | 100 | 120:
+                expt_ninstrs = [32, 20]
+            case _:
+                raise ValueError(f'unsupported {parameters.arch.compute_capability}')
 
         assert len(decoder.instructions) == expt_ninstrs[0], len(decoder.instructions)
 

@@ -117,6 +117,7 @@ class Parameters:
     arch : NVIDIAArch
 
 PARAMETERS = [
+    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 75)),
     Parameters(arch = NVIDIAArch.from_compute_capability(cc = 80)),
     Parameters(arch = NVIDIAArch.from_compute_capability(cc = 86)),
     Parameters(arch = NVIDIAArch.from_compute_capability(cc = 89)),

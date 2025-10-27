@@ -96,6 +96,8 @@ nitpick_ignore_regex = [
     ('py:class', r'blake3.blake3.*'),
     ('py:class', r'nvtx._lib.lib.*'),
     ('py:class', r'numpy.int64'),
+    ('py:class', r'_regex.Match'),
+    ('py:class', r'_regex.Pattern'),
 ]
 
 # Configuration for 'myst_nb', see also https://myst-nb.readthedocs.io/en/latest/configuration.html.

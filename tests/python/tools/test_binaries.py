@@ -59,6 +59,7 @@ def get_compilation_output(*,
     cmake_file_api : cmake.FileAPI,
     object : bool = True, # pylint: disable=redefined-builtin
     resource_usage : bool = False,
+    ptx : bool = False,
 ) -> typing.Tuple[pathlib.Path, str]:
     """
     Compile the `source` in `cwd` for `arch`.
@@ -86,14 +87,17 @@ def get_compilation_output(*,
 
     match cmake_file_api.toolchains['CUDA']['compiler']['id']:
         case 'NVIDIA':
-            cmd += [
-                '--gpu-architecture=' + arch.as_compute,
-                '--gpu-code='         + arch.as_sm,
-            ]
+            cmd.append('--gpu-architecture=' + arch.as_compute)
+            if ptx:
+                cmd.append('--gpu-code=' + arch.as_compute + ',' + arch.as_sm)
+            else:
+                cmd.append('--gpu-code=' + arch.as_sm)
             if resource_usage:
                 cmd.append('--resource-usage')
         case 'Clang':
             cmd.append(f'--cuda-gpu-arch={arch.as_sm}')
+            if ptx:
+                cmd.append('--cuda-include-ptx=' + arch.as_sm)
             if resource_usage:
                 cmd += ['-Xcuda-ptxas', '-v',]
         case _:

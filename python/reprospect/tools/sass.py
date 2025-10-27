@@ -158,17 +158,42 @@ class Decoder:
 
     The disassembled :py:attr:`instructions` are collected, and the associated control codes are decoded.
     """
-    # Instruction is like:
-    #   STG R1, R2
-    INSTRUCTION = r'[A-Z0-9a-z,\. +_\-!@\[\]]+'
-
-    # HEX is like:
-    #   0x00000a0000017a02
     HEX = r'[a-f0-9x]+'
+    """
+    Matcher for an hex-like string, such as `0x00000a0000017a02`.
+    """
 
-    # Typical SASS line:
-    #   /*0070*/ MOV R5, 0x4 ; /* 0x0000000400057802 */
-    MATCHER = rf'\/\*({HEX})\*\/\s+({INSTRUCTION})\s*;\s+\/\* ({HEX}) \*\/'
+    INSTRUCTION = r'[\w@!\.\[\],\+\-\s]+'
+    """
+    Match an instruction string, such as:
+
+    - `ISETP.GE.U32.AND P0, PT, R0, UR9, PT`
+    - `LDC.64 R10, c[0x0][0x3a0]`
+    """
+
+    MATCHER = re.compile(
+        rf'/\*({HEX})\*/'
+        r'\s+'
+        rf'({INSTRUCTION}?)'
+        r'(?:\s+(?:[&\?].*?)\s*)?'
+        r';\s*'
+        rf'/\*\s*({HEX})\s*\*/',
+        re.IGNORECASE | re.VERBOSE
+    )
+    """
+    Matcher for the full SASS line. It focuses on the offset, instruction and trailing hex encoding.
+
+    For instance, it matches::
+
+        /*0070*/                   UIMAD UR4, UR4, UR5, URZ ;                       /* 0x00000005040472a4 */
+
+    Note that sometimes, additional strings appear after the instruction and before the hex::
+
+        /*0090*/ ISETP.GE.U32.AND P0, PT, R0, UR9, PT            ?WAIT13_END_GROUP;  /* 0x0000000900007c0c */
+        /*00e0*/ LDC.64 R10, c[0x0][0x3a0]  &wr=0x2  ?trans8;    /* 0x0000e800ff0a7b82 */
+
+    These strings are ignored.
+    """
 
     @typeguard.typechecked
     def __init__(self, source : typing.Optional[pathlib.Path] = None, code : typing.Optional[str] = None, skip_until_headerflags : bool = True) -> None:
@@ -214,16 +239,6 @@ class Decoder:
                     headerflags = '.headerflags' in line
                     iline += 1
                     continue
-
-            # For a few architecture/compiler combinations, additional fields appear.
-            # For instance:
-            #   &wr=0x0          ?trans1;
-            #   &req={1}         ?WAIT5_END_GROUP
-            line = re.sub(pattern = r'&wr=[0-5x]+', repl = '', string = line)
-            line = re.sub(pattern = r'&rd=[0-5x]+', repl = '', string = line)
-            line = re.sub(pattern = r'\?trans[0-9]+', repl = '', string = line)
-            line = re.sub(pattern = r'&req={[0-9,]+}', repl = '', string = line)
-            line = re.sub(pattern = r'\?WAIT[0-9]+_END_GROUP', repl = '', string = line)
 
             match = re.match(self.MATCHER, line)
 

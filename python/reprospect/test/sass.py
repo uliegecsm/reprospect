@@ -127,9 +127,9 @@ class PatternBuilder:
         if modifiers:
             for modifier in filter(None, modifiers):
                 if isinstance(modifier, str) and modifier.startswith('?'):
-                    opcode += PatternBuilder.optional('.' + PatternBuilder.group(modifier[1::], group = 'modifiers'))
+                    opcode += PatternBuilder.optional(r'\.' + PatternBuilder.group(modifier[1::], group = 'modifiers'))
                 else:
-                    opcode += '.' + PatternBuilder.group(modifier, group = 'modifiers')
+                    opcode += r'\.' + PatternBuilder.group(modifier, group = 'modifiers')
         return opcode
 
     @classmethod
@@ -480,7 +480,7 @@ class AtomicMatcher(ArchitectureAwarePatternMatcher):
         #   {pred}, {dest}, [{addr}], {compare}, {newval}
         match self.params.operation:
             case 'CAS':
-                operands = rf'PT, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
+                operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
                 dtype = [self.params.dtype[1]] if self.params.dtype is not None and self.params.dtype[1] > 32 else []
             case _:
                 operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}'

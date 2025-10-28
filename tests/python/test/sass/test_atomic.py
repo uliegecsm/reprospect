@@ -173,7 +173,8 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert len(matched.captures('opcode')) == 1
         assert 'modifiers' in matched.capturesdict()
         assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 4
+        assert len(matched.captures('operands')) == 5
+        assert matched.captures('operands')[0] == 'PT'
 
     def test_atomicCAS_128(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """

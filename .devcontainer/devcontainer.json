@@ -16,6 +16,12 @@
     "runArgs": [
         "--privileged",
     ],
+    "remoteEnv": {
+        // Enforce an absolute path for ccache.
+        "CCACHE_DIR" : "${containerWorkspaceFolder}/.ccache/",
+        // Increase ccache cache size.
+        "CCACHE_MAXSIZE" : "15G",
+    },
     // Git security fix: see also https://github.com/actions/checkout/issues/766
     "onCreateCommand": "git config --global --add safe.directory $PWD",
 }

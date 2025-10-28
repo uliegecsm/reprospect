@@ -1,3 +1,4 @@
 artifacts/**
 build*/**
 __pycache__
+.ccache

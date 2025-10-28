@@ -1,4 +1,6 @@
 [MESSAGES CONTROL]
+enable=useless-suppression
+
 disable=
     line-too-long,
     logging-fstring-interpolation,

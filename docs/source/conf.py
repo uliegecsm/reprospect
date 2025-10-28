@@ -50,9 +50,10 @@ extlinks = {
 
 intersphinx_mapping = {
     'numpy' : ('https://numpy.org/doc/stable/', None),
-    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'python': ('https://docs.python.org/3', None),
-    'rich'  : ("https://rich.readthedocs.io/en/stable/", None),
+    'pandas' : ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'python' : ('https://docs.python.org/3', None),
+    'rich' : ('https://rich.readthedocs.io/en/stable/', None),
+    'semantic_version' : ('https://python-semanticversion.readthedocs.io/en/latest/', None),
 }
 
 autodoc_default_options = {
@@ -87,6 +88,10 @@ tikz_latex_preamble = r'\usepackage[dvipsnames]{xcolor}'
 # as 'unittest.TestCase', thus confusing 'intersphinx'.
 import unittest
 unittest.TestCase.__module__ = 'unittest'
+
+import semantic_version
+semantic_version.SimpleSpec.__module__ = 'semantic_version'
+semantic_version.Version.__module__ = 'semantic_version'
 
 linkcode_url = 'https://github.com/uliegecsm/reprospect'
 

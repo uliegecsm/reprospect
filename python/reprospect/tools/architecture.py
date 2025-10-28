@@ -4,6 +4,7 @@ import functools
 import re
 import typing
 
+import semantic_version
 import typeguard
 
 @functools.total_ordering
@@ -18,6 +19,30 @@ class ComputeCapability:
     """
     major : int
     minor : int
+
+    CUDA_SUPPORT : typing.ClassVar[dict[int, semantic_version.SimpleSpec]] = {
+        70 : semantic_version.SimpleSpec('>=9,<=12.9'),
+        75 : semantic_version.SimpleSpec('>=10'),
+        80 : semantic_version.SimpleSpec('>=11.2'),
+        86 : semantic_version.SimpleSpec('>=11.2'),
+        87 : semantic_version.SimpleSpec('>=11.5'),
+        89 : semantic_version.SimpleSpec('>=11.8'),
+        90 : semantic_version.SimpleSpec('>=11.8'),
+        100 : semantic_version.SimpleSpec('>=12.8'),
+        103 : semantic_version.SimpleSpec('>=12.9'),
+        110 : semantic_version.SimpleSpec('>=13.0'),
+        120 : semantic_version.SimpleSpec('>=12.8'),
+        121 : semantic_version.SimpleSpec('>=12.9'),
+    }
+    """
+    CUDA Toolkit support.
+
+    References:
+
+    * https://docs.nvidia.com/cuda/archive/12.8.0/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+    * https://docs.nvidia.com/cuda/archive/12.9.1/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+    * https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+    """
 
     @property
     @typeguard.typechecked
@@ -56,6 +81,18 @@ class ComputeCapability:
         """
         major, minor = divmod(value, 10)
         return ComputeCapability(major = major, minor = minor)
+
+    @typeguard.typechecked
+    def supported(self, version : semantic_version.Version) -> bool:
+        """
+        Check if the architecture is supported by the CUDA `version`.
+
+        >>> from semantic_version import Version
+        >>> from reprospect.tools.architecture import NVIDIAArch
+        >>> NVIDIAArch.from_str('VOLTA70').compute_capability.supported(version = Version('13.0.0'))
+        False
+        """
+        return version in self.CUDA_SUPPORT[self.as_int]
 
 class NVIDIAFamily(enum.StrEnum):
     """
@@ -115,6 +152,10 @@ class NVIDIAArch:
     def as_compute(self) -> str:
         """
         Convert to CUDA "virtual architecture" (``compute_``).
+
+        >>> from reprospect.tools.architecture import NVIDIAArch
+        >>> NVIDIAArch.from_str('ADA89').as_compute
+        'compute_89'
         """
         return f'compute_{self.compute_capability.as_int}'
 

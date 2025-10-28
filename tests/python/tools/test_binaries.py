@@ -120,17 +120,24 @@ def get_compilation_output(*,
 class Parameters:
     arch : NVIDIAArch
 
-PARAMETERS = [
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 75)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 80)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 86)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 89)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 90)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 100)),
-    Parameters(arch = NVIDIAArch.from_compute_capability(cc = 120)),
-]
-if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.0.0'):
-    PARAMETERS.append(Parameters(arch = NVIDIAArch.from_compute_capability(cc = 70)))
+def architectures(version : semantic_version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> list[NVIDIAArch]:
+    """
+    Get the list of architectures we test, that are supported by `version`.
+    """
+    return tuple({
+        arch for cc in [
+            70,
+            75,
+            80,
+            86,
+            89,
+            90,
+            100,
+            120,
+        ] if (arch := NVIDIAArch.from_compute_capability(cc = cc)).compute_capability.supported(version = version)
+    })
+
+PARAMETERS = [Parameters(arch = arch) for arch in architectures()]
 
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestResourceUsage:

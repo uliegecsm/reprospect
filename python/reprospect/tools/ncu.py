@@ -22,6 +22,7 @@ import rich.tree
 import typeguard
 
 from reprospect.tools import cacher
+from reprospect.tools.binaries import CuppFilt, LlvmCppFilt
 from reprospect.utils import ldd
 from reprospect.utils import rich_helpers
 
@@ -741,6 +742,7 @@ class Report:
         metrics : list[Metric | MetricCorrelation],
         includes : typing.Optional[list[str]] = None,
         excludes : typing.Optional[list[str]] = None,
+        demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None,
     ) -> ProfilingResults:
         """
         Extract the `metrics` of the actions in the range with ID `range_idx`.
@@ -765,7 +767,7 @@ class Report:
             results = self.collect_metrics_from_action(action = action, metrics = metrics)
 
             results['mangled']   = action.name(action.NameBase_MANGLED)
-            results['demangled'] = action.name(action.NameBase_DEMANGLED)
+            results['demangled'] = action.name(action.NameBase_DEMANGLED) if demangler is None else demangler.demangle(results['mangled'])
 
             # Loop over the domains of the action.
             # Note that domains are only available if NVTX was enabled during collection.

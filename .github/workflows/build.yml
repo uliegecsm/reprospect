@@ -334,7 +334,7 @@ jobs:
                     -DReProspect_ENABLE_TESTS=ON
                 cmake --build . --preset=gnu-nvidia --target=docs
 
-            - uses: actions/download-artifact@v5
+            - uses: actions/download-artifact@v6
               with:
                   name: tests-gnu-nvidia-BLACKWELL120
                   path: artifacts

@@ -9,4 +9,6 @@ Environment
 SASS instruction matcher
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. automodule:: tests.python.test.test_sass
+.. automodule:: tests.python.test.sass.test_atomic
+
+.. automodule:: tests.python.test.sass.test_sass

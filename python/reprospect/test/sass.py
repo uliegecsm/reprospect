@@ -117,7 +117,7 @@ class PatternBuilder:
 
     @staticmethod
     @typeguard.typechecked
-    def opcode_mods(opcode : str, modifiers : typing.Optional[list[str]] = None) -> str:
+    def opcode_mods(opcode : str, modifiers : typing.Optional[list[int | str]] = None) -> str:
         """
         Append each modifier with a `.`, within a proper named capture group.
 
@@ -408,9 +408,11 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
                     dtype.append('?RN')
                 case 'S':
                     if self.params.operation == 'ADD':
-                        dtype = [f'{self.params.dtype[1]}']
+                        dtype = []
                     else:
                         dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
+                case 'U':
+                    dtype = [self.params.dtype[1]] if self.params.dtype[1] > 32 else []
                 case _:
                     raise ValueError(self.params.dtype)
         else:
@@ -470,7 +472,7 @@ class AtomicMatcher(ArchitectureAwarePatternMatcher):
         )
         super().__init__(arch = arch)
 
-    def _build_pattern(self) -> str:
+    def _build_pattern(self) -> str: # pylint: disable=too-many-branches
         # CAS has a different operand structure.
         # For instance:
         #   ATOMG.E.CAS.STRONG.GPU PT, R7, [R2], R6, R7
@@ -483,7 +485,7 @@ class AtomicMatcher(ArchitectureAwarePatternMatcher):
             case _:
                 operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}'
                 if self.params.dtype is not None and self.params.operation == 'EXCH':
-                    dtype = [f'{self.params.dtype[1]}'] if self.params.dtype[1] > 32 else []
+                    dtype = [self.params.dtype[1]] if self.params.dtype[1] > 32 else []
                 elif self.params.dtype is not None:
                     match self.params.dtype[0]:
                         case 'F':
@@ -491,7 +493,9 @@ class AtomicMatcher(ArchitectureAwarePatternMatcher):
                             dtype.append('?FTZ')
                             dtype.append('?RN')
                         case 'S':
-                            dtype = [f'{self.params.dtype[1]}'] if self.params.dtype[1] > 32 else [f'{self.params.dtype[0]}{self.params.dtype[1]}']
+                            dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
+                        case 'U':
+                            dtype = [self.params.dtype[1]] if self.params.dtype[1] > 32 else []
                         case _:
                             raise ValueError(self.params.dtype)
                 else:

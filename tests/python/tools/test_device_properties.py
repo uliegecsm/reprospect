@@ -2,6 +2,7 @@ import ctypes
 import logging
 import unittest
 
+import cuda.bindings.driver
 import pytest
 
 from reprospect.tools import device_properties
@@ -18,8 +19,8 @@ class TestCuda(unittest.TestCase):
         """
         device_properties.Cuda.load()
 
-        assert isinstance(device_properties.Cuda.cuda,   ctypes.CDLL)
-        assert isinstance(device_properties.Cuda.cudart, ctypes.CDLL)
+        assert isinstance(device_properties.Cuda.libcuda,   ctypes.CDLL)
+        assert isinstance(device_properties.Cuda.libcudart, ctypes.CDLL)
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_check_driver_status(self):
@@ -57,34 +58,34 @@ class TestCuda(unittest.TestCase):
         """
         Retrieve a few device attributes.
         """
-        cuda = device_properties.Cuda()
+        instance = device_properties.Cuda()
 
-        for device in range(cuda.device_count):
+        for device in range(instance.device_count):
             logging.info(f'Looking at attributes of device {device}.')
             # For now, all Cuda devices have a 32 warp size.
-            assert cuda.get_device_attribute(value_type = ctypes.c_int, attribute = device_properties.CudaDeviceAttribute.WARP_SIZE, device = device) == 32
+            assert instance.get_device_attribute(value_type = ctypes.c_int, attribute = cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_WARP_SIZE, device = device) == 32
 
             # For now, all Cuda devices have a 1024 max threads per block.
-            assert cuda.get_device_attribute(value_type = ctypes.c_int, attribute = device_properties.CudaDeviceAttribute.MAX_THREADS_PER_BLOCK, device = device) == 1024
+            assert instance.get_device_attribute(value_type = ctypes.c_int, attribute = cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK, device = device) == 1024
 
             # Get a few interesting attributes.
             attributes = [
-                device_properties.CudaDeviceAttribute.MAX_REGISTERS_PER_MULTIPROCESSOR,
-                device_properties.CudaDeviceAttribute.REGISTERS_PER_BLOCK,
-                device_properties.CudaDeviceAttribute.TOTAL_CONSTANT_MEMORY,
+                cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR,
+                cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_REGISTERS_PER_BLOCK,
+                cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY,
             ]
             for attribute in attributes:
-                logging.info(f'{attribute.name}: {cuda.get_device_attribute(value_type = ctypes.c_int, attribute = device_properties.CudaDeviceAttribute.TOTAL_CONSTANT_MEMORY, device = device)}')
+                logging.info(f'{attribute.name}: {instance.get_device_attribute(value_type = ctypes.c_int, attribute = cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY, device = device)}')
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_get_device_compute_capability(self):
         """
         Retrieve the compute capability of all devices available.
         """
-        cuda = device_properties.Cuda()
+        instance = device_properties.Cuda()
 
-        for device in range(cuda.device_count):
-            cc = cuda.get_device_compute_capability(device = device)
+        for device in range(instance.device_count):
+            cc = instance.get_device_compute_capability(device = device)
             logging.info(f'Compute capability of device {device} is {cc}.')
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
@@ -92,10 +93,10 @@ class TestCuda(unittest.TestCase):
         """
         Get the device name.
         """
-        cuda = device_properties.Cuda()
+        instance = device_properties.Cuda()
 
-        for device in range(cuda.device_count):
-            cc = cuda.get_device_name(device = device)
+        for device in range(instance.device_count):
+            cc = instance.get_device_name(device = device)
             assert isinstance(cc, str)
             logging.info(f'Name of device {device} is {cc}.')
 
@@ -104,7 +105,7 @@ class TestCuda(unittest.TestCase):
         """
         Get the device total memory.
         """
-        cuda = device_properties.Cuda()
+        instance = device_properties.Cuda()
 
-        for device in range(cuda.device_count):
-            assert cuda.get_device_total_memory(device = device) > 1024 * 1024 * 1024
+        for device in range(instance.device_count):
+            assert instance.get_device_total_memory(device = device) > 1024 * 1024 * 1024

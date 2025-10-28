@@ -49,7 +49,10 @@ extlinks = {
 }
 
 intersphinx_mapping = {
+    'cuda-bindings' : ('https://nvidia.github.io/cuda-python/cuda-bindings/latest/', None),
+    'cuda-core' : ('https://nvidia.github.io/cuda-python/cuda-core/latest/', None),
     'numpy' : ('https://numpy.org/doc/stable/', None),
+    'packaging' : ('https://packaging.pypa.io/en/stable/', None),
     'pandas' : ('https://pandas.pydata.org/pandas-docs/stable/', None),
     'python' : ('https://docs.python.org/3', None),
     'rich' : ('https://rich.readthedocs.io/en/stable/', None),
@@ -76,6 +79,7 @@ bibtex_bibfiles = ['references.bib']
 
 rst_prolog = '''
 .. _Kokkos: http://kokkos.org
+.. _Low-level Python Bindings for CUDA: https://nvidia.github.io/cuda-python/cuda-bindings/latest/
 .. _CUDA binary utilities: https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html
 .. _Nsight Compute: https://developer.nvidia.com/nsight-compute
 .. _Nsight Systems: https://developer.nvidia.com/nsight-systems

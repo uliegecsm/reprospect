@@ -402,7 +402,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 }}
 """
 
-    def test_add_int_strong_gpu(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `int`.
         """
@@ -430,7 +430,38 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'WEAK')
         assert not any(matcher.matches(inst) for inst in decoder.instructions)
 
-    def test_add_float_strong_gpu(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_unsigned_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+        """
+        Test with :py:attr:`CODE_ADD` for `unsigned long long int`.
+        """
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_ADD.format(type = 'unsigned long long int'))
+
+        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+
+        # Find the reduction.
+        matcher = ReductionMatcher(
+            arch = parameters.arch,
+            operation = 'ADD',
+            scope = 'DEVICE',
+            consistency = 'STRONG',
+            dtype = ('S', 64),
+        )
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        assert len(red) == 1
+
+        inst, matched = red[0]
+
+        logging.info(matcher.pattern)
+        logging.info(inst.instruction)
+        logging.info(matched.capturesdict())
+        assert len(matched.captures('opcode')) == 1
+        assert 'modifiers' in matched.capturesdict()
+        assert {'64'}.issubset(matched.captures('modifiers'))
+        assert len(matched.captures('address')) == 1
+        assert len(matched.captures('operands')) == 2
+
+    def test_add_strong_device_float(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `float`.
         """
@@ -455,7 +486,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.captures('address')) == 1
         assert len(matched.captures('operands')) == 2
 
-    def test_add_double_strong_gpu(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_double(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `double`.
         """
@@ -480,7 +511,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.captures('address')) == 1
         assert len(matched.captures('operands')) == 2
 
-    def test_sub_strong_gpu(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_sub_strong_device(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_SUB`.
         """
@@ -496,17 +527,11 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(red[0])
 
-    def test_max_strong_gpu(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_max_strong_device_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
-        Test with :py:attr:`CODE_MAX`.
-
-        Depending on the type size, the modifier is:
-
-        * `MAX.S32` (*e.g.* `int`)
-        * `MAX.S64` (*e.g.* `long long int`)
+        Test with :py:attr:`CODE_MAX` for `long long int`. The modifier is ``MAX.S64``.
         """
-        # Get instructions for S64.
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.s64.cu'
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MAX.format(type = 'long long int'))
 
         decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
@@ -523,8 +548,11 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         logging.info(matched.capturesdict())
         assert {'MAX', 'S64'}.issubset(matched.captures('modifiers'))
 
-        # Get instructions for S32.
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.s32.cu'
+    def test_max_strong_device_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+        """
+        Test with :py:attr:`CODE_MAX` for `int`. The modifier is ``MAX.S32``.
+        """
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MAX.format(type = 'int'))
 
         decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
@@ -579,6 +607,14 @@ __global__ void add({type}* __restrict__ const dst, const {type}* __restrict__ c
 
     cuda::atomic_ref<{type}, cuda::thread_scope_block> ref(dst[index]);
     ref.fetch_add(src[index], cuda::memory_order_relaxed);
+}}
+"""
+
+    CODE_EXCH = """\
+__global__ void exch({type}* __restrict__ const dst, const {type}* __restrict__ const src)
+{{
+    const auto index = blockIdx.x * blockDim.x + threadIdx.x;
+    atomicExch(&dst[index], src[index]);
 }}
 """
 
@@ -701,13 +737,12 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 
         logging.info(cas[0])
 
-    def test_add_relaxed_block(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_relaxed_block_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         As of CUDA 13.0.0, the generated code still applies the ``.STRONG`` modifier,
         regardless of the ``.relaxed`` qualifier shown in the PTX.
         """
-        # Get instructions for 'int'.
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.int.cu'
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'int'))
 
         decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
@@ -737,8 +772,81 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 
         assert 'atom.add.relaxed.cta.s32' in output
 
+    def test_add_relaxed_block_unsigned_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+        """
+        Similar to :py:meth:`test_add_relaxed_block_int` for `unsigned long long int`.
+        """
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'unsigned long long int'))
+
+        decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+
+        # Find the atomic add.
+        matcher = AtomicMatcher(
+            arch = parameters.arch,
+            operation = 'ADD',
+            consistency = 'STRONG', scope = 'BLOCK',
+            memory = '',
+            dtype = ('S', 64),
+        )
+        add = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        assert len(add) == 1, matcher
+
+        inst, matched = add[0]
+
+        logging.info(matcher.pattern)
+        logging.info(inst.instruction)
+        logging.info(matched.capturesdict())
+
+        assert regex.match(PatternBuilder.PREDT, matched.captures('operands')[0]) is not None
+        assert matched.captures('operands')[1] == 'RZ'
+
+        # In the PTX, we can see the '.relaxed'.
+        output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+
+        assert 'atom.add.relaxed.cta.u64' in output, output
+
+    def test_add_relaxed_block_float(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+        """
+        Similar to :py:meth:`test_add_relaxed_block_int` for `float`.
+        """
         # Get instructions for 'double'.
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.double.cu'
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'float'))
+
+        decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+
+        # Find the atomic add.
+        matcher = AtomicMatcher(
+            arch = parameters.arch,
+            operation = 'ADD',
+            consistency = 'STRONG', scope = 'BLOCK',
+            memory = '',
+            dtype = ('F', 32),
+        )
+        add = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        assert len(add) == 1, matcher
+
+        inst, matched = add[0]
+
+        logging.info(matcher.pattern)
+        logging.info(inst.instruction)
+        logging.info(matched.capturesdict())
+
+        assert regex.match(PatternBuilder.PREDT, matched.captures('operands')[0]) is not None
+        assert matched.captures('operands')[1] == 'RZ'
+
+        # In the PTX, we can see the '.relaxed'.
+        output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+
+        assert 'atom.add.relaxed.cta.f32' in output
+
+    def test_add_relaxed_block_double(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+        """
+        Similar to :py:meth:`test_add_relaxed_block_int` for `double`.
+        """
+        # Get instructions for 'double'.
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'double'))
 
         decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
@@ -767,3 +875,66 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
 
         assert 'atom.add.relaxed.cta.f64' in output
+
+    def test_exch_strong_device_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+        """
+        Test with :py:attr:`CODE_EXCH` for `int`.
+        """
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_EXCH.format(type = 'int'))
+
+        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+
+        # Find the reduction.
+        matcher = AtomicMatcher(arch = parameters.arch, operation = 'EXCH', dtype = ('S', 32), scope = 'DEVICE', consistency = 'STRONG')
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        assert len(red) == 1, matcher
+
+        inst, matched = red[0]
+
+        logging.info(matcher.pattern)
+        logging.info(inst.instruction)
+        logging.info(matched.capturesdict())
+        assert {'EXCH'}.issubset(matched.captures('modifiers'))
+
+    def test_exch_strong_device_unsigned_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+        """
+        Test with :py:attr:`CODE_EXCH` for `unsigned long long int`.
+        """
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_EXCH.format(type = 'unsigned long long int'))
+
+        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+
+        # Find the reduction.
+        matcher = AtomicMatcher(arch = parameters.arch, operation = 'EXCH', dtype = ('S', 64), scope = 'DEVICE', consistency = 'STRONG')
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        assert len(red) == 1, matcher
+
+        inst, matched = red[0]
+
+        logging.info(matcher.pattern)
+        logging.info(inst.instruction)
+        logging.info(matched.capturesdict())
+        assert {'EXCH', '64'}.issubset(matched.captures('modifiers'))
+
+    def test_exch_strong_device_float(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+        """
+        Test with :py:attr:`CODE_EXCH` for `float`.
+        """
+        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_EXCH.format(type = 'float'))
+
+        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+
+        # Find the reduction.
+        matcher = AtomicMatcher(arch = parameters.arch, operation = 'EXCH', dtype = ('F', 32), scope = 'DEVICE', consistency = 'STRONG')
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        assert len(red) == 1, matcher
+
+        inst, matched = red[0]
+
+        logging.info(matcher.pattern)
+        logging.info(inst.instruction)
+        logging.info(matched.capturesdict())
+        assert {'EXCH'}.issubset(matched.captures('modifiers'))

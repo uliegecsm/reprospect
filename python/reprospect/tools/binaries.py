@@ -127,13 +127,20 @@ class Function:
     ru : dict = None  #: The resource usage.
 
     @typeguard.typechecked
-    def to_table(self, *, max_code_length: int = 130) -> rich.table.Table:
+    def to_table(self, *, max_code_length : int = 130, descriptors : typing.Optional[dict[str, str]] = None) -> rich.table.Table:
         """
         Convert to a :py:class:`rich.table.Table`.
+
+        :param descriptors: Key-value pairs added as descriptor rows at the top of the table, optional.
         """
         table = rich.table.Table(width = 15 + max_code_length + 7, show_header = False, padding = (0, 1))
         table.add_column(width = 15)
         table.add_column(width = max_code_length, overflow = "ellipsis", no_wrap = True)
+
+        # Additional rows.
+        if descriptors:
+            for k, v in descriptors.items():
+                table.add_row(k, v, end_section = True)
 
         # Code.
         table.add_row("Code", rich.text.Text(textwrap.dedent(self.code.expandtabs()).rstrip()), end_section = True)
@@ -247,6 +254,17 @@ class CuObjDump:
         file = cwd / re.match(r'Extracting ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+.cubin)', files[0]).group(1)
 
         return CuObjDump(file = file, arch = arch, **kwargs), file
+
+    @typeguard.typechecked
+    def __str__(self) -> str:
+        """
+        Rich representation.
+        """
+        with rich.console.Console(width = 200) as console, console.capture() as capture:
+            console.print(f'CuObjDump of {self.file} for architecture {self.arch}:')
+            for name, function in self.functions.items():
+                console.print(function.to_table(descriptors = {'Function' : name}), no_wrap = True)
+        return capture.get()
 
     @staticmethod
     @typeguard.typechecked

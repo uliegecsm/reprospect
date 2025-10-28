@@ -1,6 +1,5 @@
 import abc
 import functools
-import logging
 import json
 import pathlib
 import typing
@@ -48,7 +47,6 @@ class CMakeMixin(abc.ABC):
         with open(self.CMAKE_BINARY_DIR / 'compile_commands.json', 'r', encoding = 'utf-8') as fin:
             commands = json.load(fin)
         target_source = next(self.target_sources)
-        logging.info(f'Looking for {target_source} in {commands}')
         archs = get_arch_from_compile_command(cmd = next(filter(
             lambda x: str(target_source) in x['file'],
             commands))['command']

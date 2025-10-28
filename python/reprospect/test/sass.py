@@ -401,23 +401,28 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
 
     def _build_pattern(self) -> str:
         if self.params.dtype is not None:
-            data_type = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
             match self.params.dtype[0]:
                 case 'F':
-                    data_type.append('?FTZ')
-                    data_type.append('?RN')
+                    dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
+                    dtype.append('?FTZ')
+                    dtype.append('?RN')
+                case 'S':
+                    if self.params.operation == 'ADD':
+                        dtype = [f'{self.params.dtype[1]}']
+                    else:
+                        dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
                 case _:
-                    pass
+                    raise ValueError(self.params.dtype)
         else:
-            data_type = []
+            dtype = []
 
         match self.arch.compute_capability.as_int:
             case 70 | 75:
-                return PatternBuilder.opcode_mods('RED', ['E', self.params.operation, *data_type, self.params.consistency, self.params.scope]) + f' {PatternBuilder.reg_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('RED', ['E', self.params.operation, *dtype, self.params.consistency, self.params.scope]) + f' {PatternBuilder.reg_addr()}, {PatternBuilder.reg()}'
             case 80 | 86 | 89:
-                return PatternBuilder.opcode_mods('RED', ['E', self.params.operation, *data_type, self.params.consistency, self.params.scope]) + f' {PatternBuilder.reg64_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('RED', ['E', self.params.operation, *dtype, self.params.consistency, self.params.scope]) + f' {PatternBuilder.reg64_addr()}, {PatternBuilder.reg()}'
             case 90 | 100 | 120:
-                return PatternBuilder.opcode_mods('REDG', ['E', self.params.operation, *data_type, self.params.consistency, self.params.scope]) + f' {PatternBuilder.desc_reg64_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('REDG', ['E', self.params.operation, *dtype, self.params.consistency, self.params.scope]) + f' {PatternBuilder.desc_reg64_addr()}, {PatternBuilder.reg()}'
             case _:
                 raise ValueError(f'unsupported {self.arch}')
 
@@ -477,14 +482,20 @@ class AtomicMatcher(ArchitectureAwarePatternMatcher):
                 dtype = [self.params.dtype[1]] if self.params.dtype is not None and self.params.dtype[1] > 32 else []
             case _:
                 operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}'
-                if self.params.dtype is not None:
-                    dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
+                if self.params.dtype is not None and self.params.operation == 'EXCH':
+                    dtype = [f'{self.params.dtype[1]}'] if self.params.dtype[1] > 32 else []
+                elif self.params.dtype is not None:
                     match self.params.dtype[0]:
                         case 'F':
+                            dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
                             dtype.append('?FTZ')
                             dtype.append('?RN')
+                        case 'S':
+                            dtype = [f'{self.params.dtype[1]}'] if self.params.dtype[1] > 32 else [f'{self.params.dtype[0]}{self.params.dtype[1]}']
                         case _:
-                            pass
+                            raise ValueError(self.params.dtype)
+                else:
+                    dtype = []
 
         match self.arch.compute_capability.as_int:
             case 70 | 75:

@@ -27,6 +27,9 @@ def get_base_name_tag_digest(version : str) -> tuple[str, str, str]:
         case '13.0.0':
             tag = f'{version}-devel-ubuntu24.04'
             digest = 'sha256:1e8ac7a54c184a1af8ef2167f28fa98281892a835c981ebcddb1fad04bdd452d'
+        case '13.0.1':
+            tag = f'{version}-devel-ubuntu24.04'
+            digest = 'sha256:7d2f6a8c2071d911524f95061a0db363e24d27aa51ec831fcccf9e76eb72bc92'
         case _:
             raise ValueError(version)
     return ('nvidia/cuda', tag, digest)
@@ -189,7 +192,7 @@ def main(*, args : argparse.Namespace) -> None:
     }, args = args))
 
     matrix.extend(complete_job({
-        'cuda_version' : '13.0.0',
+        'cuda_version' : '13.0.1',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 120,
         'platforms' : ['linux/amd64', 'linux/arm64'],

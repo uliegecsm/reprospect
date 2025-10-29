@@ -1,4 +1,5 @@
 import dataclasses
+import functools
 import json
 import logging
 import os
@@ -120,9 +121,10 @@ def get_compilation_output(*,
 class Parameters:
     arch : NVIDIAArch
 
+@functools.cache
 def architectures(version : semantic_version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> list[NVIDIAArch]:
     """
-    Get the list of architectures we test, that are supported by `version`.
+    Get the list of architectures to test, that are supported by `version`.
     """
     return tuple({
         arch for cc in [

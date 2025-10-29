@@ -1,13 +1,13 @@
 [MESSAGES CONTROL]
 disable=
-    R0801,
-    redefined-outer-name,
     invalid-name,
     line-too-long,
     logging-fstring-interpolation,
     missing-class-docstring,
     missing-function-docstring,
     missing-module-docstring,
+    R0801,
+    redefined-outer-name,
     too-few-public-methods,
     too-many-arguments,
     too-many-locals,

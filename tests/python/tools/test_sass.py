@@ -6,8 +6,8 @@ import re
 import pytest
 import typeguard
 
-from reprospect.utils import cmake
 from reprospect.tools import sass, binaries
+from reprospect.utils import cmake
 
 from tests.python.tools.test_binaries import Parameters, PARAMETERS, get_compilation_output
 

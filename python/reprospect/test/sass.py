@@ -35,10 +35,12 @@ References:
 
 import abc
 import dataclasses
+import os
 import types
 import typing
 
 import regex
+import semantic_version
 import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
@@ -257,6 +259,28 @@ class ArchitectureAwarePatternMatcher(PatternMatcher):
         Build the regex pattern based on architecture.
         """
 
+class VersionAwarePatternMixin:
+    """
+    Base class for matchers that generate patterns based on CUDA version.
+
+    .. note::
+
+        The CUDA version is defaulted to the `CUDA_VERSION` environment variable. However, it must be noted that
+        it is expected to be the version of ``ptxas``.
+
+        The version is not always needed, but is useful for some SASS instructions that changed over the course of CUDA ISA evolution.
+        For instance, under CUDA 12.6, an atomic add for `int` (at block scope) translates to::
+
+            ATOM.E.ADD.STRONG.CTA PT, RZ, [R2], R5
+
+        whereas for CUDA 12.8.1 or 13.0.0, it translates to::
+
+            ATOM.E.ADD.S32.STRONG.CTA PT, RZ, [R2], R5
+    """
+    @typeguard.typechecked
+    def __init__(self, version : typing.Optional[semantic_version.Version] = None) -> None:
+        self.version = version if version is not None else semantic_version.Version(os.environ['CUDA_VERSION'])
+
 class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
     """
     Architecture-dependent matcher for global load (``LDG``) instructions,
@@ -428,7 +452,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
             case _:
                 raise ValueError(f'unsupported {self.arch}')
 
-class AtomicMatcher(ArchitectureAwarePatternMatcher):
+class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
     """
     Matcher for atomic operations on:
 
@@ -456,6 +480,7 @@ class AtomicMatcher(ArchitectureAwarePatternMatcher):
         consistency : str = 'STRONG',
         dtype : typing.Optional[tuple[typing.Optional[str], int]] = None,
         memory : str = 'G',
+        version : typing.Optional[semantic_version.Version] = None,
     ):
         """
         :param dtype: For instance, `('F', 64')` for a floating-point type 64-bits in size or `(S, 32)` for a signed integer type 32-bits in size.
@@ -470,7 +495,8 @@ class AtomicMatcher(ArchitectureAwarePatternMatcher):
             memory = memory,
             dtype = dtype,
         )
-        super().__init__(arch = arch)
+        VersionAwarePatternMixin.__init__(self, version = version)
+        ArchitectureAwarePatternMatcher.__init__(self, arch = arch)
 
     def _build_pattern(self) -> str: # pylint: disable=too-many-branches
         # CAS has a different operand structure.
@@ -493,7 +519,10 @@ class AtomicMatcher(ArchitectureAwarePatternMatcher):
                             dtype.append('?FTZ')
                             dtype.append('?RN')
                         case 'S':
-                            dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
+                            if self.params.operation == 'ADD' and self.version in semantic_version.SimpleSpec('<12.8'):
+                                dtype = []
+                            else:
+                                dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
                         case 'U':
                             dtype = [self.params.dtype[1]] if self.params.dtype[1] > 32 else []
                         case _:

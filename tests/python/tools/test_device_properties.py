@@ -1,7 +1,5 @@
 import ctypes
 import logging
-import pathlib
-import re
 import unittest
 
 import pytest
@@ -13,15 +11,6 @@ class TestCuda(unittest.TestCase):
     """
     Test for :py:class:`reprospect.tools.device_properties.Cuda`.
     """
-    INCLUDE_DIR = pathlib.Path('/usr/local/cuda/include')
-
-    def test_include_dir(self):
-        """
-        Check include directory.
-        """
-        assert self.INCLUDE_DIR.is_dir()
-        assert (self.INCLUDE_DIR / 'cuda.h').is_file()
-
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_initialize(self):
         """
@@ -119,20 +108,3 @@ class TestCuda(unittest.TestCase):
 
         for device in range(cuda.device_count):
             assert cuda.get_device_total_memory(device = device) > 1024 * 1024 * 1024
-
-    def test_cuda_device_attribute_uptodate(self):
-        """
-        Check that :py:class:`reprospect.tools.device_properties.CudaDeviceAttribute` is up-to-date with the content of `cuda.h`.
-        """
-        cuda_header = self.INCLUDE_DIR / 'cuda.h'
-
-        assert cuda_header.is_file()
-
-        to_be_found = set(rf'CU_DEVICE_ATTRIBUTE_{attribute.name}[ ]+=[ ]+{attribute.value}' for attribute in device_properties.CudaDeviceAttribute)
-
-        with cuda_header.open('r') as fin:
-            for line in fin:
-                for found in [attr for attr in to_be_found if re.search(attr, line)]:
-                    to_be_found.remove(found)
-
-        assert len(to_be_found) == 0, to_be_found

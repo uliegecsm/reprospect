@@ -194,7 +194,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
                 logging.warning('The 128-bit atomicCAS() does not compile with Clang.')
                 expecting_failure = True
             case _:
-                raise ValueError(f'unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}')
+                raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
 
         kwargs = {'arch' : parameters.arch, 'file' : FILE, 'cmake_file_api' : cmake_file_api}
 

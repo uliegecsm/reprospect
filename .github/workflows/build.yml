@@ -216,6 +216,7 @@ jobs:
                       CXX_COMPILER=${{ matrix.compilers.CXX.path }}
                       DOXYGEN_VERSION=1_14_0
                       GOOGLEBENCHMARK_VERSION=1.9.4
+                      PYTHON_VERSION=${{ matrix.ubuntu_version == '24.04' && '3.12' || '3.10' }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
             - uses: docker/build-push-action@v6.18.0

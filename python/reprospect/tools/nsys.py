@@ -9,6 +9,7 @@ import shlex
 import shutil
 import sqlite3
 import subprocess
+import sys
 import typing
 
 import blake3
@@ -19,6 +20,11 @@ import typeguard
 from reprospect.tools import cacher
 from reprospect.utils import ldd
 from reprospect.utils import rich_helpers
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 class Session:
     """
@@ -298,13 +304,13 @@ class Report:
 
             return self.events.iloc[sorted(previous)]
 
-        @typing.override
+        @override
         @typeguard.typechecked
         def to_tree(self) -> rich.tree.Tree:
             @typeguard.typechecked
             def add_branch(*, tree : rich.tree.Tree, nodes : pandas.DataFrame) -> None:
                 for _, node in nodes.iterrows():
-                    branch = tree.add(f'{node['text']} ({node['eventTypeName']})')
+                    branch = tree.add(f"{node['text']} ({node['eventTypeName']})")
                     if node['children'].any():
                         add_branch(tree = branch, nodes = self.events.loc[node['children']])
 
@@ -404,7 +410,7 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
 
         filtered = filtered.squeeze()
 
-        logging.info(f'Events will be filtered in the time frame {filtered['start']} -> {filtered['end']}.')
+        logging.info(f"Events will be filtered in the time frame {filtered['start']} -> {filtered['end']}.")
 
         query = f"""
 SELECT
@@ -454,7 +460,7 @@ class Cacher(cacher.Cacher):
         super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.nsys-cache')
         self.session = session
 
-    @typing.override
+    @override
     @typeguard.typechecked
     def hash(self, *, # pylint: disable=arguments-differ
         executable : pathlib.Path,
@@ -501,6 +507,7 @@ class Cacher(cacher.Cacher):
 
         return hasher
 
+    @override
     @typeguard.typechecked
     def populate(self, directory : pathlib.Path, **kwargs) -> Session.Command:
         """

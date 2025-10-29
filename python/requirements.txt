@@ -1,3 +1,4 @@
+backports.strenum
 blake3
 cmake_file_api @ git+https://github.com/madebr/python-cmake-file-api@v0.0.8.3
 ijson
@@ -7,3 +8,4 @@ rich
 semantic_version
 system-helpers @ git+https://github.com/uliegecsm/system-helpers@0.0.3
 typeguard
+typing-extensions>=4.4.0

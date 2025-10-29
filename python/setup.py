@@ -12,6 +12,7 @@ requirements = filter(None, requirements.read_text().splitlines())
 setup(
     name             = 'reprospect',
     version          = version,
+    python_requires  = '>=3.10',
     license          = 'MIT',
     url              = 'https://github.com/uliegecsm/reprospect',
     install_requires = [

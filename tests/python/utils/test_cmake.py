@@ -44,9 +44,9 @@ class TestFileAPI:
         for language, toolchain in cmake_file_api.toolchains.items():
             compiler = toolchain['compiler']
             logging.info(f'For language {language}:')
-            logging.info(f'\t- compiler ID     : {compiler['id']}')
-            logging.info(f'\t- compiler path   : {compiler['path']}')
-            logging.info(f'\t- compiler version: {compiler['version']}')
+            logging.info(f"\t- compiler ID     : {compiler['id']}")
+            logging.info(f"\t- compiler path   : {compiler['path']}")
+            logging.info(f"\t- compiler version: {compiler['version']}")
 
     @typeguard.typechecked
     def test_codemodel_configuration(self, cmake_file_api) -> None:

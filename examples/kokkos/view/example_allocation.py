@@ -1,6 +1,6 @@
-import enum
 import logging
 import math
+import sys
 import typing
 
 import numpy
@@ -12,7 +12,17 @@ import reprospect
 from reprospect.tools import nsys
 from reprospect.utils import detect
 
-class Memory(enum.StrEnum):
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum import StrEnum
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
+class Memory(StrEnum):
     DEVICE = 'DEVICE'
     SHARED = 'MANAGED'
 
@@ -21,7 +31,7 @@ class TestAllocation(reprospect.CMakeAwareTestCase):
     Explore the behavior of `Kokkos::View` allocation under different scenarios.
     """
     @classmethod
-    @typing.override
+    @override
     @typeguard.typechecked
     def get_target_name(cls) -> str:
         return 'examples_kokkos_view_allocation'
@@ -99,8 +109,8 @@ class TestNSYS(TestAllocation):
             cuda_api_trace_allocation   = report.get_events(table = 'CUPTI_ACTIVITY_KIND_RUNTIME', accessors = ['AllocationProfiling', memory_space, str(size), 'allocation'])
             cuda_api_trace_deallocation = report.get_events(table = 'CUPTI_ACTIVITY_KIND_RUNTIME', accessors = ['AllocationProfiling', memory_space, str(size), 'deallocation'])
 
-            logging.info(f'Events during allocation: {cuda_api_trace_allocation['name']}.')
-            logging.info(f'Events during deallocation: {cuda_api_trace_deallocation['name']}.')
+            logging.info(f"Events during allocation: {cuda_api_trace_allocation['name']}.")
+            logging.info(f"Events during deallocation: {cuda_api_trace_deallocation['name']}.")
 
             # Allocation goes through the expected Cuda API calls.
             assert len(cuda_api_trace_allocation['name']) == len(expt_cuda_api_calls_allocation)

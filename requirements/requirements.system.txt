@@ -1,4 +1,3 @@
 ccache
-cmake
 pdf2svg
 texlive-latex-extra

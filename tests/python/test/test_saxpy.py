@@ -1,5 +1,5 @@
 import pathlib
-import typing
+import sys
 
 import pytest
 import typeguard
@@ -11,6 +11,11 @@ from reprospect.tools          import ncu
 from reprospect.tools.sass     import Decoder
 from reprospect.utils          import detect
 
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
 class TestSaxpy(reprospect.CMakeAwareTestCase):
     """
     General test class.
@@ -20,7 +25,7 @@ class TestSaxpy(reprospect.CMakeAwareTestCase):
     TARGET_SOURCE = pathlib.Path('tests') / 'cpp' / 'cuda' / 'test_saxpy.cpp'
 
     @classmethod
-    @typing.override
+    @override
     @typeguard.typechecked
     def get_target_name(cls) -> str:
         return 'tests_cpp_cuda_saxpy'

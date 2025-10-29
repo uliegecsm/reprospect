@@ -1,11 +1,11 @@
 import abc
 import dataclasses
-import enum
 import io
 import logging
 import pathlib
 import re
 import subprocess
+import sys
 import textwrap
 import typing
 
@@ -16,6 +16,16 @@ import rich.table
 import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum import StrEnum
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 PATTERNS = [
     re.compile(r'-arch=sm_(\d+)'),
@@ -61,8 +71,8 @@ class CuppFilt(DemanglerMixin):
     """
     Convenient wrapper for ``cu++filt``.
     """
-    @typing.override
     @classmethod
+    @override
     @typeguard.typechecked
     def get_executable(cls) -> str:
         return 'cu++filt'
@@ -71,13 +81,13 @@ class LlvmCppFilt(DemanglerMixin):
     """
     Convenient wrapper for ``llvm-cxxfilt``.
     """
-    @typing.override
     @classmethod
+    @override
     @typeguard.typechecked
     def get_executable(cls) -> str:
         return 'llvm-cxxfilt'
 
-class ResourceUsage(enum.StrEnum):
+class ResourceUsage(StrEnum):
     """
     Support for resource usage fields.
 

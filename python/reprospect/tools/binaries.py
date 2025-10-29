@@ -29,6 +29,10 @@ PATTERNS = [
 def get_arch_from_compile_command(cmd : str) -> set[NVIDIAArch]:
     """
     Get NVIDIA architecture from compile command.
+
+    >>> from reprospect.tools.binaries import get_arch_from_compile_command
+    >>> get_arch_from_compile_command('nvcc -arch=sm_89 test.cpp')
+    {NVIDIAArch(family=<NVIDIAFamily.ADA: 'ADA'>, compute_capability=ComputeCapability(major=8, minor=9))}
     """
     matches : set[str] = set()
     for pattern in PATTERNS:

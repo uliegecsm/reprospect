@@ -204,7 +204,7 @@ jobs:
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: true # ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
                   file: docker/dockerfile
                   tags: ${{ matrix.image }}
                   cache-from: type=registry,ref=${{ matrix.image }}
@@ -216,13 +216,14 @@ jobs:
                       CXX_COMPILER=${{ matrix.compilers.CXX.path }}
                       DOXYGEN_VERSION=1_14_0
                       GOOGLEBENCHMARK_VERSION=1.9.4
+                      PYTHON_VERSION=${{ matrix.ubuntu_version == '24.04' && '3.12' || '3.10' }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
             - uses: docker/build-push-action@v6.18.0
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: # true ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
                   file: docker/dockerfile.kokkos
                   tags: ${{ matrix.kokkos }}
                   cache-from: type=registry,ref=${{ matrix.kokkos }}

@@ -16,25 +16,28 @@ AVAILABLE_RUNNER_ARCHES = (
 )
 
 @typeguard.typechecked
-def get_base_name_tag_digest(version : str) -> tuple[str, str, str]:
+def get_base_name_tag_digest(cuda_version : str, ubuntu_version : str) -> tuple[str, str, str]:
     """
     Get `Docker` base image name, tag and digest.
     """
-    match version:
-        case '12.6.3':
-            tag = f'{version}-devel-ubuntu24.04'
+    match (cuda_version, ubuntu_version):
+        case ('12.6.3', '22.04'):
+            tag = f'12.6.3-devel-ubuntu22.04'
+            digest = 'sha256:d49bb8a4ff97fb5fe477947a3f02aa8c0a53eae77e11f00ec28618a0bcaa2ad1'
+        case ('12.6.3', '24.04'):
+            tag = f'12.6.3-devel-ubuntu24.04'
             digest = 'sha256:badf6c452e8b1efea49d0bb956bef78adcf60e7f87ac77333208205f00ac9ade'
-        case '12.8.1':
-            tag = f'{version}-devel-ubuntu24.04'
+        case ('12.8.1', '24.04'):
+            tag = f'12.8.1-devel-ubuntu24.04'
             digest = 'sha256:520292dbb4f755fd360766059e62956e9379485d9e073bbd2f6e3c20c270ed66'
-        case '13.0.0':
-            tag = f'{version}-devel-ubuntu24.04'
+        case ('13.0.0', '24.04'):
+            tag = f'13.0.0-devel-ubuntu24.04'
             digest = 'sha256:1e8ac7a54c184a1af8ef2167f28fa98281892a835c981ebcddb1fad04bdd452d'
-        case '13.0.1':
-            tag = f'{version}-devel-ubuntu24.04'
+        case ('13.0.1', '24.04'):
+            tag = f'13.0.1-devel-ubuntu24.04'
             digest = 'sha256:7d2f6a8c2071d911524f95061a0db363e24d27aa51ec831fcccf9e76eb72bc92'
         case _:
-            raise ValueError(version)
+            raise ValueError((cuda_version, ubuntu_version))
     return ('nvidia/cuda', tag, digest)
 
 @dataclasses.dataclass
@@ -102,7 +105,7 @@ def complete_job_impl(*, partial : dict, args : argparse.Namespace) -> dict:
     # Name and tag of the image.
     name = 'cuda-' + '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CXX'].version, partial['compilers']['CUDA'].ID])))
 
-    base_name, base_tag, base_digest = get_base_name_tag_digest(version = partial['cuda_version'])
+    base_name, base_tag, base_digest = get_base_name_tag_digest(cuda_version = partial['cuda_version'], ubuntu_version = partial['ubuntu_version'])
 
     arch = NVIDIAArch.from_compute_capability(cc = partial.pop('nvidia_compute_capability'))
     partial['nvidia_arch'] = str(arch)
@@ -189,6 +192,7 @@ def main(*, args : argparse.Namespace) -> None:
 
     matrix.extend(complete_job({
         'cuda_version' : '12.8.1',
+        'ubuntu_version' : '24.04',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '13'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 70,
         'platforms' : ['linux/amd64', 'linux/arm64'],
@@ -196,6 +200,7 @@ def main(*, args : argparse.Namespace) -> None:
 
     matrix.extend(complete_job({
         'cuda_version' : '13.0.1',
+        'ubuntu_version' : '24.04',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 120,
         'platforms' : ['linux/amd64', 'linux/arm64'],
@@ -203,22 +208,31 @@ def main(*, args : argparse.Namespace) -> None:
 
     matrix.extend(complete_job({
         'cuda_version' : '12.6.3',
+        'ubuntu_version' : '22.04',
+        'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '13'), 'CUDA' : Compiler(ID = 'nvidia')},
+        'nvidia_compute_capability' : 75,
+        'platforms' : ['linux/amd64'],
+    }, args = args))
+
+    matrix.extend(complete_job({
+        'cuda_version' : '12.6.3',
+        'ubuntu_version' : '24.04',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '13'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 89,
         'platforms' : ['linux/amd64'],
-        'tests' : True,
     }, args = args))
 
     matrix.extend(complete_job({
         'cuda_version' : '13.0.0',
+        'ubuntu_version' : '24.04',
         'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 86,
         'platforms' : ['linux/amd64'],
-        'tests' : True,
     }, args = args))
 
     matrix.extend(complete_job({
         'cuda_version' : '12.8.1',
+        'ubuntu_version' : '24.04',
         'compilers' : {'CXX' : Compiler(ID = 'clang', version = '19'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 70,
         'platforms' : ['linux/amd64'],
@@ -226,6 +240,7 @@ def main(*, args : argparse.Namespace) -> None:
 
     matrix.extend(complete_job({
         'cuda_version' : '13.0.0',
+        'ubuntu_version' : '24.04',
         'compilers' : {'CXX' : Compiler(ID = 'clang', version = '20'), 'CUDA' : Compiler(ID = 'nvidia')},
         'nvidia_compute_capability' : 120,
         'platforms' : ['linux/amd64'],
@@ -233,6 +248,7 @@ def main(*, args : argparse.Namespace) -> None:
 
     matrix.extend(complete_job({
         'cuda_version' : '12.8.1',
+        'ubuntu_version' : '24.04',
         'compilers' : {'CXX' : Compiler(ID = 'clang', version = '21')},
         'nvidia_compute_capability' : 120,
         'platforms' : ['linux/amd64'],

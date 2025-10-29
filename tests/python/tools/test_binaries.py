@@ -7,6 +7,7 @@ import pathlib
 import shutil
 import subprocess
 import typing
+import unittest
 
 import pytest
 import rich.console
@@ -257,28 +258,30 @@ class TestFunction:
     """
     Tests related to :py:class:`reprospect.tools.binaries.Function`.
     """
-    def test_string_representation(self) -> None:
-        """
-        Test :py:meth:`reprospect.tools.binaries.Function.__str__`.
-        """
-        CODE = """\
+    CODE = """\
         .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"
         /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */
                                                                                                             /* 0x000e220000000800 */
         /*0010*/                   S2R R0, SR_TID.X                     &wr=0x1          ?trans7;           /* 0x0000000000007919 */
                                                                                                             /* 0x000e6e0000002100 */
 """
-        RU = {
-            ResourceUsage.REGISTER : 10,
-            ResourceUsage.STACK    : 0,
-            ResourceUsage.SHARED   : 0,
-            ResourceUsage.LOCAL    : 0,
-            ResourceUsage.CONSTANT : {0: 924},
-            ResourceUsage.TEXTURE  : 0,
-            ResourceUsage.SURFACE  : 0,
-            ResourceUsage.SAMPLER  : 0
-        }
-        function = Function(code = CODE, ru = RU)
+
+    RU = {
+        ResourceUsage.REGISTER : 10,
+        ResourceUsage.STACK    : 0,
+        ResourceUsage.SHARED   : 0,
+        ResourceUsage.LOCAL    : 0,
+        ResourceUsage.CONSTANT : {0: 924},
+        ResourceUsage.TEXTURE  : 0,
+        ResourceUsage.SURFACE  : 0,
+        ResourceUsage.SAMPLER  : 0
+    }
+
+    def test_string_representation(self) -> None:
+        """
+        Test :py:meth:`reprospect.tools.binaries.Function.__str__`.
+        """
+        function = Function(code = self.CODE, ru = self.RU)
 
         # Check that the conversion to a table with truncation of long lines works as expected.
         with rich.console.Console(width = 200) as console, console.capture() as capture:
@@ -309,11 +312,11 @@ class TestFunction:
 └─────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 """
 
-@pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestCuObjDump:
     """
     Tests related to :py:class:`reprospect.tools.binaries.CuObjDump`.
     """
+    @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
     class TestSaxpy:
         """
         When the kernel performs a `saxpy`.
@@ -411,3 +414,49 @@ class TestCuObjDump:
             symbols = cuobjdump.symtab(cubin = cubin, arch = parameters.arch)
 
             assert self.SYMBOL in symbols['name'].values
+
+    def test_string_representation(self) -> None:
+        """
+        Test :py:meth:`reprospect.tools.binaries.CuObjDump.__str__`.
+        """
+        def mock_init(self):
+            self.file = pathlib.Path('code_object.o')
+            self.arch = NVIDIAArch.from_str('BLACKWELL120')
+            self.functions = {
+                'my_kernel(float, const float *, float *, unsigned int)' : Function(
+                    code = TestFunction.CODE,
+                    ru = TestFunction.RU
+                ),
+                'my_other_kernel(float, const float *, float *, unsigned int)' : Function(
+                    code = TestFunction.CODE,
+                    ru = TestFunction.RU
+                )
+            }
+
+        with unittest.mock.patch.object(CuObjDump, "__init__", mock_init):
+            cuobjdump = CuObjDump() # pylint: disable=no-value-for-parameter
+            assert str(cuobjdump) == """\
+CuObjDump of code_object.o for architecture BLACKWELL120:
+┌─────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Function        │ my_kernel(float, const float *, float *, unsigned int)                                                                             │
+├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Code            │ .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"                                                                 │
+│                 │ /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */       │
+│                 │                                                                                                     /* 0x000e220000000800 */       │
+│                 │ /*0010*/                   S2R R0, SR_TID.X                     &wr=0x1          ?trans7;           /* 0x0000000000007919 */       │
+│                 │                                                                                                     /* 0x000e6e0000002100 */       │
+├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Resource usage  │ REG: 10, STACK: 0, SHARED: 0, LOCAL: 0, CONSTANT: {0: 924}, TEXTURE: 0, SURFACE: 0, SAMPLER: 0                                     │
+└─────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Function        │ my_other_kernel(float, const float *, float *, unsigned int)                                                                       │
+├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Code            │ .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"                                                                 │
+│                 │ /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */       │
+│                 │                                                                                                     /* 0x000e220000000800 */       │
+│                 │ /*0010*/                   S2R R0, SR_TID.X                     &wr=0x1          ?trans7;           /* 0x0000000000007919 */       │
+│                 │                                                                                                     /* 0x000e6e0000002100 */       │
+├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Resource usage  │ REG: 10, STACK: 0, SHARED: 0, LOCAL: 0, CONSTANT: {0: 924}, TEXTURE: 0, SURFACE: 0, SAMPLER: 0                                     │
+└─────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+"""

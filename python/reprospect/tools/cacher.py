@@ -128,7 +128,7 @@ class Cacher:
 
                 self.populate(directory = directory, **kwargs)
 
-                entry = Cacher.Entry(cached = False, digest = hexdigest, timestamp = datetime.datetime.now(datetime.UTC), directory = directory)
+                entry = Cacher.Entry(cached = False, digest = hexdigest, timestamp = datetime.datetime.now(datetime.timezone.utc), directory = directory)
 
                 cursor.execute(
                     f'REPLACE INTO {self.TABLE} (hash, timestamp) VALUES (?, ?)',

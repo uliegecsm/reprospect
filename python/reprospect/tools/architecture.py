@@ -1,11 +1,16 @@
 import dataclasses
-import enum
 import functools
 import re
+import sys
 import typing
 
 import semantic_version
 import typeguard
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum import StrEnum
 
 @functools.total_ordering
 @dataclasses.dataclass(frozen = True, slots = True)
@@ -94,7 +99,7 @@ class ComputeCapability:
         """
         return version in self.CUDA_SUPPORT[self.as_int]
 
-class NVIDIAFamily(enum.StrEnum):
+class NVIDIAFamily(StrEnum):
     """
     Supported NVIDIA architecture families.
     """

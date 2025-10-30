@@ -1,7 +1,6 @@
 import collections
 import copy
 import dataclasses
-import enum
 import functools
 import importlib
 import json
@@ -26,7 +25,17 @@ from reprospect.tools.binaries import CuppFilt, LlvmCppFilt
 from reprospect.utils import ldd
 from reprospect.utils import rich_helpers
 
-class Unit(enum.StrEnum):
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum import StrEnum
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
+class Unit(StrEnum):
     """
     Available units.
 
@@ -38,7 +47,7 @@ class Unit(enum.StrEnum):
     SM    = 'sm'
     SMSP  = 'smsp'
 
-class PipeStage(enum.StrEnum):
+class PipeStage(StrEnum):
     """
     Available pipe stages.
 
@@ -49,7 +58,7 @@ class PipeStage(enum.StrEnum):
     TAG = 't'
     TAG_OUTPUT = 't_output'
 
-class Quantity(enum.StrEnum):
+class Quantity(StrEnum):
     """
     Available quantities.
 
@@ -113,7 +122,7 @@ class MetricCounter(Metric):
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
-    class RollUp(enum.StrEnum):
+    class RollUp(StrEnum):
         SUM = '.sum'
         AVG = '.avg'
         MIN = '.min'
@@ -127,7 +136,7 @@ class MetricRatio(Metric):
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
-    class RollUp(enum.StrEnum):
+    class RollUp(StrEnum):
         PCT      = '.pct'
         RATIO    = '.ratio'
         MAX_RATE = '.max_rate'
@@ -511,7 +520,11 @@ class Session:
                                 break
 
                 if not retry_allowed:
-                    logging.exception(f'Failed launching \'ncu\' with {command}.{'\n' + command.log.read_text(encoding = 'utf-8') if command.log.is_file() else ''}')
+                    logging.exception(
+                        f"Failed launching 'ncu' with {command}."
+                        "\n"
+                        f"{command.log.read_text(encoding = 'utf-8') if command.log.is_file() else ''}"
+                    )
                     raise
                 sleep_for = sleep(retry, retries)
                 logging.info(f'Sleeping {sleep_for} seconds before retrying.')
@@ -605,7 +618,6 @@ class ProfilingResults(rich_helpers.TreeMixin, collections.UserDict):
 
         self.data = collections.OrderedDict()
 
-    @typing.override
     @typeguard.typechecked
     def get(self, accessors : typing.Iterable) -> dict: # pylint: disable=arguments-differ
         """
@@ -636,7 +648,7 @@ class ProfilingResults(rich_helpers.TreeMixin, collections.UserDict):
 
         return {key: sum(s[key] for s in samples.values()) for key in keys}
 
-    @typing.override
+    @override
     @typeguard.typechecked
     def to_tree(self) -> rich.tree.Tree:
         @typeguard.typechecked
@@ -868,7 +880,7 @@ class Cacher(cacher.Cacher):
         super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.ncu-cache')
         self.session = session
 
-    @typing.override
+    @override
     @typeguard.typechecked
     def hash(self, *, # pylint: disable=arguments-differ
         executable : pathlib.Path,
@@ -921,6 +933,7 @@ class Cacher(cacher.Cacher):
 
         return hasher
 
+    @override
     @typeguard.typechecked
     def populate(self, directory : pathlib.Path, **kwargs) -> Session.Command:
         """

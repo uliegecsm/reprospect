@@ -193,7 +193,7 @@ class TestSession:
                 assert NODE_A_MANGLED + '-0' in results.keys()
                 assert all(f'add_and_increment_kernel-{idx}' in results.keys() for idx in range(1, 4))
             case _:
-                raise ValueError(f'unsupported compiler ID {cmake_cuda_compiler['id']}')
+                raise ValueError(f"unsupported compiler ID {cmake_cuda_compiler['id']}")
 
         # Check global load/store for each node, and aggregated as well.
         SIGNATURES = {

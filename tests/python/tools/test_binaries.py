@@ -82,7 +82,7 @@ def get_compilation_output(*,
             case 'Clang':
                 cmd += ['-x', 'cuda']
             case _:
-                raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA']['compiler']['id']}')
+                raise ValueError(f"unsupported compiler ID {cmake_file_api.toolchains['CUDA']['compiler']['id']}")
 
     # Clang tends to add a lot of debug code otherwise.
     cmd.append('-O3')
@@ -103,7 +103,7 @@ def get_compilation_output(*,
             if resource_usage:
                 cmd += ['-Xcuda-ptxas', '-v',]
         case _:
-            raise ValueError(f'unsupported compiler ID {cmake_file_api.toolchains['CUDA']['compiler']['id']}')
+            raise ValueError(f"unsupported compiler ID {cmake_file_api.toolchains['CUDA']['compiler']['id']}")
 
     cmd += [
         '-c', source,

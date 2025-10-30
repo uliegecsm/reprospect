@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.27 FATAL_ERROR)
 
 # Retrieve the version.
 file(READ "${CMAKE_SOURCE_DIR}/python/reprospect/__init__.py" VERSION_FILE_CONTENTS)
@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Python 3.12 REQUIRED Interpreter)
+find_package(Python 3.10 REQUIRED Interpreter)
 
 include(cmake/functions/environment.cmake)
 include(cmake/functions/path_helper.cmake)
@@ -26,7 +26,8 @@ include(cmake/modules/detect.cmake)
 include(cmake/modules/Warnings.cmake)
 
 # Ask CMake to dump file-based detailed information about the build system.
-# See also https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html
+# See also https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html.
+# Note that this requires CMake 3.27 or newer.
 cmake_file_api(QUERY API_VERSION 1
   CACHE 2
   TOOLCHAINS 1

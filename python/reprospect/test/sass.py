@@ -36,6 +36,7 @@ References:
 import abc
 import dataclasses
 import os
+import sys
 import types
 import typing
 
@@ -45,6 +46,11 @@ import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass         import Instruction
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 class PatternBuilder:
     """
@@ -150,7 +156,7 @@ class PatternBuilder:
             pattern += cls.optional(cls.OFFSET)
         elif offset is True:
             pattern += cls.OFFSET
-        return rf'\[{cls.group(pattern, groups = ['operands', 'address'])}\]'
+        return rf"\[{cls.group(pattern, groups = ['operands', 'address'])}\]"
 
     @classmethod
     @typeguard.typechecked
@@ -168,7 +174,7 @@ class PatternBuilder:
             pattern += cls.optional(cls.OFFSET)
         elif offset is True:
             pattern += cls.OFFSET
-        return rf'\[({cls.group(pattern, groups = ['operands', 'address'])})\]'
+        return rf"\[({cls.group(pattern, groups = ['operands', 'address'])})\]"
 
     @classmethod
     @typeguard.typechecked
@@ -223,7 +229,7 @@ class PatternMatcher(Matcher):
     """
     pattern : str | regex.Pattern
 
-    @typing.override
+    @override
     @typeguard.typechecked
     def matches(self, inst : Instruction | str) -> typing.Optional[regex.Match]:
         if isinstance(inst, str):
@@ -314,7 +320,7 @@ class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
         self.params = types.SimpleNamespace(size = size, cache = cache)
         super().__init__(arch = arch)
 
-    @typing.override
+    @override
     @typeguard.typechecked
     def _build_pattern(self) -> str:
         match self.arch.compute_capability.as_int:
@@ -346,7 +352,7 @@ class StoreGlobalMatcher(ArchitectureAwarePatternMatcher):
         self.params = types.SimpleNamespace(size = size)
         super().__init__(arch = arch)
 
-    @typing.override
+    @override
     @typeguard.typechecked
     def _build_pattern(self) -> str:
         match self.arch.compute_capability.as_int:
@@ -423,6 +429,8 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
         )
         super().__init__(arch = arch)
 
+    @override
+    @typeguard.typechecked
     def _build_pattern(self) -> str:
         if self.params.dtype is not None:
             match self.params.dtype[0]:
@@ -498,6 +506,8 @@ class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
         VersionAwarePatternMixin.__init__(self, version = version)
         ArchitectureAwarePatternMatcher.__init__(self, arch = arch)
 
+    @override
+    @typeguard.typechecked
     def _build_pattern(self) -> str: # pylint: disable=too-many-branches
         # CAS has a different operand structure.
         # For instance:

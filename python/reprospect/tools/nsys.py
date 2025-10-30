@@ -46,7 +46,7 @@ class Session:
         opts: list[str]          #: ``nsys`` options that do not involve paths.
         output: pathlib.Path     #: ``nsys`` report file.
         executable: pathlib.Path #: Executable to run.
-        args: list[str]          #: Arguments to pass to the executable.
+        args: list[str | pathlib.Path] | None #: Arguments to pass to the executable.
 
         @functools.cached_property
         @typeguard.typechecked
@@ -54,7 +54,7 @@ class Session:
             """
             Build the full ``nsys`` profile command.
             """
-            cmd = ['nsys', 'profile']
+            cmd : list[str | pathlib.Path] = ['nsys', 'profile']
 
             cmd += self.opts
 
@@ -155,13 +155,13 @@ class Session:
         """
         Export report to ``.sqlite``.
         """
-        cmd = [
+        cmd : tuple[str | pathlib.Path, ...] = (
             'nsys', 'stats',
             '--force-overwrite=true',
             '--force-export=true',
             f'--sqlite={self.output_file_sqlite}',
             self.output_file_nsys_rep,
-        ]
+        )
 
         logging.info(f"Exporting to 'sqlite' with {cmd}.")
         self.output_file_sqlite.unlink(missing_ok = True)
@@ -177,7 +177,7 @@ class Session:
         """
         Extract the CUDA `API` call stats, filtering the database with `filter_nvtx`.
         """
-        cmd = [
+        cmd : list[str | pathlib.Path] = [
             'nsys', 'stats',
             f'--output={self.output_dir / self.output_file_prefix}',
             f'--report={report}',
@@ -206,7 +206,7 @@ class Report:
     @typeguard.typechecked
     def __init__(self, *, db : pathlib.Path) -> None:
         self.db = db
-        self.conn : sqlite3.Connection = None
+        self.conn : sqlite3.Connection | None = None
 
     @typeguard.typechecked
     def __enter__(self) -> 'Report':
@@ -217,7 +217,8 @@ class Report:
     @typeguard.typechecked
     def __exit__(self, *args, **kwargs) -> None:
         logging.info(f'Closing connection to {self.db}.')
-        self.conn.close()
+        if self.conn is not None:
+            self.conn.close()
 
     @functools.cached_property
     @typeguard.typechecked
@@ -226,6 +227,7 @@ class Report:
         Tables in the report.
         """
         logging.info(f'Listing tables in {self.db}.')
+        assert self.conn is not None
         cursor = self.conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         return [row[0] for row in cursor.fetchall()]
@@ -275,7 +277,9 @@ class Report:
         """
         if isinstance(src, pandas.Series) and selector is None:
             return cls.single_row(data = dst[dst[correlation_dst] == src[correlation_src]])
-        return cls.single_row(data = dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
+        if isinstance(src, pandas.DataFrame) and selector is not None:
+            return cls.single_row(data = dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
+        raise RuntimeError()
 
     class NvtxEvents(rich_helpers.TreeMixin):
         @typeguard.typechecked
@@ -283,7 +287,7 @@ class Report:
             self.events = events
 
         @typeguard.typechecked
-        def get(self, accessors : typing.Iterable[str]) -> pandas.DataFrame:
+        def get(self, accessors : typing.Sequence[str]) -> pandas.DataFrame:
             """
             Find all nested NVTX events matching `accessors`.
             """
@@ -368,8 +372,8 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
         events['level'] = -1
 
         # We’ll build parent-child relationships using a stack.
-        stack = []
-        child_map = {i: [] for i in events.index}
+        stack : list[typing.Hashable] = []
+        child_map : dict[typing.Hashable, list[typing.Hashable]] = {i: [] for i in events.index}
 
         for idx, event in events.iterrows():
             # Pop any finished parents.
@@ -392,7 +396,7 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
         return Report.NvtxEvents(events = events)
 
     @typeguard.typechecked
-    def get_events(self, table : str, accessors : typing.Iterable[str]) -> pandas.DataFrame:
+    def get_events(self, table : str, accessors : typing.Sequence[str]) -> pandas.DataFrame:
         """
         Query all rows in `table` that happen between the `start`/`end` time points
         of the nested NVTX range matching `accessors`.
@@ -460,15 +464,13 @@ class Cacher(cacher.Cacher):
         super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.nsys-cache')
         self.session = session
 
-    @override
     @typeguard.typechecked
-    def hash(self, *, # pylint: disable=arguments-differ
+    def hash_impl(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_capture : typing.Optional[str] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
         env : typing.Optional[typing.MutableMapping] = None,
-        **kwargs
     ) -> blake3.blake3:
         """
         Hash based on:
@@ -506,6 +508,17 @@ class Cacher(cacher.Cacher):
             hasher.update(json.dumps(env).encode())
 
         return hasher
+
+    @override
+    @typeguard.typechecked
+    def hash(self, **kwargs) -> blake3.blake3:
+        return self.hash_impl(
+            executable = kwargs['executable'],
+            opts = kwargs.get('opts'),
+            nvtx_capture = kwargs.get('nvtx_capture'),
+            args = kwargs.get('args'),
+            env = kwargs.get('env'),
+        )
 
     @override
     @typeguard.typechecked

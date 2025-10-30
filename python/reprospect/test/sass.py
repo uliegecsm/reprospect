@@ -384,8 +384,15 @@ class StoreGlobalMatcher(ArchitectureAwarePatternMatcher):
             case _:
                 raise ValueError(f'unsupported {self.arch}')
 
+ThreadScope = typing.Literal['BLOCK', 'DEVICE', 'THREADS']
+"""
+References:
+
+* https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_model.html#thread-scopes
+"""
+
 @typeguard.typechecked
-def convert_thread_scope(*, scope : typing.Literal['BLOCK', 'DEVICE', 'THREADS'], arch : NVIDIAArch) -> str:
+def convert_thread_scope(*, scope : ThreadScope, arch : NVIDIAArch) -> str:
     """
     Convert the scope to SASS modifier.
 
@@ -430,7 +437,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
     def __init__(self,
         arch : NVIDIAArch,
         operation : str = 'ADD',
-        scope : typing.Optional[str] = None,
+        scope : typing.Optional[ThreadScope] = None,
         consistency : str = 'STRONG',
         dtype : typing.Optional[tuple[str, int]] = None,
     ):
@@ -503,7 +510,7 @@ class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
     def __init__(self,
         arch : NVIDIAArch,
         operation : str = 'ADD',
-        scope : typing.Optional[str] = None,
+        scope : typing.Optional[ThreadScope] = None,
         consistency : str = 'STRONG',
         dtype : typing.Optional[tuple[typing.Optional[str], int]] = None,
         memory : str = 'G',

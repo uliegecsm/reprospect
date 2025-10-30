@@ -52,7 +52,7 @@ index, uuid, name, compute_cap
 
                 mock_shutil.assert_called_once()
 
-                mock_subprocess.assert_called_once_with(['nvidia-smi', '--query-gpu=uuid,index,name,compute_cap', '--format=csv'])
+                mock_subprocess.assert_called_once_with(('nvidia-smi', '--query-gpu=uuid,index,name,compute_cap', '--format=csv'))
 
     def test_detect_gpus_no_gpu(self) -> None:
         """

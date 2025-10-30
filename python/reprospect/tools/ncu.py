@@ -1,10 +1,10 @@
-import collections
 import copy
 import dataclasses
 import functools
 import importlib
 import json
 import logging
+import operator
 import os
 import pathlib
 import re
@@ -87,7 +87,7 @@ class Metric:
     human : str
 
     #: A dictionary of sub-metrics and their value.
-    subs : dict[typing.Any, int | float]
+    subs : dict[typing.Any, int | float | None]
 
     @typeguard.typechecked
     def __init__(self,
@@ -149,12 +149,14 @@ class XYZBase:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/#metrics-reference
     """
+    prefix : str
+
     @classmethod
     @typeguard.typechecked
     def get(cls, dims : typing.Optional[list[str]] = None) -> typing.Iterable[Metric]:
         if not dims:
             dims = ['x', 'y', 'z']
-        return (Metric(name = cls.prefix + dim) for dim in dims) # pylint: disable=no-member
+        return (Metric(name = cls.prefix + dim) for dim in dims)
 
 class LaunchBlock(XYZBase):
     """
@@ -178,8 +180,8 @@ class MetricCorrelation:
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
     name : str
-    correlated : dict[str, int] = None
-    value : float = None
+    correlated : dict[str, int] | None = None
+    value : float | None = None
 
     @typeguard.typechecked
     def gather(self) -> list[str]:
@@ -372,7 +374,7 @@ class L1TEXCache:
                 )
 
 @typeguard.typechecked
-def gather(metrics : list[Metric | MetricCorrelation]) -> list[str]:
+def gather(metrics : typing.Iterable[Metric | MetricCorrelation]) -> list[str]:
     """
     Retrieve all sub-metric names, e.g. to pass them to ``ncu``.
     """
@@ -397,9 +399,9 @@ class Session:
         opts: list[str]                                      #: ``ncu`` options that do not involve paths.
         output: pathlib.Path                                 #: ``ncu`` report file.
         log: pathlib.Path                                    #: ``ncu`` log file.
-        metrics: typing.Iterable[Metric | MetricCorrelation] #: ``ncu`` metrics.
+        metrics: typing.Iterable[Metric | MetricCorrelation] | None #: ``ncu`` metrics.
         executable: str | pathlib.Path                       #: Executable to run.
-        args: list[str | pathlib.Path]                       #: Arguments to pass to the executable.
+        args: list[str | pathlib.Path] | None                #: Arguments to pass to the executable.
 
         @functools.cached_property
         @typeguard.typechecked
@@ -407,7 +409,7 @@ class Session:
             """
             Build the full ``ncu`` command.
             """
-            cmd = ['ncu']
+            cmd : list[str | pathlib.Path] = ['ncu']
 
             if self.opts:
                 cmd += self.opts
@@ -504,7 +506,10 @@ class Session:
             args = args,
         )
 
-        for retry in reversed(range(retries if retries else 1)):
+        if retries is None:
+            retries = 1
+
+        for retry in reversed(range(retries)):
             try:
                 logging.info(f"Launching 'ncu' with {command.to_list} (log file at {command.log}).")
                 subprocess.check_call(command.to_list, cwd = cwd, env = env)
@@ -606,40 +611,54 @@ class NvtxDomain:
             return getattr(self.nvtx_domain, attr)
         raise AttributeError(attr)
 
-class ProfilingResults(rich_helpers.TreeMixin, collections.UserDict):
+#: A single metric value in profiling results.
+MetricValue : typing.TypeAlias = typing.Union[MetricCorrelation, int, float, str, None]
+
+#: Profiling results for a single entry.
+ProfilingResult : typing.TypeAlias = dict[str, MetricValue]
+
+#: Nested profiling results data structure.
+NestedProfilingResults : typing.TypeAlias = dict[str, typing.Union['NestedProfilingResults', MetricValue]]
+
+class ProfilingResults(rich_helpers.TreeMixin, NestedProfilingResults):
     """
     Data structure for storing profiling results.
 
     This data structure is a nested (ordered) dictionary.
     It has helper functions that ease dealing with nested values.
     """
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
-        self.data = collections.OrderedDict()
-
     @typeguard.typechecked
-    def get(self, accessors : typing.Iterable) -> dict: # pylint: disable=arguments-differ
+    def query(self, accessors : typing.Iterable[str]) -> typing.Union[NestedProfilingResults, ProfilingResult, MetricValue]:
         """
         Get (nested) value from the `accessors` path.
-        It is created if needed.
         """
-        current = self.data
-        for accessor in accessors:
-            if accessor not in current:
-                current[accessor] = {}
-            current = current[accessor]
-        return current
+        return functools.reduce(operator.getitem, accessors, typing.cast(dict, self))
 
     @typeguard.typechecked
-    def aggregate(self, accessors : typing.Iterable, keys : typing.Optional[typing.Iterable] = None) -> dict:
+    def set(self, accessors: typing.Sequence[str], data : dict[str, MetricValue]) -> None:
+        """
+        Set or create (nested) `data` from the `accessors` path.
+        Creates intermediate dictionaries as needed.
+        """
+        current = typing.cast(dict, self)
+        for accessor in accessors[0:-1]:
+            current = current.setdefault(accessor, {})
+        current[accessors[-1]] = data
+
+    @typeguard.typechecked
+    def aggregate(self, accessors : typing.Iterable[str], keys : typing.Optional[typing.Iterable] = None) -> dict:
         """
         Aggregate values of dictionaries selected by `accessors`.
 
         The selected dictionaries are assumed to be at the last nesting level and to all have the same keys.
         """
         # Get all dictionaries that match 'accessors'.
-        samples = self.get(accessors = accessors)
+        results = self.query(accessors = accessors)
+
+        if not isinstance(results, dict):
+            raise TypeError(f'Expected dictionary at {accessors}, got {type(results).__name__}.')
+
+        samples = typing.cast(dict[str, dict[str, MetricValue]], results)
 
         # Create the aggregate results.
         # Get keys of the first sample if no keys provided. We assume all samples have the same keys.
@@ -661,12 +680,12 @@ class ProfilingResults(rich_helpers.TreeMixin, collections.UserDict):
                     tree.add(f'{key}: {value}')
 
         tree = rich.tree.Tree('Profiling results')
-        add_branch(tree = tree, data = self.data)
+        add_branch(tree = tree, data = self)
 
         return tree
 
 @typeguard.typechecked
-def load_ncu_report() -> typing.Optional[types.ModuleType]:
+def load_ncu_report() -> types.ModuleType:
     """
     Attempt to load the `Nsight Compute` `Python` interface (``ncu_report``).
 
@@ -691,9 +710,15 @@ def load_ncu_report() -> typing.Optional[types.ModuleType]:
         raise RuntimeError("'ncu' was not found.")
 
     version_string = subprocess.check_output([ncu, '--version']).decode().splitlines()[-1]
-    version_full   = re.match(r'Version ([0-9.]+)', version_string).groups()[0]
-    version_short  = re.match(r'[0-9]+.[0-9]+.[0-9]+', version_full).group()
-    logging.debug(f'Found \'ncu\' ({ncu}) with version {version_full}.')
+    if (matched := re.match(r'Version ([0-9.]+)', version_string)) is not None:
+        version_full = matched.groups()[0]
+    else:
+        raise RuntimeError(f'unexpected format {version_string}')
+    if (matched := re.match(r'[0-9]+.[0-9]+.[0-9]+', version_full)) is not None:
+        version_short = matched.group()
+        logging.debug(f'Found \'ncu\' ({ncu}) with version {version_full}.')
+    else:
+        raise RuntimeError(f'unexpected format {version_string}')
 
     nsight_compute_dir = pathlib.Path('/opt') / 'nvidia' / 'nsight-compute' / version_short
     if not nsight_compute_dir.is_dir():
@@ -705,8 +730,10 @@ def load_ncu_report() -> typing.Optional[types.ModuleType]:
         location                   = nsight_compute_extra_python_dir / 'ncu_report.py',
         submodule_search_locations = [str(nsight_compute_extra_python_dir)],
     )
+    assert ncu_report_spec is not None
     ncu_report = importlib.util.module_from_spec(ncu_report_spec)
     sys.modules['ncu_report'] = ncu_report
+    assert ncu_report_spec.loader is not None
     ncu_report_spec.loader.exec_module(ncu_report)
     return sys.modules['ncu_report']
 
@@ -779,21 +806,23 @@ class Report:
             results = self.collect_metrics_from_action(action = action, metrics = metrics)
 
             results['mangled']   = action.name(action.NameBase_MANGLED)
-            results['demangled'] = action.name(action.NameBase_DEMANGLED) if demangler is None else demangler.demangle(results['mangled'])
+            results['demangled'] = action.name(action.NameBase_DEMANGLED) if demangler is None else demangler.demangle(typing.cast(str, results['mangled']))
 
             # Loop over the domains of the action.
             # Note that domains are only available if NVTX was enabled during collection.
             if action.domains:
                 for domain in action.domains:
-                    current = profiling_results.get(accessors = domain.push_pop_ranges())
-                    current[f'{action.name()}-{action.index}'] = results
+                    profiling_results.set(
+                        accessors = domain.push_pop_ranges() + (f'{action.name()}-{action.index}',),
+                        data = results,
+                    )
             else:
-                profiling_results[f'{action.name()}-{action.index}'] = results
+                profiling_results.set((f'{action.name()}-{action.index}',), results)
 
         return profiling_results
 
     @typeguard.typechecked
-    def collect_metrics_from_action(self, *, metrics : list[Metric | MetricCorrelation], action : Action) -> dict[str, typing.Any]:
+    def collect_metrics_from_action(self, *, metrics : typing.Iterable[Metric | MetricCorrelation], action : Action) -> dict[str, MetricValue]:
         """
         Collect values of the `metrics` in the `action`.
 
@@ -802,7 +831,7 @@ class Report:
         * https://github.com/shunting314/gpumisc/blob/37bbb827ae2ed6f5777daff06956c7a10aafe34d/ncu-related/official-sections/FPInstructions.py#L51
         * https://github.com/NVIDIA/nsight-training/blob/2d680f7f8368b945bc00b22834808af24eff4c3d/cuda/nsight_compute/python_report_interface/Opcode_instanced_metrics.ipynb
         """
-        results = {}
+        results : dict[str, MetricValue] = {}
 
         for metric in map(copy.deepcopy, metrics):
             if isinstance(metric, MetricCorrelation):
@@ -880,16 +909,14 @@ class Cacher(cacher.Cacher):
         super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.ncu-cache')
         self.session = session
 
-    @override
     @typeguard.typechecked
-    def hash(self, *, # pylint: disable=arguments-differ
+    def hash_impl(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_includes : typing.Optional[list[str]] = None,
         metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
         env : typing.Optional[typing.MutableMapping] = None,
-        **kwargs
     ) -> blake3.blake3:
         """
         Hash based on:
@@ -923,7 +950,7 @@ class Cacher(cacher.Cacher):
         hasher.update_mmap(command.executable)
 
         if command.args:
-            hasher.update(shlex.join(command.args).encode())
+            hasher.update(shlex.join(map(str, command.args)).encode())
 
         for lib in sorted(ldd.get_shared_dependencies(file = command.executable)):
             hasher.update_mmap(lib)
@@ -932,6 +959,18 @@ class Cacher(cacher.Cacher):
             hasher.update(json.dumps(env).encode())
 
         return hasher
+
+    @override
+    @typeguard.typechecked
+    def hash(self, **kwargs) -> blake3.blake3:
+        return self.hash_impl(
+            executable = kwargs['executable'],
+            opts = kwargs.get('opts'),
+            nvtx_includes = kwargs.get('nvtx_includes'),
+            metrics = kwargs.get('metrics'),
+            args = kwargs.get('args'),
+            env = kwargs.get('env'),
+        )
 
     @override
     @typeguard.typechecked

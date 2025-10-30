@@ -116,14 +116,14 @@ class ResourceUsage(StrEnum):
         """
         Parse a resource usage line, such as produced by ``cuobjdump`` with ``--dump-resource-usage``.
         """
-        res = {}
+        res : dict[ResourceUsage, typing.Union[int, dict[int, int]]] = {}
         for token in re.findall(r'([A-Z]+)(?:\[([0-9]+)\])?:([0-9]+)', line):
             t = ResourceUsage(token[0])
             match t:
                 case ResourceUsage.CONSTANT:
                     if t not in res:
                         res[t] = {}
-                    res[t][int(token[1])] = int(token[2])
+                    typing.cast(dict[int, int], res[t])[int(token[1])] = int(token[2])
                 case _:
                     res[t] = int(token[2])
         return res
@@ -133,8 +133,8 @@ class Function:
     """
     Data structure holding the SASS code and resource usage of a kernel, as extracted from a binary.
     """
-    code : str = None #: The SASS code.
-    ru : dict = None  #: The resource usage.
+    code : str #: The SASS code.
+    ru : dict | None = None #: The resource usage.
 
     @typeguard.typechecked
     def to_table(self, *, max_code_length : int = 130, descriptors : typing.Optional[dict[str, str]] = None) -> rich.table.Table:
@@ -156,7 +156,8 @@ class Function:
         table.add_row("Code", rich.text.Text(textwrap.dedent(self.code.expandtabs()).rstrip()), end_section = True)
 
         # Resource usage.
-        table.add_row("Resource usage", ", ".join([f"{key}: {value}" for key, value in self.ru.items()]))
+        if self.ru:
+            table.add_row("Resource usage", ", ".join([f"{key}: {value}" for key, value in self.ru.items()]))
 
         return table
 
@@ -187,21 +188,21 @@ class CuObjDump:
     ) -> None:
         self.file = file #: The binary file.
         self.arch = arch
-        self.functions = {}
+        self.functions : dict[str, Function] = {}
         if sass:
-            self.sass(demangler = demangler)
+            self.extract_sass(demangler = demangler)
 
     @typeguard.typechecked
-    def sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None) -> None:
+    def extract_sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None) -> None:
         """
         Extract SASS from :py:attr:`file`. Optionally demangle functions.
         """
-        cmd = [
+        cmd : tuple[str | pathlib.Path, ...] = (
             'cuobjdump',
             '--gpu-architecture', self.arch.as_sm,
             '--dump-sass', '--dump-resource-usage',
             self.file,
-        ]
+        )
 
         logging.info(f"Extracting 'SASS' from {self.file} using {cmd}.")
 
@@ -247,12 +248,12 @@ class CuObjDump:
         instead of extracting the SASS straightforwardly from the whole `file` is
         significantly faster.
         """
-        cmd = [
+        cmd : tuple[str | pathlib.Path, ...] = (
             'cuobjdump',
             '--extract-elf', cubin,
             '--gpu-architecture', arch.as_sm,
             file,
-        ]
+        )
 
         logging.info(f'Extracting ELF file containing {cubin} from {file} for architecture {arch} with {cmd}.')
 
@@ -261,9 +262,10 @@ class CuObjDump:
         if len(files) != 1:
             raise RuntimeError(files)
 
-        file = cwd / re.match(r'Extracting ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+.cubin)', files[0]).group(1)
-
-        return CuObjDump(file = file, arch = arch, **kwargs), file
+        if (matched := re.match(r'Extracting ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+.cubin)', files[0])) is not None:
+            file = cwd / matched.group(1)
+            return CuObjDump(file = file, arch = arch, **kwargs), file
+        raise RuntimeError(files[0])
 
     @typeguard.typechecked
     def __str__(self) -> str:
@@ -282,7 +284,7 @@ class CuObjDump:
         """
         Extract the symbol table from `cubin` for `arch`.
         """
-        cmd = ['cuobjdump', '--gpu-architecture', arch.as_sm, '--dump-elf', cubin]
+        cmd : list[str | pathlib.Path] = ['cuobjdump', '--gpu-architecture', arch.as_sm, '--dump-elf', cubin]
         logging.info(f'Extracting the symbol table from {cubin} using {cmd}.')
 
         # The section starts with

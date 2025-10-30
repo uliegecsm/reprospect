@@ -62,7 +62,7 @@ class ComputeCapability:
     def __str__(self) -> str:
         return f'{self.major}.{self.minor}'
 
-    def __eq__(self, other: typing.Union[int, 'ComputeCapability']) -> bool:
+    def __eq__(self, other : object) -> bool:
         if isinstance(other, ComputeCapability):
             return (self.major, self.minor) == (other.major, other.minor)
         if isinstance(other, int):
@@ -74,7 +74,7 @@ class ComputeCapability:
             return (self.major, self.minor) < (other.major, other.minor)
         if isinstance(other, int):
             return self.as_int < other
-        return NotImplemented
+        return NotImplemented # type: ignore[unreachable]
 
     @staticmethod
     @typeguard.typechecked
@@ -179,7 +179,7 @@ class NVIDIAArch:
     @staticmethod
     @typeguard.typechecked
     def from_compute_capability(cc : str | int) -> 'NVIDIAArch':
-        return NVIDIAArch(family = NVIDIAFamily.from_compute_capability(cc = cc), compute_capability = ComputeCapability.from_int(int(cc)))
+        return NVIDIAArch(family = NVIDIAFamily.from_compute_capability(cc = int(cc)), compute_capability = ComputeCapability.from_int(int(cc)))
 
     @staticmethod
     @typeguard.typechecked

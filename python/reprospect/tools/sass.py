@@ -214,6 +214,8 @@ class Decoder:
         if self.source:
             self.code = self.source.read_text()
 
+        assert self.code is not None
+
         lines = self.code.splitlines()
 
         iline = 0
@@ -258,6 +260,8 @@ class Decoder:
                     control = ControlCode.decode(code = match.group(1))
                     iline += 1
 
+            assert control is not None
+
             # Create instruction.
             instruction = Instruction(
                 offset = int(offset, base = 16),
@@ -274,7 +278,7 @@ class Decoder:
         """
         Convert the decoded SASS to a :py:class:`pandas.DataFrame`.
         """
-        data = {
+        data : dict[str, list[int | str]] = {
             'offset' : [],
             'instruction' : [],
             'stall' : [],

@@ -78,19 +78,19 @@ class ZeroOrMoreInSequenceMatcher(SequenceMatcher):
         """
         It is always matching.
         """
-        return self.matches(instructions = instructions, start = start)
+        return self.matches(instructions = instructions, start = start) or []
 
 @dataclasses.dataclass(slots = True, frozen = True)
 class OrderedInSequenceMatcher(SequenceMatcher):
     """
     Match a sequence of matchers in the order they are provided.
     """
-    matchers : tuple[SequenceMatcher | Matcher]
+    matchers : tuple[SequenceMatcher | Matcher, ...]
 
     @override
     @typeguard.typechecked
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
-        matches = []
+        matches : list[regex.Match] = []
         for matcher in self.matchers:
             if isinstance(matcher, Matcher) and (matched := matcher.matches(inst = instructions[start + len(matches)])) is not None:
                 matches.append(matched)
@@ -113,7 +113,7 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
     """
     Match a sequence of matchers in some permutation of the order they are provided.
     """
-    matchers : tuple[SequenceMatcher | Matcher]
+    matchers : tuple[SequenceMatcher | Matcher, ...]
 
     @override
     @typeguard.typechecked

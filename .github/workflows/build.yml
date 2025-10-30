@@ -309,14 +309,25 @@ jobs:
             - uses: actions/checkout@v5
               with:
                   path: install-from
-            - run : |
+
+            - name: Create a virtual environment.
+              run : python -m venv ${{ github.job }}
+
+            - name: Install the package and delete the sources.
+              run : |
+                . ${{ github.job }}/bin/activate
                 pip install install-from/python
                 rm -rf install-from/
 
-            - run: |
+            - name: Print version and import.
+              run: |
+                . ${{ github.job }}/bin/activate
+                python -c "import reprospect; print(reprospect); print(reprospect.__version__)"
                 python -c "from reprospect.utils.detect import GPUDetector as u; print(u.get())"
 
-            - run: |
+            - name: Scripts.
+              run: |
+                . ${{ github.job }}/bin/activate
                 reprospect-install-nsight-systems --help
 
     documentation:

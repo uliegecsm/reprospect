@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = [
+    "reprospect",
     "reprospect.installers",
     "reprospect.test",
     "reprospect.tools",
@@ -11,6 +12,7 @@ packages = [
 ]
 
 [tool.setuptools.package-dir]
+"reprospect" = "reprospect"
 "reprospect.installers" = "reprospect/installers"
 "reprospect.test" = "reprospect/test"
 "reprospect.tools" = "reprospect/tools"

@@ -322,6 +322,7 @@ jobs:
             - name: Print version and import.
               run: |
                 . ${{ github.job }}/bin/activate
+                python -m pip show reprospect
                 python -c "import reprospect; print(reprospect); print(reprospect.__version__)"
                 python -c "from reprospect.utils.detect import GPUDetector as u; print(u.get())"
 

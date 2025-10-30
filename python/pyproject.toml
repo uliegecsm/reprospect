@@ -18,10 +18,16 @@ packages = [
 "reprospect.tools" = "reprospect/tools"
 "reprospect.utils" = "reprospect/utils"
 
+[tool.setuptools.dynamic]
+# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#dynamic-metadata
+version = {attr = "reprospect.__version__"}
+dependencies = {file = ["requirements.txt"]}
+
 [project]
 name = "reprospect"
 description = "A framework for reproducible prospecting of CUDA applications."
-license-files = ["LICEN[CS]E*"]
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">= 3.10"
 dynamic = [
     "dependencies",

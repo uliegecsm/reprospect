@@ -10,30 +10,8 @@ requirements = pathlib.Path(__file__).parent / 'requirements.txt'
 requirements = filter(None, requirements.read_text().splitlines())
 
 setup(
-    name             = 'reprospect',
     version          = version,
-    python_requires  = '>=3.10',
-    license          = 'MIT',
-    url              = 'https://github.com/uliegecsm/reprospect',
     install_requires = [
         *requirements,
     ],
-    packages = [
-        'reprospect.installers',
-        'reprospect.test',
-        'reprospect.tools',
-        'reprospect.utils',
-    ],
-    package_dir = {
-        'reprospect.installers' : 'reprospect/installers',
-        'reprospect.test' : 'reprospect/test',
-        'reprospect.tools' : 'reprospect/tools',
-        'reprospect.utils' : 'reprospect/utils',
-    },
-    entry_points = {
-        'console_scripts': [
-            'reprospect-install-nsight-systems = reprospect.installers.nsight_systems:main',
-            'reprospect-utils-detect-gpus = reprospect.utils.detect:main',
-        ],
-    },
 )

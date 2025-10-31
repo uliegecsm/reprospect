@@ -1,5 +1,6 @@
 import logging
 import math
+import pathlib
 import sys
 import typing
 
@@ -9,6 +10,7 @@ import typeguard
 
 import reprospect
 
+from reprospect.test  import environment
 from reprospect.tools import nsys
 from reprospect.utils import detect
 
@@ -30,6 +32,8 @@ class TestAllocation(reprospect.CMakeAwareTestCase):
     """
     Explore the behavior of `Kokkos::View` allocation under different scenarios.
     """
+    KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter = pathlib.Path)
+
     @classmethod
     @override
     @typeguard.typechecked

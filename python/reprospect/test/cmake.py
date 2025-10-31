@@ -6,6 +6,7 @@ import typing
 
 import typeguard
 
+from reprospect.test.environment   import EnvironmentField
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import get_arch_from_compile_command, CuppFilt, LlvmCppFilt
 from reprospect.utils              import cmake
@@ -27,10 +28,8 @@ class CMakeMixin(abc.ABC):
     """
     Mixin to integrate with CMake build system.
     """
-    _REQUIRED_ATTRIBUTES_WITH_DEFAULT_FROM_ENV = {
-        'CMAKE_BINARY_DIR': pathlib.Path,
-        'CMAKE_CURRENT_BINARY_DIR': pathlib.Path,
-    }
+    CMAKE_BINARY_DIR = EnvironmentField(converter = pathlib.Path)
+    CMAKE_CURRENT_BINARY_DIR = EnvironmentField(converter = pathlib.Path)
 
     @classmethod
     @abc.abstractmethod

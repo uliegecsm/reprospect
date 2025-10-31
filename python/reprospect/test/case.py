@@ -4,10 +4,9 @@ import typing
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuppFilt, LlvmCppFilt
-from reprospect.test.environment   import EnvironmentAwareMixin
 from reprospect.test.cmake         import CMakeMixin
 
-class TestCase(EnvironmentAwareMixin, abc.ABC):
+class TestCase(abc.ABC):
     """
     Test case.
     """

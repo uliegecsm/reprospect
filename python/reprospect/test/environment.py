@@ -1,33 +1,97 @@
+import dataclasses
 import os
 import typing
 
-import typeguard
+T = typing.TypeVar('T')
+"""Type variable for :py:class:`~EnvironmentField` and related generics."""
 
-class EnvironmentAwareMixin:
+@dataclasses.dataclass(slots = True)
+class EnvironmentField(typing.Generic[T]):
     """
-    Base class that resolves missing instance attributes from the environment.
+    Descriptor that returns a value lazily read from an environment variable.
 
-    .. note::
-        A missing attribute is read the first time from the environment, and is then set as an attribute,
-        such that an update of the environment won't affect the attribute value in subsequent calls.
+    Based on:
+
+    * https://docs.python.org/3/howto/descriptor.html
+    * https://mypy.readthedocs.io/en/stable/generics.html#defining-generic-classes
     """
-    #: Specify convertors from environment variable values to attributes of the relevant types.
-    _REQUIRED_ATTRIBUTES_WITH_DEFAULT_FROM_ENV : typing.ClassVar[dict[str, typing.Callable[[str], typing.Any]]] = {}
+    env : typing.Optional[str] = None
+    """
+    Name of the environment variable.
+    """
 
-    @typeguard.typechecked
-    @classmethod
-    def read_from_env(cls, name : str) -> typing.Any:
-        value = os.getenv(name)
-        if value is None:
-            raise AttributeError(f'{cls.__name__} has no attribute {name!r} and there is no environment variable {name!r}.')
+    converter : typing.Optional[typing.Callable[[str], T]] = None
+    """
+    Callable to convert the value of the environment variable to the target type.
+    """
 
-        if name in cls._REQUIRED_ATTRIBUTES_WITH_DEFAULT_FROM_ENV:
-            value = cls._REQUIRED_ATTRIBUTES_WITH_DEFAULT_FROM_ENV[name](value)
+    default : typing.Optional[T] = None
+    """
+    Default value if the environment variable does not exist.
+    """
 
-        setattr(cls, name, value)
+    _cached : T | None = dataclasses.field(default = None, init = False, repr = False)
+    """
+    Value, cached.
+    """
 
-        return value
+    _attr_name : str | None = dataclasses.field(default = None, init = False, repr = False)
+    """
+    Name of the attribute.
+    """
 
-    @typeguard.typechecked
-    def __getattr__(self, name : str) -> typing.Any:
-        return self.read_from_env(name)
+    def __post_init__(self) -> None:
+        if self.default is not None and self.converter is None:
+            self.converter = type(self.default)
+
+    def __set_name__(self, owner : type, name: str) -> None:
+        """
+        References:
+
+        * https://docs.python.org/3/reference/datamodel.html#object.__set_name__
+        """
+        self._attr_name = name
+
+    @typing.overload
+    def __get__(self, instance: None, owner: type) -> "EnvironmentField[T]": ...
+
+    @typing.overload
+    def __get__(self, instance: object, owner: type) -> T: ...
+
+    def __get__(self, instance, owner = None):
+        """
+        References:
+
+        * https://docs.python.org/3/reference/datamodel.html#object.__get__
+        """
+        if instance is None:
+            return self
+
+        return self.read(instance = instance, owner = owner)
+
+    def read(self, instance, owner) -> T:
+        """
+        Read from the environment.
+        """
+        if self._cached is not None:
+            return self._cached
+
+        key = self.env or self._attr_name
+
+        if key is None:
+            raise AttributeError("Descriptor not initialized properly.")
+
+        if (value := os.getenv(key)) is not None and self.converter is not None:
+            self._cached = self.converter(value)
+        elif self.default is not None:
+            self._cached = self.default
+        else:
+            raise RuntimeError(f"Missing required environment variable {key!r} or converter or default value for {instance.__class__ if instance else owner}.")
+
+        return self._cached
+
+    def reset(self) -> None:
+        """
+        Reset, thus forcing a re-read from environment on next access.
+        """
+        self._cached = None

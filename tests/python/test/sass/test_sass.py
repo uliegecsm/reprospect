@@ -12,7 +12,14 @@ from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump
 from reprospect.tools.sass         import Decoder
 from reprospect.utils              import cmake
-from reprospect.test.sass          import AtomicMatcher, FloatAddMatcher, LoadGlobalMatcher, PatternBuilder, ReductionMatcher, StoreGlobalMatcher
+from reprospect.test.sass          import AtomicMatcher, \
+                                          FloatAddMatcher, \
+                                          OpcodeModsMatcher, \
+                                          OpcodeModsWithOperandsMatcher, \
+                                          LoadGlobalMatcher, \
+                                          PatternBuilder, \
+                                          ReductionMatcher, \
+                                          StoreGlobalMatcher
 
 from tests.python.tools.test_binaries import Parameters, PARAMETERS, get_compilation_output
 
@@ -644,3 +651,61 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         logging.info(inst.instruction)
         logging.info(matched.capturesdict())
         assert {'MAX'}.issubset(matched.captures('modifiers'))
+
+class TestOpcodeModsMatcher:
+    """
+    Tests for :py:class:`reprospect.test.sass.OpcodeModsMatcher`.
+    """
+    def test_with_square_brackets(self):
+        instruction = 'IMAD R4, R4, c[0x0][0x0], R3'
+
+        matched = OpcodeModsMatcher(instruction = 'IMAD').matches(instruction)
+
+        assert matched is not None
+        assert matched.captures('operands') == ['R4', 'R4', 'c[0x0][0x0]', 'R3']
+
+    def test_with_minus_sign(self):
+        instruction = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ'
+
+        matched = OpcodeModsMatcher(instruction = 'UIADD3').matches(instruction)
+
+        assert matched is not None
+        assert matched.captures('operands') == ['UR5', 'UPT', 'UPT', '-UR4', 'UR9', 'URZ']
+
+    def test_with_reuse(self):
+        instruction = 'ISETP.GE.U32.AND P0, PT, R0.reuse, UR5, PT'
+
+        matched = OpcodeModsMatcher(instruction = 'ISETP.GE.U32.AND').matches(instruction)
+
+        assert matched is not None
+        assert matched.captures('operands') == ['P0', 'PT', 'R0.reuse', 'UR5', 'PT']
+
+    def test_with_descr(self):
+        instruction = 'LDG.E R2, desc[UR6][R2.64]'
+
+        matched = OpcodeModsMatcher(instruction = 'LDG.E').matches(instruction)
+
+        assert matched is not None
+        assert matched.captures('operands') == ['R2', 'desc[UR6][R2.64]']
+
+class TestOpcodeModsWithOperandsMatcher:
+    """
+    Tests for :py:class:`reprospect.test.sass.OpcodeModsWithOperandsMatcher`.
+    """
+    def test(self):
+        instruction = 'ISETP.NE.AND P2, PT, R4, RZ, PT'
+
+        matcher = OpcodeModsWithOperandsMatcher(instruction = 'ISETP.NE.AND', operands = (
+            PatternBuilder.PRED,
+            PatternBuilder.PREDT,
+            'R4',
+            PatternBuilder.REGZ,
+            PatternBuilder.PREDT,
+        ))
+
+        logging.info(matcher.pattern)
+
+        matched = matcher.matches(instruction)
+
+        assert matched is not None
+        assert matched.captures('operands') == ['P2', 'PT', 'R4', 'RZ', 'PT']

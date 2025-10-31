@@ -35,6 +35,7 @@ References:
 
 import abc
 import dataclasses
+import functools
 import os
 import sys
 import types
@@ -67,6 +68,15 @@ class PatternBuilder:
 
     #: Match a predicate register or ``PT``.
     PREDT = rf'PT|{PRED}'
+
+    OPERAND = r'[\w@!\.\[\]\+\-\s]+'
+
+    CONSTANT = rf'c\[0x[0-9]+\]\[(0x[0-9c]+|{REG})\]'
+    """
+    Match constant memory location.
+    The bank looks like ``0x3`` while the address is either compile-time (*e.g.*
+    ``0x899``) or depends on a register.
+    """
 
     @staticmethod
     @typeguard.typechecked
@@ -139,6 +149,15 @@ class PatternBuilder:
                 else:
                     opcode += r'\.' + PatternBuilder.group(modifier, group = 'modifiers')
         return opcode
+
+    @classmethod
+    @functools.cache
+    def operands(cls) -> str:
+        """
+        Many operands, with the `operands` named capture group.
+        """
+        op = PatternBuilder.group(cls.OPERAND, group = 'operands')
+        return rf'{op}(?:\s*,\s*{op})*'
 
     @classmethod
     @typeguard.typechecked
@@ -554,3 +573,45 @@ class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
             f'ATOM{self.params.memory}',
             ['E', self.params.operation, *dtype, self.params.consistency, self.params.scope],
         ) + f' {operands.format(addr = addr)}'
+
+class OpcodeModsMatcher(PatternMatcher):
+    """
+    Matcher that will collect all operands of an instruction.
+
+    Useful when the opcode and modifiers are known and the operands may need to be retrieved.
+
+    >>> from reprospect.test.sass import OpcodeModsMatcher
+    >>> OpcodeModsMatcher(instruction = 'ISETP.NE.AND').matches(
+    ...     'ISETP.NE.AND P2, PT, R4, RZ, PT'
+    ... ).captures('operands')
+    ['P2', 'PT', 'R4', 'RZ', 'PT']
+    """
+    @typeguard.typechecked
+    def __init__(self, instruction : str, operands : bool = True) -> None:
+        super().__init__(pattern = rf'^{instruction}\s+{PatternBuilder.operands()}' if operands else rf'^{instruction}')
+
+class OpcodeModsWithOperandsMatcher(PatternMatcher):
+    """
+    Matcher that matches a given instruction and operands.
+
+    Similar to :py:class:`OpcodeModsMatcher`, but the operands can be better constrained.
+
+    >>> from reprospect.test.sass import OpcodeModsWithOperandsMatcher, PatternBuilder
+    >>> OpcodeModsWithOperandsMatcher(
+    ...     instruction = 'ISETP.NE.AND',
+    ...     operands = (
+    ...         PatternBuilder.PRED,
+    ...         PatternBuilder.PREDT,
+    ...         'R4',
+    ...         PatternBuilder.REGZ,
+    ...         PatternBuilder.PREDT,
+    ...     )
+    ... ).matches('ISETP.NE.AND P2, PT, R4, RZ, PT').captures('operands')
+    ['P2', 'PT', 'R4', 'RZ', 'PT']
+    """
+    @typeguard.typechecked
+    def __init__(self, instruction : str, operands : typing.Iterable[str]) -> None:
+        operands = r',\s+'.join(
+            PatternBuilder.group(op, group = 'operands') for op in operands
+        )
+        super().__init__(pattern = rf"^{instruction}\s+{operands}")

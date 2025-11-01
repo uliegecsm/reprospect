@@ -5,11 +5,12 @@ import logging
 import pathlib
 import pickle
 import sqlite3
+import typing
 
 import blake3
 import typeguard
 
-class Cacher:
+class Cacher(abc.ABC):
     """
     Cache results.
 
@@ -28,7 +29,7 @@ class Cacher:
     Inspired by ``ccache``, see also https://ccache.dev/manual/4.12.1.html#_how_ccache_works.
     """
     #: Name of the table.
-    TABLE : str = None
+    TABLE : str = 'defaulted'
 
     @dataclasses.dataclass(frozen = True)
     class Entry:
@@ -36,7 +37,7 @@ class Cacher:
         cached : bool
 
         #: Digest of the entry.
-        digest : bytes
+        digest : str
 
         #: Timestamp at which the entry was populated.
         timestamp : datetime.datetime
@@ -56,7 +57,7 @@ class Cacher:
 
         self.file = self.directory / 'cache.db'
 
-        self.database : sqlite3.Connection = None
+        self.database : typing.Optional[sqlite3.Connection] = None
 
     @typeguard.typechecked
     def __enter__(self) -> 'Cacher':
@@ -68,6 +69,7 @@ class Cacher:
 
     @typeguard.typechecked
     def __exit__(self, *args, **kwargs) -> None:
+        assert self.database is not None
         self.database.close()
 
     @typeguard.typechecked
@@ -101,7 +103,7 @@ class Cacher:
 
     @abc.abstractmethod
     @typeguard.typechecked
-    def populate(self, directory : pathlib.Path, **kwargs) -> None:
+    def populate(self, directory : pathlib.Path, **kwargs) -> typing.Any:
         pass
 
     @typeguard.typechecked
@@ -112,6 +114,8 @@ class Cacher:
         hasher = self.hash(**kwargs)
 
         hexdigest = hasher.hexdigest()
+
+        assert self.database is not None
 
         with self.database:
             cursor = self.database.cursor()

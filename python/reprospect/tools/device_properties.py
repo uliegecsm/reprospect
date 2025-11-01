@@ -49,6 +49,10 @@ class CudaDriverError:
         error_name = ctypes.c_char_p()
         cuda.cuGetErrorString(self.value, ctypes.byref(error_msg))
         cuda.cuGetErrorName  (self.value, ctypes.byref(error_name))
+
+        assert error_name.value is not None
+        assert error_msg.value is not None
+
         return error_name.value.decode(), error_msg.value.decode() # pylint: disable=no-member
 
 class CudaDeviceAttribute(enum.IntEnum):
@@ -204,8 +208,8 @@ class CudaDeviceAttribute(enum.IntEnum):
 
 class Cuda:
 
-    cuda   : ctypes.CDLL = None
-    cudart : ctypes.CDLL = None
+    cuda   : ctypes.CDLL | None = None
+    cudart : ctypes.CDLL | None = None
 
     @classmethod
     @typeguard.typechecked
@@ -214,7 +218,7 @@ class Cuda:
         Load CUDA library.
         """
         if not cls.cuda:
-            cls.cuda   = ctypes.CDLL('libcuda.so')
+            cls.cuda = ctypes.CDLL('libcuda.so')
             logging.info(f"Library {cls.cuda} loaded successfully.")
 
         if not cls.cudart:
@@ -247,34 +251,38 @@ class Cuda:
 
     @classmethod
     @typeguard.typechecked
-    def check_driver_api_call(cls, *, func : typing.Callable) -> typing.Any:
+    def check_driver_api_call(cls, *, func : str) -> typing.Any:
         """
         Wrap CUDA driver API call `func` to raise an exception if the call is not successful.
         """
-        @functools.wraps(func)
+        assert cls.cuda is not None
+        handle = getattr(cls.cuda, func)
+        @functools.wraps(handle)
         def wrapper(*args, **kwargs):
-            status = func(*args, **kwargs)
-            cls.check_driver_status(status = CudaDriverError(value = status), info = func.__name__)
+            status = handle(*args, **kwargs)
+            cls.check_driver_status(status = CudaDriverError(value = status), info = handle.__name__)
             return status
         return wrapper
 
     @classmethod
     @typeguard.typechecked
-    def check_runtime_api_call(cls, *, func : typing.Callable) -> typing.Any:
+    def check_runtime_api_call(cls, *, func : str) -> typing.Any:
         """
         Wrap CUDA runtime API call `func` to raise an exception if the call is not successful.
         """
-        @functools.wraps(func)
+        assert cls.cudart is not None
+        handle = getattr(cls.cudart, func)
+        @functools.wraps(handle)
         def wrapper(*args, **kwargs):
-            status = func(*args, **kwargs)
-            cls.check_runtime_status(status = CudaRuntimeError(value = status), info = func.__name__)
+            status = handle(*args, **kwargs)
+            cls.check_runtime_status(status = CudaRuntimeError(value = status), info = handle.__name__)
             return status
         return wrapper
 
     @typeguard.typechecked
     def __init__(self, flags : int = 0) -> None:
         self.load()
-        self.check_driver_api_call(func = self.cuda.cuInit)(flags)
+        self.check_driver_api_call(func = 'cuInit')(flags)
 
     @functools.cached_property
     @typeguard.typechecked
@@ -283,7 +291,7 @@ class Cuda:
         Wrap ``cudaGetDeviceCount``.
         """
         count = ctypes.c_int()
-        self.check_runtime_api_call(func = self.cudart.cudaGetDeviceCount)(ctypes.byref(count))
+        self.check_runtime_api_call(func = 'cudaGetDeviceCount')(ctypes.byref(count))
         return count.value
 
     @typeguard.typechecked
@@ -292,7 +300,7 @@ class Cuda:
         Retrieve an attribute of `device`.
         """
         value = value_type()
-        self.check_runtime_api_call(func = self.cudart.cudaDeviceGetAttribute)(ctypes.byref(value), attribute.value, device)
+        self.check_runtime_api_call(func = 'cudaDeviceGetAttribute')(ctypes.byref(value), attribute.value, device)
         return value.value
 
     @typeguard.typechecked
@@ -302,7 +310,7 @@ class Cuda:
         """
         cc_major = ctypes.c_int()
         cc_minor = ctypes.c_int()
-        self.check_driver_api_call(func = self.cuda.cuDeviceComputeCapability)(
+        self.check_driver_api_call(func = 'cuDeviceComputeCapability')(
             ctypes.byref(cc_major),
             ctypes.byref(cc_minor),
             ctypes.c_int(device),
@@ -315,7 +323,7 @@ class Cuda:
         Get name of `device`.
         """
         name = b' ' * length
-        self.check_driver_api_call(func = self.cuda.cuDeviceGetName)(ctypes.c_char_p(name), len(name), device)
+        self.check_driver_api_call(func = 'cuDeviceGetName')(ctypes.c_char_p(name), len(name), device)
         return name.split(b"\0", 1)[0].decode()
 
     @typeguard.typechecked
@@ -324,7 +332,7 @@ class Cuda:
         Get device total memory.
         """
         total_mem = ctypes.c_size_t()
-        self.check_driver_api_call(func = self.cuda.cuDeviceTotalMem)(
+        self.check_driver_api_call(func = 'cuDeviceTotalMem')(
             ctypes.byref(total_mem),
             ctypes.c_int(device),
         )

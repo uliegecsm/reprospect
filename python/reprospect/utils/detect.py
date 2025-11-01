@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import typing
 
+import numpy
 import pandas
 import typeguard
 
@@ -18,9 +19,9 @@ class GPUDetector:
 
         By default, results are cached.
     """
-    COLUMNS = {'uuid' : str, 'index' : int, 'name' : str, 'compute_cap' : str}
+    COLUMNS : typing.ClassVar[dict[str, typing.Type[str] | numpy.dtype]] = {'uuid' : str, 'index' : numpy.dtype('int32'), 'name' : str, 'compute_cap' : str}
 
-    _cache : typing.Optional[pandas.DataFrame] = None
+    _cache : typing.ClassVar[pandas.DataFrame | None] = None
 
     @classmethod
     def clear_cache(cls) -> None:
@@ -48,14 +49,14 @@ class GPUDetector:
         """
         Implementation of the detection.
         """
-        CMD = ['nvidia-smi', '--query-gpu=' + ','.join(cls.COLUMNS.keys()), '--format=csv'] # pylint: disable=invalid-name
+        CMD : tuple[str, ...] = ('nvidia-smi', '--query-gpu=' + ','.join(cls.COLUMNS.keys()), '--format=csv') # pylint: disable=invalid-name
 
         if shutil.which('nvidia-smi') is not None:
             gpus = pandas.read_csv(
                 io.StringIO(subprocess.check_output(CMD).decode()),
                 sep = ',',
                 skipinitialspace = True,
-                dtype = cls.COLUMNS,
+                dtype = cls.COLUMNS, # type: ignore[arg-type]
             )
             if not set(cls.COLUMNS.keys()).issubset(gpus.columns):
                 raise RuntimeError(gpus.columns)
@@ -65,7 +66,7 @@ class GPUDetector:
                 )
             return gpus
         logging.warning("'nvidia-smi' not found.")
-        return pandas.DataFrame(columns = cls.COLUMNS)
+        return pandas.DataFrame(columns = cls.COLUMNS.keys()) # type: ignore[arg-type]
 
     @classmethod
     @typeguard.typechecked

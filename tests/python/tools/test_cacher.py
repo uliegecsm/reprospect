@@ -1,7 +1,23 @@
+import logging
 import pathlib
+import sys
 import tempfile
+import typing
+
+import typeguard
 
 from reprospect.tools.cacher import Cacher
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
+class DummyImplementation(Cacher):
+    @override
+    @typeguard.typechecked
+    def populate(self, directory : pathlib.Path, **kwargs) -> typing.Any:
+        logging.info(f'Populating within {directory} with {kwargs}.')
 
 class TestCacher:
     """
@@ -12,7 +28,7 @@ class TestCacher:
         Check that calling :py:meth:`reprospect.tools.cacher.Cacher.hash` twice with the same values returns the same hash.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir) as cacher:
+            with DummyImplementation(directory = tmpdir) as cacher:
                 hash_a = cacher.hash(opts = ['--nvtx'], exe = 'my-exec', args = ['--bla=42'])
                 hash_b = cacher.hash(opts = ['--nvtx'], exe = 'my-exec', args = ['--bla=42'])
 
@@ -23,7 +39,7 @@ class TestCacher:
         Check that calling :py:meth:`reprospect.tools.cacher.Cacher.hash` twice with different values returns different hashes.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir) as cacher:
+            with DummyImplementation(directory = tmpdir) as cacher:
                 # Different 'opts'.
                 hash_a = cacher.hash(opts = ['--ntvx'], exe = pathlib.Path('my-exec'))
                 hash_b = cacher.hash(opts = ['--nvtx'], exe = pathlib.Path('my-exec'))
@@ -47,7 +63,7 @@ class TestCacher:
         Check that calling :py:meth:`reprospect.tools.cacher.Cacher.get` for the first time leads to a cache miss.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir) as cacher:
+            with DummyImplementation(directory = tmpdir) as cacher:
                 results = cacher.get(opts = ['--nvtx'], exe = 'test-exec', args = ['--bla=42'])
 
                 assert results.cached is False
@@ -57,7 +73,7 @@ class TestCacher:
         Check that calling :py:meth:`reprospect.tools.cacher.Cacher.get` for the second time leads to a cache hit.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir) as cacher:
+            with DummyImplementation(directory = tmpdir) as cacher:
                 results_first = cacher.get(opts = ['--nvtx'], exe = 'exec-666', args = ['--bla=42'], env = {'my' : 'env'}, anything_you_want = {4: 2})
 
                 assert results_first.cached is False

@@ -247,6 +247,49 @@ class TestProfilingResults:
     """
     Tests for :py:class:`reprospect.tools.ncu.ProfilingResults`.
     """
+    RESULTS = ncu.ProfilingResults({
+        'nvtx_range_name' : {
+            'push_region_A' : {
+                'push_region_B' : {
+                    'my-kernel' : {
+                        'metric_A' : None,
+                        'metric_B' : 42,
+                        'metric_V' : 'some-nice-value',
+                    }
+                }
+            }
+        }
+    })
+
+    def test_type(self):
+        """
+        It derives from :py:class:`dict`.
+        """
+        assert issubclass(ncu.ProfilingResults, dict)
+
+    def test_query(self):
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query`.
+        """
+        with pytest.raises(KeyError, match = "'nvtx_range_not_in_results'"):
+            self.RESULTS.query(('nvtx_range_not_in_results',))
+
+        assert self.RESULTS.query(('nvtx_range_name',)) == self.RESULTS['nvtx_range_name']
+        assert self.RESULTS.query(('nvtx_range_name', 'push_region_A')) == self.RESULTS['nvtx_range_name']['push_region_A']
+        assert self.RESULTS.query(('nvtx_range_name', 'push_region_A', 'push_region_B')) == self.RESULTS['nvtx_range_name']['push_region_A']['push_region_B']
+        assert self.RESULTS.query(('nvtx_range_name', 'push_region_A', 'push_region_B', 'my-kernel', 'metric_V')) == 'some-nice-value'
+
+    def test_set(self):
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.set`.
+        """
+        self.RESULTS.set(
+            accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel'),
+            data = {'my-value' : 42}
+        )
+
+        assert self.RESULTS.query(('nvtx_range_name', 'push_region_XS', 'nice-kernel', 'my-value')) == 42
+
     def test_string_representation(self):
         """
         Test the string representation of :py:meth:`reprospect.tools.ncu.ProfilingResults`.
@@ -254,10 +297,14 @@ class TestProfilingResults:
         results = ncu.ProfilingResults()
 
         # Add nested data.
-        results.get(["nvtx_range_name", "global_function_name_a_idx_0"])["metric_i"] = 15
-        results.get(["nvtx_range_name", "global_function_name_a_idx_0"])["metric_ii"] = 7
-        results.get(["nvtx_range_name", "global_function_name_b_idx_1"])["metric_i"] = 15
-        results.get(["nvtx_range_name", "global_function_name_b_idx_1"])["metric_ii"] = 9
+        results.set(accessors = ("nvtx_range_name", "global_function_name_a_idx_0"), data = {
+            'metric_i' : 15,
+            'metric_ii' : 7,
+        })
+        results.set(accessors = ("nvtx_range_name", "global_function_name_b_idx_1"), data = {
+            'metric_i' : 15,
+            'metric_ii' : 9.456,
+        })
 
         assert str(results) == """\
 Profiling results
@@ -267,7 +314,7 @@ Profiling results
     │   └── metric_ii: 7
     └── global_function_name_b_idx_1
         ├── metric_i: 15
-        └── metric_ii: 9
+        └── metric_ii: 9.456
 """
 
 class TestCacher:

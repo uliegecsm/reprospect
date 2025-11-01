@@ -46,10 +46,9 @@ def detect_cuda_version() -> str:
     #. ``nvidia-smi --query``
     #. ``nvcc --version``
     """
-    def convert(version : str) -> str:
+    def convert(version : re.Match) -> str:
         logging.info(f"Detected CUDA version is {version.group(0)}.")
-        version = f'{version.group(1)}-{version.group(2)}'
-        return version
+        return f'{version.group(1)}-{version.group(2)}'
 
     if 'CUDA_VERSION' in os.environ:
         version = semantic_version.Version(os.environ['CUDA_VERSION'])
@@ -57,13 +56,13 @@ def detect_cuda_version() -> str:
     elif shutil.which('nvidia-smi') is not None:
         output = subprocess.check_output(['nvidia-smi', '--query']).decode()
         for line in output.splitlines():
-            if "CUDA Version" in line:
-                return convert(version = re.search(pattern = r'([0-9]+).([0-9]+)', string = line))
+            if "CUDA Version" in line and (matched := re.search(pattern = r'([0-9]+).([0-9]+)', string = line)) is not None:
+                return convert(version = matched)
     elif shutil.which('nvcc') is not None:
         output = subprocess.check_output(['nvcc', '--version']).decode()
-        return convert(version = re.search(pattern = r'release ([0-9]+).([0-9]+)', string = output))
-    else:
-        raise RuntimeError("Could not deduce CUDA version.")
+        if (matched := re.search(pattern = r'release ([0-9]+).([0-9]+)', string = output)) is not None:
+            return convert(version = matched)
+    raise RuntimeError("Could not deduce CUDA version.")
 
 def main() -> None:
 

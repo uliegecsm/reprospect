@@ -411,7 +411,7 @@ jobs:
 
             - run: |
                 cd python/
-                mypy --config-file .mypy.ini
+                mypy --config-file pyproject.toml
 
     deploy:
         needs: [setup-job-matrix, build-images, tests, examples, install-as-package-and-test, documentation, pylint]

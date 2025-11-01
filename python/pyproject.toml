@@ -44,3 +44,11 @@ Homepage = "https://github.com/uliegecsm/reprospect"
 [project.scripts]
 reprospect-install-nsight-systems = "reprospect.installers.nsight_systems:main"
 reprospect-utils-detect-gpus = "reprospect.utils.detect:main"
+
+[tool.mypy]
+follow_untyped_imports = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+packages = ["reprospect"]

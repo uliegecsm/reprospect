@@ -153,9 +153,9 @@ class XYZBase:
 
     @classmethod
     @typeguard.typechecked
-    def get(cls, dims : typing.Optional[list[str]] = None) -> typing.Iterable[Metric]:
+    def get(cls, dims : typing.Optional[typing.Iterable[str]] = None) -> typing.Iterable[Metric]:
         if not dims:
-            dims = ['x', 'y', 'z']
+            dims = ('x', 'y', 'z')
         return (Metric(name = cls.prefix + dim) for dim in dims)
 
 class LaunchBlock(XYZBase):
@@ -378,10 +378,7 @@ def gather(metrics : typing.Iterable[Metric | MetricCorrelation]) -> list[str]:
     """
     Retrieve all sub-metric names, e.g. to pass them to ``ncu``.
     """
-    result = []
-    for metric in metrics:
-        result += metric.gather()
-    return result
+    return [name for metric in metrics for name in metric.gather()]
 
 class Session:
     """

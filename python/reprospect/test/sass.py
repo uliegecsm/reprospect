@@ -96,7 +96,7 @@ class PatternBuilder:
 
     @staticmethod
     @typeguard.typechecked
-    def group(s : typing.Any, *, group : typing.Optional[str] = None, groups : typing.Optional[list[str]] = None) -> str:
+    def group(s : typing.Any, *, group : typing.Optional[str] = None, groups : typing.Optional[typing.Iterable[str]] = None) -> str:
         """
         Wrap a pattern in named capture group(s).
         """
@@ -135,7 +135,7 @@ class PatternBuilder:
 
     @staticmethod
     @typeguard.typechecked
-    def opcode_mods(opcode : str, modifiers : typing.Optional[list[int | str]] = None) -> str:
+    def opcode_mods(opcode : str, modifiers : typing.Optional[typing.Iterable[int | str]] = None) -> str:
         """
         Append each modifier with a `.`, within a proper named capture group.
 
@@ -175,7 +175,7 @@ class PatternBuilder:
             pattern += cls.optional(cls.OFFSET)
         elif offset is True:
             pattern += cls.OFFSET
-        return rf"\[{cls.group(pattern, groups = ['operands', 'address'])}\]"
+        return rf"\[{cls.group(pattern, groups = ('operands', 'address'))}\]"
 
     @classmethod
     @typeguard.typechecked
@@ -193,7 +193,7 @@ class PatternBuilder:
             pattern += cls.optional(cls.OFFSET)
         elif offset is True:
             pattern += cls.OFFSET
-        return rf"\[({cls.group(pattern, groups = ['operands', 'address'])})\]"
+        return rf"\[({cls.group(pattern, groups = ('operands', 'address'))})\]"
 
     @classmethod
     @typeguard.typechecked
@@ -210,7 +210,7 @@ class PatternBuilder:
             pattern += rf'\[({cls.REG64}{cls.OFFSET})\]'
         else:
             pattern += rf'\[({cls.REG64})\]'
-        return cls.group(pattern, groups = ['operands', 'address'])
+        return cls.group(pattern, groups = ('operands', 'address'))
 
 @typeguard.typechecked
 def check_memory_instruction_word_size(*, size : int) -> None:
@@ -219,7 +219,7 @@ def check_memory_instruction_word_size(*, size : int) -> None:
 
         Global memory instructions support reading or writing words of size equal to 1, 2, 4, 8, or 16 bytes.
     """
-    ALLOWABLE_SIZES = [1, 2, 4, 8, 16] # pylint: disable=invalid-name
+    ALLOWABLE_SIZES : tuple[int, ...] = (1, 2, 4, 8, 16) # pylint: disable=invalid-name
     if size not in ALLOWABLE_SIZES:
         raise RuntimeError(f'{size} is not an allowable memory instruction word size ({ALLOWABLE_SIZES} (in bytes)).')
 
@@ -261,7 +261,7 @@ class FloatAddMatcher(PatternMatcher):
     """
     PATTERN = regex.compile(
         PatternBuilder.opcode_mods('FADD') + r'\s+' +
-        PatternBuilder.group(PatternBuilder.REG, groups = ['dst', 'operands']) + r'\s*,\s*' +
+        PatternBuilder.group(PatternBuilder.REG, groups = ('dst', 'operands')) + r'\s*,\s*' +
         PatternBuilder.reg() + r'\s*,\s*' +
         PatternBuilder.reg()
     )
@@ -344,11 +344,11 @@ class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
     def _build_pattern(self) -> str:
         match self.arch.compute_capability.as_int:
             case 70 | 75:
-                return PatternBuilder.opcode_mods('LDG', ['E', self.params.size, self.params.cache, 'SYS']) + f' {PatternBuilder.reg()}, {PatternBuilder.reg_addr()}'
+                return PatternBuilder.opcode_mods('LDG', ('E', self.params.size, self.params.cache, 'SYS')) + f' {PatternBuilder.reg()}, {PatternBuilder.reg_addr()}'
             case 80 | 86 | 89:
-                return PatternBuilder.opcode_mods('LDG', ['E', self.params.size, self.params.cache]) + f' {PatternBuilder.reg()}, {PatternBuilder.reg64_addr()}'
+                return PatternBuilder.opcode_mods('LDG', ('E', self.params.size, self.params.cache)) + f' {PatternBuilder.reg()}, {PatternBuilder.reg64_addr()}'
             case 90 | 100 | 120:
-                return PatternBuilder.opcode_mods('LDG', ['E', self.params.size, self.params.cache]) + f' {PatternBuilder.reg()}, {PatternBuilder.desc_reg64_addr()}'
+                return PatternBuilder.opcode_mods('LDG', ('E', self.params.size, self.params.cache)) + f' {PatternBuilder.reg()}, {PatternBuilder.desc_reg64_addr()}'
             case _:
                 raise ValueError(f'unsupported {self.arch}')
 
@@ -376,11 +376,11 @@ class StoreGlobalMatcher(ArchitectureAwarePatternMatcher):
     def _build_pattern(self) -> str:
         match self.arch.compute_capability.as_int:
             case 70 | 75:
-                return PatternBuilder.opcode_mods('STG', ['E', self.params.size, 'SYS']) + f' {PatternBuilder.reg_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('STG', ('E', self.params.size, 'SYS')) + f' {PatternBuilder.reg_addr()}, {PatternBuilder.reg()}'
             case 80 | 86 | 89:
-                return PatternBuilder.opcode_mods('STG', ['E', self.params.size]) + f' {PatternBuilder.reg64_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('STG', ('E', self.params.size)) + f' {PatternBuilder.reg64_addr()}, {PatternBuilder.reg()}'
             case 90 | 100 | 120:
-                return PatternBuilder.opcode_mods('STG', ['E', self.params.size]) + f' {PatternBuilder.desc_reg64_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('STG', ('E', self.params.size)) + f' {PatternBuilder.desc_reg64_addr()}, {PatternBuilder.reg()}'
             case _:
                 raise ValueError(f'unsupported {self.arch}')
 
@@ -456,33 +456,33 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
         super().__init__(arch = arch)
 
     @override
-    @typeguard.typechecked
     def _build_pattern(self) -> str:
+        dtype : typing.Sequence[int | str] = ()
         if self.params.dtype is not None:
             match self.params.dtype[0]:
                 case 'F':
-                    dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
-                    dtype.append('?FTZ')
-                    dtype.append('?RN')
+                    dtype = (
+                        f'{self.params.dtype[0]}{self.params.dtype[1]}',
+                        '?FTZ',
+                        '?RN',
+                    )
                 case 'S':
                     if self.params.operation == 'ADD':
-                        dtype = []
+                        dtype = ()
                     else:
-                        dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
+                        dtype = (f'{self.params.dtype[0]}{self.params.dtype[1]}',)
                 case 'U':
-                    dtype = [self.params.dtype[1]] if self.params.dtype[1] > 32 else []
+                    dtype = (self.params.dtype[1],) if self.params.dtype[1] > 32 else ()
                 case _:
                     raise ValueError(self.params.dtype)
-        else:
-            dtype = []
 
         match self.arch.compute_capability.as_int:
             case 70 | 75:
-                return PatternBuilder.opcode_mods('RED', ['E', self.params.operation, *dtype, self.params.consistency, self.params.scope]) + f' {PatternBuilder.reg_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('RED', ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)) + f' {PatternBuilder.reg_addr()}, {PatternBuilder.reg()}'
             case 80 | 86 | 89:
-                return PatternBuilder.opcode_mods('RED', ['E', self.params.operation, *dtype, self.params.consistency, self.params.scope]) + f' {PatternBuilder.reg64_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('RED', ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)) + f' {PatternBuilder.reg64_addr()}, {PatternBuilder.reg()}'
             case 90 | 100 | 120:
-                return PatternBuilder.opcode_mods('REDG', ['E', self.params.operation, *dtype, self.params.consistency, self.params.scope]) + f' {PatternBuilder.desc_reg64_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('REDG', ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)) + f' {PatternBuilder.desc_reg64_addr()}, {PatternBuilder.reg()}'
             case _:
                 raise ValueError(f'unsupported {self.arch}')
 
@@ -533,38 +533,42 @@ class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
         ArchitectureAwarePatternMatcher.__init__(self, arch = arch)
 
     @override
-    @typeguard.typechecked
     def _build_pattern(self) -> str: # pylint: disable=too-many-branches
-        # CAS has a different operand structure.
-        # For instance:
-        #   ATOMG.E.CAS.STRONG.GPU PT, R7, [R2], R6, R7
-        # The generic pattern for the operands is thus:
-        #   {pred}, {dest}, [{addr}], {compare}, {newval}
+        """
+        ``CAS`` has a different operand structure. For instance::
+
+            ATOMG.E.CAS.STRONG.GPU PT, R7, [R2], R6, R7
+
+        The generic pattern for the operands is thus::
+
+            {pred}, {dest}, [{addr}], {compare}, {newval}
+        """
+        dtype : typing.Sequence[int | str] = ()
         match self.params.operation:
             case 'CAS':
                 operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
-                dtype = [self.params.dtype[1]] if self.params.dtype is not None and self.params.dtype[1] > 32 else []
+                dtype = (self.params.dtype[1],) if self.params.dtype is not None and self.params.dtype[1] > 32 else ()
             case _:
                 operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}'
                 if self.params.dtype is not None and self.params.operation == 'EXCH':
-                    dtype = [self.params.dtype[1]] if self.params.dtype[1] > 32 else []
+                    dtype = (self.params.dtype[1],) if self.params.dtype[1] > 32 else ()
                 elif self.params.dtype is not None:
                     match self.params.dtype[0]:
                         case 'F':
-                            dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
-                            dtype.append('?FTZ')
-                            dtype.append('?RN')
+                            dtype = (
+                                f'{self.params.dtype[0]}{self.params.dtype[1]}',
+                                '?FTZ',
+                                '?RN',
+                            )
                         case 'S':
                             if self.params.operation == 'ADD' and self.version in semantic_version.SimpleSpec('<12.8'):
-                                dtype = []
+                                dtype = ()
                             else:
-                                dtype = [f'{self.params.dtype[0]}{self.params.dtype[1]}']
+                                dtype = (f'{self.params.dtype[0]}{self.params.dtype[1]}',)
                         case 'U':
-                            dtype = [self.params.dtype[1]] if self.params.dtype[1] > 32 else []
+                            dtype = (self.params.dtype[1],) if self.params.dtype[1] > 32 else ()
                         case _:
                             raise ValueError(self.params.dtype)
-                else:
-                    dtype = []
 
         match self.arch.compute_capability.as_int:
             case 70 | 75:
@@ -578,7 +582,7 @@ class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
 
         return PatternBuilder.opcode_mods(
             f'ATOM{self.params.memory}',
-            ['E', self.params.operation, *dtype, self.params.consistency, self.params.scope],
+            ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope),
         ) + f' {operands.format(addr = addr)}'
 
 class OpcodeModsMatcher(PatternMatcher):

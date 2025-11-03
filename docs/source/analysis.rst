@@ -28,7 +28,7 @@ API tracing |:movie_camera:|
 
 See for example:
 
-* :py:class:`examples.kokkos.view.example_allocation.TestNSYS`
+* :py:class:`examples.kokkos.view.example_allocation_tracing.TestNSYS`
 
 From sources to binaries |:bricks:|
 -----------------------------------

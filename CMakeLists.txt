@@ -22,6 +22,7 @@ find_package(Python 3.10 REQUIRED Interpreter)
 
 include(cmake/functions/environment.cmake)
 include(cmake/functions/path_helper.cmake)
+include(cmake/functions/pytest_skip.cmake)
 include(cmake/modules/detect.cmake)
 include(cmake/modules/Warnings.cmake)
 

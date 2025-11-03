@@ -433,4 +433,4 @@ jobs:
               run: |
                 mc alias set MC_HOST_COSTMO ${{ vars.MC_HOST_COSTMO_URL }} ${{ secrets.MC_HOST_COSTMO_USER }} ${{ secrets.MC_HOST_COSTMO_PASSWORD }}
                 mc mb --ignore-existing MC_HOST_COSTMO/reprospect
-                mc cp python/dist/ MC_HOST_COSTMO/reprospect/
+                mc cp --recursive python/dist/ MC_HOST_COSTMO/reprospect/

@@ -14,7 +14,7 @@ ENV PATH=${VIRTUAL_ENV}/bin:${PATH}
 RUN <<EOF
     set -ex
     apt update
-    apt --yes --no-install-recommends install python3 python3-pip python3-venv git
+    apt --yes --no-install-recommends install python3 python3-pip python3-venv python3-dev git
     python3 -m venv $VIRTUAL_ENV
 
     printf "import re, sys\nif re.match(r'Python ${PYTHON_VERSION}.[0-9]+', '$(python3 --version)') is None: raise RuntimeError(f'Your Python version {sys.version} does not match ${PYTHON_VERSION}.')" | python3

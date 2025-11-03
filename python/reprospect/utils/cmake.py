@@ -4,7 +4,6 @@ import pathlib
 
 import cmake_file_api
 import ijson
-import typeguard
 
 class FileAPI:
     """
@@ -19,13 +18,11 @@ class FileAPI:
     TOOLCHAINS_VERSION = 1
     CODEMODEL_VERSION = 2
 
-    @typeguard.typechecked
     def __init__(self, cmake_build_directory : pathlib.Path) -> None:
         self.reader = cmake_file_api.reply.v1.api.CMakeFileApiV1(build_path = cmake_build_directory)
         self.cmake_reply_path = cmake_build_directory / '.cmake' / 'api' / 'v1' / 'reply'
 
     @functools.cached_property
-    @typeguard.typechecked
     def cache(self) -> dict:
         """
         Retrieve the CMake cache.
@@ -40,7 +37,6 @@ class FileAPI:
             }
 
     @functools.cached_property
-    @typeguard.typechecked
     def toolchains(self) -> dict:
         """
         Retrieve the toolchains information.
@@ -55,7 +51,6 @@ class FileAPI:
             }
 
     @functools.cached_property
-    @typeguard.typechecked
     def codemodel_configuration(self) -> dict:
         """
         Retrieve the codemodel information, and extract the information available for the build configuration.
@@ -72,7 +67,6 @@ class FileAPI:
         return configurations[0]
 
     @functools.lru_cache(maxsize = 128)
-    @typeguard.typechecked
     def target(self, name : str) -> dict:
         """
         Retrieve the information available for the target `name`.

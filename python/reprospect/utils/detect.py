@@ -7,7 +7,6 @@ import typing
 
 import numpy
 import pandas
-import typeguard
 
 from reprospect.tools import architecture
 
@@ -31,12 +30,11 @@ class GPUDetector:
         cls._cache = None
 
     @classmethod
-    @typeguard.typechecked
-    def get(cls, cache : bool = True, **kwargs) -> pandas.DataFrame:
+    def get(cls, cache : bool = True, enrich : bool = True) -> pandas.DataFrame:
         if cache and cls._cache is not None:
             return cls._cache
 
-        results = cls.detect(**kwargs)
+        results = cls.detect(enrich = enrich)
 
         if cache:
             cls._cache = results
@@ -44,7 +42,6 @@ class GPUDetector:
         return results
 
     @classmethod
-    @typeguard.typechecked
     def detect(cls, enrich : bool = True) -> pandas.DataFrame:
         """
         Implementation of the detection.
@@ -61,7 +58,7 @@ class GPUDetector:
             if not set(cls.COLUMNS.keys()).issubset(gpus.columns):
                 raise RuntimeError(gpus.columns)
             if enrich:
-                gpus['architecture'] = gpus['compute_cap'].apply(
+                gpus.loc[:, 'architecture'] = gpus['compute_cap'].apply(
                     lambda x: architecture.NVIDIAArch.from_compute_capability(int(x.replace('.', '')))
                 )
             return gpus
@@ -69,7 +66,6 @@ class GPUDetector:
         return pandas.DataFrame(columns = cls.COLUMNS.keys()) # type: ignore[arg-type]
 
     @classmethod
-    @typeguard.typechecked
     def count(cls, cache : bool = True) -> int:
         """
         Get the number of available GPUs.

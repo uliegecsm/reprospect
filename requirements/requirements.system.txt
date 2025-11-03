@@ -1,3 +1,4 @@
 ccache
 pdf2svg
 texlive-latex-extra
+tree

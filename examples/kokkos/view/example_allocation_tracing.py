@@ -16,7 +16,7 @@ from reprospect.utils import detect
 if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
-    from backports.strenum import StrEnum
+    from backports.strenum.strenum import StrEnum
 
 if sys.version_info >= (3, 12):
     from typing import override

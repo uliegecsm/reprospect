@@ -5,6 +5,10 @@ from mypyc.build import mypycify
 setup(
     ext_modules = mypycify(
         [
+            'reprospect/test/matchers.py',
+            'reprospect/test/sass.py',
+            'reprospect/tools/architecture.py',
+            'reprospect/tools/binaries/cuobjdump.py',
             'reprospect/tools/ncu.py',
             'reprospect/tools/sass.py',
             'reprospect/utils/cmake.py',

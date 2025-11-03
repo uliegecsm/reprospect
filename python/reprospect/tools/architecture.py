@@ -9,10 +9,39 @@ import semantic_version
 if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
-    from backports.strenum import StrEnum
+    from backports.strenum.strenum import StrEnum
+
+CUDA_SUPPORT : typing.Final[dict[int, semantic_version.SimpleSpec]] = {
+    70 : semantic_version.SimpleSpec('>=9,<=12.9'),
+    75 : semantic_version.SimpleSpec('>=10'),
+    80 : semantic_version.SimpleSpec('>=11.2'),
+    86 : semantic_version.SimpleSpec('>=11.2'),
+    87 : semantic_version.SimpleSpec('>=11.5'),
+    89 : semantic_version.SimpleSpec('>=11.8'),
+    90 : semantic_version.SimpleSpec('>=11.8'),
+    100 : semantic_version.SimpleSpec('>=12.8'),
+    103 : semantic_version.SimpleSpec('>=12.9'),
+    110 : semantic_version.SimpleSpec('>=13.0'),
+    120 : semantic_version.SimpleSpec('>=12.8'),
+    121 : semantic_version.SimpleSpec('>=12.9'),
+}
+"""
+CUDA Toolkit support.
+
+References:
+
+* https://docs.nvidia.com/cuda/archive/12.8.0/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+* https://docs.nvidia.com/cuda/archive/12.9.1/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+* https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
+
+.. note::
+
+    It is declared at module scope because of https://github.com/mypyc/mypyc/issues/1122, though it should be declared
+    as :py:data:`typing.Final` within :py:class:`ComputeCapability`.
+"""
 
 @functools.total_ordering
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen = True, slots = True, kw_only = True)
 class ComputeCapability:
     """
     Compute capability.
@@ -23,30 +52,6 @@ class ComputeCapability:
     """
     major : int
     minor : int
-
-    CUDA_SUPPORT : typing.ClassVar[dict[int, semantic_version.SimpleSpec]] = {
-        70 : semantic_version.SimpleSpec('>=9,<=12.9'),
-        75 : semantic_version.SimpleSpec('>=10'),
-        80 : semantic_version.SimpleSpec('>=11.2'),
-        86 : semantic_version.SimpleSpec('>=11.2'),
-        87 : semantic_version.SimpleSpec('>=11.5'),
-        89 : semantic_version.SimpleSpec('>=11.8'),
-        90 : semantic_version.SimpleSpec('>=11.8'),
-        100 : semantic_version.SimpleSpec('>=12.8'),
-        103 : semantic_version.SimpleSpec('>=12.9'),
-        110 : semantic_version.SimpleSpec('>=13.0'),
-        120 : semantic_version.SimpleSpec('>=12.8'),
-        121 : semantic_version.SimpleSpec('>=12.9'),
-    }
-    """
-    CUDA Toolkit support.
-
-    References:
-
-    * https://docs.nvidia.com/cuda/archive/12.8.0/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
-    * https://docs.nvidia.com/cuda/archive/12.9.1/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
-    * https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html#gpu-feature-list
-    """
 
     @property
     def as_int(self) -> int:
@@ -93,7 +98,7 @@ class ComputeCapability:
         >>> NVIDIAArch.from_str('VOLTA70').compute_capability.supported(version = Version('13.0.0'))
         False
         """
-        return version in self.CUDA_SUPPORT[self.as_int]
+        return version in CUDA_SUPPORT[self.as_int]
 
 class NVIDIAFamily(StrEnum):
     """

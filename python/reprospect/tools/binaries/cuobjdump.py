@@ -29,7 +29,7 @@ from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
 if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
-    from backports.strenum import StrEnum
+    from backports.strenum.strenum import StrEnum
 
 class ResourceUsage(StrEnum):
     """

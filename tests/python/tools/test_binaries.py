@@ -12,16 +12,15 @@ import unittest
 import pytest
 import rich.console
 import semantic_version
-import typeguard
 
-from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import get_arch_from_compile_command, CuObjDump, CuppFilt, LlvmCppFilt, ResourceUsage, Function
-from reprospect.utils              import cmake
+from reprospect.tools.architecture    import NVIDIAArch
+from reprospect.tools.binaries        import CuObjDump, CuppFilt, LlvmCppFilt, ResourceUsage, Function
+from reprospect.utils                 import cmake
+from reprospect.utils.compile_command import get_arch_from_compile_command
 
 TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
 
 @pytest.fixture(scope = 'session')
-@typeguard.typechecked
 def cmake_file_api() -> cmake.FileAPI:
     return cmake.FileAPI(
         cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
@@ -29,7 +28,7 @@ def cmake_file_api() -> cmake.FileAPI:
 
 def test_get_arch_from_compile_command(cmake_file_api) -> None:
     """
-    Test :py:meth:`reprospect.tools.binaries.get_arch_from_compile_command`.
+    Test :py:meth:`reprospect.utils.compile_command.get_arch_from_compile_command`.
     """
     COMMANDS : dict[str, set] = {
         # For nvcc.
@@ -53,7 +52,6 @@ def test_get_arch_from_compile_command(cmake_file_api) -> None:
     cmake_cuda_architecture = int(cmake_file_api.cache['CMAKE_CUDA_ARCHITECTURES']['value'].split('-')[0])
     assert get_arch_from_compile_command(cmd = command[0]['command']) == {NVIDIAArch.from_compute_capability(cc = cmake_cuda_architecture)}
 
-@typeguard.typechecked
 def get_compilation_output(*,
     source : pathlib.Path,
     cwd : pathlib.Path,
@@ -153,7 +151,6 @@ class TestResourceUsage:
         """
         FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'shared_memory.cu'
 
-        @typeguard.typechecked
         def test(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Check how shared memory is reported in the compilation output.
@@ -180,7 +177,6 @@ class TestResourceUsage:
         """
         FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'wide_load_store.cu'
 
-        @typeguard.typechecked
         def test(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Check how wide loads and stores influence the compilation result.
@@ -213,7 +209,6 @@ class TestResourceUsage:
         """
         FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
 
-        @typeguard.typechecked
         def test(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Check compilation result.
@@ -326,7 +321,6 @@ class TestCuObjDump:
         SYMBOL    = '_Z12saxpy_kernelfPKfPfj'
         SIGNATURE = CuppFilt.demangle(SYMBOL)
 
-        @typeguard.typechecked
         def test_sass_from_object(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CUDA_FILE` as object, extract SASS and analyse resource usage.
@@ -365,7 +359,6 @@ class TestCuObjDump:
                 ResourceUsage.SAMPLER: 0,
             }, cuobjdump.functions[self.SIGNATURE].ru
 
-        @typeguard.typechecked
         def test_extract_cubin_from_file(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
@@ -390,7 +383,6 @@ class TestCuObjDump:
             assert len(cuobjdump.functions) == 1
             assert self.SIGNATURE in cuobjdump.functions
 
-        @typeguard.typechecked
         def test_extract_symbol_table(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.

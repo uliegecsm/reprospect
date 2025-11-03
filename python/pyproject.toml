@@ -8,6 +8,7 @@ packages = [
     "reprospect.installers",
     "reprospect.test",
     "reprospect.tools",
+    "reprospect.tools.binaries",
     "reprospect.utils",
 ]
 
@@ -16,6 +17,7 @@ packages = [
 "reprospect.installers" = "reprospect/installers"
 "reprospect.test" = "reprospect/test"
 "reprospect.tools" = "reprospect/tools"
+"reprospect.tools.binaries" = "reprospect/tools/binaries"
 "reprospect.utils" = "reprospect/utils"
 
 [tool.setuptools.dynamic]

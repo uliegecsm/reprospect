@@ -1,4 +1,3 @@
-import abc
 import dataclasses
 import io
 import logging
@@ -13,79 +12,14 @@ import pandas
 import rich.console
 import rich.text
 import rich.table
-import typeguard
 
-from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.architecture      import NVIDIAArch
+from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
     from backports.strenum import StrEnum
-
-if sys.version_info >= (3, 12):
-    from typing import override
-else:
-    from typing_extensions import override
-
-PATTERNS = [
-    re.compile(r'-arch=sm_(\d+)'),
-    re.compile(r'--gpu-architecture=compute_(\d+) --gpu-code=sm_(\d+)'),
-    re.compile(r'--generate-code=arch=compute_(\d+),code=\[sm_(\d+)\]'),
-    re.compile(r'--generate-code=arch=compute_(\d+),code=\[compute_(\d+),sm_(\d+)\]'),
-    re.compile(r'--cuda-gpu-arch=sm_(\d+)'),
-]
-
-@typeguard.typechecked
-def get_arch_from_compile_command(cmd : str) -> set[NVIDIAArch]:
-    """
-    Get NVIDIA architecture from compile command.
-
-    >>> from reprospect.tools.binaries import get_arch_from_compile_command
-    >>> get_arch_from_compile_command('nvcc -arch=sm_89 test.cpp')
-    {NVIDIAArch(family=<NVIDIAFamily.ADA: 'ADA'>, compute_capability=ComputeCapability(major=8, minor=9))}
-    """
-    matches : set[str] = set()
-    for pattern in PATTERNS:
-        for match in pattern.finditer(cmd):
-            matches.update(g for g in match.groups() if g)
-
-    return {NVIDIAArch.from_compute_capability(cc = int(m)) for m in matches}
-
-class DemanglerMixin(abc.ABC):
-    @classmethod
-    @abc.abstractmethod
-    def get_executable(cls) -> pathlib.Path | str:
-        pass
-
-    @classmethod
-    @typeguard.typechecked
-    def demangle(cls, s: str) -> str:
-        """
-        Demangle `s` (a symbol).
-        """
-        return subprocess.check_output([
-            cls.get_executable(), s,
-        ]).decode().strip()
-
-class CuppFilt(DemanglerMixin):
-    """
-    Convenient wrapper for ``cu++filt``.
-    """
-    @classmethod
-    @override
-    @typeguard.typechecked
-    def get_executable(cls) -> str:
-        return 'cu++filt'
-
-class LlvmCppFilt(DemanglerMixin):
-    """
-    Convenient wrapper for ``llvm-cxxfilt``.
-    """
-    @classmethod
-    @override
-    @typeguard.typechecked
-    def get_executable(cls) -> str:
-        return 'llvm-cxxfilt'
 
 class ResourceUsage(StrEnum):
     """
@@ -111,7 +45,6 @@ class ResourceUsage(StrEnum):
     TEXTURE = 'TEXTURE'
 
     @staticmethod
-    @typeguard.typechecked
     def parse(line : str) -> dict:
         """
         Parse a resource usage line, such as produced by ``cuobjdump`` with ``--dump-resource-usage``.
@@ -136,7 +69,6 @@ class Function:
     code : str #: The SASS code.
     ru : dict | None = None #: The resource usage.
 
-    @typeguard.typechecked
     def to_table(self, *, max_code_length : int = 130, descriptors : typing.Optional[dict[str, str]] = None) -> rich.table.Table:
         """
         Convert to a :py:class:`rich.table.Table`.
@@ -161,7 +93,6 @@ class Function:
 
         return table
 
-    @typeguard.typechecked
     def __str__(self) -> str:
         """
         Rich representation with :py:meth:`to_table`.
@@ -178,7 +109,6 @@ class CuObjDump:
 
     * :cite:`nvidia-cuda-binary-utility-cuobjdump`
     """
-    @typeguard.typechecked
     def __init__(
         self,
         file : pathlib.Path,
@@ -192,7 +122,6 @@ class CuObjDump:
         if sass:
             self.extract_sass(demangler = demangler)
 
-    @typeguard.typechecked
     def extract_sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None) -> None:
         """
         Extract SASS from :py:attr:`file`. Optionally demangle functions.
@@ -230,7 +159,6 @@ class CuObjDump:
                 self.functions[function].ru = ResourceUsage.parse(line = next(lines))
 
     @staticmethod
-    @typeguard.typechecked
     def extract(*,
         file : pathlib.Path,
         arch : NVIDIAArch,
@@ -267,7 +195,6 @@ class CuObjDump:
             return CuObjDump(file = file, arch = arch, **kwargs), file
         raise RuntimeError(files[0])
 
-    @typeguard.typechecked
     def __str__(self) -> str:
         """
         Rich representation.
@@ -279,7 +206,6 @@ class CuObjDump:
         return capture.get()
 
     @staticmethod
-    @typeguard.typechecked
     def symtab(*, cubin : pathlib.Path, arch : NVIDIAArch) -> pandas.DataFrame:
         """
         Extract the symbol table from `cubin` for `arch`.

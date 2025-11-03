@@ -4,14 +4,12 @@ import json
 import pathlib
 import typing
 
-import typeguard
+from reprospect.test.environment      import EnvironmentField
+from reprospect.tools.architecture    import NVIDIAArch
+from reprospect.tools.binaries        import CuppFilt, LlvmCppFilt
+from reprospect.utils                 import cmake
+from reprospect.utils.compile_command import get_arch_from_compile_command
 
-from reprospect.test.environment   import EnvironmentField
-from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import get_arch_from_compile_command, CuppFilt, LlvmCppFilt
-from reprospect.utils              import cmake
-
-@typeguard.typechecked
 def get_demangler_for_compiler(compiler_id : str) -> typing.Type[CuppFilt | LlvmCppFilt]:
     """
     Get demangler for compiler with given id.
@@ -37,7 +35,6 @@ class CMakeMixin(abc.ABC):
         pass
 
     @functools.cached_property
-    @typeguard.typechecked
     def cwd(self) -> pathlib.Path:
         """
         Get working directory for the analysis based on the CMake current binary directory.
@@ -47,7 +44,6 @@ class CMakeMixin(abc.ABC):
         return cwd
 
     @functools.cached_property
-    @typeguard.typechecked
     def arch(self) -> NVIDIAArch:
         """
         Retrieve the NVIDIA architecture from the CMake compile command database.
@@ -67,12 +63,10 @@ class CMakeMixin(abc.ABC):
         return archs.pop()
 
     @functools.cached_property
-    @typeguard.typechecked
     def cmake_file_api(self) -> cmake.FileAPI:
         return cmake.FileAPI(cmake_build_directory = self.CMAKE_BINARY_DIR)
 
     @functools.cached_property
-    @typeguard.typechecked
     def target(self) -> dict:
         """
         Retrieve the target information from the CMake codemodel database.
@@ -80,7 +74,6 @@ class CMakeMixin(abc.ABC):
         return self.cmake_file_api.target(self.get_target_name())
 
     @functools.cached_property
-    @typeguard.typechecked
     def target_sources(self) -> typing.Iterator[pathlib.Path]:
         """
         Retrieve the target source from the CMake codemodel database.
@@ -88,7 +81,6 @@ class CMakeMixin(abc.ABC):
         return map(lambda source: pathlib.Path(source['path']), self.target['sources'])
 
     @functools.cached_property
-    @typeguard.typechecked
     def executable(self) -> pathlib.Path:
         """
         Retrieve the executable for the analysis from the CMake codemodel database.
@@ -96,7 +88,6 @@ class CMakeMixin(abc.ABC):
         return self.CMAKE_BINARY_DIR / self.target['paths']['build'] / self.target['nameOnDisk']
 
     @functools.cached_property
-    @typeguard.typechecked
     def toolchains(self) -> dict:
         """
         Retrieve the toolchains information from the read CMake file API.
@@ -104,6 +95,5 @@ class CMakeMixin(abc.ABC):
         return self.cmake_file_api.toolchains
 
     @functools.cached_property
-    @typeguard.typechecked
     def demangler(self) -> typing.Type[CuppFilt | LlvmCppFilt]:
         return get_demangler_for_compiler(self.toolchains['CUDA']['compiler']['id'])

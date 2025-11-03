@@ -9,7 +9,7 @@
 /**
  * @file
  *
- * Companion of @ref examples/kokkos/view/example_allocation.py.
+ * Companion of @ref examples/kokkos/view/example_allocation_tracing.py.
  */
 
 namespace reprospect::examples::kokkos::view

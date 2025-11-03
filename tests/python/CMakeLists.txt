@@ -16,6 +16,8 @@ function(add_pytest FILE)
     test_environment(${FILENAME} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
     test_environment(${FILENAME} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
 
+    pytest_skip_mark(${FILENAME})
+
     # Directory for artifacts.
     file(RELATIVE_PATH relative_path ${CMAKE_SOURCE_DIR} ${FILEPATH})
     test_environment(${FILENAME} ARTIFACT_DIR set ${CMAKE_SOURCE_DIR}/artifacts/${relative_path})

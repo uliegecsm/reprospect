@@ -38,7 +38,7 @@ class TestAllocation(reprospect.CMakeAwareTestCase):
     @override
     @typeguard.typechecked
     def get_target_name(cls) -> str:
-        return 'examples_kokkos_view_allocation'
+        return 'examples_kokkos_view_allocation_tracing'
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestNSYS(TestAllocation):

@@ -1,5 +1,26 @@
 [build-system]
-requires = ["setuptools"]
+requires = [
+    "setuptools",
+    "mypy[mypyc]",
+
+    # mypyc requires that runtime dependencies are also installed
+    # during the build, since it parses the code base.
+    # For now, the only solution is to copy-paste the list here.
+    "backports.strenum",
+    "blake3",
+    "cmake_file_api @ git+https://github.com/madebr/python-cmake-file-api@fc02aa8522b7f793643412124ee938f8d0dc7ef9",
+    "ijson",
+    "pandas",
+    "regex",
+    "rich",
+    "semantic_version",
+    "system-helpers @ git+https://github.com/uliegecsm/system-helpers@f81d70b200db8f486102108a43349dfa89f523e4",
+    "typeguard",
+    "typing-extensions>=4.4.0",
+
+    # Requirements from requirements/requirements.python.txt that are required by mypyc.
+    "types-regex",
+]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]

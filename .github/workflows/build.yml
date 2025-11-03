@@ -422,8 +422,9 @@ jobs:
         steps:
             - uses: actions/checkout@v5
             - run: |
-                python -m build python/
-                ls
+                cd python
+                python -m build --verbose .
+                tree dist/
             - run: |
                 VERSION=$(python3 -c "import pathlib, re; version = re.search(r'\d+.\d+.\d+', pathlib.Path('python/reprospect/__init__.py').read_text()); print(version.group());")
                 echo "Version of the project is ${VERSION}."
@@ -432,4 +433,4 @@ jobs:
               run: |
                 mc alias set MC_HOST_COSTMO ${{ vars.MC_HOST_COSTMO_URL }} ${{ secrets.MC_HOST_COSTMO_USER }} ${{ secrets.MC_HOST_COSTMO_PASSWORD }}
                 mc mb --ignore-existing MC_HOST_COSTMO/reprospect
-                mc cp python/dist/reprospect-${VERSION}-py3-none-any.whl MC_HOST_COSTMO/reprospect/
+                mc cp python/dist/ MC_HOST_COSTMO/reprospect/

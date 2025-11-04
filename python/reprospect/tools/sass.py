@@ -7,9 +7,8 @@ import typing
 import pandas
 import rich.console
 import rich.table
-import typeguard
 
-@dataclasses.dataclass(frozen = True)
+@dataclasses.dataclass(frozen = True, slots = True)
 class ControlCode:
     """
     SASS control code decoding.
@@ -102,7 +101,6 @@ class ControlCode:
     reuse: dict[str, bool] #: Reuse flags.
 
     @staticmethod
-    @typeguard.typechecked
     def decode(*, code : str) -> 'ControlCode':
         """
         Decode 64-bit word including a control code.
@@ -158,12 +156,12 @@ class Decoder:
 
     The disassembled :py:attr:`instructions` are collected, and the associated control codes are decoded.
     """
-    HEX = r'[a-f0-9x]+'
+    HEX : typing.Final[str] = r'[a-f0-9x]+'
     """
     Matcher for an hex-like string, such as `0x00000a0000017a02`.
     """
 
-    INSTRUCTION = r'[\w@!\.\[\],\+\-\s]+'
+    INSTRUCTION : typing.Final[str] = r'[\w@!\.\[\],\+\-\s]+'
     """
     Match an instruction string, such as:
 
@@ -171,7 +169,7 @@ class Decoder:
     - `LDC.64 R10, c[0x0][0x3a0]`
     """
 
-    MATCHER = re.compile(
+    MATCHER : typing.Final[re.Pattern[str]] = re.compile(
         rf'/\*({HEX})\*/'
         r'\s+'
         rf'({INSTRUCTION}?)'
@@ -195,7 +193,6 @@ class Decoder:
     These strings are ignored.
     """
 
-    @typeguard.typechecked
     def __init__(self, source : typing.Optional[pathlib.Path] = None, code : typing.Optional[str] = None, skip_until_headerflags : bool = True) -> None:
         """
         Initialize the decoder with the SASS contained in `source` or `code`.
@@ -206,12 +203,11 @@ class Decoder:
         if source or code:
             self._parse(skip_until_headerflags = skip_until_headerflags)
 
-    @typeguard.typechecked
     def _parse(self, skip_until_headerflags : bool) -> None:
         """
         Parse SASS lines.
         """
-        if self.source:
+        if self.source is not None:
             self.code = self.source.read_text()
 
         assert self.code is not None
@@ -273,7 +269,6 @@ class Decoder:
             self.instructions.append(instruction)
             iline += 1
 
-    @typeguard.typechecked
     def to_df(self) -> pandas.DataFrame:
         """
         Convert the decoded SASS to a :py:class:`pandas.DataFrame`.
@@ -308,7 +303,6 @@ class Decoder:
 
         return pandas.DataFrame(data)
 
-    @typeguard.typechecked
     def to_table(self) -> rich.table.Table:
         """
         Convert the decoded SASS to a :py:class:`rich.table.Table`.
@@ -325,7 +319,6 @@ class Decoder:
 
         return rt
 
-    @typeguard.typechecked
     def __str__(self) -> str:
         """
         Rich representation with :py:meth:`to_table`.
@@ -334,7 +327,6 @@ class Decoder:
             console.print(self.to_table(), no_wrap = True)
         return capture.get()
 
-    @typeguard.typechecked
     def to_html(self) -> str:
         """
         Visualize the decoded SASS in a nice HTML table.

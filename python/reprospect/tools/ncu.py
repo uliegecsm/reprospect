@@ -16,9 +16,9 @@ import time
 import types
 import typing
 
+import attrs
 import blake3
 import rich.tree
-import typeguard
 
 from reprospect.tools import cacher
 from reprospect.tools.binaries import CuppFilt, LlvmCppFilt
@@ -28,7 +28,7 @@ from reprospect.utils import rich_helpers
 if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
-    from backports.strenum import StrEnum
+    from backports.strenum.strenum import StrEnum
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -89,11 +89,10 @@ class Metric:
     #: A dictionary of sub-metrics and their value.
     subs : dict[typing.Any, int | float | None]
 
-    @typeguard.typechecked
     def __init__(self,
         name : str,
         *,
-        subs : typing.Optional[list[typing.Any]] = None,
+        subs : typing.Optional[typing.Iterable[typing.Any]] = None,
         human : typing.Optional[str] = None,
     ) -> None:
         """
@@ -107,12 +106,20 @@ class Metric:
     def __repr__(self) -> str:
         return self.name + '(' + ','.join([f'{sub}={value}' for sub, value in self.subs.items()]) + ')'
 
-    @typeguard.typechecked
     def gather(self) -> list[str]:
         """
         Get the list of sub-metric names or the metric name itself if no sub-metrics are defined.
         """
         return [f'{self.name}{sub}' for sub in self.subs.keys()]
+
+class MetricCounterRollUp(StrEnum):
+    """
+    Available roll-ups for :py:class:`MetricCounter`.
+    """
+    SUM = '.sum'
+    AVG = '.avg'
+    MIN = '.min'
+    MAX = '.max'
 
 class MetricCounter(Metric):
     """
@@ -122,11 +129,15 @@ class MetricCounter(Metric):
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
-    class RollUp(StrEnum):
-        SUM = '.sum'
-        AVG = '.avg'
-        MIN = '.min'
-        MAX = '.max'
+    RollUp : typing.Final[typing.Type[MetricCounterRollUp]] = MetricCounterRollUp # pylint: disable=invalid-name
+
+class MetricRatioRollUp(StrEnum):
+    """
+    Available roll-ups for :py:class:`MetricRatio`.
+    """
+    PCT      = '.pct'
+    RATIO    = '.ratio'
+    MAX_RATE = '.max_rate'
 
 class MetricRatio(Metric):
     """
@@ -136,10 +147,7 @@ class MetricRatio(Metric):
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
-    class RollUp(StrEnum):
-        PCT      = '.pct'
-        RATIO    = '.ratio'
-        MAX_RATE = '.max_rate'
+    RollUp : typing.Final[typing.Type[MetricRatioRollUp]] = MetricRatioRollUp # pylint: disable=invalid-name
 
 class XYZBase:
     """
@@ -149,10 +157,9 @@ class XYZBase:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/#metrics-reference
     """
-    prefix : str
+    prefix : typing.ClassVar[str]
 
     @classmethod
-    @typeguard.typechecked
     def get(cls, dims : typing.Optional[typing.Iterable[str]] = None) -> typing.Iterable[Metric]:
         if not dims:
             dims = ('x', 'y', 'z')
@@ -162,13 +169,13 @@ class LaunchBlock(XYZBase):
     """
     Factory of metrics ``launch__block_dim_x``, ``launch__block_dim_y`` and ``launch__block_dim_z``.
     """
-    prefix = 'launch__block_dim_'
+    prefix : typing.ClassVar[str] = 'launch__block_dim_'
 
 class LaunchGrid(XYZBase):
     """
     Factory of metrics ``launch__grid_dim_x``, ``launch__grid_dim_y`` and ``launch__grid_dim_z``.
     """
-    prefix = 'launch__grid_dim_'
+    prefix : typing.ClassVar[str] = 'launch__grid_dim_'
 
 @dataclasses.dataclass(frozen = False)
 class MetricCorrelation:
@@ -183,11 +190,9 @@ class MetricCorrelation:
     correlated : dict[str, int] | None = None
     value : float | None = None
 
-    @typeguard.typechecked
     def gather(self) -> list[str]:
         return [self.name]
 
-@typeguard.typechecked
 def counter_name_from(
     *,
     unit : Unit,
@@ -212,228 +217,229 @@ def counter_name_from(
         name += f'_{qualifier}'
     return name
 
+class L1TEXCacheGlobalLoadInstructions(MetricCounter):
+    """
+    Counter metric ``(unit)__(sass?)_inst_executed_op_global_ld``.
+    """
+    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
+        super().__init__(
+            name = counter_name_from(
+                unit = unit,
+                quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
+                qualifier = 'executed_op_global_ld',
+            ), subs = subs or (MetricCounterRollUp.SUM,),
+            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'instructions', mode or '')),
+        )
+
+class L1TEXCacheGlobalLoadRequests(MetricCounter):
+    """
+    Counter metric ``l1tex__t_requests_pipe_lsu_mem_global_op_ld``.
+    """
+    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
+        super().__init__(
+            name = counter_name_from(
+                unit = Unit.L1TEX,
+                pipestage = PipeStage.TAG,
+                quantity = Quantity.REQUEST,
+                qualifier = 'pipe_lsu_mem_global_op_ld',
+            ), subs = subs or (MetricCounterRollUp.SUM),
+            human = ' '.join([L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'requests']),
+        )
+
+class L1TEXCacheGlobalLoadSectors(MetricCounter):
+    """
+    Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld``.
+    """
+    def __init__(self,
+        subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None,
+        suffix : typing.Optional[typing.Literal['hit', 'miss']] = None,
+    ) -> None:
+        qualifier = f'pipe_lsu_mem_global_op_ld_lookup_{suffix}' if suffix else 'pipe_lsu_mem_global_op_ld'
+
+        super().__init__(
+            name = counter_name_from(
+                unit = Unit.L1TEX,
+                pipestage = PipeStage.TAG,
+                quantity = Quantity.SECTOR,
+                qualifier = qualifier,
+            ),
+            subs = subs or (MetricCounterRollUp.SUM,),
+            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, f'sectors {suffix}' if suffix else 'sectors')),
+        )
+
+class L1TEXCacheGlobalLoadSectorHits(L1TEXCacheGlobalLoadSectors):
+    """
+    Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_hit``.
+    """
+    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
+        L1TEXCacheGlobalLoadSectors.__init__(self, subs = subs, suffix = 'hit')
+
+class L1TEXCacheGlobalLoadSectorMisses(L1TEXCacheGlobalLoadSectors):
+    """
+    Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_miss``.
+    """
+    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
+        super().__init__(subs = subs, suffix = 'miss')
+
+class L1TEXCacheGlobalLoadWavefronts(MetricCounter):
+    """
+    Counter metric ``l1tex__t_wavefronts_pipe_lsu_mem_global_op_ld``.
+    """
+    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
+        super().__init__(
+            name = counter_name_from(
+                unit = Unit.L1TEX,
+                pipestage = PipeStage.TAG_OUTPUT,
+                quantity = Quantity.WAVEFRONT,
+                qualifier = 'pipe_lsu_mem_global_op_ld',
+            ), subs = subs or (MetricCounterRollUp.SUM,),
+            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'wavefronts')),
+        )
+
+class L1TEXCacheGlobalLoad:
+
+    NAME : typing.Final[str] = 'global load'
+
+    Instructions : typing.Final[typing.Type[L1TEXCacheGlobalLoadInstructions]] = L1TEXCacheGlobalLoadInstructions # pylint: disable=invalid-name
+
+    Requests : typing.Final[typing.Type[L1TEXCacheGlobalLoadRequests]] = L1TEXCacheGlobalLoadRequests # pylint: disable=invalid-name
+
+    Sectors : typing.Final[typing.Type[L1TEXCacheGlobalLoadSectors]] = L1TEXCacheGlobalLoadSectors # pylint: disable=invalid-name
+
+    SectorHits : typing.Final[typing.Type[L1TEXCacheGlobalLoadSectorHits]] = L1TEXCacheGlobalLoadSectorHits # pylint: disable=invalid-name
+
+    SectorMisses : typing.Final[typing.Type[L1TEXCacheGlobalLoadSectorMisses]] = L1TEXCacheGlobalLoadSectorMisses # pylint: disable=invalid-name
+
+    Wavefronts : typing.Final[typing.Type[L1TEXCacheGlobalLoadWavefronts]] = L1TEXCacheGlobalLoadWavefronts # pylint: disable=invalid-name
+
+class L1TEXCacheGlobalStoreInstructions(MetricCounter):
+    """
+    Counter metric ``(unit)__(sass?)_inst_executed_op_global_st``.
+    """
+    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
+        super().__init__(
+            name = counter_name_from(
+                unit = unit,
+                quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
+                qualifier = 'executed_op_global_st',
+            ), subs = subs or (MetricCounterRollUp.SUM,),
+            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'instructions', mode or '')),
+        )
+
+class L1TEXCacheGlobalStoreSectors(MetricCounter):
+    """
+    Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_st``.
+    """
+    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
+        super().__init__(
+            name = counter_name_from(
+                unit = Unit.L1TEX,
+                pipestage = PipeStage.TAG,
+                quantity = Quantity.SECTOR,
+                qualifier = 'pipe_lsu_mem_global_op_st',
+            ), subs = subs or (MetricCounterRollUp.SUM,),
+            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'sectors')),
+        )
+
+class L1TEXCacheGlobalStore:
+
+    NAME : typing.Final[str] = 'global store'
+
+    Instructions : typing.Final[typing.Type[L1TEXCacheGlobalStoreInstructions]] = L1TEXCacheGlobalStoreInstructions # pylint: disable=invalid-name
+
+    Sectors : typing.Final[typing.Type[L1TEXCacheGlobalStoreSectors]] = L1TEXCacheGlobalStoreSectors # pylint: disable=invalid-name
+
+class L1TEXCacheLocalStoreInstructions(MetricCounter):
+    """
+    Counter metric ``(unit)__(sass?)_inst_executed_op_local_st``.
+    """
+    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
+        super().__init__(
+            name = counter_name_from(
+                unit = unit,
+                quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
+                qualifier = 'executed_op_local_st',
+            ), subs = subs or (MetricCounterRollUp.SUM,),
+            human = ' '.join((L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, 'instructions', mode or '')),
+        )
+
+class L1TEXCacheLocalStore:
+
+    NAME : typing.Final[str] = 'local store'
+
+    Instructions : typing.Final[typing.Type[L1TEXCacheLocalStoreInstructions]] = L1TEXCacheLocalStoreInstructions # pylint: disable=invalid-name
+
 class L1TEXCache:
     """
     A selection of metrics related to `L1/TEX` cache.
 
     See :cite:`nvidia-ncu-requests-wavefronts-sectors`.
     """
-    name = 'L1/TEX cache'
+    NAME : typing.Final[str] = 'L1/TEX cache'
 
-    class GlobalLoad:
+    GlobalLoad : typing.Final[typing.Type[L1TEXCacheGlobalLoad]] = L1TEXCacheGlobalLoad # pylint: disable=invalid-name
 
-        name = 'global load'
+    GlobalStore : typing.Final[typing.Type[L1TEXCacheGlobalStore]] = L1TEXCacheGlobalStore # pylint: disable=invalid-name
 
-        class Instructions(MetricCounter):
-            """
-            Counter metric ``(unit)__(sass?)_inst_executed_op_global_ld``.
-            """
-            @typeguard.typechecked
-            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
-                MetricCounter.__init__(self,
-                    name  = counter_name_from(
-                        unit = unit,
-                        quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
-                        qualifier = 'executed_op_global_ld',
-                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
-                    human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'instructions', mode or '']),
-                )
+    LocalStore : typing.Final[typing.Type[L1TEXCacheLocalStore]] = L1TEXCacheLocalStore # pylint: disable=invalid-name
 
-        class Requests(MetricCounter):
-            """
-            Counter metric ``l1tex__t_requests_pipe_lsu_mem_global_op_ld``.
-            """
-            @typeguard.typechecked
-            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
-                MetricCounter.__init__(self,
-                    name  = counter_name_from(
-                        unit = Unit.L1TEX,
-                        pipestage = PipeStage.TAG,
-                        quantity = Quantity.REQUEST,
-                        qualifier = 'pipe_lsu_mem_global_op_ld',
-                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
-                    human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'requests']),
-                )
-
-        class Sectors(MetricCounter):
-            """
-            Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld``.
-            """
-            @typeguard.typechecked
-            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
-                MetricCounter.__init__(self,
-                    name  = counter_name_from(
-                        unit = Unit.L1TEX,
-                        pipestage = PipeStage.TAG,
-                        quantity = Quantity.SECTOR,
-                        qualifier = 'pipe_lsu_mem_global_op_ld',
-                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
-                    human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'sectors']),
-                )
-
-        class SectorHits(MetricCounter):
-            """
-            Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_hit``.
-            """
-            @typeguard.typechecked
-            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
-                MetricCounter.__init__(self,
-                    name  = counter_name_from(
-                        unit = Unit.L1TEX,
-                        pipestage = PipeStage.TAG,
-                        quantity = Quantity.SECTOR,
-                        qualifier = 'pipe_lsu_mem_global_op_ld_lookup_hit',
-                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
-                    human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'sector hits']),
-                )
-
-        class SectorMisses(MetricCounter):
-            """
-            Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_miss``.
-            """
-            @typeguard.typechecked
-            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
-                MetricCounter.__init__(self,
-                    name  = counter_name_from(
-                        unit = Unit.L1TEX,
-                        pipestage = PipeStage.TAG,
-                        quantity = Quantity.SECTOR,
-                        qualifier = 'pipe_lsu_mem_global_op_ld_lookup_miss',
-                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
-                    human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'sector misses']),
-                )
-
-        class Wavefronts(MetricCounter):
-            """
-            Counter metric ``l1tex__t_wavefronts_pipe_lsu_mem_global_op_ld``.
-            """
-            @typeguard.typechecked
-            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
-                MetricCounter.__init__(self,
-                    name  = counter_name_from(
-                        unit = Unit.L1TEX,
-                        pipestage = PipeStage.TAG_OUTPUT,
-                        quantity = Quantity.WAVEFRONT,
-                        qualifier = 'pipe_lsu_mem_global_op_ld',
-                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
-                    human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalLoad.name, 'wavefronts']),
-                )
-
-    class GlobalStore:
-
-        name = 'global store'
-
-        class Instructions(MetricCounter):
-            """
-            Counter metric ``(unit)__(sass?)_inst_executed_op_global_st``.
-            """
-            @typeguard.typechecked
-            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
-                MetricCounter.__init__(self,
-                    name  = counter_name_from(
-                        unit = unit,
-                        quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
-                        qualifier = 'executed_op_global_st',
-                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
-                    human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalStore.name, 'instructions', mode or '']),
-                )
-
-        class Sectors(MetricCounter):
-            """
-            Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_st``.
-            """
-            @typeguard.typechecked
-            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None) -> None:
-                MetricCounter.__init__(self,
-                    name  = counter_name_from(
-                        unit = Unit.L1TEX,
-                        pipestage = PipeStage.TAG,
-                        quantity = Quantity.SECTOR,
-                        qualifier = 'pipe_lsu_mem_global_op_st',
-                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
-                    human = ' '.join([L1TEXCache.name, L1TEXCache.GlobalStore.name, 'sectors']),
-                )
-
-    class LocalStore:
-
-        name = 'local store'
-
-        class Instructions(MetricCounter):
-            """
-            Counter metric ``(unit)__(sass?)_inst_executed_op_local_st``.
-            """
-            @typeguard.typechecked
-            def __init__(self, subs : typing.Optional[list[MetricCounter.RollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
-                MetricCounter.__init__(self,
-                    name  = counter_name_from(
-                        unit = unit,
-                        quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
-                        qualifier = 'executed_op_local_st',
-                    ), subs = subs if subs else [MetricCounter.RollUp.SUM],
-                    human = ' '.join([L1TEXCache.name, L1TEXCache.LocalStore.name, 'instructions', mode or '']),
-                )
-
-@typeguard.typechecked
 def gather(metrics : typing.Iterable[Metric | MetricCorrelation]) -> list[str]:
     """
     Retrieve all sub-metric names, e.g. to pass them to ``ncu``.
     """
     return [name for metric in metrics for name in metric.gather()]
 
+@attrs.define(frozen = True, slots = True)
+class SessionCommand:
+    """
+    Used by :py:class:`reprospect.tools.ncu.Session`.
+    """
+    opts: list[str]                                      #: ``ncu`` options that do not involve paths.
+    output: pathlib.Path                                 #: ``ncu`` report file.
+    log: pathlib.Path                                    #: ``ncu`` log file.
+    metrics: typing.Iterable[Metric | MetricCorrelation] | None #: ``ncu`` metrics.
+    executable: str | pathlib.Path                       #: Executable to run.
+    args: list[str | pathlib.Path] | None                #: Arguments to pass to the executable.
+
+    @functools.cached_property
+    def to_list(self) -> list[str | pathlib.Path]:
+        """
+        Build the full ``ncu`` command.
+        """
+        cmd : list[str | pathlib.Path] = ['ncu']
+
+        if self.opts:
+            cmd += self.opts
+
+        cmd += ['--force-overwrite', '-o', self.output]
+        cmd += ['--log-file', self.log]
+
+        if self.metrics:
+            cmd.append(f'--metrics={",".join(gather(metrics = self.metrics))}')
+
+        cmd.append(self.executable)
+
+        if self.args:
+            cmd += self.args
+
+        return cmd
+
 class Session:
     """
     `Nsight Compute` session interface.
     """
-    @typeguard.typechecked
     def __init__(self, *, output : pathlib.Path):
         self.output = output
 
-    @dataclasses.dataclass(frozen = True)
-    class Command:
-        """
-        The command.
-        """
-        opts: list[str]                                      #: ``ncu`` options that do not involve paths.
-        output: pathlib.Path                                 #: ``ncu`` report file.
-        log: pathlib.Path                                    #: ``ncu`` log file.
-        metrics: typing.Iterable[Metric | MetricCorrelation] | None #: ``ncu`` metrics.
-        executable: str | pathlib.Path                       #: Executable to run.
-        args: list[str | pathlib.Path] | None                #: Arguments to pass to the executable.
-
-        @functools.cached_property
-        @typeguard.typechecked
-        def to_list(self) -> list[str | pathlib.Path]:
-            """
-            Build the full ``ncu`` command.
-            """
-            cmd : list[str | pathlib.Path] = ['ncu']
-
-            if self.opts:
-                cmd += self.opts
-
-            cmd += ['--force-overwrite', '-o', self.output]
-            cmd += ['--log-file', self.log]
-
-            if self.metrics:
-                cmd.append(f'--metrics={",".join(gather(metrics = self.metrics))}')
-
-            cmd.append(self.executable)
-
-            if self.args:
-                cmd += self.args
-
-            return cmd
-
-    @typeguard.typechecked
     def get_command(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
         metrics : typing.Optional[typing.Iterable[Metric | MetricCorrelation]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
-    ) -> 'Session.Command':
+    ) -> SessionCommand:
         """
-        Create a :py:class:`Session.Command`.
+        Create a :py:class:`SessionCommand`.
         """
         if not opts:
             opts = []
@@ -450,7 +456,7 @@ class Session:
                 *[f'--nvtx-include={x}' for x in nvtx_includes],
             ]
 
-        return Session.Command(
+        return SessionCommand(
             opts = opts,
             output = self.output,
             log = self.output.with_suffix('.log'),
@@ -459,7 +465,6 @@ class Session:
             args = args,
         )
 
-    @typeguard.typechecked
     def run(
         self,
         executable : pathlib.Path,
@@ -471,7 +476,7 @@ class Session:
         env : typing.Optional[typing.MutableMapping] = None,
         retries : typing.Optional[int] = None,
         sleep : typing.Callable[[int, int], float] = lambda retry, retries: 3. * (1. - retry / retries),
-    ) -> 'Session.Command':
+    ) -> SessionCommand:
         """
         Run ``ncu``.
 
@@ -540,7 +545,6 @@ class Range:
 
     This class loads the actions that are in the range.
     """
-    @typeguard.typechecked
     def __init__(self, report, index : int, includes : typing.Optional[list[str]] = None, excludes : typing.Optional[list[str]] = None) -> None:
         self.index = index
         self.range = report.range_by_idx(self.index)
@@ -549,7 +553,6 @@ class Range:
 
         self._load_actions_by_nvtx(includes = includes, excludes = excludes)
 
-    @typeguard.typechecked
     def _load_actions_by_nvtx(self, includes : typing.Optional[list[str]] = None, excludes : typing.Optional[list[str]] = None) -> None:
         """
         If both `includes` and `excludes` are empty, load all actions.
@@ -568,7 +571,6 @@ class Action:
     """
     Wrapper around :ncu_report:`IAction`.
     """
-    @typeguard.typechecked
     def __init__(self, nvtx_range, index : int) -> None:
         self.index  = index
         self.action = nvtx_range.action_by_idx(index)
@@ -624,14 +626,12 @@ class ProfilingResults(rich_helpers.TreeMixin, NestedProfilingResults):
     This data structure is a nested (ordered) dictionary.
     It has helper functions that ease dealing with nested values.
     """
-    @typeguard.typechecked
     def query(self, accessors : typing.Iterable[str]) -> typing.Union[NestedProfilingResults, ProfilingResult, MetricValue]:
         """
         Get (nested) value from the `accessors` path.
         """
         return functools.reduce(operator.getitem, accessors, typing.cast(dict, self))
 
-    @typeguard.typechecked
     def set(self, accessors: typing.Sequence[str], data : dict[str, MetricValue]) -> None:
         """
         Set or create (nested) `data` from the `accessors` path.
@@ -642,7 +642,6 @@ class ProfilingResults(rich_helpers.TreeMixin, NestedProfilingResults):
             current = current.setdefault(accessor, {})
         current[accessors[-1]] = data
 
-    @typeguard.typechecked
     def aggregate(self, accessors : typing.Iterable[str], keys : typing.Optional[typing.Iterable] = None) -> dict:
         """
         Aggregate values of dictionaries selected by `accessors`.
@@ -665,9 +664,7 @@ class ProfilingResults(rich_helpers.TreeMixin, NestedProfilingResults):
         return {key: sum(s[key] for s in samples.values()) for key in keys}
 
     @override
-    @typeguard.typechecked
     def to_tree(self) -> rich.tree.Tree:
-        @typeguard.typechecked
         def add_branch(*, tree : rich.tree.Tree, data : dict) -> None:
             for key, value in data.items():
                 if isinstance(value, dict):
@@ -681,7 +678,6 @@ class ProfilingResults(rich_helpers.TreeMixin, NestedProfilingResults):
 
         return tree
 
-@typeguard.typechecked
 def load_ncu_report() -> types.ModuleType:
     """
     Attempt to load the `Nsight Compute` `Python` interface (``ncu_report``).
@@ -750,7 +746,6 @@ class Report:
     * https://docs.nvidia.com/nsight-compute/CustomizationGuide/index.html#python-report-interface
     * https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
     """
-    @typeguard.typechecked
     def __init__(self, *, path : typing.Optional[pathlib.Path] = None, name : typing.Optional[str] = None, session : typing.Optional[Session] = None) -> None:
         """
         Load the report ``<path>/<name>.ncu-rep`` or the report generated by :py:class:`Session`.
@@ -771,11 +766,10 @@ class Report:
 
         logging.info(f"Report {self.path} loaded successfully ({self.report}).")
 
-    @typeguard.typechecked
     def extract_metrics_in_range(
         self,
         range_idx : int,
-        metrics : list[Metric | MetricCorrelation],
+        metrics : typing.Iterable[Metric | MetricCorrelation],
         includes : typing.Optional[list[str]] = None,
         excludes : typing.Optional[list[str]] = None,
         demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None,
@@ -818,7 +812,6 @@ class Report:
 
         return profiling_results
 
-    @typeguard.typechecked
     def collect_metrics_from_action(self, *, metrics : typing.Iterable[Metric | MetricCorrelation], action : Action) -> dict[str, MetricValue]:
         """
         Collect values of the `metrics` in the `action`.
@@ -856,7 +849,6 @@ class Report:
         return results
 
     @classmethod
-    @typeguard.typechecked
     def fill_metric(cls, action : Action, metric : Metric) -> Metric:
         """
         Loop over submetrics of `metric`.
@@ -866,7 +858,6 @@ class Report:
         return metric
 
     @classmethod
-    @typeguard.typechecked
     def get_metric_by_name(cls, *, action : Action, metric : str):
         """
         Read a `metric` in `action`.
@@ -899,19 +890,17 @@ class Cacher(cacher.Cacher):
         The cache should not be shared between machines, since there may be differences between machines
         that influence the results but are not included in the hashing.
     """
-    TABLE : str = 'ncu'
+    TABLE : typing.ClassVar[str] = 'ncu'
 
-    @typeguard.typechecked
     def __init__(self, *, session : Session, directory : typing.Optional[str | pathlib.Path] = None):
         super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.ncu-cache')
         self.session = session
 
-    @typeguard.typechecked
     def hash_impl(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_includes : typing.Optional[list[str]] = None,
-        metrics : typing.Optional[list[Metric | MetricCorrelation]] = None,
+        metrics : typing.Optional[typing.Iterable[Metric | MetricCorrelation]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
         env : typing.Optional[typing.MutableMapping] = None,
     ) -> blake3.blake3:
@@ -958,7 +947,6 @@ class Cacher(cacher.Cacher):
         return hasher
 
     @override
-    @typeguard.typechecked
     def hash(self, **kwargs) -> blake3.blake3:
         return self.hash_impl(
             executable = kwargs['executable'],
@@ -970,8 +958,7 @@ class Cacher(cacher.Cacher):
         )
 
     @override
-    @typeguard.typechecked
-    def populate(self, directory : pathlib.Path, **kwargs) -> Session.Command:
+    def populate(self, directory : pathlib.Path, **kwargs) -> SessionCommand:
         """
         When there is a cache miss, call :py:meth:`reprospect.tools.ncu.Session.run`.
         Fill the `directory` with the artifacts.
@@ -983,7 +970,6 @@ class Cacher(cacher.Cacher):
 
         return command
 
-    @typeguard.typechecked
     def run(self, **kwargs) -> cacher.Cacher.Entry:
         """
         On a cache hit, copy files from the cache entry.

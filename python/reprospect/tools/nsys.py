@@ -457,7 +457,7 @@ class Cacher(cacher.Cacher):
         The cache should not be shared between machines, since there may be differences between machines
         that influence the results but are not included in the hashing.
     """
-    TABLE : str = 'nsys'
+    TABLE : typing.ClassVar[str] = 'nsys'
 
     @typeguard.typechecked
     def __init__(self, session : Session, directory : typing.Optional[str | pathlib.Path] = None):

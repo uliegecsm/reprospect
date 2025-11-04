@@ -8,7 +8,6 @@ import sqlite3
 import typing
 
 import blake3
-import typeguard
 
 class Cacher(abc.ABC):
     """
@@ -29,7 +28,7 @@ class Cacher(abc.ABC):
     Inspired by ``ccache``, see also https://ccache.dev/manual/4.12.1.html#_how_ccache_works.
     """
     #: Name of the table.
-    TABLE : str = 'defaulted'
+    TABLE : typing.ClassVar[str]
 
     @dataclasses.dataclass(frozen = True)
     class Entry:
@@ -45,7 +44,6 @@ class Cacher(abc.ABC):
         # Directory wherein files are stored.
         directory : pathlib.Path
 
-    @typeguard.typechecked
     def __init__(self, directory : str | pathlib.Path) -> None:
         """
         :param directory: Where the cacher stores all files.
@@ -59,7 +57,6 @@ class Cacher(abc.ABC):
 
         self.database : typing.Optional[sqlite3.Connection] = None
 
-    @typeguard.typechecked
     def __enter__(self) -> 'Cacher':
         """
         Connect to the database.
@@ -67,12 +64,10 @@ class Cacher(abc.ABC):
         self.database = self.create_db(file = self.file) if not self.file.is_file() else sqlite3.connect(self.file)
         return self
 
-    @typeguard.typechecked
     def __exit__(self, *args, **kwargs) -> None:
         assert self.database is not None
         self.database.close()
 
-    @typeguard.typechecked
     def create_db(self, file : pathlib.Path) -> sqlite3.Connection:
         """
         Create the `SQLITE` database.
@@ -89,7 +84,6 @@ class Cacher(abc.ABC):
         db.commit()
         return db
 
-    @typeguard.typechecked
     def hash(self, **kwargs) -> blake3.blake3:
         """
         This method is intended to be overridden in a child class with the specifics of your case.
@@ -102,11 +96,9 @@ class Cacher(abc.ABC):
         return hasher
 
     @abc.abstractmethod
-    @typeguard.typechecked
     def populate(self, directory : pathlib.Path, **kwargs) -> typing.Any:
         pass
 
-    @typeguard.typechecked
     def get(self, **kwargs) -> 'Cacher.Entry':
         """
         Serve cached entry on cache hit, populate on cache miss.

@@ -2,14 +2,11 @@ import pathlib
 import re
 import subprocess
 
-import typeguard
-
-@typeguard.typechecked
 def get_shared_dependencies(*, file : str | pathlib.Path) -> list[pathlib.Path]:
     """
     Get the list of shared object dependencies.
 
-    It assumes that `ldd` output follows::
+    It assumes that ``ldd`` output follows::
 
         libname => /path/to/lib.so (address)
     """

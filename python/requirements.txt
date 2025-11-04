@@ -9,9 +9,6 @@ pandas
 regex
 rich
 semantic_version
-
-# Version 0.0.3.
-system-helpers @ git+https://github.com/uliegecsm/system-helpers@f81d70b200db8f486102108a43349dfa89f523e4
-
+system-helpers>=0.0.3
 typeguard
 typing-extensions>=4.4.0

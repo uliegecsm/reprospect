@@ -43,7 +43,6 @@ import typing
 
 import regex
 import semantic_version
-import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass         import Instruction
@@ -57,21 +56,21 @@ class PatternBuilder:
     """
     Helper class to build patterns for instruction components.
     """
-    OFFSET = r'\+0x[0-9A-Fa-f]+'
-    PRED = r'P[0-9]+'
-    REG = r'R[0-9]+'
-    REG64 = r'R[0-9]+\.64'
-    UREG = r'UR[0-9]+'
+    OFFSET : typing.Final[str] = r'\+0x[0-9A-Fa-f]+'
+    PRED : typing.Final[str] = r'P[0-9]+'
+    REG : typing.Final[str] = r'R[0-9]+'
+    REG64 : typing.Final[str] = r'R[0-9]+\.64'
+    UREG : typing.Final[str] = r'UR[0-9]+'
 
     #: Match a register or ``RZ``.
-    REGZ = rf'RZ|{REG}'
+    REGZ : typing.Final[str] = rf'RZ|{REG}'
 
     #: Match a predicate register or ``PT``.
-    PREDT = rf'PT|{PRED}'
+    PREDT : typing.Final[str] = rf'PT|{PRED}'
 
-    OPERAND = r'[\w@!\.\[\]\+\-\s]+'
+    OPERAND : typing.Final[str] = r'[\w@!\.\[\]\+\-\s]+'
 
-    CONSTANT = rf'c\[0x[0-9]+\]\[(0x[0-9c]+|{REG})\]'
+    CONSTANT : typing.Final[str] = rf'c\[0x[0-9]+\]\[(0x[0-9c]+|{REG})\]'
     """
     Match constant memory location.
     The bank looks like ``0x3`` while the address is either compile-time (*e.g.*
@@ -79,7 +78,6 @@ class PatternBuilder:
     """
 
     @staticmethod
-    @typeguard.typechecked
     def optional(s : str) -> str:
         """
         Build optional non-capturing pattern.
@@ -87,7 +85,6 @@ class PatternBuilder:
         return rf'(?:{s})?'
 
     @staticmethod
-    @typeguard.typechecked
     def either(a : str, b : str) -> str:
         """
         Build a pattern matching either `a` or `b`.
@@ -95,22 +92,22 @@ class PatternBuilder:
         return rf'({a}|{b})'
 
     @staticmethod
-    @typeguard.typechecked
-    def group(s : typing.Any, *, group : typing.Optional[str] = None, groups : typing.Optional[typing.Iterable[str]] = None) -> str:
+    def group(s : int | str, group : str) -> str:
         """
-        Wrap a pattern in named capture group(s).
+        Wrap a pattern in a named capture group.
         """
-        if group and groups:
-            raise ValueError("Cannot specify both 'group' and 'groups'.")
-        if group:
-            return rf'(?P<{group}>{s})'
-        if groups:
-            for g in groups:
-                s = PatternBuilder.group(s, group = g)
-        return s
+        return rf'(?P<{group}>{s})'
+
+    @staticmethod
+    def groups(s : int | str, groups : typing.Iterable[str]) -> str:
+        """
+        Wrap a pattern in named capture groups.
+        """
+        for g in groups:
+            s = PatternBuilder.group(s, group = g)
+        return str(s)
 
     @classmethod
-    @typeguard.typechecked
     def reg(cls) -> str:
         """
         :py:attr:`REG` with `operands` group.
@@ -118,7 +115,6 @@ class PatternBuilder:
         return cls.group(cls.REG, group = 'operands')
 
     @classmethod
-    @typeguard.typechecked
     def regz(cls) -> str:
         """
         :py:attr:`REGZ` with `operands` group.
@@ -126,7 +122,6 @@ class PatternBuilder:
         return cls.group(cls.REGZ, group = 'operands')
 
     @classmethod
-    @typeguard.typechecked
     def predt(cls) -> str:
         """
         :py:attr:`PREDT` with `operands` group.
@@ -134,7 +129,6 @@ class PatternBuilder:
         return cls.group(cls.PREDT, group = 'operands')
 
     @staticmethod
-    @typeguard.typechecked
     def opcode_mods(opcode : str, modifiers : typing.Optional[typing.Iterable[int | str]] = None) -> str:
         """
         Append each modifier with a `.`, within a proper named capture group.
@@ -142,8 +136,9 @@ class PatternBuilder:
         Note that the modifiers starting with a `?` are matched optionally.
         """
         opcode = PatternBuilder.group(opcode, group = 'opcode')
-        if modifiers:
+        if modifiers is not None:
             for modifier in filter(None, modifiers):
+                modifier = typing.cast(int | str, modifier)
                 if isinstance(modifier, str) and modifier.startswith('?'):
                     opcode += PatternBuilder.optional(r'\.' + PatternBuilder.group(modifier[1::], group = 'modifiers'))
                 else:
@@ -160,7 +155,6 @@ class PatternBuilder:
         return rf'{op}(?:\s*,\s*{op})*'
 
     @classmethod
-    @typeguard.typechecked
     def reg_addr(cls, offset : typing.Optional[bool] = None) -> str:
         """
         Address operand. A few examples:
@@ -175,10 +169,9 @@ class PatternBuilder:
             pattern += cls.optional(cls.OFFSET)
         elif offset is True:
             pattern += cls.OFFSET
-        return rf"\[{cls.group(pattern, groups = ('operands', 'address'))}\]"
+        return rf"\[{cls.groups(pattern, groups = ('operands', 'address'))}\]"
 
     @classmethod
-    @typeguard.typechecked
     def reg64_addr(cls, offset : typing.Optional[bool] = None) -> str:
         """
         Address operand with 64-bit modifier. A few examples:
@@ -193,10 +186,9 @@ class PatternBuilder:
             pattern += cls.optional(cls.OFFSET)
         elif offset is True:
             pattern += cls.OFFSET
-        return rf"\[({cls.group(pattern, groups = ('operands', 'address'))})\]"
+        return rf"\[({cls.groups(pattern, groups = ('operands', 'address'))})\]"
 
     @classmethod
-    @typeguard.typechecked
     def desc_reg64_addr(cls, offset : typing.Optional[bool] = None) -> str:
         """
         Address operand with cache policy descriptor, like ``desc[UR0][R0.64+0x10]``.
@@ -210,9 +202,8 @@ class PatternBuilder:
             pattern += rf'\[({cls.REG64}{cls.OFFSET})\]'
         else:
             pattern += rf'\[({cls.REG64})\]'
-        return cls.group(pattern, groups = ('operands', 'address'))
+        return cls.groups(pattern, groups = ('operands', 'address'))
 
-@typeguard.typechecked
 def check_memory_instruction_word_size(*, size : int) -> None:
     """
     From https://docs.nvidia.com/cuda/cuda-c-programming-guide/#device-memory-accesses:
@@ -228,13 +219,11 @@ class Matcher(abc.ABC):
     Abstract base class for instruction matchers.
     """
     @abc.abstractmethod
-    @typeguard.typechecked
     def matches(self, inst : Instruction | str) -> typing.Any:
         """
         Check if the instruction matches.
         """
 
-    @typeguard.typechecked
     def __call__(self, inst : Instruction | str) -> typing.Any:
         """
         Allow the matcher to be called as a function.
@@ -249,7 +238,6 @@ class PatternMatcher(Matcher):
     pattern : str | regex.Pattern
 
     @override
-    @typeguard.typechecked
     def matches(self, inst : Instruction | str) -> typing.Optional[regex.Match]:
         if isinstance(inst, str):
             return regex.match(self.pattern, inst)
@@ -259,9 +247,9 @@ class FloatAddMatcher(PatternMatcher):
     """
     Matcher for floating-point add (``FADD``) instructions.
     """
-    PATTERN = regex.compile(
+    PATTERN : typing.Final[regex.Pattern[str]] = regex.compile(
         PatternBuilder.opcode_mods('FADD') + r'\s+' +
-        PatternBuilder.group(PatternBuilder.REG, groups = ('dst', 'operands')) + r'\s*,\s*' +
+        PatternBuilder.groups(PatternBuilder.REG, groups = ('dst', 'operands')) + r'\s*,\s*' +
         PatternBuilder.reg() + r'\s*,\s*' +
         PatternBuilder.reg()
     )
@@ -273,7 +261,6 @@ class ArchitectureAwarePatternMatcher(PatternMatcher):
     """
     Base class for matchers that generate patterns based on architecture.
     """
-    @typeguard.typechecked
     def __init__(self, arch : NVIDIAArch) -> None:
         self.arch = arch
         super().__init__(pattern = self._build_pattern())
@@ -302,7 +289,6 @@ class VersionAwarePatternMixin:
 
             ATOM.E.ADD.S32.STRONG.CTA PT, RZ, [R2], R5
     """
-    @typeguard.typechecked
     def __init__(self, version : typing.Optional[semantic_version.Version] = None) -> None:
         self.version = version if version is not None else semantic_version.Version(os.environ['CUDA_VERSION'])
 
@@ -317,7 +303,6 @@ class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
     * https://github.com/AdaptiveCpp/AdaptiveCpp/issues/848
     * https://docs.nvidia.com/gameworks/content/developertools/desktop/analysis/report/cudaexperiments/kernellevel/memorystatisticsglobal.htm
     """
-    @typeguard.typechecked
     def __init__(self,
         arch : NVIDIAArch,
         size : typing.Optional[int] = None,
@@ -340,7 +325,6 @@ class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
         super().__init__(arch = arch)
 
     @override
-    @typeguard.typechecked
     def _build_pattern(self) -> str:
         match self.arch.compute_capability.as_int:
             case 70 | 75:
@@ -357,7 +341,6 @@ class StoreGlobalMatcher(ArchitectureAwarePatternMatcher):
     Architecture-dependent matcher for global store (``STG``) instructions,
     like ``STG.E desc[UR6][R6.64], R15``.
     """
-    @typeguard.typechecked
     def __init__(self,
         arch : NVIDIAArch,
         size : typing.Optional[int] = None,
@@ -372,7 +355,6 @@ class StoreGlobalMatcher(ArchitectureAwarePatternMatcher):
         super().__init__(arch = arch)
 
     @override
-    @typeguard.typechecked
     def _build_pattern(self) -> str:
         match self.arch.compute_capability.as_int:
             case 70 | 75:
@@ -391,7 +373,6 @@ References:
 * https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_model.html#thread-scopes
 """
 
-@typeguard.typechecked
 def convert_thread_scope(*, scope : ThreadScope, arch : NVIDIAArch) -> str:
     """
     Convert the scope to SASS modifier.
@@ -433,7 +414,6 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
 
     * https://forums.developer.nvidia.com/t/difference-between-red-and-atomg-sass-instruction/203469
     """
-    @typeguard.typechecked
     def __init__(self,
         arch : NVIDIAArch,
         operation : str = 'ADD',
@@ -457,7 +437,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
 
     @override
     def _build_pattern(self) -> str:
-        dtype : typing.Sequence[int | str] = ()
+        dtype : typing.Sequence[int | str]
         if self.params.dtype is not None:
             match self.params.dtype[0]:
                 case 'F':
@@ -475,6 +455,8 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
                     dtype = (self.params.dtype[1],) if self.params.dtype[1] > 32 else ()
                 case _:
                     raise ValueError(self.params.dtype)
+        else:
+            dtype = ()
 
         match self.arch.compute_capability.as_int:
             case 70 | 75:
@@ -506,7 +488,6 @@ class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
 
     * https://docs.nvidia.com/cuda/archive/12.6.3/cuda-binary-utilities/index.html#hopper-instruction-set
     """
-    @typeguard.typechecked
     def __init__(self,
         arch : NVIDIAArch,
         operation : str = 'ADD',
@@ -543,7 +524,7 @@ class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
 
             {pred}, {dest}, [{addr}], {compare}, {newval}
         """
-        dtype : typing.Sequence[int | str] = ()
+        dtype : typing.Sequence[int | str]
         match self.params.operation:
             case 'CAS':
                 operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
@@ -569,6 +550,8 @@ class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
                             dtype = (self.params.dtype[1],) if self.params.dtype[1] > 32 else ()
                         case _:
                             raise ValueError(self.params.dtype)
+                else:
+                    dtype = ()
 
         match self.arch.compute_capability.as_int:
             case 70 | 75:
@@ -597,7 +580,6 @@ class OpcodeModsMatcher(PatternMatcher):
     ... ).captures('operands')
     ['P2', 'PT', 'R4', 'RZ', 'PT']
     """
-    @typeguard.typechecked
     def __init__(self, instruction : str, operands : bool = True) -> None:
         super().__init__(pattern = rf'^{instruction}\s+{PatternBuilder.operands()}' if operands else rf'^{instruction}')
 
@@ -620,7 +602,6 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
     ... ).matches('ISETP.NE.AND P2, PT, R4, RZ, PT').captures('operands')
     ['P2', 'PT', 'R4', 'RZ', 'PT']
     """
-    @typeguard.typechecked
     def __init__(self, instruction : str, operands : typing.Iterable[str]) -> None:
         operands = r',\s+'.join(
             PatternBuilder.group(op, group = 'operands') for op in operands

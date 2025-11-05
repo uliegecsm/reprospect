@@ -4,10 +4,10 @@ import pathlib
 import re
 import subprocess
 import tempfile
+import typing
 import unittest.mock
 
 import pytest
-import typeguard
 
 from reprospect.test.cmake import get_demangler_for_compiler
 
@@ -15,13 +15,18 @@ from reprospect.utils import cmake
 from reprospect.tools import ncu
 from reprospect.utils import detect
 
-TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
+@pytest.fixture(scope = 'session')
+def workdir() -> pathlib.Path:
+    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
 
 @pytest.fixture(scope = 'session')
-@typeguard.typechecked
-def cmake_cuda_compiler() -> dict:
+def bindir() -> pathlib.Path:
+    return pathlib.Path(os.environ['CMAKE_BINARY_DIR'])
+
+@pytest.fixture(scope = 'session')
+def cmake_cuda_compiler(bindir) -> dict:
     return cmake.FileAPI(
-        cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR'])
+        cmake_build_directory = bindir,
     ).toolchains['CUDA']['compiler']
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
@@ -29,10 +34,10 @@ class TestSession:
     """
     Test :py:class:`reprospect.tools.ncu.Session`.
     """
-    GRAPH = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph' if 'CMAKE_BINARY_DIR' in os.environ else None
-    SAXPY = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
+    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph'
+    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy'
 
-    def test_collect_basic_metrics_saxpy_with_nvtx_filtering(self) -> None:
+    def test_collect_basic_metrics_saxpy_with_nvtx_filtering(self, bindir, workdir) -> None:
         """
         Collect a few basic metrics for the :py:attr:`SAXPY` executable and filter by NVTX.
         """
@@ -64,10 +69,10 @@ class TestSession:
             'demangled',
         )
 
-        session = ncu.Session(output = TMPDIR / 'report-saxpy-basics')
+        session = ncu.Session(output = workdir / 'report-saxpy-basics')
 
         session.run(
-            executable = self.SAXPY,
+            executable = bindir / self.SAXPY,
             metrics = METRICS,
             nvtx_includes = map(
                 lambda x: f'application_domain@{x}/',
@@ -76,7 +81,7 @@ class TestSession:
             retries = 5,
         )
 
-        report = ncu.Report(path = TMPDIR, name = 'report-saxpy-basics')
+        report = ncu.Report(path = workdir, name = 'report-saxpy-basics')
 
         assert report.report.num_ranges() == 1
 
@@ -85,9 +90,13 @@ class TestSession:
 
         logging.info(results)
 
+        assert isinstance(results, dict)
+
         assert len(results) > 1
         assert 'saxpy_kernel-0' in results.keys()
         assert 'saxpy_kernel-1' in results.keys()
+        assert isinstance(results['saxpy_kernel-0'], dict)
+        assert isinstance(results['saxpy_kernel-1'], dict)
         assert all(x in results['saxpy_kernel-0'] for x in EXPT_METRICS_AND_METADATA)
         assert all(x in results['saxpy_kernel-1'] for x in EXPT_METRICS_AND_METADATA)
 
@@ -99,13 +108,20 @@ class TestSession:
 
         logging.info(results_filtered)
 
+        assert isinstance(results_filtered, dict)
+
         results_filtered_first  = results_filtered['launch_saxpy_kernel_first_time']
         results_filtered_second = results_filtered['launch_saxpy_kernel_second_time']
+
+        assert isinstance(results_filtered_first, dict)
+        assert isinstance(results_filtered_second, dict)
 
         assert len(results_filtered_first)  == 1
         assert len(results_filtered_second) == 1
         assert 'saxpy_kernel-0' in results_filtered_first .keys()
         assert 'saxpy_kernel-1' in results_filtered_second.keys()
+        assert isinstance(results_filtered_first ['saxpy_kernel-0'], dict)
+        assert isinstance(results_filtered_second['saxpy_kernel-1'], dict)
         assert all(x in results_filtered_first ['saxpy_kernel-0'] for x in EXPT_METRICS_AND_METADATA[:2])
         assert all(x in results_filtered_second['saxpy_kernel-1'] for x in EXPT_METRICS_AND_METADATA[:2])
 
@@ -124,15 +140,15 @@ class TestSession:
             assert results_filtered_first ['saxpy_kernel-0'][metric] == results['saxpy_kernel-0'][metric]
             assert results_filtered_second['saxpy_kernel-1'][metric] == results['saxpy_kernel-1'][metric]
 
-    def test_collect_correlated_metrics_saxpy(self):
+    def test_collect_correlated_metrics_saxpy(self, bindir, workdir) -> None:
         """
         Collect a metric with correlations for the :py:attr:`SAXPY` executable.
         """
         METRICS = (ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode'),)
 
-        session = ncu.Session(output = TMPDIR / 'report-saxpy-correlated')
+        session = ncu.Session(output = workdir / 'report-saxpy-correlated')
 
-        session.run(executable = self.SAXPY, metrics = METRICS, retries = 5)
+        session.run(executable = bindir / self.SAXPY, metrics = METRICS, retries = 5)
 
         report = ncu.Report(session = session)
 
@@ -143,7 +159,7 @@ class TestSession:
         logging.info(results)
 
         assert 'saxpy_kernel-0' in results.keys()
-
+        assert isinstance(results['saxpy_kernel-0'], dict)
         assert 'sass__inst_executed_per_opcode' in results['saxpy_kernel-0']
 
         assert sum(results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated.values()) == results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].value
@@ -153,10 +169,13 @@ class TestSession:
         assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['IMAD'] > 0
 
         # Check load instructions.
+        assert isinstance(results['saxpy_kernel-0'], dict)
+        assert isinstance(results['saxpy_kernel-0']['sass__inst_executed_per_opcode'], ncu.MetricCorrelation)
+        assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated is not None
         assert 'LD' not in results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated
         assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['LDG'] > 0
 
-    def test_collect_basic_metrics_graph(self, cmake_cuda_compiler : dict):
+    def test_collect_basic_metrics_graph(self, bindir, workdir, cmake_cuda_compiler : dict) -> None:
         """
         Collect a few basic metrics for the :py:attr:`GRAPH` executable.
         """
@@ -166,9 +185,9 @@ class TestSession:
             ncu.L1TEXCache.GlobalStore.Sectors(),
         )
 
-        session = ncu.Session(output = TMPDIR / 'report-graph-basics')
+        session = ncu.Session(output = workdir / 'report-graph-basics')
 
-        session.run(executable = self.GRAPH, metrics = METRICS, retries = 5)
+        session.run(executable = bindir / self.GRAPH, metrics = METRICS, retries = 5)
 
         report = ncu.Report(session = session)
 
@@ -208,6 +227,11 @@ class TestSession:
         metrics_node_C = next(filter(SIGNATURES['node_C'], results.values()))
         metrics_node_D = next(filter(SIGNATURES['node_D'], results.values()))
 
+        assert isinstance(metrics_node_A, dict)
+        assert isinstance(metrics_node_B, dict)
+        assert isinstance(metrics_node_C, dict)
+        assert isinstance(metrics_node_D, dict)
+
         metrics_aggregate = results.aggregate(accessors = [], keys = [
             'L1/TEX cache global store sectors.sum',
             'L1/TEX cache global load sectors.sum',
@@ -232,22 +256,22 @@ class TestSession:
             'L1/TEX cache global store sectors.sum': 4,
         }
 
-    def test_fails_correctly_with_retries(self):
+    def test_fails_correctly_with_retries(self, bindir, workdir) -> None:
         """
         When `retries` is given, but `ncu` fails for a good reason, it should not retry, *i.e.* it should not sleep.
         """
-        session = ncu.Session(output = TMPDIR / 'report-failure')
+        session = ncu.Session(output = workdir / 'report-failure')
 
         with unittest.mock.patch('time.sleep') as mock_sleep:
             with pytest.raises(subprocess.CalledProcessError):
-                session.run(executable = self.GRAPH, opts = ['--something-ncu-does-not-know'], retries = 5)
+                session.run(executable = bindir / self.GRAPH, opts = ['--something-ncu-does-not-know'], retries = 5)
             mock_sleep.assert_not_called()
 
 class TestProfilingResults:
     """
     Tests for :py:class:`reprospect.tools.ncu.ProfilingResults`.
     """
-    RESULTS = ncu.ProfilingResults({
+    RESULTS : typing.Final[ncu.ProfilingResults] = ncu.ProfilingResults({
         'nvtx_range_name' : {
             'push_region_A' : {
                 'push_region_B' : {
@@ -261,13 +285,13 @@ class TestProfilingResults:
         }
     })
 
-    def test_type(self):
+    def test_type(self) -> None:
         """
         It derives from :py:class:`dict`.
         """
         assert issubclass(ncu.ProfilingResults, dict)
 
-    def test_query(self):
+    def test_query(self) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query`.
         """
@@ -279,7 +303,7 @@ class TestProfilingResults:
         assert self.RESULTS.query(('nvtx_range_name', 'push_region_A', 'push_region_B')) == self.RESULTS['nvtx_range_name']['push_region_A']['push_region_B']
         assert self.RESULTS.query(('nvtx_range_name', 'push_region_A', 'push_region_B', 'my-kernel', 'metric_V')) == 'some-nice-value'
 
-    def test_set(self):
+    def test_set(self) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.set`.
         """
@@ -290,7 +314,7 @@ class TestProfilingResults:
 
         assert self.RESULTS.query(('nvtx_range_name', 'push_region_XS', 'nice-kernel', 'my-value')) == 42
 
-    def test_string_representation(self):
+    def test_string_representation(self) -> None:
         """
         Test the string representation of :py:meth:`reprospect.tools.ncu.ProfilingResults`.
         """
@@ -321,33 +345,33 @@ class TestCacher:
     """
     Tests for :py:class:`reprospect.tools.ncu.Cacher`.
     """
-    GRAPH = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph' if 'CMAKE_BINARY_DIR' in os.environ else None
-    SAXPY = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
+    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph'
+    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy'
 
-    def test_hash_same(self):
+    def test_hash_same(self, bindir) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = pathlib.Path('I-dont-care'))) as cacher:
-                hash_a = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
-                hash_b = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
+                hash_a = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
+                hash_b = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
 
                 assert hash_a.digest() == hash_b.digest()
 
-    def test_hash_different(self):
+    def test_hash_different(self, bindir) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = pathlib.Path('I-dont-care'))) as cacher:
-                hash_a = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
-                hash_b = cacher.hash(opts = ['--nvtx'], executable = self.SAXPY, args = ['--bla=42'])
+                hash_a = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
+                hash_b = cacher.hash(opts = ['--nvtx'], executable = bindir / self.SAXPY, args = ['--bla=42'])
 
                 assert hash_a.digest() != hash_b.digest()
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
-    def test_cache_hit(self):
+    def test_cache_hit(self, bindir, workdir) -> None:
         """
         The cacher should hit on the second call.
         """
@@ -357,13 +381,13 @@ class TestCacher:
             ncu.L1TEXCache.GlobalStore.Sectors(),
         )
 
-        FILES = ['report-cached.log', 'report-cached.ncu-rep']
+        FILES = ('report-cached.log', 'report-cached.ncu-rep')
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = TMPDIR / 'report-cached')) as cacher:
+            with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = workdir / 'report-cached')) as cacher:
                 assert os.listdir(cacher.directory) == ['cache.db']
 
-                results_first = cacher.run(executable = self.GRAPH, metrics = METRICS, retries = 5)
+                results_first = cacher.run(executable = bindir / self.GRAPH, metrics = METRICS, retries = 5)
 
                 assert results_first.cached is False
 
@@ -375,7 +399,7 @@ class TestCacher:
                 assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
                 assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
 
-                results_second = cacher.run(executable = self.GRAPH, metrics = METRICS, retries = 5)
+                results_second = cacher.run(executable = bindir / self.GRAPH, metrics = METRICS, retries = 5)
 
                 assert results_second.cached is True
 

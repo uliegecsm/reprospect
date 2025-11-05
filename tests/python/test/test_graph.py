@@ -1,9 +1,9 @@
 import logging
 import pathlib
 import sys
+import typing
 
 import pytest
-import typeguard
 
 import reprospect
 
@@ -23,11 +23,10 @@ class TestGraph(reprospect.CMakeAwareTestCase):
     """
     @classmethod
     @override
-    @typeguard.typechecked
     def get_target_name(cls) -> str:
         return 'tests_cpp_cuda_graph'
 
-    DEMANGLED_NODE_A = {
+    DEMANGLED_NODE_A : typing.Final[dict[str, str]] = {
         'NVIDIA' : 'void add_and_increment_kernel<(unsigned int)0, >(unsigned int *)',
         'Clang' : 'void add_and_increment_kernel<0u>(unsigned int*)',
     }
@@ -37,12 +36,10 @@ class TestSASS(TestGraph):
     SASS-focused analysis.
     """
     @property
-    @typeguard.typechecked
     def cubin(self) -> pathlib.Path:
         return self.cwd / f'graph.1.{self.arch.as_sm}.cubin'
 
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
     def cuobjdump(self) -> CuObjDump:
         return CuObjDump.extract(
             file = self.executable,
@@ -53,7 +50,6 @@ class TestSASS(TestGraph):
             demangler = self.demangler,
         )[0]
 
-    @typeguard.typechecked
     def test_kernel_count(self, cuobjdump : CuObjDump) -> None:
         """
         Count how many kernels there are (1 per graph node).
@@ -61,7 +57,6 @@ class TestSASS(TestGraph):
         assert len(cuobjdump.functions) == 4
         logging.info(cuobjdump.sass)
 
-    @typeguard.typechecked
     def test_instruction_count(self, cuobjdump : CuObjDump) -> None:
         """
         Check how many instructions there are in the first graph node kernel.
@@ -75,14 +70,13 @@ class TestNCU(TestGraph):
     `ncu`-focused analysis.
     """
 
-    METRICS = [
-        ncu.Metric(name = 'launch__registers_per_thread_allocated')
-    ]
+    METRICS : typing.Final[tuple[ncu.Metric]] = (
+        ncu.Metric(name = 'launch__registers_per_thread_allocated'),
+    )
 
-    NVTX_INCLUDES = ['application_domain@outer_useless_range']
+    NVTX_INCLUDES : typing.Final[tuple[str]] = ('application_domain@outer_useless_range',)
 
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
     def report(self) -> ncu.Report:
         session = ncu.Session(output = self.cwd / 'ncu')
         session.run(
@@ -95,11 +89,9 @@ class TestNCU(TestGraph):
         return ncu.Report(session = session)
 
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
     def results(self, report : ncu.Report) -> ncu.ProfilingResults:
         return report.extract_metrics_in_range(0, metrics = self.METRICS, demangler = self.demangler)
 
-    @typeguard.typechecked
     def test_result_count(self, report : ncu.Report, results : ncu.ProfilingResults) -> None:
         """
         Check how many ranges and results there are in the report.
@@ -107,13 +99,18 @@ class TestNCU(TestGraph):
         assert report.report.num_ranges() == 1
         assert len(results) == 4
 
-    @typeguard.typechecked
     def test_launch_registers_per_thread_allocated_node_A(self, results : ncu.ProfilingResults) -> None:
         """
         Check metric `launch__registers_per_thread_allocated` for graph node A.
         """
-        metrics = list(filter(lambda x: x['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']], results.values()))
-        assert len(metrics) == 1
-        metrics = metrics[0]
+        def matcher(value : ncu.NestedProfilingResults | ncu.MetricValue) -> bool:
+            if isinstance(value, dict):
+                return value['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]
+            return False
 
-        assert metrics[self.METRICS[0].name] == 512
+        metrics = list(filter(matcher, results.values()))
+
+        assert len(metrics) == 1
+        kernel = metrics[0]
+
+        assert kernel[self.METRICS[0].name] == 512

@@ -3,7 +3,6 @@ import os
 import pathlib
 
 import pytest
-import typeguard
 
 from reprospect.utils import cmake
 
@@ -12,14 +11,12 @@ class TestFileAPI:
     Tests for :py:class:`reprospect.utils.cmake.FileAPI`.
     """
     @pytest.fixture(scope = 'session')
-    @typeguard.typechecked
     def cmake_file_api(self) -> cmake.FileAPI:
         return cmake.FileAPI(
             cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
         )
 
-    @typeguard.typechecked
-    def test_cache(self, cmake_file_api) -> None:
+    def test_cache(self, cmake_file_api : cmake.FileAPI) -> None:
         """
         Check that cache variables are read correctly.
         """
@@ -31,8 +28,7 @@ class TestFileAPI:
             'value' : 'ON',
         }
 
-    @typeguard.typechecked
-    def test_toolchains(self, cmake_file_api) -> None:
+    def test_toolchains(self, cmake_file_api : cmake.FileAPI) -> None:
         """
         Check toolchain information.
         """
@@ -48,8 +44,7 @@ class TestFileAPI:
             logging.info(f"\t- compiler path   : {compiler['path']}")
             logging.info(f"\t- compiler version: {compiler['version']}")
 
-    @typeguard.typechecked
-    def test_codemodel_configuration(self, cmake_file_api) -> None:
+    def test_codemodel_configuration(self, cmake_file_api : cmake.FileAPI) -> None:
         """
         Check codemodel configuration information.
         """
@@ -60,8 +55,7 @@ class TestFileAPI:
 
         assert 'targets' in cmake_file_api.codemodel_configuration
 
-    @typeguard.typechecked
-    def test_target(self, cmake_file_api) -> None:
+    def test_target(self, cmake_file_api : cmake.FileAPI) -> None:
         """
         Check target information.
         """

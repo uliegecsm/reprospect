@@ -7,44 +7,49 @@ import typing
 
 import pytest
 import semantic_version
-import typeguard
 
 from reprospect.tools.nsys import Report, Session, strip_cuda_api_suffix, Cacher
 from reprospect.utils      import detect
 
-TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
+@pytest.fixture(scope = 'session')
+def workdir() -> pathlib.Path:
+    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
+
+@pytest.fixture(scope = 'session')
+def bindir() -> pathlib.Path:
+    return pathlib.Path(os.environ['CMAKE_BINARY_DIR'])
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:
     """
     Test :py:class:`reprospect.tools.nsys.Session`.
     """
-    EXECUTABLE = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
+    EXECUTABLE : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy'
 
-    @typeguard.typechecked
-    def run(self, nvtx_capture : typing.Optional[str] = None) -> Session:
-        assert self.EXECUTABLE.is_file()
-
+    def run(self, bindir : pathlib.Path, cwd : pathlib.Path, nvtx_capture : typing.Optional[str] = None) -> Session:
         ns = Session(
-            output_dir = TMPDIR,
+            output_dir = cwd,
             output_file_prefix = self.EXECUTABLE.name,
         )
 
         ns.run(
-            executable = self.EXECUTABLE,
+            executable = bindir / self.EXECUTABLE,
             nvtx_capture = nvtx_capture,
-            cwd = TMPDIR,
+            cwd = cwd,
         )
 
         ns.export_to_sqlite()
 
         return ns
 
-    def test_cuda_api_trace(self):
+    def test_cuda_api_trace(self, bindir, workdir) -> None:
         """
         Collect all CUDA API calls of :file:`tests/cpp/cuda/test_saxpy.cpp`.
         """
-        ns = self.run(nvtx_capture = "outer_useless_range@application_domain")
+        ns = self.run(
+            bindir = bindir, cwd = workdir,
+            nvtx_capture = "outer_useless_range@application_domain",
+        )
 
         cuda_api_trace = ns.extract_statistical_report(report = 'cuda_api_trace')
 
@@ -85,11 +90,11 @@ class TestSession:
 
         assert list(map(strip_cuda_api_suffix, cuda_api_trace['Name'].to_list())) == expt
 
-    def test_report(self):
+    def test_report(self, bindir, workdir) -> None:
         """
         Process the `nsys` report with :py:class:`reprospect.tools.nsys.Report`.
         """
-        ns = self.run()
+        ns = self.run(bindir = bindir, cwd = workdir)
 
         cuda_api_trace = ns.extract_statistical_report(report = 'cuda_api_trace')
 
@@ -148,43 +153,43 @@ class TestCacher:
     """
     Tests for :py:class:`reprospect.tools.nsys.Cacher`.
     """
-    GRAPH = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph' if 'CMAKE_BINARY_DIR' in os.environ else None
-    SAXPY = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
+    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph'
+    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy'
 
-    def test_hash_same(self):
+    def test_hash_same(self, bindir) -> None:
         """
         Test :py:meth:`reprospect.tools.nsys.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             with Cacher(directory = tmpdir, session = Session(output_dir = pathlib.Path('I-dont-care'), output_file_prefix = 'osef')) as cacher:
-                hash_a = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
-                hash_b = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
+                hash_a = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
+                hash_b = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
 
                 assert hash_a.digest() == hash_b.digest()
 
-    def test_hash_different(self):
+    def test_hash_different(self, bindir) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             with Cacher(directory = tmpdir, session = Session(output_dir = pathlib.Path('I-dont-care'), output_file_prefix = 'osef')) as cacher:
-                hash_a = cacher.hash(opts = ['--nvtx'], executable = self.GRAPH, args = ['--bla=42'])
-                hash_b = cacher.hash(opts = ['--nvtx'], executable = self.SAXPY, args = ['--bla=42'])
+                hash_a = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
+                hash_b = cacher.hash(opts = ['--nvtx'], executable = bindir / self.SAXPY, args = ['--bla=42'])
 
                 assert hash_a.digest() != hash_b.digest()
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
-    def test_cache_hit(self):
+    def test_cache_hit(self, bindir, workdir) -> None:
         """
         The cacher should hit on the second call.
         """
         FILES = ['report-cached.nsys-rep']
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir, session = Session(output_dir = TMPDIR, output_file_prefix = 'report-cached')) as cacher:
+            with Cacher(directory = tmpdir, session = Session(output_dir = workdir, output_file_prefix = 'report-cached')) as cacher:
                 assert os.listdir(cacher.directory) == ['cache.db']
 
-                results_first = cacher.run(executable = self.GRAPH)
+                results_first = cacher.run(executable = bindir / self.GRAPH)
 
                 assert results_first.cached is False
 
@@ -196,7 +201,7 @@ class TestCacher:
                 assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
                 assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
 
-                results_second = cacher.run(executable = self.GRAPH)
+                results_second = cacher.run(executable = bindir / self.GRAPH)
 
                 assert results_second.cached is True
 
@@ -208,12 +213,11 @@ class TestReport:
     Test :py:class:`reprospect.tools.nsys.Report`.
     """
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
-    def report(self) -> Report:
-        with Cacher(session = Session(output_dir = TMPDIR, output_file_prefix = 'test-report')) as cacher:
+    def report(self, bindir, workdir : pathlib.Path) -> Report:
+        with Cacher(session = Session(output_dir = workdir, output_file_prefix = 'test-report')) as cacher:
             entry = cacher.run(
-                executable = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy',
-                cwd = TMPDIR,
+                executable = bindir / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy',
+                cwd = workdir,
                 nvtx_capture = '*',
             )
 
@@ -289,16 +293,16 @@ NVTX events
     └── launch_saxpy_kernel_second_time (NvtxPushPopRange)
 """
 
-        def test_intricated(self) -> None:
+        def test_intricated(self, workdir) -> None:
             """
             Use :py:class:`tests.nvtx.test_nvtx.TestNVTX.intricated` to check that we can
             build the hierarchy of NVTX events for arbitrarily complicated situations.
             """
-            with Cacher(session = Session(output_dir = TMPDIR, output_file_prefix = 'test-report-nvtx')) as cacher:
+            with Cacher(session = Session(output_dir = workdir, output_file_prefix = 'test-report-nvtx')) as cacher:
                 entry = cacher.run(
                     executable = pathlib.Path(sys.executable),
                     args = [pathlib.Path(__file__).parent.parent.parent / 'nvtx' / 'test_nvtx.py'],
-                    cwd = TMPDIR,
+                    cwd = workdir,
                     nvtx_capture = '*',
                 )
 

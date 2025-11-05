@@ -413,6 +413,10 @@ jobs:
                 cd python/
                 mypy --config-file pyproject.toml
 
+            - run: |
+                export PYTHONPATH="$PWD/python${PYTHONPATH+:}${PYTHONPATH}"
+                mypy --config-file tests/python/.mypy.ini --explicit-package-bases tests/python
+
     deploy:
         needs: [setup-job-matrix, build-images, tests, examples, install-as-package-and-test, documentation, pylint]
         runs-on: [self-hosted, linux, docker, amd64]

@@ -22,7 +22,7 @@ class TestCacher:
     """
     Tests for :py:class:`reprospect.tools.cacher.Cacher`.
     """
-    def test_hash_same(self):
+    def test_hash_same(self) -> None:
         """
         Check that calling :py:meth:`reprospect.tools.cacher.Cacher.hash` twice with the same values returns the same hash.
         """
@@ -33,7 +33,7 @@ class TestCacher:
 
                 assert hash_a.digest() == hash_b.digest()
 
-    def test_hash_different(self):
+    def test_hash_different(self) -> None:
         """
         Check that calling :py:meth:`reprospect.tools.cacher.Cacher.hash` twice with different values returns different hashes.
         """
@@ -57,7 +57,7 @@ class TestCacher:
 
                 assert hash_a.digest() != hash_b.digest()
 
-    def test_cache_miss(self):
+    def test_cache_miss(self) -> None:
         """
         Check that calling :py:meth:`reprospect.tools.cacher.Cacher.get` for the first time leads to a cache miss.
         """
@@ -67,7 +67,7 @@ class TestCacher:
 
                 assert results.cached is False
 
-    def test_cache_hit(self):
+    def test_cache_hit(self) -> None:
         """
         Check that calling :py:meth:`reprospect.tools.cacher.Cacher.get` for the second time leads to a cache hit.
         """

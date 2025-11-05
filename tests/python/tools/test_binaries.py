@@ -1,22 +1,22 @@
-import dataclasses
-import functools
 import logging
 import os
 import pathlib
 import shutil
 import subprocess
 import typing
-import unittest
 
 import pytest
 import rich.console
-import semantic_version
 
-from reprospect.tools.architecture    import NVIDIAArch
-from reprospect.tools.binaries        import CuObjDump, CuppFilt, LlvmCppFilt, ResourceUsage, Function
-from reprospect.utils                 import cmake
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.binaries     import CuObjDump, CuppFilt, LlvmCppFilt, ResourceUsage, Function
+from reprospect.utils              import cmake
 
-TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
+from tests.python.parameters import Parameters, PARAMETERS
+
+@pytest.fixture(scope = 'session')
+def workdir() -> pathlib.Path:
+    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
 
 @pytest.fixture(scope = 'session')
 def cmake_file_api() -> cmake.FileAPI:
@@ -88,30 +88,6 @@ def get_compilation_output(*,
         stderr = subprocess.STDOUT,
     ).decode())
 
-@dataclasses.dataclass(frozen = True)
-class Parameters:
-    arch : NVIDIAArch
-
-@functools.cache
-def architectures(version : semantic_version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> list[NVIDIAArch]:
-    """
-    Get the list of architectures to test, that are supported by `version`.
-    """
-    return tuple({
-        arch for cc in [
-            70,
-            75,
-            80,
-            86,
-            89,
-            90,
-            100,
-            120,
-        ] if (arch := NVIDIAArch.from_compute_capability(cc = cc)).compute_capability.supported(version = version)
-    })
-
-PARAMETERS = [Parameters(arch = arch) for arch in architectures()]
-
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestResourceUsage:
     """
@@ -121,15 +97,15 @@ class TestResourceUsage:
         """
         When the kernel uses shared memory.
         """
-        FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'shared_memory.cu'
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'shared_memory.cu'
 
-        def test(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Check how shared memory is reported in the compilation output.
             """
             _, compilation = get_compilation_output(
                 source = self.FILE,
-                cwd = TMPDIR,
+                cwd = workdir,
                 arch = parameters.arch,
                 object = True,
                 resource_usage = True,
@@ -147,15 +123,15 @@ class TestResourceUsage:
         """
         When the kernel uses wide loads and stores.
         """
-        FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'wide_load_store.cu'
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'wide_load_store.cu'
 
-        def test(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test(self, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Check how wide loads and stores influence the compilation result.
             """
             _, compilation = get_compilation_output(
                 source = self.FILE,
-                cwd = TMPDIR,
+                cwd = workdir,
                 arch = parameters.arch,
                 object = True,
                 resource_usage = True,
@@ -179,15 +155,15 @@ class TestResourceUsage:
         """
         When the kernel performs a `saxpy`.
         """
-        FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
 
-        def test(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Check compilation result.
             """
             _, compilation = get_compilation_output(
                 source = self.FILE,
-                cwd = TMPDIR,
+                cwd = workdir,
                 arch = parameters.arch,
                 object = True,
                 resource_usage = True,
@@ -225,7 +201,7 @@ class TestFunction:
     """
     Tests related to :py:class:`reprospect.tools.binaries.Function`.
     """
-    CODE = """\
+    CODE : typing.Final[str] = """\
         .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"
         /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */
                                                                                                             /* 0x000e220000000800 */
@@ -233,7 +209,7 @@ class TestFunction:
                                                                                                             /* 0x000e6e0000002100 */
 """
 
-    RU = {
+    RU : typing.Final[dict] = {
         ResourceUsage.REGISTER : 10,
         ResourceUsage.STACK    : 0,
         ResourceUsage.SHARED   : 0,
@@ -288,18 +264,18 @@ class TestCuObjDump:
         """
         When the kernel performs a `saxpy`.
         """
-        CPP_FILE  = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cpp'
-        CUDA_FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
-        SYMBOL    = '_Z12saxpy_kernelfPKfPfj'
-        SIGNATURE = CuppFilt.demangle(SYMBOL)
+        CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cpp'
+        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
+        SYMBOL    : typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
+        SIGNATURE : typing.Final[str] = CuppFilt.demangle(SYMBOL)
 
-        def test_sass_from_object(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_sass_from_object(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CUDA_FILE` as object, extract SASS and analyse resource usage.
             """
             output, _ = get_compilation_output(
                 source = self.CUDA_FILE,
-                cwd = TMPDIR,
+                cwd = workdir,
                 arch = parameters.arch,
                 object = True,
                 cmake_file_api = cmake_file_api,
@@ -331,13 +307,13 @@ class TestCuObjDump:
                 ResourceUsage.SAMPLER: 0,
             }, cuobjdump.functions[self.SIGNATURE].ru
 
-        def test_extract_cubin_from_file(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_extract_cubin_from_file(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
             """
             output, _ = get_compilation_output(
                 source = self.CPP_FILE,
-                cwd = TMPDIR,
+                cwd = workdir,
                 arch = parameters.arch,
                 object = False,
                 cmake_file_api = cmake_file_api,
@@ -346,7 +322,7 @@ class TestCuObjDump:
             cuobjdump, cubin = CuObjDump.extract(
                 file = output,
                 arch = parameters.arch,
-                cwd = TMPDIR,
+                cwd = workdir,
                 cubin = output.name,
             )
 
@@ -355,13 +331,13 @@ class TestCuObjDump:
             assert len(cuobjdump.functions) == 1
             assert self.SIGNATURE in cuobjdump.functions
 
-        def test_extract_symbol_table(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_extract_symbol_table(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.
             """
             output, _ = get_compilation_output(
                 source = self.CPP_FILE,
-                cwd = TMPDIR,
+                cwd = workdir,
                 arch = parameters.arch,
                 object = False,
                 cmake_file_api = cmake_file_api,
@@ -370,7 +346,7 @@ class TestCuObjDump:
             cuobjdump, cubin = CuObjDump.extract(
                 file = output,
                 arch = parameters.arch,
-                cwd = TMPDIR,
+                cwd = workdir,
                 cubin = output.name,
                 sass = False,
             )
@@ -383,23 +359,23 @@ class TestCuObjDump:
         """
         Test :py:meth:`reprospect.tools.binaries.CuObjDump.__str__`.
         """
-        def mock_init(self):
-            self.file = pathlib.Path('code_object.o')
-            self.arch = NVIDIAArch.from_str('BLACKWELL120')
-            self.functions = {
-                'my_kernel(float, const float *, float *, unsigned int)' : Function(
-                    code = TestFunction.CODE,
-                    ru = TestFunction.RU
-                ),
-                'my_other_kernel(float, const float *, float *, unsigned int)' : Function(
-                    code = TestFunction.CODE,
-                    ru = TestFunction.RU
-                )
-            }
+        cuobjdump = CuObjDump(
+            file = pathlib.Path('code_object.o'),
+            arch = NVIDIAArch.from_str('BLACKWELL120'),
+            sass = False,
+        )
+        cuobjdump.functions = {
+            'my_kernel(float, const float *, float *, unsigned int)' : Function(
+                code = TestFunction.CODE,
+                ru = TestFunction.RU
+            ),
+            'my_other_kernel(float, const float *, float *, unsigned int)' : Function(
+                code = TestFunction.CODE,
+                ru = TestFunction.RU
+            )
+        }
 
-        with unittest.mock.patch.object(CuObjDump, "__init__", mock_init):
-            cuobjdump = CuObjDump() # pylint: disable=no-value-for-parameter
-            assert str(cuobjdump) == """\
+        assert str(cuobjdump) == """\
 CuObjDump of code_object.o for architecture BLACKWELL120:
 ┌─────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Function        │ my_kernel(float, const float *, float *, unsigned int)                                                                             │

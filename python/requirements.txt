@@ -1,3 +1,4 @@
+attrs
 backports.strenum
 blake3
 

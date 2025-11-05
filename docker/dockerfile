@@ -94,11 +94,13 @@ EOF
 FROM requirements-compiler-${CXX_COMPILER_ID} AS python-requirements
 
 RUN --mount=target=/python/requirements.txt,type=bind,source=python/requirements.txt \
+    --mount=target=/python/reprospect/installers/cuda_bindings.py,type=bind,source=python/reprospect/installers/cuda_bindings.py \
     --mount=target=/requirements/requirements.python.txt,type=bind,source=requirements/requirements.python.txt <<EOF
     set -ex
 
     python3 -m pip install -r /python/requirements.txt
     python3 -m pip install -r /requirements/requirements.python.txt
+    python3 /python/reprospect/installers/cuda_bindings.py
     python3 -m pip install pytest build
 EOF
 

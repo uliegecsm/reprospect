@@ -66,6 +66,7 @@ authors = [
 Homepage = "https://github.com/uliegecsm/reprospect"
 
 [project.scripts]
+reprospect-install-cuda-bindings = "reprospect.installers.cuda_bindings:main"
 reprospect-install-nsight-systems = "reprospect.installers.nsight_systems:main"
 reprospect-utils-detect-gpus = "reprospect.utils.detect:main"
 

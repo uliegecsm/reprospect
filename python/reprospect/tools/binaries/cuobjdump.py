@@ -1,3 +1,13 @@
+"""
+Tools that can be used to extract SASS code and kernel attributes from executables.
+
+.. note::
+
+    Whereas :py:class:`cuda.core.experimental.ObjectCode` focuses on compiling with ``nvcc`` and querying a handful
+    of kernel properties, this modules provides an interface to the CUDA binary analysis utilities to allow
+    the SASS code of each kernel to be extracted for more extensive analysis, *e.g.* with :py:mod:`reprospect.tools.sass`.
+"""
+
 import dataclasses
 import io
 import logging

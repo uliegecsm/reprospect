@@ -1,5 +1,6 @@
 [MESSAGES CONTROL]
 disable=
+    c-extension-no-member,
     invalid-name,
     line-too-long,
     logging-fstring-interpolation,

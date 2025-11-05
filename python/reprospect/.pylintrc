@@ -2,6 +2,7 @@
 enable=useless-suppression
 
 disable=
+    c-extension-no-member,
     line-too-long,
     logging-fstring-interpolation,
     missing-class-docstring,

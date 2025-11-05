@@ -6,6 +6,7 @@ blake3
 cmake_file_api @ git+https://github.com/madebr/python-cmake-file-api@fc02aa8522b7f793643412124ee938f8d0dc7ef9
 
 ijson
+mypy_extensions
 pandas
 regex
 rich

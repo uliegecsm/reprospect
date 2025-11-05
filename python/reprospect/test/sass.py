@@ -99,7 +99,7 @@ class PatternBuilder:
         return rf'(?P<{group}>{s})'
 
     @staticmethod
-    def groups(s : int | str, groups = typing.Iterable[str]) -> str:
+    def groups(s : int | str, groups : typing.Iterable[str]) -> str:
         """
         Wrap a pattern in named capture groups.
         """

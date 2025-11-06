@@ -369,7 +369,7 @@ class TestCuObjDump:
 
         SIGNATURES : typing.Final[dict[str, str]] = {
             '_Z6say_hiv' : 'say_hi()',
-            '_Z20vector_atomic_add_42PKfS0_Pfi' : 'vector_atomic_add_42(const float *, const float *, float *, int)',
+            '_Z20vector_atomic_add_42PKfS0_Pfj' : 'vector_atomic_add_42(const float *, const float *, float *, unsigned int)',
         }
 
         def test_sass_from_object(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
@@ -437,7 +437,7 @@ class TestCuObjDump:
 
             symbols = cuobjdump.symtab(cubin = cubin, arch = parameters.arch)
 
-            assert all(x in symbols['name'].values for x in self.SIGNATURES)
+            assert all(x in symbols['name'].values for x in self.SIGNATURES), symbols
 
     def test_string_representation(self) -> None:
         """

@@ -355,6 +355,90 @@ class TestCuObjDump:
 
             assert self.SYMBOL in symbols['name'].values
 
+    @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+    class TestMany:
+        """
+        When there are many kernels.
+
+        .. note::
+
+            ``__device__`` functions have been inlined.
+        """
+        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'many.cu'
+        CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'many.cpp'
+
+        SIGNATURES : typing.Final[dict[str, str]] = {
+            '_Z6say_hiv' : 'say_hi()',
+            '_Z20vector_atomic_add_42PKfS0_Pfi' : 'vector_atomic_add_42(const float *, const float *, float *, int)',
+        }
+
+        def test_sass_from_object(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+            """
+            Compile :py:attr:`CUDA_FILE` as object, extract SASS.
+            """
+            output, _ = get_compilation_output(
+                source = self.CUDA_FILE,
+                cwd = workdir,
+                arch = parameters.arch,
+                object = True,
+                cmake_file_api = cmake_file_api,
+            )
+
+            cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = True)
+
+            sass = output.with_suffix(f'.{parameters.arch.compute_capability}.sass')
+            logging.debug(f'Writing SASS to {sass}.')
+            sass.write_text(cuobjdump.sass)
+
+            assert len(cuobjdump.functions) == len(self.SIGNATURES)
+
+        def test_extract_cubin_from_file(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+            """
+            Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
+            """
+            output, _ = get_compilation_output(
+                source = self.CPP_FILE,
+                cwd = workdir,
+                arch = parameters.arch,
+                object = False,
+                cmake_file_api = cmake_file_api,
+            )
+
+            cuobjdump, cubin = CuObjDump.extract(
+                file = output,
+                arch = parameters.arch,
+                cwd = workdir,
+                cubin = output.name,
+            )
+
+            assert cubin.is_file()
+
+            assert set(cuobjdump.functions.keys()) == set(self.SIGNATURES.values())
+
+        def test_extract_symbol_table(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+            """
+            Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.
+            """
+            output, _ = get_compilation_output(
+                source = self.CPP_FILE,
+                cwd = workdir,
+                arch = parameters.arch,
+                object = False,
+                cmake_file_api = cmake_file_api,
+            )
+
+            cuobjdump, cubin = CuObjDump.extract(
+                file = output,
+                arch = parameters.arch,
+                cwd = workdir,
+                cubin = output.name,
+                sass = False,
+            )
+
+            symbols = cuobjdump.symtab(cubin = cubin, arch = parameters.arch)
+
+            assert all(x in symbols['name'].values for x in self.SIGNATURES)
+
     def test_string_representation(self) -> None:
         """
         Test :py:meth:`reprospect.tools.binaries.CuObjDump.__str__`.

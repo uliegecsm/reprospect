@@ -4,8 +4,6 @@ import sys
 import tempfile
 import typing
 
-import typeguard
-
 from reprospect.tools.cacher import Cacher
 
 if sys.version_info >= (3, 12):
@@ -14,8 +12,9 @@ else:
     from typing_extensions import override
 
 class DummyImplementation(Cacher):
+    TABLE : typing.ClassVar[str] = 'dummy'
+
     @override
-    @typeguard.typechecked
     def populate(self, directory : pathlib.Path, **kwargs) -> typing.Any:
         logging.info(f'Populating within {directory} with {kwargs}.')
 

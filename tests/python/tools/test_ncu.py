@@ -32,11 +32,11 @@ class TestSession:
     GRAPH = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph' if 'CMAKE_BINARY_DIR' in os.environ else None
     SAXPY = pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy' if 'CMAKE_BINARY_DIR' in os.environ else None
 
-    def test_collect_basic_metrics_saxpy_with_nvtx_filtering(self):
+    def test_collect_basic_metrics_saxpy_with_nvtx_filtering(self) -> None:
         """
         Collect a few basic metrics for the :py:attr:`SAXPY` executable and filter by NVTX.
         """
-        METRICS = [
+        METRICS : tuple[ncu.Metric, ...] = (
             # Metric with full name provided.
             ncu.Metric(name = 'launch__registers_per_thread_allocated'),
             # Metric with roll-up.
@@ -47,9 +47,9 @@ class TestSession:
             # A few L1TEX cache metrics.
             ncu.L1TEXCache.GlobalLoad.Instructions(),
             ncu.L1TEXCache.GlobalLoad.Sectors(),
-        ]
+        )
 
-        EXPT_METRICS_AND_METADATA = [
+        EXPT_METRICS_AND_METADATA = (
             'launch__registers_per_thread_allocated',
             'smsp__inst_executed.sum',
             'launch__block_dim_x',
@@ -62,7 +62,7 @@ class TestSession:
             'L1/TEX cache global load sectors.sum',
             'mangled',
             'demangled',
-        ]
+        )
 
         session = ncu.Session(output = TMPDIR / 'report-saxpy-basics')
 
@@ -128,7 +128,7 @@ class TestSession:
         """
         Collect a metric with correlations for the :py:attr:`SAXPY` executable.
         """
-        METRICS = [ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode')]
+        METRICS = (ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode'),)
 
         session = ncu.Session(output = TMPDIR / 'report-saxpy-correlated')
 
@@ -160,11 +160,11 @@ class TestSession:
         """
         Collect a few basic metrics for the :py:attr:`GRAPH` executable.
         """
-        METRICS = [
+        METRICS = (
             # A few L1TEX cache metrics.
             ncu.L1TEXCache.GlobalLoad.Sectors(),
             ncu.L1TEXCache.GlobalStore.Sectors(),
-        ]
+        )
 
         session = ncu.Session(output = TMPDIR / 'report-graph-basics')
 
@@ -351,11 +351,11 @@ class TestCacher:
         """
         The cacher should hit on the second call.
         """
-        METRICS = [
+        METRICS = (
             # A few L1TEX cache metrics.
             ncu.L1TEXCache.GlobalLoad.Sectors(),
             ncu.L1TEXCache.GlobalStore.Sectors(),
-        ]
+        )
 
         FILES = ['report-cached.log', 'report-cached.ncu-rep']
 

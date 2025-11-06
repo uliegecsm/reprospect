@@ -12,7 +12,7 @@ from reprospect.tools.sass import Instruction
 from reprospect.test.sass  import AtomicMatcher, PatternBuilder
 from reprospect.utils      import cmake
 
-from tests.python.tools.test_binaries import Parameters, PARAMETERS
+from tests.python.parameters import Parameters, PARAMETERS
 from tests.python.test.sass.test_sass import get_decoder
 
 @pytest.fixture(scope = 'session')
@@ -22,7 +22,9 @@ def cmake_file_api() -> cmake.FileAPI:
         cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
     )
 
-TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
+@pytest.fixture(scope = 'session')
+def workdir() -> pathlib.Path:
+    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
 
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestAtomicMatcher:
@@ -149,18 +151,18 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             ( 32, 'float',     'unsigned int'),
             ( 64, 'double',    'unsigned long long int'),
     ], ids = str)
-    def test_atomicCAS(self, request, word, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_atomicCAS(self, request, workdir, word, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD_BASED_ON_CAS`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}{word[0]}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}{word[0]}.cu'
         FILE.write_text(self.CODE_ADD_BASED_ON_CAS.format(
             size = int(word[0] / 8),
             type = word[1],
             integer = word[2],
         ))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the atomic CAS.
         _, _, matched = self.match_one(
@@ -176,11 +178,11 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert len(matched.captures('operands')) == 5
         assert matched.captures('operands')[0] == 'PT'
 
-    def test_atomicCAS_128(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_atomicCAS_128(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Supported from compute capability 9.x.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.128.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.128.cu'
         FILE.write_text(self.CODE_ADD_BASED_ON_CAS_128)
 
         # Under some circumstances, 128-bit atomicCAS will not compile.
@@ -196,7 +198,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             case _:
                 raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
 
-        kwargs = {'arch' : parameters.arch, 'file' : FILE, 'cmake_file_api' : cmake_file_api}
+        kwargs = {'cwd' : workdir, 'arch' : parameters.arch, 'file' : FILE, 'cmake_file_api' : cmake_file_api}
 
         if expecting_failure:
             with pytest.raises(subprocess.CalledProcessError):
@@ -214,15 +216,15 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 
         assert {'CAS', '128'}.issubset(matched.captures('modifiers'))
 
-    def test_add_relaxed_block_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_relaxed_block_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         As of CUDA 13.0.0, the generated code still applies the ``.STRONG`` modifier,
         regardless of the ``.relaxed`` qualifier shown in the PTX.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'int'))
 
-        decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
 
         # Find the atomic add.
         matcher, _, matched = self.match_one(
@@ -238,21 +240,21 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert matched.captures('operands')[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
-        output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
 
         if matcher.version in semantic_version.SimpleSpec('<12.8'):
-            assert 'atom.add.relaxed.cta.u32' in output
+            assert 'atom.add.relaxed.cta.u32' in result
         else:
-            assert 'atom.add.relaxed.cta.s32' in output
+            assert 'atom.add.relaxed.cta.s32' in result
 
-    def test_add_relaxed_block_unsigned_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_relaxed_block_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Similar to :py:meth:`test_add_relaxed_block_int` for `unsigned long long int`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'unsigned long long int'))
 
-        decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
 
         # Find the atomic add.
         _, _, matched = self.match_one(
@@ -268,18 +270,18 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert matched.captures('operands')[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
-        output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
 
-        assert 'atom.add.relaxed.cta.u64' in output, output
+        assert 'atom.add.relaxed.cta.u64' in result, result
 
-    def test_add_relaxed_block_float(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_relaxed_block_float(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Similar to :py:meth:`test_add_relaxed_block_int` for `float`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'float'))
 
-        decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
 
         # Find the atomic add.
         _, _, matched = self.match_one(
@@ -295,18 +297,18 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert matched.captures('operands')[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
-        output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
 
-        assert 'atom.add.relaxed.cta.f32' in output
+        assert 'atom.add.relaxed.cta.f32' in result
 
-    def test_add_relaxed_block_double(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_relaxed_block_double(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Similar to :py:meth:`test_add_relaxed_block_int` for `double`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'double'))
 
-        decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
 
         # Find the atomic add.
         _, _, matched = self.match_one(
@@ -322,18 +324,18 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert matched.captures('operands')[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
-        output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
 
-        assert 'atom.add.relaxed.cta.f64' in output
+        assert 'atom.add.relaxed.cta.f64' in result
 
-    def test_min_relaxed_device_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_min_relaxed_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MIN` for `int`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MIN.format(type = 'int'))
 
-        decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
 
         # Find the atomic min.
         _, _, matched = self.match_one(
@@ -350,18 +352,18 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert {'MIN', 'S32'}.issubset(matched.captures('modifiers'))
 
         # In the PTX, we can see the '.relaxed'.
-        output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
 
-        assert 'atom.min.relaxed.gpu.s32' in output
+        assert 'atom.min.relaxed.gpu.s32' in result
 
-    def test_min_relaxed_device_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_min_relaxed_device_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MIN` for `long long int`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MIN.format(type = 'long long int'))
 
-        decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
 
         # Find the atomic min.
         _, _, matched = self.match_one(
@@ -378,18 +380,18 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert {'MIN', 'S64'}.issubset(matched.captures('modifiers'))
 
         # In the PTX, we can see the '.relaxed'.
-        output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
 
-        assert 'atom.min.relaxed.gpu.s64' in output
+        assert 'atom.min.relaxed.gpu.s64' in result
 
-    def test_min_relaxed_device_unsigned_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_min_relaxed_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MIN` for `unsigned long long int`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MIN.format(type = 'unsigned long long int'))
 
-        decoder, output = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
 
         # Find the atomic min.
         _, _, matched = self.match_one(
@@ -406,18 +408,18 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert {'MIN', '64'}.issubset(matched.captures('modifiers'))
 
         # In the PTX, we can see the '.relaxed'.
-        output = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
 
-        assert 'atom.min.relaxed.gpu.u64' in output
+        assert 'atom.min.relaxed.gpu.u64' in result
 
-    def test_exch_strong_device_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_exch_strong_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_EXCH` for `int`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_EXCH.format(type = 'int'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the atomic exchange.
         _, _, matched = self.match_one(
@@ -427,14 +429,14 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 
         assert {'EXCH'}.issubset(matched.captures('modifiers'))
 
-    def test_exch_strong_device_unsigned_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_exch_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_EXCH` for `unsigned long long int`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_EXCH.format(type = 'unsigned long long int'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the atomic exchange.
         _, _, matched = self.match_one(
@@ -444,14 +446,14 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 
         assert {'EXCH', '64'}.issubset(matched.captures('modifiers'))
 
-    def test_exch_strong_device_float(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_exch_strong_device_float(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_EXCH` for `float`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_EXCH.format(type = 'float'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the atomic exchange.
         _, _, matched = self.match_one(

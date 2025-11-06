@@ -4,14 +4,16 @@ import pathlib
 import re
 
 import pytest
-import typeguard
 
 from reprospect.tools import sass, binaries
 from reprospect.utils import cmake
 
-from tests.python.tools.test_binaries import Parameters, PARAMETERS, get_compilation_output
+from tests.python.parameters import Parameters, PARAMETERS
+from tests.python.tools.test_binaries import get_compilation_output
 
-TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
+@pytest.fixture(scope = 'session')
+def workdir() -> pathlib.Path:
+    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
 
 FFMA = \
 """\
@@ -38,7 +40,6 @@ ISETP_NE_U32_AND = \
 """
 
 @pytest.fixture(scope = 'session')
-@typeguard.typechecked
 def cmake_file_api() -> cmake.FileAPI:
     return cmake.FileAPI(
         cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
@@ -48,7 +49,7 @@ class TestSASSDecoder:
     """
     Test :py:class:`reprospect.tools.sass.Decoder`.
     """
-    def test_matchers(self):
+    def test_matchers(self) -> None:
         """
         Simple tests for the matchers.
         """
@@ -86,7 +87,7 @@ class TestSASSDecoder:
         assert matched.group(2) == 'ATOM.E.ADD.F64.RN.STRONG.SM P0, RZ, desc[UR4][R2.64], R4'
         assert matched.group(3) == '0x8000000402ff79a2'
 
-    def test_IMAD(self):
+    def test_IMAD(self) -> None:
         """
         Check that it can decode `IMAD`.
         """
@@ -114,7 +115,7 @@ class TestSASSDecoder:
         decoder = sass.Decoder(code = fused, skip_until_headerflags = False)
         assert decoder.instructions == list(instructions.values()), decoder.instructions
 
-    def test_FFMA(self):
+    def test_FFMA(self) -> None:
         """
         Check that it can decode `FFMA`.
         """
@@ -126,7 +127,7 @@ class TestSASSDecoder:
                 control = sass.ControlCode(stall_count = 8, yield_flag = False, read = 7, write = 7, wait = [False, False, True, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False}))
         ], decoder.instructions
 
-    def test_ISETP(self):
+    def test_ISETP(self) -> None:
         """
         Check that it can decode `ISETP`.
         """
@@ -139,7 +140,7 @@ class TestSASSDecoder:
             )
         ], decoder.instructions
 
-    def test_from_source(self):
+    def test_from_source(self) -> None:
         """
         Read SASS from a source.
         """
@@ -150,15 +151,14 @@ class TestSASSDecoder:
         assert len(decoder.instructions) == 32, len(decoder.instructions)
 
     @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
-    @typeguard.typechecked
-    def test_from_cuobjdump(self, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_from_cuobjdump(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Read SASS dumped from ``cuobjdump``.
         """
         CUDA_FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
         output, _ = get_compilation_output(
             source = CUDA_FILE,
-            cwd = TMPDIR,
+            cwd = workdir,
             arch = parameters.arch,
             object = True,
             cmake_file_api = cmake_file_api,
@@ -186,7 +186,7 @@ class TestSASSDecoder:
 
         assert len(instructions_not_nop) == expt_ninstrs[1], len(instructions_not_nop)
 
-    def test_string_representation(self):
+    def test_string_representation(self) -> None:
         """
         Test :py:meth:`reprospect.tools.sass.Decoder.__str__`.
         """
@@ -223,7 +223,7 @@ class TestSASSDecoder:
 └────────┴───────────────────────┴───────┴───────┴────┴────┴────┴────┴────┴────┘
 """
 
-    def test_to_html(self):
+    def test_to_html(self) -> None:
         """
         Test :py:meth:`reprospect.tools.sass.Decoder.to_html`.
         """
@@ -241,7 +241,7 @@ class TestSASSDecoder:
         with file.open('w+') as fout:
             fout.write(decoder.to_html())
 
-    def test_from_128_to_130(self):
+    def test_from_128_to_130(self) -> None:
         """
         This test is related to an observation that, for the same
         architecture (`120`), `nvcc 12.8.1` and `nvcc 13.0.0` write the same sequence of instructions,

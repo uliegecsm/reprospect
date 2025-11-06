@@ -1,5 +1,6 @@
 import inspect
 import sys
+import typing
 import unittest.mock
 
 import pandas
@@ -102,9 +103,9 @@ class TestGPUDetectorAsScript:
     """
     Tests for :py:mod:`reprospect.utils.detect` in script mode.
     """
-    SCRIPT = inspect.getfile(detect)
+    SCRIPT : typing.Final[str] = inspect.getfile(detect)
 
-    def test(self, capsys):
+    def test(self, capsys) -> None:
         """
         Check that the output is correctly formatted according to the arguments.
         """

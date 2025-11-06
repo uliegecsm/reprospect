@@ -6,6 +6,7 @@ Tests
    :caption: Contents:
 
    tests/nvtx
+   tests/python/parameters
    tests/python/test
    tests/python/tools
    tests/python/utils

@@ -26,6 +26,11 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
+
 class Session:
     """
     `Nsight Systems` session interface.
@@ -209,7 +214,7 @@ class Report:
         self.conn : sqlite3.Connection | None = None
 
     @typeguard.typechecked
-    def __enter__(self) -> 'Report':
+    def __enter__(self) -> Self:
         logging.info(f'Connecting to {self.db}.')
         self.conn = sqlite3.connect(self.db)
         return self

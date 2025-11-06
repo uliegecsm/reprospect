@@ -6,8 +6,14 @@ import pathlib
 import pickle
 import sqlite3
 import typing
+import sys
 
 import blake3
+
+if sys.version_info >= (3, 11):
+    from typing import Self
+else:
+    from typing_extensions import Self
 
 class Cacher(abc.ABC):
     """
@@ -57,7 +63,7 @@ class Cacher(abc.ABC):
 
         self.database : typing.Optional[sqlite3.Connection] = None
 
-    def __enter__(self) -> 'Cacher':
+    def __enter__(self) -> Self:
         """
         Connect to the database.
         """

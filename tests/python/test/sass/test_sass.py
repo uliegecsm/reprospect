@@ -2,6 +2,7 @@ import functools
 import logging
 import os
 import pathlib
+import typing
 
 import pytest
 import regex
@@ -21,16 +22,18 @@ from reprospect.test.sass          import AtomicMatcher, \
                                           ReductionMatcher, \
                                           StoreGlobalMatcher
 
-from tests.python.tools.test_binaries import Parameters, PARAMETERS, get_compilation_output
+from tests.python.parameters          import Parameters, PARAMETERS
+from tests.python.tools.test_binaries import get_compilation_output
 
 @pytest.fixture(scope = 'session')
-@typeguard.typechecked
 def cmake_file_api() -> cmake.FileAPI:
     return cmake.FileAPI(
         cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
     )
 
-TMPDIR = pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR']) if 'CMAKE_CURRENT_BINARY_DIR' in os.environ else None
+@pytest.fixture(scope = 'session')
+def workdir() -> pathlib.Path:
+    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
 
 CODE_ELEMENTWISE_ADD_RESTRICT = """\
 __global__ void elementwise_add_restrict(int* __restrict__ const dst, const int* __restrict__ const src) {
@@ -52,13 +55,13 @@ __global__ void elementwise_add_restrict_wide(float4* __restrict__ const dst, co
 
 @functools.lru_cache(maxsize = 128)
 @typeguard.typechecked
-def get_decoder(*, arch : NVIDIAArch, file : pathlib.Path, cmake_file_api : cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:
+def get_decoder(*, cwd : pathlib.Path, arch : NVIDIAArch, file : pathlib.Path, cmake_file_api : cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:
     """
     Compile the code in `file` for `arch` and return a :py:class:`reprospect.tools.sass.Decoder`.
     """
     output, _ = get_compilation_output(
         source = file,
-        cwd = TMPDIR,
+        cwd = cwd,
         arch = arch,
         object = True,
         resource_usage = False,
@@ -203,14 +206,14 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 """
 
     @typeguard.typechecked
-    def test_elementwise_add_restrict(self, request,parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test loads with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT)
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir,arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the read-only load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, readonly = True)
@@ -250,14 +253,14 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
         assert len(load) == 2
 
     @typeguard.typechecked
-    def test_elementwise_add_restrict_wide(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test wide loads with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT_WIDE)
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the read-only wide load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = True)
@@ -275,7 +278,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 
         assert load_ro != load
 
-    def test_constant(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_constant(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         If `src` is declared ``const __restrict__``, the compiler is able to use the ``.CONSTANT`` modifier.
         Otherwise, we need to explicitly use ``__ldg`` to end up using ``.CONSTANT``.
@@ -287,10 +290,10 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
         }
         decoders = {}
         for name, code in ITEMS.items():
-            FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.{name}.cu'
+            FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.{name}.cu'
             FILE.write_text(code)
 
-            decoders[name], _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+            decoders[name], _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['restrict'   ].instructions))) == 1
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['no_restrict'].instructions))) == 0
@@ -302,14 +305,14 @@ class TestStoreGlobalMatcher:
     Tests for :py:class:`reprospect.test.sass.StoreGlobalMatcher`.
     """
     @typeguard.typechecked
-    def test_elementwise_add_restrict(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test store with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT)
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the store.
         matcher = StoreGlobalMatcher(arch = parameters.arch)
@@ -326,14 +329,14 @@ class TestStoreGlobalMatcher:
         assert len(matched.captures('address')) == 1
         assert len(matched.captures('operands')) == 2
 
-    def test_elementwise_add_restrict_wide(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test wide store with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT_WIDE)
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the wide store.
         matcher = StoreGlobalMatcher(arch = parameters.arch, size = 128)
@@ -355,16 +358,16 @@ class TestFloatAddMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.FloatAddMatcher`.
     """
-    def test_elementwise_add_restrict_wide(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.
 
         There will be 4 ``FADD`` instructions because of the *float4*.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT_WIDE)
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         matcher = FloatAddMatcher()
         fadd = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
@@ -409,14 +412,14 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 }}
 """
 
-    def test_add_strong_device_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `int`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD.format(type = 'int'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'STRONG', dtype = ('S', 32))
@@ -438,14 +441,14 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'WEAK', dtype = ('S', 32))
         assert not any(matcher.matches(inst) for inst in decoder.instructions)
 
-    def test_add_strong_device_unsigned_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_unsigned_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `unsigned int`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD.format(type = 'unsigned int'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'STRONG', dtype = ('U', 32))
@@ -463,14 +466,14 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.captures('address')) == 1
         assert len(matched.captures('operands')) == 2
 
-    def test_add_strong_device_unsigned_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `unsigned long long int`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD.format(type = 'unsigned long long int'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
         matcher = ReductionMatcher(
@@ -494,14 +497,14 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.captures('address')) == 1
         assert len(matched.captures('operands')) == 2
 
-    def test_add_strong_device_float(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_float(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `float`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD.format(type = 'float'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', dtype = ('F', 32), scope = 'DEVICE', consistency = 'STRONG')
@@ -519,14 +522,14 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.captures('address')) == 1
         assert len(matched.captures('operands')) == 2
 
-    def test_add_strong_device_double(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_double(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `double`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD.format(type = 'double'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', dtype = ('F', 64), scope = 'DEVICE', consistency = 'STRONG')
@@ -544,14 +547,14 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.captures('address')) == 1
         assert len(matched.captures('operands')) == 2
 
-    def test_sub_strong_device(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_sub_strong_device(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_SUB`.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_SUB)
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
         # Note that the source is negated in another instruction.
@@ -560,16 +563,17 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(red[0])
 
-    def test_max_strong_device_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_max_strong_device_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MAX` for `long long int`. The modifier is ``MAX.S64``.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MAX.format(type = 'long long int'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
+        matcher_type : typing.Type[AtomicMatcher] | typing.Type[ReductionMatcher]
         if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<12.8'):
             matcher_type = AtomicMatcher
         else:
@@ -585,16 +589,17 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         logging.info(matched.capturesdict())
         assert {'MAX', 'S64'}.issubset(matched.captures('modifiers'))
 
-    def test_max_strong_device_unsigned_long_long_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_max_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MAX` for `unsigned long long int`. The modifier is ``MAX.64``.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MAX.format(type = 'unsigned long long int'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
+        matcher_type : typing.Type[AtomicMatcher] | typing.Type[ReductionMatcher]
         if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<12.8'):
             matcher_type = AtomicMatcher
         else:
@@ -610,14 +615,14 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         logging.info(matched.capturesdict())
         assert {'MAX', '64'}.issubset(matched.captures('modifiers'))
 
-    def test_max_strong_device_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_max_strong_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MAX` for `int`. The modifier is ``MAX.S32``.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MAX.format(type = 'int'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('S', 32), scope = 'DEVICE', consistency = 'STRONG')
@@ -631,14 +636,14 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         logging.info(matched.capturesdict())
         assert {'MAX', 'S32'}.issubset(matched.captures('modifiers'))
 
-    def test_max_strong_device_unsigned_int(self, request, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_max_strong_device_unsigned_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MAX` for `unsigned int`. The modifier is ``MAX``.
         """
-        FILE = TMPDIR / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MAX.format(type = 'unsigned int'))
 
-        decoder, _ = get_decoder(arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('U', 32), scope = 'DEVICE', consistency = 'STRONG')

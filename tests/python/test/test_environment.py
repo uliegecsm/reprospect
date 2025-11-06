@@ -9,14 +9,14 @@ class TestEnvironmentField:
     """
     Tests for :py:class:`reprospect.test.environment.EnvironmentField`.
     """
-    def test_no_attribute_name_or_env_key(self):
+    def test_no_attribute_name_or_env_key(self) -> None:
         """
         Raises if neither an attribute name nor an environment key is given.
         """
         with pytest.raises(AttributeError,match = 'Descriptor not initialized properly.'):
             EnvironmentField().read(None, None)
 
-    def test_read_str_converter(self, monkeypatch):
+    def test_read_str_converter(self, monkeypatch) -> None:
         """
         Environment variable read as `str`.
         """
@@ -30,7 +30,7 @@ class TestEnvironmentField:
         assert config.test_var == 'hello'
         assert isinstance(config.test_var, str)
 
-    def test_read_int_converter(self, monkeypatch):
+    def test_read_int_converter(self, monkeypatch) -> None:
         """
         Environment variable read as `int`.
         """
@@ -44,7 +44,7 @@ class TestEnvironmentField:
         assert config.count == 42
         assert isinstance(config.count, int)
 
-    def test_not_in_environment_use_default(self):
+    def test_not_in_environment_use_default(self) -> None:
         """
         The value is initialized to the given default value.
         """
@@ -60,7 +60,7 @@ class TestEnvironmentField:
         assert default_value.other == pathlib.Path('my-default-path')
         assert isinstance(default_value.other, pathlib.Path)
 
-    def test_not_in_environment_no_default(self):
+    def test_not_in_environment_no_default(self) -> None:
         """
         The attribute cannot be initialized.
         """
@@ -74,7 +74,7 @@ class TestEnvironmentField:
         with pytest.raises(RuntimeError, match = "Missing required environment variable 'other' or converter or default value for <class"):
             assert Raises().other
 
-    def test_in_environment_converted_with_env_key(self, monkeypatch):
+    def test_in_environment_converted_with_env_key(self, monkeypatch) -> None:
         """
         The value is correctly initialized from the environment (given a key), and converted.
         """
@@ -94,7 +94,7 @@ class TestEnvironmentField:
         assert read_and_convert_value.other == pathlib.Path('ola/hi/bonjour')
         assert isinstance(read_and_convert_value.other, pathlib.Path)
 
-    def test_in_environment_converted_no_env_key(self, monkeypatch):
+    def test_in_environment_converted_no_env_key(self, monkeypatch) -> None:
         """
         The attribute is correctly initialized from the environment (no key given), and converted.
         """
@@ -112,7 +112,7 @@ class TestEnvironmentField:
         assert read_and_convert_value.var.computed == hash('my-nice/path.rst')
         assert isinstance(read_and_convert_value.var, WeirdType)
 
-    def test_value_cached_at_class_level(self, monkeypatch):
+    def test_value_cached_at_class_level(self, monkeypatch) -> None:
         """
         The value is shared among all instances.
         """
@@ -133,7 +133,7 @@ class TestEnvironmentField:
 
         assert config_b.value == 'first'
 
-    def test_converter_from_default_type(self, monkeypatch):
+    def test_converter_from_default_type(self, monkeypatch) -> None:
         """
         If no converter was provided, infer it from the type of the default value.
         """
@@ -147,7 +147,7 @@ class TestEnvironmentField:
         assert config.var == 666.42
         assert isinstance(config.var, float)
 
-    def test_reset(self, monkeypatch):
+    def test_reset(self, monkeypatch) -> None:
         class Config:
             value = EnvironmentField(converter = float)
 

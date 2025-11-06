@@ -77,7 +77,6 @@ class ComputeCapability:
         return NotImplemented # type: ignore[unreachable]
 
     @staticmethod
-    @typeguard.typechecked
     def from_int(value : int) -> 'ComputeCapability':
         """
         >>> from reprospect.tools.architecture import ComputeCapability
@@ -177,12 +176,10 @@ class NVIDIAArch:
         return f"{self.family.name}{self.compute_capability.as_int}"
 
     @staticmethod
-    @typeguard.typechecked
     def from_compute_capability(cc : str | int) -> 'NVIDIAArch':
         return NVIDIAArch(family = NVIDIAFamily.from_compute_capability(cc = int(cc)), compute_capability = ComputeCapability.from_int(int(cc)))
 
     @staticmethod
-    @typeguard.typechecked
     def from_str(arch : str) -> 'NVIDIAArch':
         """
         >>> from reprospect.tools.architecture import NVIDIAArch

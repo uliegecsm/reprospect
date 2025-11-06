@@ -16,7 +16,6 @@ import logging
 import typing
 
 import cuda.bindings.driver # type: ignore[import-not-found]
-import typeguard
 
 from reprospect.tools import architecture
 
@@ -31,7 +30,6 @@ class CudaRuntimeError:
     def success(self) -> bool:
         return self.value == 0
 
-    @typeguard.typechecked
     def get(self, libcudart) -> tuple[str, str]:
         """
         Get error name and string.
@@ -51,7 +49,6 @@ class CudaDriverError:
     def success(self) -> bool:
         return self.value == 0
 
-    @typeguard.typechecked
     def get(self, libcuda) -> tuple[str, str]:
         """
         Get error name and string.
@@ -72,7 +69,6 @@ class Cuda:
     libcudart : ctypes.CDLL | None = None
 
     @classmethod
-    @typeguard.typechecked
     def load(cls) -> None:
         """
         Load CUDA library.
@@ -86,7 +82,6 @@ class Cuda:
             logging.info(f"Library {cls.libcudart} loaded successfully.")
 
     @classmethod
-    @typeguard.typechecked
     def check_driver_status(cls, *, status : CudaDriverError, info : typing.Any) -> None:
         """
         Check that `status` is successful, raise otherwise.
@@ -98,7 +93,6 @@ class Cuda:
             )
 
     @classmethod
-    @typeguard.typechecked
     def check_runtime_status(cls, *, status : CudaRuntimeError, info : typing.Any) -> None:
         """
         Check that `status` is successful, raise otherwise.
@@ -110,7 +104,6 @@ class Cuda:
             )
 
     @classmethod
-    @typeguard.typechecked
     def check_driver_api_call(cls, *, func : str) -> typing.Any:
         """
         Wrap CUDA driver API call `func` to raise an exception if the call is not successful.
@@ -125,7 +118,6 @@ class Cuda:
         return wrapper
 
     @classmethod
-    @typeguard.typechecked
     def check_runtime_api_call(cls, *, func : str) -> typing.Any:
         """
         Wrap CUDA runtime API call `func` to raise an exception if the call is not successful.
@@ -139,13 +131,11 @@ class Cuda:
             return status
         return wrapper
 
-    @typeguard.typechecked
     def __init__(self, flags : int = 0) -> None:
         self.load()
         self.check_driver_api_call(func = 'cuInit')(flags)
 
     @functools.cached_property
-    @typeguard.typechecked
     def device_count(self) -> int:
         """
         Wrap ``cudaGetDeviceCount``.
@@ -154,7 +144,6 @@ class Cuda:
         self.check_runtime_api_call(func = 'cudaGetDeviceCount')(ctypes.byref(count))
         return count.value
 
-    @typeguard.typechecked
     def get_device_attribute(self, *, value_type : typing.Type, attribute : cuda.bindings.driver.CUdevice_attribute, device : int) -> typing.Any:
         """
         Retrieve an attribute of `device`.
@@ -163,7 +152,6 @@ class Cuda:
         self.check_runtime_api_call(func = 'cudaDeviceGetAttribute')(ctypes.byref(value), attribute.value, device)
         return value.value
 
-    @typeguard.typechecked
     def get_device_compute_capability(self, *, device : int) -> architecture.ComputeCapability:
         """
         Get compute capability of `device`.
@@ -177,7 +165,6 @@ class Cuda:
         )
         return architecture.ComputeCapability(major = cc_major.value, minor = cc_minor.value)
 
-    @typeguard.typechecked
     def get_device_name(self, *, device : int, length : int = 150) -> str:
         """
         Get name of `device`.
@@ -186,7 +173,6 @@ class Cuda:
         self.check_driver_api_call(func = 'cuDeviceGetName')(ctypes.c_char_p(name), len(name), device)
         return name.split(b"\0", 1)[0].decode()
 
-    @typeguard.typechecked
     def get_device_total_memory(self, *, device : int) -> int:
         """
         Get device total memory.

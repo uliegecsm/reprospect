@@ -2,7 +2,6 @@ import pathlib
 import sys
 
 import pytest
-import typeguard
 
 import reprospect
 
@@ -26,7 +25,6 @@ class TestSaxpy(reprospect.CMakeAwareTestCase):
 
     @classmethod
     @override
-    @typeguard.typechecked
     def get_target_name(cls) -> str:
         return 'tests_cpp_cuda_saxpy'
 
@@ -35,21 +33,17 @@ class TestSASS(TestSaxpy):
     SASS-focused analysis.
     """
     @property
-    @typeguard.typechecked
     def cubin(self) -> pathlib.Path:
         return self.cwd / f'saxpy.1.{self.arch.as_sm}.cubin'
 
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
     def cuobjdump(self) -> CuObjDump:
         return CuObjDump.extract(file = self.executable, arch = self.arch, sass = True, cwd = self.cwd, cubin = self.cubin.name)[0]
 
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
     def decoder(self, cuobjdump : CuObjDump) -> Decoder:
         return Decoder(code = cuobjdump.sass)
 
-    @typeguard.typechecked
     def test_instruction_count(self, decoder : Decoder) -> None:
         assert len(decoder.instructions) >= 16
 
@@ -69,7 +63,6 @@ class TestNCU(TestSaxpy):
     ]
 
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
     def report(self) -> ncu.Report:
         session = ncu.Session(output = self.cwd / 'ncu')
         session.run(
@@ -82,11 +75,9 @@ class TestNCU(TestSaxpy):
         return ncu.Report(session = session)
 
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
     def results(self, report : ncu.Report) -> ncu.ProfilingResults:
         return report.extract_metrics_in_range(0, metrics = self.METRICS)
 
-    @typeguard.typechecked
     def test_result_count(self, report : ncu.Report, results : ncu.ProfilingResults) -> None:
         """
         Check how many ranges and results there are in the report.

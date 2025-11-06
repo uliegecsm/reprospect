@@ -6,7 +6,6 @@ import typing
 
 import numpy
 import pytest
-import typeguard
 
 import reprospect
 
@@ -36,7 +35,6 @@ class TestAllocation(reprospect.CMakeAwareTestCase):
 
     @classmethod
     @override
-    @typeguard.typechecked
     def get_target_name(cls) -> str:
         return 'examples_kokkos_view_allocation_tracing'
 
@@ -49,7 +47,6 @@ class TestNSYS(TestAllocation):
     """Size of the `Kokkos::Impl::SharedAllocationHeader` type, see https://github.com/kokkos/kokkos/blob/c1a715cab26da9407867c6a8c04b2a1d6b2fc7ba/core/src/impl/Kokkos_SharedAlloc.hpp#L23."""
 
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
     def session(self) -> nsys.Session:
         """
         Analyse with `nsys`, use :py:class:`reprospect.tools.nsys.Cacher`.
@@ -75,12 +72,10 @@ class TestNSYS(TestAllocation):
             return cacher.session
 
     @pytest.fixture(scope = 'class')
-    @typeguard.typechecked
     def report(self, session : nsys.Session) -> nsys.Report:
         return nsys.Report(db = session.output_file_sqlite)
 
     @staticmethod
-    @typeguard.typechecked
     def get_memory_id(report : nsys.Report, memory : Memory) -> numpy.int64:
         """
         Retrieve the `id` from `ENUM_CUDA_MEM_KIND` whose `name` matches `memory`.

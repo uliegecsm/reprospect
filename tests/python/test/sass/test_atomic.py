@@ -6,7 +6,6 @@ import subprocess
 import pytest
 import regex
 import semantic_version
-import typeguard
 
 from reprospect.tools.sass import Instruction
 from reprospect.test.sass  import AtomicMatcher, PatternBuilder
@@ -16,7 +15,6 @@ from tests.python.parameters import Parameters, PARAMETERS
 from tests.python.test.sass.test_sass import get_decoder
 
 @pytest.fixture(scope = 'session')
-@typeguard.typechecked
 def cmake_file_api() -> cmake.FileAPI:
     return cmake.FileAPI(
         cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),

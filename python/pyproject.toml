@@ -17,7 +17,6 @@ requires = [
     "rich",
     "semantic_version",
     "system-helpers>=0.0.3",
-    "typeguard",
     "typing-extensions>=4.4.0",
 
     # Requirements from requirements/requirements.python.txt that are required by mypyc.

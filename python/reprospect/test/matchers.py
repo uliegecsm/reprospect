@@ -9,7 +9,6 @@ import sys
 import typing
 
 import regex
-import typeguard
 
 from reprospect.test.sass  import Matcher
 from reprospect.tools.sass import Instruction
@@ -39,13 +38,11 @@ class InSequenceAtMatcher(SequenceMatcher):
     matcher : Matcher
 
     @override
-    @typeguard.typechecked
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
         matched = self.matcher.matches(instructions[start])
         return [matched] if matched is not None else None
 
     @override
-    @typeguard.typechecked
     def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
         matched = self.matches(instructions = instructions, start = start)
         if matched is None:
@@ -60,7 +57,6 @@ class ZeroOrMoreInSequenceMatcher(SequenceMatcher):
     matcher : Matcher
 
     @override
-    @typeguard.typechecked
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
         matches: list[regex.Match] = []
 
@@ -73,7 +69,6 @@ class ZeroOrMoreInSequenceMatcher(SequenceMatcher):
         return matches
 
     @override
-    @typeguard.typechecked
     def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
         """
         It is always matching.
@@ -88,7 +83,6 @@ class OrderedInSequenceMatcher(SequenceMatcher):
     matchers : tuple[SequenceMatcher | Matcher, ...]
 
     @override
-    @typeguard.typechecked
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
         matches : list[regex.Match] = []
         for matcher in self.matchers:
@@ -101,7 +95,6 @@ class OrderedInSequenceMatcher(SequenceMatcher):
         return matches
 
     @override
-    @typeguard.typechecked
     def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
         matched = self.matches(instructions = instructions, start = start)
         if matched is None:
@@ -116,7 +109,6 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
     matchers : tuple[SequenceMatcher | Matcher, ...]
 
     @override
-    @typeguard.typechecked
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
         """
         Cycle through all permutations of :py:attr:`matchers` (breaks on match).
@@ -131,7 +123,6 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
         return None
 
     @override
-    @typeguard.typechecked
     def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
         matched = self.matches(instructions = instructions, start = start)
         if matched is None:

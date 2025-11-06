@@ -7,7 +7,6 @@ import typing
 import pytest
 import regex
 import semantic_version
-import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump
@@ -54,7 +53,6 @@ __global__ void elementwise_add_restrict_wide(float4* __restrict__ const dst, co
 """Element-wise add with 128-bit ``float4``."""
 
 @functools.lru_cache(maxsize = 128)
-@typeguard.typechecked
 def get_decoder(*, cwd : pathlib.Path, arch : NVIDIAArch, file : pathlib.Path, cmake_file_api : cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:
     """
     Compile the code in `file` for `arch` and return a :py:class:`reprospect.tools.sass.Decoder`.
@@ -205,7 +203,6 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 }
 """
 
-    @typeguard.typechecked
     def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test loads with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT`.
@@ -252,7 +249,6 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
         load = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
         assert len(load) == 2
 
-    @typeguard.typechecked
     def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test wide loads with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.
@@ -304,7 +300,6 @@ class TestStoreGlobalMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.StoreGlobalMatcher`.
     """
-    @typeguard.typechecked
     def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test store with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT`.

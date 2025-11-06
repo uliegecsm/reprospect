@@ -15,7 +15,6 @@ import typing
 import blake3
 import pandas
 import rich.tree
-import typeguard
 
 from reprospect.tools import cacher
 from reprospect.utils import ldd
@@ -35,7 +34,6 @@ class Session:
     """
     `Nsight Systems` session interface.
     """
-    @typeguard.typechecked
     def __init__(self, output_dir : pathlib.Path, output_file_prefix : str) -> None:
         self.output_dir = output_dir
         self.output_file_prefix = output_file_prefix
@@ -54,7 +52,6 @@ class Session:
         args: list[str | pathlib.Path] | None #: Arguments to pass to the executable.
 
         @functools.cached_property
-        @typeguard.typechecked
         def to_list(self) -> list[str | pathlib.Path]:
             """
             Build the full ``nsys`` profile command.
@@ -75,7 +72,6 @@ class Session:
 
             return cmd
 
-    @typeguard.typechecked
     def get_command(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
@@ -118,7 +114,6 @@ class Session:
             args = args,
         )
 
-    @typeguard.typechecked
     def run(
         self,
         executable : pathlib.Path,
@@ -152,7 +147,6 @@ class Session:
 
         return command
 
-    @typeguard.typechecked
     def export_to_sqlite(
         self,
         cwd : pathlib.Path = pathlib.Path.cwd(),
@@ -172,7 +166,6 @@ class Session:
         self.output_file_sqlite.unlink(missing_ok = True)
         subprocess.check_call(cmd, cwd = cwd)
 
-    @typeguard.typechecked
     def extract_statistical_report(
         self,
         report : str = 'cuda_api_sum',
@@ -208,25 +201,21 @@ class Report:
     """
     Helper for reading the `SQLite` export of a ``nsys`` report.
     """
-    @typeguard.typechecked
     def __init__(self, *, db : pathlib.Path) -> None:
         self.db = db
         self.conn : sqlite3.Connection | None = None
 
-    @typeguard.typechecked
     def __enter__(self) -> Self:
         logging.info(f'Connecting to {self.db}.')
         self.conn = sqlite3.connect(self.db)
         return self
 
-    @typeguard.typechecked
     def __exit__(self, *args, **kwargs) -> None:
         logging.info(f'Closing connection to {self.db}.')
         if self.conn is not None:
             self.conn.close()
 
     @functools.cached_property
-    @typeguard.typechecked
     def tables(self) -> list[str]:
         """
         Tables in the report.
@@ -237,7 +226,6 @@ class Report:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         return [row[0] for row in cursor.fetchall()]
 
-    @typeguard.typechecked
     def table(self, *, name : str, **kwargs) -> pandas.DataFrame:
         """
         Get a table from the report.
@@ -245,7 +233,6 @@ class Report:
         logging.info(f'Retrieving table {name} in {self.db}.')
         return pandas.read_sql_query(f"SELECT * FROM {name};", self.conn, **kwargs)
 
-    @typeguard.typechecked
     @staticmethod
     def single_row(*, data : pandas.DataFrame) -> pandas.Series:
         """
@@ -264,11 +251,9 @@ class Report:
         pattern : str
         column : str = 'Name'
 
-        @typeguard.typechecked
         def __call__(self, table : pandas.DataFrame) -> pandas.Series:
             return table[self.column].astype(str).str.contains(self.pattern, regex = True)
 
-    @typeguard.typechecked
     @classmethod
     def get_correlated_row(cls, *,
         src : pandas.DataFrame | pandas.Series,
@@ -287,11 +272,9 @@ class Report:
         raise RuntimeError()
 
     class NvtxEvents(rich_helpers.TreeMixin):
-        @typeguard.typechecked
         def __init__(self, events : pandas.DataFrame) -> None:
             self.events = events
 
-        @typeguard.typechecked
         def get(self, accessors : typing.Sequence[str]) -> pandas.DataFrame:
             """
             Find all nested NVTX events matching `accessors`.
@@ -314,9 +297,7 @@ class Report:
             return self.events.iloc[sorted(previous)]
 
         @override
-        @typeguard.typechecked
         def to_tree(self) -> rich.tree.Tree:
-            @typeguard.typechecked
             def add_branch(*, tree : rich.tree.Tree, nodes : pandas.DataFrame) -> None:
                 for _, node in nodes.iterrows():
                     branch = tree.add(f"{node['text']} ({node['eventTypeName']})")
@@ -329,7 +310,6 @@ class Report:
             return tree
 
     @functools.cached_property
-    @typeguard.typechecked
     def nvtx_events(self) -> 'Report.NvtxEvents':
         """
         Get all NVTX events from the `NVTX_EVENTS` table.
@@ -400,7 +380,6 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
 
         return Report.NvtxEvents(events = events)
 
-    @typeguard.typechecked
     def get_events(self, table : str, accessors : typing.Sequence[str]) -> pandas.DataFrame:
         """
         Query all rows in `table` that happen between the `start`/`end` time points
@@ -433,7 +412,6 @@ ORDER BY {table}.start ASC
         """
         return pandas.read_sql_query(query, self.conn)
 
-@typeguard.typechecked
 def strip_cuda_api_suffix(call : str) -> str:
     """
     Strip suffix like `_v10000` or `_ptsz` from a CUDA API `call`.
@@ -464,12 +442,10 @@ class Cacher(cacher.Cacher):
     """
     TABLE : typing.ClassVar[str] = 'nsys'
 
-    @typeguard.typechecked
     def __init__(self, session : Session, directory : typing.Optional[str | pathlib.Path] = None):
         super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.nsys-cache')
         self.session = session
 
-    @typeguard.typechecked
     def hash_impl(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
@@ -515,7 +491,6 @@ class Cacher(cacher.Cacher):
         return hasher
 
     @override
-    @typeguard.typechecked
     def hash(self, **kwargs) -> blake3.blake3:
         return self.hash_impl(
             executable = kwargs['executable'],
@@ -526,7 +501,6 @@ class Cacher(cacher.Cacher):
         )
 
     @override
-    @typeguard.typechecked
     def populate(self, directory : pathlib.Path, **kwargs) -> Session.Command:
         """
         When there is a cache miss, call :py:meth:`reprospect.tools.nsys.Session.run`.
@@ -538,7 +512,6 @@ class Cacher(cacher.Cacher):
 
         return command
 
-    @typeguard.typechecked
     def run(self, **kwargs) -> cacher.Cacher.Entry:
         """
         On a cache hit, copy files from the cache entry.
@@ -550,7 +523,6 @@ class Cacher(cacher.Cacher):
 
         return entry
 
-    @typeguard.typechecked
     def export_to_sqlite(
         self,
         entry : cacher.Cacher.Entry,

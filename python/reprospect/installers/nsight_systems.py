@@ -4,15 +4,14 @@ import os
 import re
 import shutil
 import subprocess
+import typing
 
 import semantic_version
-import typeguard
 
 import system_helpers.apt.install
 
-PACKAGE = 'cuda-nsight-systems'
+PACKAGE : typing.Final[str] = 'cuda-nsight-systems'
 
-@typeguard.typechecked
 def parse_args() -> argparse.Namespace:
     """
     Parse CLI arguments.
@@ -37,7 +36,6 @@ def install(*, args = argparse.Namespace) -> None:
         update = True, clean = True,
     )
 
-@typeguard.typechecked
 def detect_cuda_version() -> str:
     """
     Detect CUDA version using the following strategies:

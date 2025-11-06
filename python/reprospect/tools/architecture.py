@@ -5,7 +5,6 @@ import sys
 import typing
 
 import semantic_version
-import typeguard
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -50,7 +49,6 @@ class ComputeCapability:
     """
 
     @property
-    @typeguard.typechecked
     def as_int(self) -> int:
         """
         >>> from reprospect.tools.architecture import ComputeCapability
@@ -86,7 +84,6 @@ class ComputeCapability:
         major, minor = divmod(value, 10)
         return ComputeCapability(major = major, minor = minor)
 
-    @typeguard.typechecked
     def supported(self, version : semantic_version.Version) -> bool:
         """
         Check if the architecture is supported by the CUDA `version`.
@@ -110,7 +107,6 @@ class NVIDIAFamily(StrEnum):
     BLACKWELL = 'BLACKWELL'
 
     @staticmethod
-    @typeguard.typechecked
     def from_compute_capability(cc : ComputeCapability | int) -> "NVIDIAFamily":
         """
         Get the NVIDIA architecture family from a compute capability.
@@ -152,7 +148,6 @@ class NVIDIAArch:
             )
 
     @property
-    @typeguard.typechecked
     def as_compute(self) -> str:
         """
         Convert to CUDA "virtual architecture" (``compute_``).
@@ -164,14 +159,12 @@ class NVIDIAArch:
         return f'compute_{self.compute_capability.as_int}'
 
     @property
-    @typeguard.typechecked
     def as_sm(self) -> str:
         """
         Convert to CUDA "real architecture" (``sm_``).
         """
         return f'sm_{self.compute_capability.as_int}'
 
-    @typeguard.typechecked
     def __str__(self) -> str:
         return f"{self.family.name}{self.compute_capability.as_int}"
 

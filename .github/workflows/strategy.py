@@ -6,16 +6,16 @@ import logging
 import pprint
 import typing
 
-import typeguard
 
 from reprospect.tools.architecture import NVIDIAArch
 
-AVAILABLE_RUNNER_ARCHES = (
+AVAILABLE_RUNNER_ARCHES : typing.Final[tuple[NVIDIAArch, ...]] = (
     NVIDIAArch.from_str('VOLTA70'),
     NVIDIAArch.from_str('BLACKWELL120'),
 )
 
-@typeguard.typechecked
+JobDict : typing.TypeAlias = dict[str, typing.Any]
+
 def get_base_name_tag_digest(cuda_version : str, ubuntu_version : str) -> tuple[str, str, str]:
     """
     Get `Docker` base image name, tag and digest.
@@ -40,13 +40,12 @@ def get_base_name_tag_digest(cuda_version : str, ubuntu_version : str) -> tuple[
             raise ValueError((cuda_version, ubuntu_version))
     return ('nvidia/cuda', tag, digest)
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen = False, slots = True)
 class Compiler:
     ID : str
     version : typing.Optional[str] = None
     path : typing.Optional[str] = None
 
-@typeguard.typechecked
 def full_image(*, name : str, tag : str, platform : str, args : argparse.Namespace) -> str:
     """
     Full image from its `name` and `tag`, with remote.
@@ -62,8 +61,7 @@ def full_image(*, name : str, tag : str, platform : str, args : argparse.Namespa
         case _:
             raise ValueError(f'unsupported platform {platform!r}')
 
-@typeguard.typechecked
-def complete_job_impl(*, partial : dict, args : argparse.Namespace) -> dict:
+def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDict:
     """
     Add fields to a job.
     """
@@ -163,12 +161,11 @@ def complete_job_impl(*, partial : dict, args : argparse.Namespace) -> dict:
 
     return partial
 
-@typeguard.typechecked
-def complete_job(partial : dict, args : argparse.Namespace) -> list[dict]:
+def complete_job(partial : JobDict, args : argparse.Namespace) -> list[JobDict]:
     """
     Each platform is a separate job, because multi-arch builds are too slow due to emulation.
     """
-    jobs = []
+    jobs : list[JobDict] = []
 
     for platform in partial.pop('platforms'):
         job = copy.deepcopy(partial)
@@ -183,7 +180,6 @@ def complete_job(partial : dict, args : argparse.Namespace) -> list[dict]:
 
     return jobs
 
-@typeguard.typechecked
 def main(*, args : argparse.Namespace) -> None:
     """
     Generate the strategy matrix.

@@ -2,10 +2,8 @@ import contextlib
 import logging
 
 import nvtx
-import typeguard
 
 @contextlib.contextmanager
-@typeguard.typechecked
 def push_pop_range(domain : nvtx.Domain, **kwargs):
     domain.push_range(attributes = domain.get_event_attributes(**kwargs))
     try:
@@ -14,7 +12,6 @@ def push_pop_range(domain : nvtx.Domain, **kwargs):
         domain.pop_range()
 
 @contextlib.contextmanager
-@typeguard.typechecked
 def start_end_range(domain : nvtx.Domain, **kwargs):
     range_id = domain.start_range(attributes = domain.get_event_attributes(**kwargs))
     try:
@@ -69,7 +66,6 @@ class TestNVTX:
         assert reg is not None
 
     @classmethod
-    @typeguard.typechecked
     def intricated(cls, domain) -> None:
         """
         Build a situation with many intricated ranges.

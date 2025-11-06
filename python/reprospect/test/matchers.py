@@ -3,14 +3,13 @@ Combine matchers from :py:mod:`reprospect.test.sass` into sequence matchers.
 """
 
 import abc
-import dataclasses
 import itertools
 import sys
 import typing
 
 import regex
 
-from reprospect.test.sass  import Matcher
+from reprospect.test.sass  import InstructionMatcher
 from reprospect.tools.sass import Instruction
 
 if sys.version_info >= (3, 12):
@@ -30,12 +29,18 @@ class SequenceMatcher(abc.ABC):
     def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
         pass
 
-@dataclasses.dataclass(slots = True, frozen = True)
 class InSequenceAtMatcher(SequenceMatcher):
     """
     Check that the element matches exactly, raise otherwise.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    matcher : Matcher
+    __slots__ = ('matcher',)
+
+    def __init__(self, matcher : InstructionMatcher) -> None:
+        self.matcher : typing.Final[InstructionMatcher] = matcher
 
     @override
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
@@ -49,12 +54,18 @@ class InSequenceAtMatcher(SequenceMatcher):
             raise RuntimeError(f'{self.matcher!r} did not match {instructions[start]!r}.')
         return matched
 
-@dataclasses.dataclass(slots = True, frozen = True)
 class ZeroOrMoreInSequenceMatcher(SequenceMatcher):
     """
     Match zero or more times.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    matcher : Matcher
+    __slots__ = ('matcher',)
+
+    def __init__(self, matcher : InstructionMatcher) -> None:
+        self.matcher : typing.Final[InstructionMatcher] = matcher
 
     @override
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
@@ -75,21 +86,27 @@ class ZeroOrMoreInSequenceMatcher(SequenceMatcher):
         """
         return self.matches(instructions = instructions, start = start) or []
 
-@dataclasses.dataclass(slots = True, frozen = True)
 class OrderedInSequenceMatcher(SequenceMatcher):
     """
     Match a sequence of matchers in the order they are provided.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    matchers : tuple[SequenceMatcher | Matcher, ...]
+    __slots__ = ('matchers',)
+
+    def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
+        self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
 
     @override
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
         matches : list[regex.Match] = []
         for matcher in self.matchers:
-            if isinstance(matcher, Matcher) and (matched := matcher.matches(inst = instructions[start + len(matches)])) is not None:
-                matches.append(matched)
-            elif isinstance(matcher, SequenceMatcher) and (matched := matcher.matches(instructions = instructions, start = start + len(matches))) is not None:
-                matches.extend(matched)
+            if isinstance(matcher, InstructionMatcher) and (single := matcher.matches(inst = instructions[start + len(matches)])) is not None:
+                matches.append(single)
+            elif isinstance(matcher, SequenceMatcher) and (many := matcher.matches(instructions = instructions, start = start + len(matches))) is not None:
+                matches.extend(many)
             else:
                 return None
         return matches
@@ -101,12 +118,18 @@ class OrderedInSequenceMatcher(SequenceMatcher):
             raise RuntimeError(f'{self.matchers!r} did not match {instructions[start:start + len(self.matchers)]!r}.')
         return matched
 
-@dataclasses.dataclass(slots = True, frozen = True)
 class UnorderedInSequenceMatcher(SequenceMatcher):
     """
     Match a sequence of matchers in some permutation of the order they are provided.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    matchers : tuple[SequenceMatcher | Matcher, ...]
+    __slots__ = ('matchers',)
+
+    def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
+        self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
 
     @override
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:

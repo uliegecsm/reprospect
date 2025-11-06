@@ -331,6 +331,12 @@ jobs:
                 . ${{ github.job }}/bin/activate
                 reprospect-install-nsight-systems --help
 
+            - name: Extensibility.
+              run: |
+                  . ${{ github.job }}/bin/activate
+                  pip install -U pytest
+                  python3 -m pytest -vvv -s --log-cli-level=info tests/python/test_extensibility.py
+
     documentation:
         needs: [setup-job-matrix, tests]
         runs-on: [self-hosted, linux, docker, amd64]

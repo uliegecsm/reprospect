@@ -34,13 +34,13 @@ References:
 """
 
 import abc
-import dataclasses
 import functools
 import os
 import sys
 import types
 import typing
 
+import mypy_extensions
 import regex
 import semantic_version
 
@@ -214,31 +214,40 @@ def check_memory_instruction_word_size(*, size : int) -> None:
     if size not in ALLOWABLE_SIZES:
         raise RuntimeError(f'{size} is not an allowable memory instruction word size ({ALLOWABLE_SIZES} (in bytes)).')
 
-class Matcher(abc.ABC):
+@mypy_extensions.mypyc_attr(allow_interpreted_subclasses = True)
+class InstructionMatcher(abc.ABC):
     """
     Abstract base class for instruction matchers.
     """
     @abc.abstractmethod
-    def matches(self, inst : Instruction | str) -> typing.Any:
+    def matches(self, inst : Instruction | str) -> typing.Optional[regex.Match[str]]:
         """
         Check if the instruction matches.
         """
 
-    def __call__(self, inst : Instruction | str) -> typing.Any:
+    def __call__(self, inst : Instruction | str) -> typing.Optional[regex.Match[str]]:
         """
         Allow the matcher to be called as a function.
         """
         return self.matches(inst)
 
-@dataclasses.dataclass(slots = True, kw_only = True)
-class PatternMatcher(Matcher):
+@mypy_extensions.mypyc_attr(allow_interpreted_subclasses = True)
+class PatternMatcher(InstructionMatcher):
     """
     Regex-based (or pattern) matching.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    pattern : str | regex.Pattern
+    __slots__ = ('pattern',)
+
+    def __init__(self, pattern : str | regex.Pattern[str]) -> None:
+        self.pattern : typing.Final[str | regex.Pattern[str]] = pattern
 
     @override
-    def matches(self, inst : Instruction | str) -> typing.Optional[regex.Match]:
+    @typing.final
+    def matches(self, inst : Instruction | str) -> typing.Optional[regex.Match[str]]:
         if isinstance(inst, str):
             return regex.match(self.pattern, inst)
         return regex.match(self.pattern, inst.instruction)
@@ -271,9 +280,9 @@ class ArchitectureAwarePatternMatcher(PatternMatcher):
         Build the regex pattern based on architecture.
         """
 
-class VersionAwarePatternMixin:
+class ArchitectureAndVersionAwarePatternMatcher(ArchitectureAwarePatternMatcher):
     """
-    Base class for matchers that generate patterns based on CUDA version.
+    Base class for matchers that generate patterns based on CUDA version and architecture.
 
     .. note::
 
@@ -289,8 +298,9 @@ class VersionAwarePatternMixin:
 
             ATOM.E.ADD.S32.STRONG.CTA PT, RZ, [R2], R5
     """
-    def __init__(self, version : typing.Optional[semantic_version.Version] = None) -> None:
+    def __init__(self, arch : NVIDIAArch, version : typing.Optional[semantic_version.Version] = None) -> None:
         self.version = version if version is not None else semantic_version.Version(os.environ['CUDA_VERSION'])
+        super().__init__(arch = arch)
 
 class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
     """
@@ -468,7 +478,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
             case _:
                 raise ValueError(f'unsupported {self.arch}')
 
-class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
+class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
     """
     Matcher for atomic operations on:
 
@@ -510,8 +520,7 @@ class AtomicMatcher(VersionAwarePatternMixin, ArchitectureAwarePatternMatcher):
             memory = memory,
             dtype = dtype,
         )
-        VersionAwarePatternMixin.__init__(self, version = version)
-        ArchitectureAwarePatternMatcher.__init__(self, arch = arch)
+        super().__init__(arch = arch, version = version)
 
     @override
     def _build_pattern(self) -> str: # pylint: disable=too-many-branches

@@ -437,7 +437,7 @@ class TestCuObjDump:
 
             symbols = cuobjdump.symtab(cubin = cubin, arch = parameters.arch)
 
-            assert all(x in symbols['name'].values for x in self.SIGNATURES)
+            assert all(x in symbols['name'].values for x in self.SIGNATURES), symbols
 
     def test_string_representation(self) -> None:
         """

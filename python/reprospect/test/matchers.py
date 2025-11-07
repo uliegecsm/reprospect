@@ -31,7 +31,7 @@ class SequenceMatcher(abc.ABC):
 
 class InSequenceAtMatcher(SequenceMatcher):
     """
-    Check that the element matches exactly, raise otherwise.
+    Check that the element matches exactly.
 
     .. note::
 
@@ -150,4 +150,33 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
         matched = self.matches(instructions = instructions, start = start)
         if matched is None:
             raise RuntimeError(f'No permutation of {self.matchers!r} did match {instructions[start:start + len(self.matchers)]!r}.')
+        return matched
+
+class InSequenceMatcher(SequenceMatcher):
+    """
+    Check that a sequence contains an element that matches exactly.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
+    """
+    __slots__ = ('matcher', 'index',)
+
+    def __init__(self, matcher : SequenceMatcher | InstructionMatcher) -> None:
+        self.matcher : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = [matcher])
+        self.index : int | None = None
+
+    @override
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
+        for index in range(start, len(instructions)):
+            if (matched := self.matcher.matches(instructions = instructions, start = index)) is not None:
+                self.index = index
+                return matched
+        return None
+
+    @override
+    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
+        matched = self.matches(instructions = instructions, start = start)
+        if matched is None:
+            raise RuntimeError(f'{self.matcher.matchers[0]!r} did not match.')
         return matched

@@ -4,6 +4,7 @@ import pytest
 
 from reprospect.test          import sass
 from reprospect.test.matchers import InSequenceAtMatcher, \
+                                     InSequenceMatcher, \
                                      OrderedInSequenceMatcher, \
                                      UnorderedInSequenceMatcher, \
                                      ZeroOrMoreInSequenceMatcher
@@ -198,3 +199,21 @@ class TestUnorderedInSequenceMatcher:
 
         with pytest.raises(RuntimeError, match = 'No permutation of '):
             UnorderedInSequenceMatcher(matchers = inners).assert_matches(instructions = NOP_DMUL_NOP_DADD)
+
+class TestInSequenceMatcher:
+    """
+    Tests for :py:class:`reprospect.test.matchers.InSequenceMatcher`.
+    """
+    def test_matches(self) -> None:
+        matcher = InSequenceMatcher(matcher = MATCHER_DADD)
+
+        assert matcher.matches(instructions = NOP_DMUL_NOP_DADD) is not None
+
+        assert matcher.index == 4
+
+    def test_assert_matches(self) -> None:
+        matcher = InSequenceMatcher(matcher = MATCHER_NOP)
+
+        assert matcher.matches(instructions = DADD_DMUL) is None
+
+        assert matcher.index is None

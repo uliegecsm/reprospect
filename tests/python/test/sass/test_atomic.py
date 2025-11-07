@@ -8,7 +8,7 @@ import regex
 import semantic_version
 
 from reprospect.tools.sass import Instruction
-from reprospect.test.sass  import AtomicMatcher, PatternBuilder
+from reprospect.test.sass  import AtomicMatcher, InstructionMatch, PatternBuilder
 from reprospect.utils      import cmake
 
 from tests.python.parameters import Parameters, PARAMETERS
@@ -127,7 +127,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 """
 
     @staticmethod
-    def match_one(*, decoder, **kwargs) -> tuple[AtomicMatcher, Instruction, regex.Match]:
+    def match_one(*, decoder, **kwargs) -> tuple[AtomicMatcher, Instruction, InstructionMatch]:
         """
         Match exactly one instruction.
         """
@@ -139,7 +139,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
+        logging.info(matched)
 
         return matcher, inst, matched
 
@@ -170,11 +170,9 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             dtype = (None, word[0]),
         )
 
-        assert len(matched.captures('opcode')) == 1
-        assert 'modifiers' in matched.capturesdict()
-        assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 5
-        assert matched.captures('operands')[0] == 'PT'
+        assert len(matched.additional['address']) == 1
+        assert len(matched.operands) == 5
+        assert matched.operands[0] == 'PT'
 
     def test_atomicCAS_128(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -212,7 +210,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             dtype = (None, 128),
         )
 
-        assert {'CAS', '128'}.issubset(matched.captures('modifiers'))
+        assert {'CAS', '128'}.issubset(matched.modifiers)
 
     def test_add_relaxed_block_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -234,8 +232,8 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             dtype = ('S', 32),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.captures('operands')[0]) is not None
-        assert matched.captures('operands')[1] == 'RZ'
+        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert matched.operands[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
@@ -264,8 +262,8 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             dtype = ('U', 64),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.captures('operands')[0]) is not None
-        assert matched.captures('operands')[1] == 'RZ'
+        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert matched.operands[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
@@ -291,8 +289,8 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             dtype = ('F', 32),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.captures('operands')[0]) is not None
-        assert matched.captures('operands')[1] == 'RZ'
+        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert matched.operands[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
@@ -318,8 +316,8 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             dtype = ('F', 64),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.captures('operands')[0]) is not None
-        assert matched.captures('operands')[1] == 'RZ'
+        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert matched.operands[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
@@ -345,9 +343,9 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             dtype = ('S', 32),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.captures('operands')[0]) is not None
-        assert matched.captures('operands')[1] == 'RZ'
-        assert {'MIN', 'S32'}.issubset(matched.captures('modifiers'))
+        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert matched.operands[1] == 'RZ'
+        assert {'MIN', 'S32'}.issubset(matched.modifiers)
 
         # In the PTX, we can see the '.relaxed'.
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
@@ -373,9 +371,9 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             dtype = ('S', 64),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.captures('operands')[0]) is not None
-        assert matched.captures('operands')[1] == 'RZ'
-        assert {'MIN', 'S64'}.issubset(matched.captures('modifiers'))
+        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert matched.operands[1] == 'RZ'
+        assert {'MIN', 'S64'}.issubset(matched.modifiers)
 
         # In the PTX, we can see the '.relaxed'.
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
@@ -401,9 +399,9 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             dtype = ('U', 64),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.captures('operands')[0]) is not None
-        assert matched.captures('operands')[1] == 'RZ'
-        assert {'MIN', '64'}.issubset(matched.captures('modifiers'))
+        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert matched.operands[1] == 'RZ'
+        assert {'MIN', '64'}.issubset(matched.modifiers)
 
         # In the PTX, we can see the '.relaxed'.
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
@@ -425,7 +423,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             arch = parameters.arch, operation = 'EXCH', dtype = ('S', 32), scope = 'DEVICE', consistency = 'STRONG',
         )
 
-        assert {'EXCH'}.issubset(matched.captures('modifiers'))
+        assert {'EXCH'}.issubset(matched.modifiers)
 
     def test_exch_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -442,7 +440,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             arch = parameters.arch, operation = 'EXCH', dtype = ('S', 64), scope = 'DEVICE', consistency = 'STRONG',
         )
 
-        assert {'EXCH', '64'}.issubset(matched.captures('modifiers'))
+        assert {'EXCH', '64'}.issubset(matched.modifiers)
 
     def test_exch_strong_device_float(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -459,4 +457,4 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             arch = parameters.arch, operation = 'EXCH', dtype = ('F', 32), scope = 'DEVICE', consistency = 'STRONG',
         )
 
-        assert {'EXCH'}.issubset(matched.captures('modifiers'))
+        assert {'EXCH'}.issubset(matched.modifiers)

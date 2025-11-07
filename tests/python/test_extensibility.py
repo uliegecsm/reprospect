@@ -16,7 +16,7 @@ import pytest
 import regex
 
 from reprospect.tools.sass    import Instruction, ControlCode
-from reprospect.test.sass     import InstructionMatcher, PatternMatcher, FloatAddMatcher
+from reprospect.test.sass     import InstructionMatch, InstructionMatcher, PatternMatcher, FloatAddMatcher
 from reprospect.test.matchers import OrderedInSequenceMatcher
 
 if sys.version_info >= (3, 12):
@@ -29,15 +29,17 @@ class NewInstructionMatcher(InstructionMatcher):
     Faking a matcher for some unforeseen use case.
     """
     @override
-    def matches(self, inst : str | Instruction) -> regex.Match[str] | None:
-        return regex.match(r'.*', inst.instruction if isinstance(inst, Instruction) else inst)
+    def matches(self, inst : str | Instruction) -> InstructionMatch | None:
+        if (matched := regex.match(r'(?P<opcode>[A-Z]+).*', inst.instruction if isinstance(inst, Instruction) else inst)) is not None:
+            return InstructionMatch.parse(bits = matched)
+        return None
 
 class NewPatternMatcher(PatternMatcher):
     """
     Faking a matcher for some unforeseen use case.
     """
     def __init__(self):
-        super().__init__(pattern = r'(NOP|DADD|DMUL).*')
+        super().__init__(pattern = r'(?P<opcode>NOP|DADD|DMUL).*')
 
 class CannotBeExtended(FloatAddMatcher):
     """
@@ -52,6 +54,7 @@ class TestInspect:
         logging.info(inspect.getfile(Instruction))
 
     def test_InstructionMatcher(self) -> None:
+        logging.info(inspect.getfile(InstructionMatch))
         logging.info(inspect.getfile(InstructionMatcher))
 
     def test_OrderedInSequenceMatcher(self) -> None:

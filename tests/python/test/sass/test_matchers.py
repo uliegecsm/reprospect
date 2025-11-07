@@ -26,9 +26,9 @@ DADD_NOP_DMUL = (DADD, NOP, NOP, NOP, DMUL)
 NOP_DMUL_NOP_DADD = (NOP, DMUL, NOP, NOP, DADD)
 """NOP instructions with one DADD and one DMUL."""
 
-MATCHER_DADD = sass.OpcodeModsWithOperandsMatcher(instruction = 'DADD', operands = ('R4', 'R4', sass.PatternBuilder.CONSTANT))
-MATCHER_DMUL = sass.OpcodeModsWithOperandsMatcher(instruction = 'DMUL', operands = ('R6', 'R6', sass.PatternBuilder.CONSTANT))
-MATCHER_NOP  = sass.OpcodeModsMatcher(instruction = 'NOP', operands = False)
+MATCHER_DADD = sass.OpcodeModsWithOperandsMatcher(opcode = 'DADD', operands = ('R4', 'R4', sass.PatternBuilder.CONSTANT))
+MATCHER_DMUL = sass.OpcodeModsWithOperandsMatcher(opcode = 'DMUL', operands = ('R6', 'R6', sass.PatternBuilder.CONSTANT))
+MATCHER_NOP  = sass.OpcodeModsMatcher(opcode = 'NOP', operands = False)
 
 class TestInSequenceAtMatcher:
     """
@@ -40,7 +40,7 @@ class TestInSequenceAtMatcher:
         """
         [matched] = InSequenceAtMatcher(matcher = MATCHER_DADD).matches(instructions = DADD_NOP_DMUL[0:1])
 
-        assert matched.group(0) == DADD.instruction
+        assert matched.opcode == 'DADD'
 
     def test_match_with_start(self):
         """
@@ -48,7 +48,7 @@ class TestInSequenceAtMatcher:
         """
         [matched] = InSequenceAtMatcher(matcher = MATCHER_DADD).matches(instructions = NOP_DMUL_NOP_DADD, start = 4)
 
-        assert matched.group(0) == DADD.instruction
+        assert matched.opcode == 'DADD'
 
     def test_no_match(self):
         """
@@ -83,7 +83,7 @@ class TestZeroOrMoreInSequenceMatcher:
         """
         matched = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).matches(instructions = DADD_NOP_DMUL, start = 1)
 
-        assert len(matched) == 3 and all(x.group(0) == 'NOP' for x in matched)
+        assert len(matched) == 3 and all(x.opcode == 'NOP' for x in matched)
 
 class TestOneOrMoreInSequenceMatcher:
     """
@@ -133,9 +133,9 @@ class TestOrderedInSequenceMatcher:
         )).matches(instructions = DADD_NOP_DMUL)
 
         assert len(matched) == 5
-        assert matched[0].group(0) == DADD.instruction
-        assert all(x.group(0) == 'NOP' for x in matched[1:-2])
-        assert matched[-1].group(0) == DMUL.instruction
+        assert matched[0].opcode == 'DADD'
+        assert all(x.opcode == 'NOP' for x in matched[1:-2])
+        assert matched[-1].opcode == 'DMUL'
 
     def test_match(self):
         """
@@ -150,8 +150,8 @@ class TestOrderedInSequenceMatcher:
         ).matches(instructions = DADD_DMUL)
 
         assert len(matched) == 2
-        assert matched[0].group(0) == DADD.instruction
-        assert matched[1].group(0) == DMUL.instruction
+        assert matched[0].opcode == 'DADD'
+        assert matched[1].opcode == 'DMUL'
 
     def test_no_match(self):
         """

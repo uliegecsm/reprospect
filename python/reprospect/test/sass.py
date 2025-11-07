@@ -20,10 +20,10 @@ while reducing the need to track low-level details of the evolving CUDA instruct
 
     >>> from reprospect.tools.architecture import NVIDIAArch
     >>> from reprospect.test.sass          import LoadGlobalMatcher
-    >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('VOLTA70')).matches(inst = 'LDG.E.SYS R15, [R8+0x10]').capturesdict()
-    {'opcode': ['LDG'], 'modifiers': ['E', 'SYS'], 'operands': ['R15', 'R8+0x10'], 'address': ['R8+0x10']}
-    >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('BLACKWELL120'), size = 128, readonly = True).matches(inst = 'LDG.E.128.CONSTANT R2, desc[UR15][R6.64+0x12]').capturesdict()
-    {'opcode': ['LDG'], 'modifiers': ['E', '128', 'CONSTANT'], 'operands': ['R2', 'desc[UR15][R6.64+0x12]'], 'address': ['desc[UR15][R6.64+0x12]']}
+    >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('VOLTA70')).matches(inst = 'LDG.E.SYS R15, [R8+0x10]')
+    InstructionMatch(opcode='LDG', modifiers=('E', 'SYS'), operands=('R15', 'R8+0x10'), additional={'address': ['R8+0x10']})
+    >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('BLACKWELL120'), size = 128, readonly = True).matches(inst = 'LDG.E.128.CONSTANT R2, desc[UR15][R6.64+0x12]')
+    InstructionMatch(opcode='LDG', modifiers=('E', '128', 'CONSTANT'), operands=('R2', 'desc[UR15][R6.64+0x12]'), additional={'address': ['desc[UR15][R6.64+0x12]']})
 
 References:
 
@@ -34,6 +34,7 @@ References:
 """
 
 import abc
+import dataclasses
 import functools
 import os
 import sys
@@ -256,18 +257,39 @@ def check_memory_instruction_word_size(*, size : int) -> None:
     if size not in ALLOWABLE_SIZES:
         raise RuntimeError(f'{size} is not an allowable memory instruction word size ({ALLOWABLE_SIZES} (in bytes)).')
 
+@dataclasses.dataclass(frozen = True, slots = True)
+class InstructionMatch:
+    """
+    An instruction with parsed components.
+    """
+    opcode : str
+    modifiers : tuple[str, ...]
+    operands : tuple[str, ...]
+
+    additional : dict[str, list[str]] | None = None
+
+    @staticmethod
+    def parse(*, bits : regex.Match[str]) -> 'InstructionMatch':
+        captured = bits.capturesdict()
+        return InstructionMatch(
+            opcode = captured.pop('opcode')[0],
+            modifiers = tuple(captured.pop('modifiers', ())),
+            operands = tuple(captured.pop('operands', ())),
+            additional = captured,
+        )
+
 @mypy_extensions.mypyc_attr(allow_interpreted_subclasses = True)
 class InstructionMatcher(abc.ABC):
     """
     Abstract base class for instruction matchers.
     """
     @abc.abstractmethod
-    def matches(self, inst : Instruction | str) -> typing.Optional[regex.Match[str]]:
+    def matches(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
         """
         Check if the instruction matches.
         """
 
-    def __call__(self, inst : Instruction | str) -> typing.Optional[regex.Match[str]]:
+    def __call__(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
         """
         Allow the matcher to be called as a function.
         """
@@ -289,10 +311,10 @@ class PatternMatcher(InstructionMatcher):
 
     @override
     @typing.final
-    def matches(self, inst : Instruction | str) -> typing.Optional[regex.Match[str]]:
-        if isinstance(inst, str):
-            return regex.match(self.pattern, inst)
-        return regex.match(self.pattern, inst.instruction)
+    def matches(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
+        if (matched := regex.match(self.pattern, inst.instruction if isinstance(inst, Instruction) else inst)) is not None:
+            return InstructionMatch.parse(bits = matched)
+        return None
 
 class FloatAddMatcher(PatternMatcher):
     """
@@ -630,13 +652,20 @@ class OpcodeModsMatcher(PatternMatcher):
     Useful when the opcode and modifiers are known and the operands may need to be retrieved.
 
     >>> from reprospect.test.sass import OpcodeModsMatcher
-    >>> OpcodeModsMatcher(instruction = 'ISETP.NE.AND').matches(
+    >>> OpcodeModsMatcher(opcode = 'ISETP', modifiers = ('NE', 'AND')).matches(
     ...     'ISETP.NE.AND P2, PT, R4, RZ, PT'
-    ... ).captures('operands')
-    ['P2', 'PT', 'R4', 'RZ', 'PT']
+    ... )
+    InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), additional={})
     """
-    def __init__(self, instruction : str, operands : bool = True) -> None:
-        super().__init__(pattern = rf'^{instruction}\s+{PatternBuilder.operands()}' if operands else rf'^{instruction}')
+    def __init__(self, *,
+        opcode : str,
+        modifiers : typing.Optional[typing.Iterable[str]] = None,
+        operands : bool = True,
+    ) -> None:
+        pattern = '^' + PatternBuilder.opcode_mods(opcode, modifiers)
+        if operands:
+            pattern += rf'\s+{PatternBuilder.operands()}'
+        super().__init__(pattern = pattern)
 
 class OpcodeModsWithOperandsMatcher(PatternMatcher):
     """
@@ -646,7 +675,8 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
 
     >>> from reprospect.test.sass import OpcodeModsWithOperandsMatcher, PatternBuilder
     >>> OpcodeModsWithOperandsMatcher(
-    ...     instruction = 'ISETP.NE.AND',
+    ...     opcode = 'ISETP',
+    ...     modifiers = ('NE', 'AND'),
     ...     operands = (
     ...         PatternBuilder.PRED,
     ...         PatternBuilder.PREDT,
@@ -654,14 +684,18 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
     ...         PatternBuilder.REGZ,
     ...         PatternBuilder.PREDT,
     ...     )
-    ... ).matches('ISETP.NE.AND P2, PT, R4, RZ, PT').captures('operands')
-    ['P2', 'PT', 'R4', 'RZ', 'PT']
+    ... ).matches('ISETP.NE.AND P2, PT, R4, RZ, PT')
+    InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), additional={})
     """
-    def __init__(self, instruction : str, operands : typing.Iterable[str]) -> None:
+    def __init__(self, *,
+        opcode : str,
+        operands : typing.Iterable[str],
+        modifiers : typing.Optional[typing.Iterable[str]] = None,
+    ) -> None:
         operands = r',\s+'.join(
             PatternBuilder.group(op, group = 'operands') for op in operands
         )
-        super().__init__(pattern = rf"^{instruction}\s+{operands}")
+        super().__init__(pattern = rf'^{PatternBuilder.opcode_mods(opcode, modifiers)}\s+{operands}')
 
 class AnyOfMatcher(InstructionMatcher):
     """
@@ -677,7 +711,7 @@ class AnyOfMatcher(InstructionMatcher):
         self.matchers : typing.Final[tuple[InstructionMatcher, ...]] = tuple(matchers)
 
     @override
-    def matches(self, inst : Instruction | str) -> regex.Match | None:
+    def matches(self, inst : Instruction | str) -> InstructionMatch | None:
         """
         Loop over the :py:attr:`matchers` and return the first match.
         """

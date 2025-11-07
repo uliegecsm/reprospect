@@ -196,6 +196,11 @@ class TestCuObjDump:
     """
     Tests related to :py:class:`reprospect.tools.binaries.CuObjDump`.
     """
+    @staticmethod
+    def dump(*, file : pathlib.Path, cuobjdump : CuObjDump) -> None:
+        logging.info(f'Writing parsed SASS to {file}.')
+        file.write_text(str(cuobjdump))
+
     @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
     class TestSaxpy:
         """
@@ -220,9 +225,10 @@ class TestCuObjDump:
 
             cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = True)
 
-            sass = output.with_suffix(f'.{parameters.arch.compute_capability}.sass')
-            logging.debug(f'Writing SASS to {sass}.')
-            sass.write_text(cuobjdump.sass)
+            TestCuObjDump.dump(
+                file = output.with_suffix(f'.{parameters.arch.compute_capability}.sass'),
+                cuobjdump = cuobjdump,
+            )
 
             assert len(cuobjdump.functions) == 1
 
@@ -331,9 +337,10 @@ class TestCuObjDump:
 
             cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = True)
 
-            sass = output.with_suffix(f'.{parameters.arch.compute_capability}.sass')
-            logging.debug(f'Writing SASS to {sass}.')
-            sass.write_text(cuobjdump.sass)
+            TestCuObjDump.dump(
+                file = output.with_suffix(f'.{parameters.arch.compute_capability}.sass'),
+                cuobjdump = cuobjdump,
+            )
 
             assert len(cuobjdump.functions) == len(self.SIGNATURES)
 

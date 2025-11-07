@@ -166,7 +166,9 @@ class TestSASSDecoder:
 
         cuobjdump = binaries.CuObjDump(file = output, arch = parameters.arch, sass = True)
 
-        decoder = sass.Decoder(code = cuobjdump.sass)
+        assert len(cuobjdump.functions) == 1
+
+        decoder = sass.Decoder(code = next(iter(cuobjdump.functions.values())).code)
 
         match parameters.arch.compute_capability.as_int:
             case 70:

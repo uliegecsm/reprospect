@@ -42,7 +42,9 @@ class TestSASS(TestSaxpy):
 
     @pytest.fixture(scope = 'class')
     def decoder(self, cuobjdump : CuObjDump) -> Decoder:
-        return Decoder(code = cuobjdump.sass)
+        assert len(cuobjdump.functions) == 1
+
+        return Decoder(code = next(iter(cuobjdump.functions.values())).code)
 
     def test_instruction_count(self, decoder : Decoder) -> None:
         assert len(decoder.instructions) >= 16

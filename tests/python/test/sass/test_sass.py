@@ -68,7 +68,11 @@ def get_decoder(*, cwd : pathlib.Path, arch : NVIDIAArch, file : pathlib.Path, c
         **kwargs,
     )
 
-    return Decoder(code = CuObjDump(file = output, arch = arch, sass = True).sass), output
+    cuobjdump = CuObjDump(file = output, arch = arch, sass = True)
+
+    assert len(cuobjdump.functions) == 1
+
+    return Decoder(code = next(iter(cuobjdump.functions.values())).code), output
 
 class TestPatternBuilder:
     """

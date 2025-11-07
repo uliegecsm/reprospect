@@ -5,6 +5,7 @@ import pytest
 from reprospect.test          import sass
 from reprospect.test.matchers import InSequenceAtMatcher, \
                                      InSequenceMatcher, \
+                                     OneOrMoreInSequenceMatcher, \
                                      OrderedInSequenceMatcher, \
                                      UnorderedInSequenceMatcher, \
                                      ZeroOrMoreInSequenceMatcher
@@ -83,6 +84,39 @@ class TestZeroOrMoreInSequenceMatcher:
         matched = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).matches(instructions = DADD_NOP_DMUL, start = 1)
 
         assert len(matched) == 3 and all(x.group(0) == 'NOP' for x in matched)
+
+class TestOneOrMoreInSequenceMatcher:
+    """
+    Tests for :py:class:`reprospect.test.matchers.OneOrMoreInSequenceMatcher`.
+    """
+    def test_matches_zero(self):
+        """
+        Does not match sequence :py:const:`DADD_NOP_DMUL`.
+        """
+        matcher = OneOrMoreInSequenceMatcher(matcher = MATCHER_NOP)
+
+        assert not matcher.matches(instructions = DADD_NOP_DMUL)
+
+        with pytest.raises(RuntimeError, match = 'did not match'):
+            matcher.assert_matches(instructions = DADD_NOP_DMUL)
+
+    def test_matches_one(self):
+        """
+        Matches the sequence :py:const:`DADD_NOP_DMUL`.
+        """
+        matcher = OneOrMoreInSequenceMatcher(matcher = MATCHER_DADD)
+
+        assert len(matcher.matches(instructions = DADD_NOP_DMUL)) == 1
+        assert len(matcher.assert_matches(instructions = DADD_NOP_DMUL)) == 1
+
+    def test_matches_more(self):
+        """
+        Matches the sequence :py:const:`DADD_NOP_DMUL` many times starting at 1.
+        """
+        matcher = OneOrMoreInSequenceMatcher(matcher = MATCHER_NOP)
+
+        assert len(matcher.matches(instructions = DADD_NOP_DMUL, start = 1)) == 3
+        assert len(matcher.assert_matches(instructions = DADD_NOP_DMUL, start = 1)) == 3
 
 class TestOrderedInSequenceMatcher:
     """

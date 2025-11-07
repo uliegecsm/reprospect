@@ -77,6 +77,13 @@ class PatternBuilder:
     ``0x899``) or depends on a register.
     """
 
+    IMMEDIATE : typing.Final[str] = '[0-9.]+'
+    """
+    References:
+
+    * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L34
+    """
+
     @staticmethod
     def optional(s : str) -> str:
         """
@@ -85,11 +92,11 @@ class PatternBuilder:
         return rf'(?:{s})?'
 
     @staticmethod
-    def either(a : str, b : str) -> str:
+    def any(*args : str) -> str:
         """
-        Build a pattern matching either `a` or `b`.
+        Build a pattern matching any of `args`.
         """
-        return rf'({a}|{b})'
+        return f'({"|".join(args)})'
 
     @staticmethod
     def group(s : int | str, group : str) -> str:
@@ -115,6 +122,20 @@ class PatternBuilder:
         return cls.group(cls.REG, group = 'operands')
 
     @classmethod
+    def mathreg(cls) -> str:
+        """
+        :py:attr:`REG` with `operands` group and optional math modifiers.
+
+        References:
+
+        * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L67
+        """
+        return cls.group(
+            r'[\-]?' + cls.REG,
+            group = 'operands',
+        )
+
+    @classmethod
     def regz(cls) -> str:
         """
         :py:attr:`REGZ` with `operands` group.
@@ -122,11 +143,32 @@ class PatternBuilder:
         return cls.group(cls.REGZ, group = 'operands')
 
     @classmethod
+    def ureg(cls) -> str:
+        """
+        :py:attr:`UREG` with `operands` group.
+        """
+        return cls.group(cls.UREG, group = 'operands')
+
+    @classmethod
     def predt(cls) -> str:
         """
         :py:attr:`PREDT` with `operands` group.
         """
         return cls.group(cls.PREDT, group = 'operands')
+
+    @classmethod
+    def constant(cls) -> str:
+        """
+        :py:attr:`CONSTANT` with `operands` group.
+        """
+        return cls.group(cls.CONSTANT, group = 'operands')
+
+    @classmethod
+    def immediate(cls) -> str:
+        """
+        :py:attr:`IMMEDIATE` with `operands` group.
+        """
+        return cls.group(cls.IMMEDIATE, group = 'operands')
 
     @staticmethod
     def opcode_mods(opcode : str, modifiers : typing.Optional[typing.Iterable[int | str]] = None) -> str:
@@ -257,10 +299,14 @@ class FloatAddMatcher(PatternMatcher):
     Matcher for floating-point add (``FADD``) instructions.
     """
     PATTERN : typing.Final[regex.Pattern[str]] = regex.compile(
-        PatternBuilder.opcode_mods('FADD') + r'\s+' +
+        PatternBuilder.opcode_mods('FADD', modifiers = ('?FTZ',)) + r'\s+' +
         PatternBuilder.groups(PatternBuilder.REG, groups = ('dst', 'operands')) + r'\s*,\s*' +
-        PatternBuilder.reg() + r'\s*,\s*' +
-        PatternBuilder.reg()
+        PatternBuilder.mathreg() + r'\s*,\s*' +
+        PatternBuilder.any(
+            PatternBuilder.mathreg(), PatternBuilder.ureg(),
+            PatternBuilder.constant(),
+            PatternBuilder.immediate(),
+        )
     )
 
     def __init__(self) -> None:
@@ -566,9 +612,9 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
             case 70 | 75:
                 addr = PatternBuilder.reg_addr()
             case 80 | 86 | 89:
-                addr = PatternBuilder.either(PatternBuilder.reg_addr(), PatternBuilder.reg64_addr())
+                addr = PatternBuilder.any(PatternBuilder.reg_addr(), PatternBuilder.reg64_addr())
             case 90 | 100 | 120:
-                addr = PatternBuilder.either(PatternBuilder.reg_addr(), PatternBuilder.desc_reg64_addr())
+                addr = PatternBuilder.any(PatternBuilder.reg_addr(), PatternBuilder.desc_reg64_addr())
             case _:
                 raise ValueError(f'unsupported {self.arch}')
 

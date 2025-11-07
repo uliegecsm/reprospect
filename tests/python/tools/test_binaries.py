@@ -10,6 +10,7 @@ import rich.console
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump, CuppFilt, LlvmCppFilt, ResourceUsage, Function
+from reprospect.tools.binaries     import cuobjdump
 from reprospect.utils              import cmake
 
 from tests.python.parameters import Parameters, PARAMETERS
@@ -209,7 +210,7 @@ class TestFunction:
                                                                                                             /* 0x000e6e0000002100 */
 """
 
-    RU : typing.Final[dict] = {
+    RU : typing.Final[cuobjdump.ResourceUsageDict] = {
         ResourceUsage.REGISTER : 10,
         ResourceUsage.STACK    : 0,
         ResourceUsage.SHARED   : 0,

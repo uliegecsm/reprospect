@@ -1,9 +1,46 @@
 import functools
 import json
 import pathlib
+import typing
 
 import cmake_file_api
 import ijson
+
+CacheDict : typing.TypeAlias = dict[str, dict[str, typing.Any]]
+"""
+The CMake cache is a nested dictionary.
+
+References:
+
+* https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#object-kind-cache
+"""
+
+ToolchainDict : typing.TypeAlias = dict[str, dict[str, typing.Any]]
+"""
+The CMake toolchain is a nested dictionary.
+
+References:
+
+* https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#object-kind-toolchains
+"""
+
+CodemodelDict : typing.TypeAlias = dict[str, list]
+"""
+The CMake code model is a dictionary.
+
+References:
+
+* https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#object-kind-codemodel
+"""
+
+TargetDict : typing.TypeAlias = dict[str, typing.Any]
+"""
+The CMake target is a dictionary.
+
+References:
+
+* https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#codemodel-version-2-target-object
+"""
 
 class FileAPI:
     """
@@ -23,7 +60,7 @@ class FileAPI:
         self.cmake_reply_path = cmake_build_directory / '.cmake' / 'api' / 'v1' / 'reply'
 
     @functools.cached_property
-    def cache(self) -> dict:
+    def cache(self) -> CacheDict:
         """
         Retrieve the CMake cache.
         """
@@ -37,7 +74,7 @@ class FileAPI:
             }
 
     @functools.cached_property
-    def toolchains(self) -> dict:
+    def toolchains(self) -> ToolchainDict:
         """
         Retrieve the toolchains information.
         """
@@ -51,7 +88,7 @@ class FileAPI:
             }
 
     @functools.cached_property
-    def codemodel_configuration(self) -> dict:
+    def codemodel_configuration(self) -> CodemodelDict:
         """
         Retrieve the codemodel information, and extract the information available for the build configuration.
 
@@ -67,7 +104,7 @@ class FileAPI:
         return configurations[0]
 
     @functools.lru_cache(maxsize = 128)
-    def target(self, name : str) -> dict:
+    def target(self, name : str) -> TargetDict:
         """
         Retrieve the information available for the target `name`.
         """

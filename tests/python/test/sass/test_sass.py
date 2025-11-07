@@ -74,6 +74,22 @@ class TestPatternBuilder:
     """
     Tests for :py:class:`reprospect.test.sass.PatternBuilder`.
     """
+    def test_reg_vs_ureg(self) -> None:
+        """
+        Ensure that :py:attr:`reprospect.test.sass.PatternBuilder.REG` does not
+        match what :py:attr:`reprospect.test.sass.PatternBuilder.UREG` matches (and
+        vice versa).
+        """
+        assert regex.match(PatternBuilder.REG,    'R42') is not None
+        assert regex.match(PatternBuilder.reg(),  'R42') is not None
+        assert regex.match(PatternBuilder.UREG,   'R42') is None
+        assert regex.match(PatternBuilder.ureg(), 'R42') is None
+
+        assert regex.match(PatternBuilder.REG,    'UR42') is None
+        assert regex.match(PatternBuilder.reg(),  'UR42') is None
+        assert regex.match(PatternBuilder.UREG,   'UR42') is not None
+        assert regex.match(PatternBuilder.ureg(), 'UR42') is not None
+
     def test_reg_addr(self):
         """
         Test :py:meth`reprospect.test.sass.PatternBuilder.reg_addr`.
@@ -349,11 +365,35 @@ class TestStoreGlobalMatcher:
         assert len(matched.captures('address')) == 1
         assert len(matched.captures('operands')) == 2
 
-@pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestFloatAddMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.FloatAddMatcher`.
     """
+    def test(self) -> None:
+        """
+        Test with instructions taken from SASS codes.
+        """
+        matched = FloatAddMatcher().matches(inst = 'FADD R6, R4, R2')
+        assert matched is not None
+        assert matched.captures('dst')[0] == 'R6'
+        assert matched.captures('operands')[-1] == 'R2'
+
+        matched = FloatAddMatcher().matches(inst = 'FADD R6, R4, c[0x0][0x178]')
+        assert matched is not None
+        assert matched.captures('dst')[0] == 'R6'
+        assert matched.captures('operands')[-1] == 'c[0x0][0x178]'
+
+        matched = FloatAddMatcher().matches(inst = 'FADD R25, R4, UR12')
+        assert matched is not None
+        assert matched.captures('dst')[0] == 'R25'
+        assert matched.captures('operands')[-1] == 'UR12'
+
+        matched = FloatAddMatcher().matches(inst = 'FADD.FTZ R9, -R7, 1.5707963705062866211')
+        assert matched is not None
+        assert matched.captures('dst')[0] == 'R9'
+        assert matched.captures('operands') == ['R9', '-R7', '1.5707963705062866211']
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
         Test with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.

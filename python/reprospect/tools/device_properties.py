@@ -30,7 +30,7 @@ class CudaRuntimeError:
     def success(self) -> bool:
         return self.value == 0
 
-    def get(self, libcudart) -> tuple[str, str]:
+    def get(self, libcudart : ctypes.CDLL) -> tuple[str, str]:
         """
         Get error name and string.
         """
@@ -49,7 +49,7 @@ class CudaDriverError:
     def success(self) -> bool:
         return self.value == 0
 
-    def get(self, libcuda) -> tuple[str, str]:
+    def get(self, libcuda : ctypes.CDLL) -> tuple[str, str]:
         """
         Get error name and string.
         """
@@ -87,6 +87,7 @@ class Cuda:
         Check that `status` is successful, raise otherwise.
         """
         if not status.success:
+            assert cls.libcuda is not None
             error_name, error_msg = status.get(libcuda = cls.libcuda)
             raise RuntimeError(
                 f"{info} failed with error code {status} ({error_name}): {error_msg}"
@@ -98,6 +99,7 @@ class Cuda:
         Check that `status` is successful, raise otherwise.
         """
         if not status.success:
+            assert cls.libcudart is not None
             error_name, error_msg = status.get(libcudart = cls.libcudart)
             raise RuntimeError(
                 f"{info} failed with error code {status} ({error_name}): {error_msg}"

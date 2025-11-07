@@ -17,6 +17,7 @@ from reprospect.test.sass          import AtomicMatcher, \
                                           OpcodeModsMatcher, \
                                           OpcodeModsWithOperandsMatcher, \
                                           LoadGlobalMatcher, \
+                                          AnyOfMatcher, \
                                           PatternBuilder, \
                                           ReductionMatcher, \
                                           StoreGlobalMatcher
@@ -709,3 +710,17 @@ class TestOpcodeModsWithOperandsMatcher:
 
         assert matched is not None
         assert matched.captures('operands') == ['P2', 'PT', 'R4', 'RZ', 'PT']
+
+class TestAnyOfMatcher:
+    """
+    Tests for :py:class:`reprospect.test.sass.AnyOfMatcher`.
+    """
+    def test(self) -> None:
+        matcher = AnyOfMatcher(
+            FloatAddMatcher(),
+            OpcodeModsMatcher(instruction = 'FMUL')
+        )
+
+        assert matcher.matches(inst = 'FADD R15, R2, R5') is not None
+        assert matcher.matches(inst = 'FMUL R15, R2, R5') is not None
+        assert matcher.matches(inst = 'S2R R0, SR_TID.X') is None

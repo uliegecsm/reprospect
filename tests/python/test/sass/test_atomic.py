@@ -238,7 +238,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert matched.captures('operands')[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
-        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
         if matcher.version in semantic_version.SimpleSpec('<12.8'):
             assert 'atom.add.relaxed.cta.u32' in result
@@ -268,7 +268,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert matched.captures('operands')[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
-        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
         assert 'atom.add.relaxed.cta.u64' in result, result
 
@@ -295,7 +295,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert matched.captures('operands')[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
-        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
         assert 'atom.add.relaxed.cta.f32' in result
 
@@ -322,7 +322,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert matched.captures('operands')[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
-        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
         assert 'atom.add.relaxed.cta.f64' in result
 
@@ -350,7 +350,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert {'MIN', 'S32'}.issubset(matched.captures('modifiers'))
 
         # In the PTX, we can see the '.relaxed'.
-        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
         assert 'atom.min.relaxed.gpu.s32' in result
 
@@ -378,7 +378,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert {'MIN', 'S64'}.issubset(matched.captures('modifiers'))
 
         # In the PTX, we can see the '.relaxed'.
-        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
         assert 'atom.min.relaxed.gpu.s64' in result
 
@@ -406,7 +406,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         assert {'MIN', '64'}.issubset(matched.captures('modifiers'))
 
         # In the PTX, we can see the '.relaxed'.
-        result = subprocess.check_output(['cuobjdump', '--dump-ptx', output]).decode()
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
         assert 'atom.min.relaxed.gpu.u64' in result
 

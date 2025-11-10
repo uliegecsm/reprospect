@@ -222,7 +222,7 @@ class CuObjDump:
         """
         Extract the symbol table from `cubin` for `arch`.
         """
-        cmd : list[str | pathlib.Path] = ['cuobjdump', '--gpu-architecture', arch.as_sm, '--dump-elf', cubin]
+        cmd : tuple[str | pathlib.Path, ...] = ('cuobjdump', '--gpu-architecture', arch.as_sm, '--dump-elf', cubin)
         logging.info(f'Extracting the symbol table from {cubin} using {cmd}.')
 
         # The section starts with

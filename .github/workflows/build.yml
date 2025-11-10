@@ -335,7 +335,9 @@ jobs:
               run: |
                   . ${{ github.job }}/bin/activate
                   pip install -U pytest
-                  python3 -m pytest -vvv -s --log-cli-level=info tests/python/test_extensibility.py
+                  python3 -m pytest \
+                      --config-file=tests/python/.pytest.ini \
+                      tests/python/test_extensibility.py
 
     documentation:
         needs: [setup-job-matrix, tests]

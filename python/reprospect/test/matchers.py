@@ -7,9 +7,7 @@ import itertools
 import sys
 import typing
 
-import regex
-
-from reprospect.test.sass  import InstructionMatcher
+from reprospect.test.sass  import InstructionMatcher, InstructionMatch
 from reprospect.tools.sass import Instruction
 
 if sys.version_info >= (3, 12):
@@ -22,11 +20,11 @@ class SequenceMatcher(abc.ABC):
     Base class for matchers of a sequence of instructions.
     """
     @abc.abstractmethod
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
         pass
 
     @abc.abstractmethod
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
+    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
         pass
 
 class InSequenceAtMatcher(SequenceMatcher):
@@ -43,12 +41,12 @@ class InSequenceAtMatcher(SequenceMatcher):
         self.matcher : typing.Final[InstructionMatcher] = matcher
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
         matched = self.matcher.matches(instructions[start])
         return [matched] if matched is not None else None
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
+    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
         matched = self.matches(instructions = instructions, start = start)
         if matched is None:
             raise RuntimeError(f'{self.matcher!r} did not match {instructions[start]!r}.')
@@ -68,8 +66,8 @@ class OneOrMoreInSequenceMatcher(SequenceMatcher):
         self.matcher : typing.Final[InstructionMatcher] = matcher
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
-        matches : list[regex.Match] = []
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
+        matches : list[InstructionMatch] = []
 
         for instruction in instructions[start:]:
             if (matched := self.matcher.matches(instruction)) is not None:
@@ -80,7 +78,7 @@ class OneOrMoreInSequenceMatcher(SequenceMatcher):
         return matches or None
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
+    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
         matched = self.matches(instructions = instructions, start = start)
         if matched is None:
             raise RuntimeError(f'{self.matcher!r} did not match {instructions[start]!r}.')
@@ -91,11 +89,11 @@ class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
     Match zero or more times.
     """
     @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
         return super().matches(instructions = instructions, start = start) or []
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
+    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
         """
         It is always matching.
         """
@@ -115,8 +113,8 @@ class OrderedInSequenceMatcher(SequenceMatcher):
         self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
-        matches : list[regex.Match] = []
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
+        matches : list[InstructionMatch] = []
         for matcher in self.matchers:
             if isinstance(matcher, InstructionMatcher) and (single := matcher.matches(inst = instructions[start + len(matches)])) is not None:
                 matches.append(single)
@@ -127,7 +125,7 @@ class OrderedInSequenceMatcher(SequenceMatcher):
         return matches
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
+    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
         matched = self.matches(instructions = instructions, start = start)
         if matched is None:
             raise RuntimeError(f'{self.matchers!r} did not match {instructions[start:start + len(self.matchers)]!r}.')
@@ -147,7 +145,7 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
         self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
         """
         Cycle through all permutations of :py:attr:`matchers` (breaks on match).
 
@@ -161,7 +159,7 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
         return None
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
+    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
         matched = self.matches(instructions = instructions, start = start)
         if matched is None:
             raise RuntimeError(f'No permutation of {self.matchers!r} did match {instructions[start:start + len(self.matchers)]!r}.')
@@ -182,7 +180,7 @@ class InSequenceMatcher(SequenceMatcher):
         self.index : int | None = None
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
         for index in range(start, len(instructions)):
             if (matched := self.matcher.matches(instructions = instructions, start = index)) is not None:
                 self.index = index
@@ -190,7 +188,7 @@ class InSequenceMatcher(SequenceMatcher):
         return None
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
+    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
         matched = self.matches(instructions = instructions, start = start)
         if matched is None:
             raise RuntimeError(f'{self.matcher.matchers[0]!r} did not match.')

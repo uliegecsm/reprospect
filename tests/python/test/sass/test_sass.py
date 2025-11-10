@@ -238,11 +238,10 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 
         logging.info(matcher.pattern)
         logging.info(inst_ro.instruction)
-        logging.info(matched_ro.capturesdict())
-        assert len(matched_ro.captures('opcode')) == 1
-        assert 'CONSTANT' in matched_ro.captures('modifiers')
-        assert len(matched_ro.captures('address')) == 1
-        assert len(matched_ro.captures('operands')) == 2
+        logging.info(matched_ro)
+        assert 'CONSTANT' in matched_ro.modifiers
+        assert len(matched_ro.additional['address']) == 1
+        assert len(matched_ro.operands) == 2
 
         # Find the load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, readonly = False)
@@ -253,11 +252,10 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert len(matched.captures('opcode')) == 1
-        assert 'CONSTANT' not in matched.captures('modifiers')
-        assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 2
+        logging.info(matched)
+        assert 'CONSTANT' not in matched.modifiers
+        assert len(matched.additional['address']) == 1
+        assert len(matched.operands) == 2
 
         assert inst_ro != inst
 
@@ -335,11 +333,9 @@ class TestStoreGlobalMatcher:
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert len(matched.captures('opcode')) == 1
-        assert 'modifiers' in matched.capturesdict()
-        assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 2
+        logging.info(matched)
+        assert len(matched.additional['address']) == 1
+        assert len(matched.operands) == 2
 
     def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
@@ -359,11 +355,10 @@ class TestStoreGlobalMatcher:
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert len(matched.captures('opcode')) == 1
-        assert '128' in matched.captures('modifiers')
-        assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 2
+        logging.info(matched)
+        assert '128' in matched.modifiers
+        assert len(matched.additional['address']) == 1
+        assert len(matched.operands) == 2
 
 class TestFloatAddMatcher:
     """
@@ -375,23 +370,27 @@ class TestFloatAddMatcher:
         """
         matched = FloatAddMatcher().matches(inst = 'FADD R6, R4, R2')
         assert matched is not None
-        assert matched.captures('dst')[0] == 'R6'
-        assert matched.captures('operands')[-1] == 'R2'
+        assert matched.additional is not None
+        assert matched.additional['dst'][0] == 'R6'
+        assert matched.operands[-1] == 'R2'
 
         matched = FloatAddMatcher().matches(inst = 'FADD R6, R4, c[0x0][0x178]')
         assert matched is not None
-        assert matched.captures('dst')[0] == 'R6'
-        assert matched.captures('operands')[-1] == 'c[0x0][0x178]'
+        assert matched.additional is not None
+        assert matched.additional['dst'][0] == 'R6'
+        assert matched.operands[-1] == 'c[0x0][0x178]'
 
         matched = FloatAddMatcher().matches(inst = 'FADD R25, R4, UR12')
         assert matched is not None
-        assert matched.captures('dst')[0] == 'R25'
-        assert matched.captures('operands')[-1] == 'UR12'
+        assert matched.additional is not None
+        assert matched.additional['dst'][0] == 'R25'
+        assert matched.operands[-1] == 'UR12'
 
         matched = FloatAddMatcher().matches(inst = 'FADD.FTZ R9, -R7, 1.5707963705062866211')
         assert matched is not None
-        assert matched.captures('dst')[0] == 'R9'
-        assert matched.captures('operands') == ['R9', '-R7', '1.5707963705062866211']
+        assert matched.additional is not None
+        assert matched.additional['dst'][0] == 'R9'
+        assert matched.operands == ('R9', '-R7', '1.5707963705062866211')
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
@@ -413,11 +412,12 @@ class TestFloatAddMatcher:
 
         for (inst, matched) in fadd:
             logging.info(inst.instruction)
-            logging.info(matched.capturesdict())
-            assert all(x in matched.capturesdict() for x in ['opcode', 'operands', 'dst'])
-            assert inst.instruction.startswith(matched.group('opcode'))
-            assert len(matched.captures('operands')) == 3
-            assert all(operand in inst.instruction for operand in matched.captures('operands'))
+            logging.info(matched)
+            assert inst.instruction.startswith(matched.opcode)
+            assert len(matched.operands) == 3
+            assert all(operand in inst.instruction for operand in matched.operands)
+            assert matched.additional is not None
+            assert 'dst' in matched.additional
 
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestReductionMatcher:
@@ -466,12 +466,10 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert len(matched.captures('opcode')) == 1
-        assert 'modifiers' in matched.capturesdict()
-        assert {'ADD'}.issubset(matched.captures('modifiers'))
-        assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 2
+        logging.info(matched)
+        assert {'ADD'}.issubset(matched.modifiers)
+        assert len(matched.additional['address']) == 1
+        assert len(matched.operands) == 2
 
         # Another consistency would fail.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'WEAK', dtype = ('S', 32))
@@ -495,12 +493,10 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert len(matched.captures('opcode')) == 1
-        assert 'modifiers' in matched.capturesdict()
-        assert {'ADD'}.issubset(matched.captures('modifiers'))
-        assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 2
+        logging.info(matched)
+        assert {'ADD'}.issubset(matched.modifiers)
+        assert len(matched.additional['address']) == 1
+        assert len(matched.operands) == 2
 
     def test_add_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -526,12 +522,10 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert len(matched.captures('opcode')) == 1
-        assert 'modifiers' in matched.capturesdict()
-        assert {'ADD', '64'}.issubset(matched.captures('modifiers'))
-        assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 2
+        logging.info(matched)
+        assert {'ADD', '64'}.issubset(matched.modifiers)
+        assert len(matched.additional['address']) == 1
+        assert len(matched.operands) == 2
 
     def test_add_strong_device_float(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -551,12 +545,10 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert len(matched.captures('opcode')) == 1
-        assert 'modifiers' in matched.capturesdict()
-        assert {'F32', 'FTZ', 'RN'}.issubset(matched.captures('modifiers'))
-        assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 2
+        logging.info(matched)
+        assert {'F32', 'FTZ', 'RN'}.issubset(matched.modifiers)
+        assert len(matched.additional['address']) == 1
+        assert len(matched.operands) == 2
 
     def test_add_strong_device_double(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -576,12 +568,10 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert len(matched.captures('opcode')) == 1
-        assert 'modifiers' in matched.capturesdict()
-        assert {'F64', 'RN'}.issubset(matched.captures('modifiers'))
-        assert len(matched.captures('address')) == 1
-        assert len(matched.captures('operands')) == 2
+        logging.info(matched)
+        assert {'F64', 'RN'}.issubset(matched.modifiers)
+        assert len(matched.additional['address']) == 1
+        assert len(matched.operands) == 2
 
     def test_sub_strong_device(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -622,8 +612,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert {'MAX', 'S64'}.issubset(matched.captures('modifiers'))
+        logging.info(matched)
+        assert {'MAX', 'S64'}.issubset(matched.modifiers)
 
     def test_max_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -648,8 +638,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert {'MAX', '64'}.issubset(matched.captures('modifiers'))
+        logging.info(matched)
+        assert {'MAX', '64'}.issubset(matched.modifiers)
 
     def test_max_strong_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -669,8 +659,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert {'MAX', 'S32'}.issubset(matched.captures('modifiers'))
+        logging.info(matched)
+        assert {'MAX', 'S32'}.issubset(matched.modifiers)
 
     def test_max_strong_device_unsigned_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -690,8 +680,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         logging.info(matcher.pattern)
         logging.info(inst.instruction)
-        logging.info(matched.capturesdict())
-        assert {'MAX'}.issubset(matched.captures('modifiers'))
+        logging.info(matched)
+        assert {'MAX'}.issubset(matched.modifiers)
 
 class TestOpcodeModsMatcher:
     """
@@ -700,34 +690,34 @@ class TestOpcodeModsMatcher:
     def test_with_square_brackets(self):
         instruction = 'IMAD R4, R4, c[0x0][0x0], R3'
 
-        matched = OpcodeModsMatcher(instruction = 'IMAD').matches(instruction)
+        matched = OpcodeModsMatcher(opcode = 'IMAD').matches(instruction)
 
         assert matched is not None
-        assert matched.captures('operands') == ['R4', 'R4', 'c[0x0][0x0]', 'R3']
+        assert matched.operands == ('R4', 'R4', 'c[0x0][0x0]', 'R3')
 
     def test_with_minus_sign(self):
         instruction = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ'
 
-        matched = OpcodeModsMatcher(instruction = 'UIADD3').matches(instruction)
+        matched = OpcodeModsMatcher(opcode = 'UIADD3').matches(instruction)
 
         assert matched is not None
-        assert matched.captures('operands') == ['UR5', 'UPT', 'UPT', '-UR4', 'UR9', 'URZ']
+        assert matched.operands == ('UR5', 'UPT', 'UPT', '-UR4', 'UR9', 'URZ')
 
     def test_with_reuse(self):
         instruction = 'ISETP.GE.U32.AND P0, PT, R0.reuse, UR5, PT'
 
-        matched = OpcodeModsMatcher(instruction = 'ISETP.GE.U32.AND').matches(instruction)
+        matched = OpcodeModsMatcher(opcode = 'ISETP', modifiers = ('GE', 'U32', 'AND')).matches(instruction)
 
         assert matched is not None
-        assert matched.captures('operands') == ['P0', 'PT', 'R0.reuse', 'UR5', 'PT']
+        assert matched.operands == ('P0', 'PT', 'R0.reuse', 'UR5', 'PT')
 
     def test_with_descr(self):
         instruction = 'LDG.E R2, desc[UR6][R2.64]'
 
-        matched = OpcodeModsMatcher(instruction = 'LDG.E').matches(instruction)
+        matched = OpcodeModsMatcher(opcode = 'LDG', modifiers = ('E',)).matches(instruction)
 
         assert matched is not None
-        assert matched.captures('operands') == ['R2', 'desc[UR6][R2.64]']
+        assert matched.operands == ('R2', 'desc[UR6][R2.64]')
 
 class TestOpcodeModsWithOperandsMatcher:
     """
@@ -736,7 +726,7 @@ class TestOpcodeModsWithOperandsMatcher:
     def test(self):
         instruction = 'ISETP.NE.AND P2, PT, R4, RZ, PT'
 
-        matcher = OpcodeModsWithOperandsMatcher(instruction = 'ISETP.NE.AND', operands = (
+        matcher = OpcodeModsWithOperandsMatcher(opcode = 'ISETP', modifiers = ('NE', 'AND'), operands = (
             PatternBuilder.PRED,
             PatternBuilder.PREDT,
             'R4',
@@ -749,7 +739,7 @@ class TestOpcodeModsWithOperandsMatcher:
         matched = matcher.matches(instruction)
 
         assert matched is not None
-        assert matched.captures('operands') == ['P2', 'PT', 'R4', 'RZ', 'PT']
+        assert matched.operands == ('P2', 'PT', 'R4', 'RZ', 'PT')
 
 class TestAnyOfMatcher:
     """
@@ -758,9 +748,15 @@ class TestAnyOfMatcher:
     def test(self) -> None:
         matcher = AnyOfMatcher(
             FloatAddMatcher(),
-            OpcodeModsMatcher(instruction = 'FMUL')
+            OpcodeModsMatcher(opcode = 'FMUL')
         )
 
-        assert matcher.matches(inst = 'FADD R15, R2, R5') is not None
-        assert matcher.matches(inst = 'FMUL R15, R2, R5') is not None
+        matched = matcher.matches(inst = 'FADD R15, R2, R5')
+        assert matched is not None
+        assert matched.opcode == 'FADD'
+
+        matched = matcher.matches(inst = 'FMUL R15, R2, R5')
+        assert matched is not None
+        assert matched.opcode == 'FMUL'
+
         assert matcher.matches(inst = 'S2R R0, SR_TID.X') is None

@@ -12,6 +12,7 @@ function(add_pytest FILE)
                     --typeguard-packages=reprospect
                     --config-file=${CMAKE_SOURCE_DIR}/tests/python/.pytest.ini
                     ${FILEPATH}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
     test_environment(${FILENAME} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR}/python)

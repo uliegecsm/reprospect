@@ -54,9 +54,9 @@ class InSequenceAtMatcher(SequenceMatcher):
             raise RuntimeError(f'{self.matcher!r} did not match {instructions[start]!r}.')
         return matched
 
-class ZeroOrMoreInSequenceMatcher(SequenceMatcher):
+class OneOrMoreInSequenceMatcher(SequenceMatcher):
     """
-    Match zero or more times.
+    Match one or more times.
 
     .. note::
 
@@ -69,7 +69,7 @@ class ZeroOrMoreInSequenceMatcher(SequenceMatcher):
 
     @override
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
-        matches: list[regex.Match] = []
+        matches : list[regex.Match] = []
 
         for instruction in instructions[start:]:
             if (matched := self.matcher.matches(instruction)) is not None:
@@ -77,7 +77,22 @@ class ZeroOrMoreInSequenceMatcher(SequenceMatcher):
             else:
                 break
 
-        return matches
+        return matches or None
+
+    @override
+    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:
+        matched = self.matches(instructions = instructions, start = start)
+        if matched is None:
+            raise RuntimeError(f'{self.matcher!r} did not match {instructions[start]!r}.')
+        return matched
+
+class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
+    """
+    Match zero or more times.
+    """
+    @override
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match] | None:
+        return super().matches(instructions = instructions, start = start) or []
 
     @override
     def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[regex.Match]:

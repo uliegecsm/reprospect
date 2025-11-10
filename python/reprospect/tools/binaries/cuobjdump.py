@@ -31,6 +31,8 @@ if sys.version_info >= (3, 11):
 else:
     from backports.strenum.strenum import StrEnum
 
+ResourceUsageDict : typing.TypeAlias = dict['ResourceUsage', typing.Union[int, dict[int, int]]]
+
 class ResourceUsage(StrEnum):
     """
     Support for resource usage fields.
@@ -55,11 +57,11 @@ class ResourceUsage(StrEnum):
     TEXTURE = 'TEXTURE'
 
     @staticmethod
-    def parse(line : str) -> dict:
+    def parse(line : str) -> ResourceUsageDict:
         """
         Parse a resource usage line, such as produced by ``cuobjdump`` with ``--dump-resource-usage``.
         """
-        res : dict[ResourceUsage, typing.Union[int, dict[int, int]]] = {}
+        res : ResourceUsageDict = {}
         for token in re.findall(r'([A-Z]+)(?:\[([0-9]+)\])?:([0-9]+)', line):
             t = ResourceUsage(token[0])
             match t:
@@ -77,7 +79,7 @@ class Function:
     Data structure holding the SASS code and resource usage of a kernel, as extracted from a binary.
     """
     code : str #: The SASS code.
-    ru : dict | None = None #: The resource usage.
+    ru : ResourceUsageDict | None = None #: The resource usage.
 
     def to_table(self, *, max_code_length : int = 130, descriptors : typing.Optional[dict[str, str]] = None) -> rich.table.Table:
         """

@@ -67,7 +67,7 @@ class CMakeMixin(abc.ABC):
         return cmake.FileAPI(cmake_build_directory = self.CMAKE_BINARY_DIR)
 
     @functools.cached_property
-    def target(self) -> dict:
+    def target(self) -> cmake.TargetDict:
         """
         Retrieve the target information from the CMake codemodel database.
         """
@@ -88,7 +88,7 @@ class CMakeMixin(abc.ABC):
         return self.CMAKE_BINARY_DIR / self.target['paths']['build'] / self.target['nameOnDisk']
 
     @functools.cached_property
-    def toolchains(self) -> dict:
+    def toolchains(self) -> cmake.ToolchainDict:
         """
         Retrieve the toolchains information from the read CMake file API.
         """

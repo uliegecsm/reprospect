@@ -3,7 +3,7 @@ import typing
 
 from reprospect.tools.architecture import NVIDIAArch
 
-PATTERNS : typing.Final[tuple[re.Pattern, ...]] = (
+PATTERNS : typing.Final[tuple[re.Pattern[str], ...]] = (
     re.compile(r'-arch=sm_(\d+)'),
     re.compile(r'--gpu-architecture=compute_(\d+) --gpu-code=sm_(\d+)'),
     re.compile(r'--generate-code=arch=compute_(\d+),code=\[sm_(\d+)\]'),

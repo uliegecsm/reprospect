@@ -25,7 +25,7 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
-def install(*, args = argparse.Namespace) -> None:
+def install(*, args : argparse.Namespace) -> None:
     """
     Install `Nsight Systems` through `apt`.
     """
@@ -44,7 +44,7 @@ def detect_cuda_version() -> str:
     #. ``nvidia-smi --query``
     #. ``nvcc --version``
     """
-    def convert(version : re.Match) -> str:
+    def convert(version : re.Match[str]) -> str:
         logging.info(f"Detected CUDA version is {version.group(0)}.")
         return f'{version.group(1)}-{version.group(2)}'
 

@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import re
+import typing
 
 import pytest
 
@@ -11,29 +12,31 @@ from reprospect.utils import cmake
 from tests.python.compilation import get_compilation_output
 from tests.python.parameters  import Parameters, PARAMETERS
 
+from tests.python.tools.binaries.assets.gemm_tensor_tile import GemmTensorTile
+
 @pytest.fixture(scope = 'session')
 def workdir() -> pathlib.Path:
     return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
 
-FFMA = \
+FFMA : typing.Final[str] = \
 """\
         /*00c0*/                   FFMA R7, R2, c[0x0][0x160], R7 ;                  /* 0x0000580002077a23 */
                                                                                      /* 0x004fd00000000007 */
 """
 
-IMAD = \
+IMAD : typing.Final[str] = \
 """\
         /*0040*/      IMAD R4, R4, c[0x0][0x0], R3 ;        /* 0x0000000004047a24 */
                                                             /* 0x001fca00078e0203 */
 """
 
-IMAD_WIDE_U32 = \
+IMAD_WIDE_U32 : typing.Final[str] = \
 """\
         /*0090*/      IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170] ; /* 0x00005c0004047625 */
                                                                 /* 0x000fc800078e0005 */
 """
 
-ISETP_NE_U32_AND = \
+ISETP_NE_U32_AND : typing.Final[str] = \
 """\
         /*00c0*/                   ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT ;       /* 0x000000ff0000720c */
                                                                                      /* 0x040fe40003f05070 */
@@ -144,7 +147,7 @@ class TestSASSDecoder:
         """
         Read SASS from a source.
         """
-        SOURCE = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass'
+        SOURCE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass'
 
         decoder = sass.Decoder(source = SOURCE)
 
@@ -155,7 +158,7 @@ class TestSASSDecoder:
         """
         Read SASS dumped from ``cuobjdump``.
         """
-        CUDA_FILE = pathlib.Path(__file__).parent / 'assets' / 'saxpy.cu'
+        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.cu'
         output, _ = get_compilation_output(
             source = CUDA_FILE,
             cwd = workdir,
@@ -265,3 +268,18 @@ class TestSASSDecoder:
             current = current and (d1281i.control == d1300i.control)
 
         assert current is False
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str, scope = 'class')
+    class TestGemmTensorTile(GemmTensorTile):
+        @pytest.fixture(scope = 'class')
+        @classmethod
+        def cuobjdump(cls, parameters, workdir, cmake_file_api) -> binaries.CuObjDump:
+            executable = GemmTensorTile.executable(arch = parameters.arch, cwd = workdir, cmake_file_api = cmake_file_api)
+            return binaries.CuObjDump(file = executable, arch = parameters.arch, sass = True)
+
+        def test(self, cuobjdump) -> None:
+            """
+            Ensure that all lines can be parsed.
+            """
+            decoder = sass.Decoder(code = cuobjdump.functions[self.SIGNATURE].code)
+            assert len(decoder.instructions) > 130

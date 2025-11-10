@@ -14,6 +14,7 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
     object : bool = True, # pylint: disable=redefined-builtin
     resource_usage : bool = False,
     ptx : bool = False,
+    includedirs : typing.Optional[typing.Iterable[pathlib.Path | str]] = None
 ) -> typing.Tuple[pathlib.Path, str]:
     """
     Compile the `source` in `cwd` for `arch`.
@@ -59,6 +60,11 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
                 cmd += ['-Xcuda-ptxas', '-v',]
         case _:
             raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
+
+    # Include directories.
+    if includedirs:
+        for idir in includedirs:
+            cmd.append(f'-I{idir}')
 
     # Append link flags if needed.
     if not object:

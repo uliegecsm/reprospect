@@ -1,0 +1,1 @@
+add_pytest(gemm_tensor_tile)

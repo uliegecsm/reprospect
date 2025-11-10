@@ -15,6 +15,8 @@ from reprospect.utils              import cmake
 from tests.python.compilation import get_compilation_output, get_cubin_name
 from tests.python.parameters  import Parameters, PARAMETERS
 
+from tests.python.tools.binaries.assets.gemm_tensor_tile import GemmTensorTile
+
 @pytest.fixture(scope = 'session')
 def workdir() -> pathlib.Path:
     return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
@@ -391,6 +393,23 @@ class TestCuObjDump:
             symbols = cuobjdump.symtab(cubin = cubin, arch = parameters.arch)
 
             assert all(x in symbols['name'].values for x in self.SIGNATURES), symbols
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str, scope = 'class')
+    class TestGemmTensorTile(GemmTensorTile):
+        @pytest.fixture(scope = 'class')
+        @classmethod
+        def cuobjdump(cls, parameters, workdir, cmake_file_api) -> CuObjDump:
+            executable = GemmTensorTile.executable(arch = parameters.arch, cwd = workdir, cmake_file_api = cmake_file_api)
+            return CuObjDump(file = executable, arch = parameters.arch, sass = True)
+
+        def test_sass_from_executable(self, cuobjdump : CuObjDump) -> None:
+            """
+            The SASS can be extracted from an executable.
+            """
+            assert len(cuobjdump.functions) == 1
+            assert self.SIGNATURE in cuobjdump.functions
+
+            assert cuobjdump.functions[self.SIGNATURE].code.count('\n') > 300
 
     def test_string_representation(self) -> None:
         """

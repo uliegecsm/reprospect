@@ -19,9 +19,9 @@ class DemanglerMixin(abc.ABC):
         """
         Demangle `s` (a symbol).
         """
-        return subprocess.check_output([
+        return subprocess.check_output((
             cls.get_executable(), s,
-        ]).decode().strip()
+        )).decode().strip()
 
 class CuppFilt(DemanglerMixin):
     """

@@ -33,7 +33,7 @@ class TestComputeCapability:
         # Use 'nvcc' to get the supported list of GPU code.
         supported = map(
             lambda x: ComputeCapability.from_int(int(re.match(r'sm_([0-9]+)', x).group(1))),
-            subprocess.check_output(['nvcc', '--list-gpu-code']).decode().splitlines(),
+            subprocess.check_output(('nvcc', '--list-gpu-code')).decode().splitlines(),
         )
         CUDA_VERSION = semantic_version.Version(os.environ['CUDA_VERSION'])
         count = 0

@@ -73,7 +73,7 @@ def install_cuda_bindings(target : packaging.version.Version) -> None:
         logging.info(f'Installing \'cuda-python\' {candidate}.')
         requirement = f'cuda-python=={candidate}'
 
-    subprocess.check_call(['pip', 'install', requirement])
+    subprocess.check_call(('pip', 'install', requirement))
 
 def parse_args() -> argparse.Namespace:
     """

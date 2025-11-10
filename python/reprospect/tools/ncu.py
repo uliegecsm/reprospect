@@ -402,7 +402,7 @@ class SessionCommand:
     args: list[str | pathlib.Path] | None                #: Arguments to pass to the executable.
 
     @functools.cached_property
-    def to_list(self) -> list[str | pathlib.Path]:
+    def to_tuple(self) -> tuple[str | pathlib.Path, ...]:
         """
         Build the full ``ncu`` command.
         """
@@ -422,7 +422,7 @@ class SessionCommand:
         if self.args:
             cmd += self.args
 
-        return cmd
+        return tuple(cmd)
 
 class Session:
     """
@@ -513,8 +513,8 @@ class Session:
 
         for retry in reversed(range(retries)):
             try:
-                logging.info(f"Launching 'ncu' with {command.to_list} (log file at {command.log}).")
-                subprocess.check_call(command.to_list, cwd = cwd, env = env)
+                logging.info(f"Launching 'ncu' with {command.to_tuple} (log file at {command.log}).")
+                subprocess.check_call(command.to_tuple, cwd = cwd, env = env)
                 break
             except subprocess.CalledProcessError:
                 retry_allowed = False
@@ -702,7 +702,7 @@ def load_ncu_report() -> types.ModuleType:
     if ncu is None:
         raise RuntimeError("'ncu' was not found.")
 
-    version_string = subprocess.check_output([ncu, '--version']).decode().splitlines()[-1]
+    version_string = subprocess.check_output((ncu, '--version')).decode().splitlines()[-1]
     if (matched := re.match(r'Version ([0-9.]+)', version_string)) is not None:
         version_full = matched.groups()[0]
     else:
@@ -917,7 +917,7 @@ class Cacher(cacher.Cacher):
         """
         hasher = blake3.blake3() # pylint: disable=not-callable
 
-        hasher.update(subprocess.check_output(['ncu', '--version']))
+        hasher.update(subprocess.check_output(('ncu', '--version')))
 
         command = self.session.get_command(
             opts = opts,

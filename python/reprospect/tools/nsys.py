@@ -52,7 +52,7 @@ class Session:
         args: list[str | pathlib.Path] | None #: Arguments to pass to the executable.
 
         @functools.cached_property
-        def to_list(self) -> list[str | pathlib.Path]:
+        def to_tuple(self) -> tuple[str | pathlib.Path, ...]:
             """
             Build the full ``nsys`` profile command.
             """
@@ -70,7 +70,7 @@ class Session:
             if self.args:
                 cmd += self.args
 
-            return cmd
+            return tuple(cmd)
 
     def get_command(self, *,
         executable : pathlib.Path,
@@ -141,9 +141,9 @@ class Session:
                 env = os.environ.copy()
             env['NSYS_NVTX_PROFILER_REGISTER_ONLY'] = '0'
 
-        logging.info(f"Launching 'nsys' with {command.to_list}.")
+        logging.info(f"Launching 'nsys' with {command.to_tuple}.")
         self.output_file_nsys_rep.unlink(missing_ok = True)
-        subprocess.check_call(command.to_list, cwd = cwd, env = env)
+        subprocess.check_call(command.to_tuple, cwd = cwd, env = env)
 
         return command
 
@@ -465,7 +465,7 @@ class Cacher(cacher.Cacher):
         """
         hasher = blake3.blake3() # pylint: disable=not-callable
 
-        hasher.update(subprocess.check_output(['nsys', '--version']))
+        hasher.update(subprocess.check_output(('nsys', '--version')))
 
         command = self.session.get_command(
             opts = opts,

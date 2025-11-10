@@ -10,7 +10,7 @@ def get_shared_dependencies(*, file : str | pathlib.Path) -> list[pathlib.Path]:
 
         libname => /path/to/lib.so (address)
     """
-    lines = subprocess.check_output(['ldd', file]).decode().splitlines()
+    lines = subprocess.check_output(('ldd', file)).decode().splitlines()
     return [
         pathlib.Path(match.group(1))
         for lib in lines

@@ -34,7 +34,7 @@ class TestResourceUsage:
         """
         When the kernel uses shared memory.
         """
-        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'shared_memory.cu'
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'binaries' / 'assets' / 'shared_memory.cu'
 
         def test(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
@@ -60,7 +60,7 @@ class TestResourceUsage:
         """
         When the kernel uses wide loads and stores.
         """
-        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'wide_load_store.cu'
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'binaries' / 'assets' / 'wide_load_store.cu'
 
         def test(self, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
@@ -92,7 +92,7 @@ class TestResourceUsage:
         """
         When the kernel performs a `saxpy`.
         """
-        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.cu'
 
         def test(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
@@ -201,8 +201,8 @@ class TestCuObjDump:
         """
         When the kernel performs a `saxpy`.
         """
-        CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cpp'
-        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
+        CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.cpp'
+        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.cu'
         SYMBOL    : typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
         SIGNATURE : typing.Final[str] = CuppFilt.demangle(SYMBOL)
 
@@ -301,8 +301,8 @@ class TestCuObjDump:
 
             ``__device__`` functions have been inlined.
         """
-        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'many.cu'
-        CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'test_binaries' / 'many.cpp'
+        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'binaries' / 'assets' / 'many.cu'
+        CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'binaries' / 'assets' / 'many.cpp'
 
         SIGNATURES : typing.Final[dict[str, str]] = {
             '_Z6say_hiv' : 'say_hi()',

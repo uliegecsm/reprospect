@@ -6,7 +6,7 @@ import typing
 from reprospect.utils              import cmake
 from reprospect.tools.architecture import NVIDIAArch
 
-def get_compilation_output(*,
+def get_compilation_output(*, # pylint: disable=too-many-branches
     source : pathlib.Path,
     cwd : pathlib.Path,
     arch : NVIDIAArch,
@@ -18,28 +18,31 @@ def get_compilation_output(*,
     """
     Compile the `source` in `cwd` for `arch`.
     """
+    cuda_toolchain = cmake_file_api.toolchains['CUDA']
+    cuda_compiler_id = cuda_toolchain['compiler']['id']
+
     output = cwd / (source.stem + ('.o' if object else ''))
 
     cmd = [
         cmake_file_api.cache['CMAKE_CUDA_COMPILER_LAUNCHER']['value'],
-        cmake_file_api.toolchains['CUDA']['compiler']['path'],
+        cuda_toolchain['compiler']['path'],
         '-std=c++20',
     ]
 
     # For compiling an executable, if the source ends with '.cpp', we need '-x cu' for nvcc and '-x cuda' for clang.
     if not object and source.suffix == '.cpp':
-        match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+        match cuda_compiler_id:
             case 'NVIDIA':
                 cmd += ['-x', 'cu']
             case 'Clang':
                 cmd += ['-x', 'cuda']
             case _:
-                raise ValueError(f"unsupported compiler ID {cmake_file_api.toolchains['CUDA']['compiler']['id']}")
+                raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
 
     # Clang tends to add a lot of debug code otherwise.
     cmd.append('-O3')
 
-    match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+    match cuda_compiler_id:
         case 'NVIDIA':
             cmd.append('--gpu-architecture=' + arch.as_compute)
             if ptx:
@@ -55,12 +58,26 @@ def get_compilation_output(*,
             if resource_usage:
                 cmd += ['-Xcuda-ptxas', '-v',]
         case _:
-            raise ValueError(f"unsupported compiler ID {cmake_file_api.toolchains['CUDA']['compiler']['id']}")
+            raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
 
-    cmd += [
-        '-c', source,
+    # Append link flags if needed.
+    if not object:
+        match cuda_compiler_id:
+            case 'NVIDIA':
+                pass
+            case 'Clang':
+                cudart = pathlib.Path(cmake_file_api.cache['CUDA_CUDART']['value'])
+                cmd.append(f'-L{cudart.parent}')
+                cmd.append('-lcudart')
+            case _:
+                raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
+    else:
+        cmd.append('-c')
+
+    cmd.extend((
+        source,
         '-o', output,
-    ]
+    ))
 
     logging.info(f'Compiling {source} with {cmd} in {cwd}.')
 
@@ -69,3 +86,21 @@ def get_compilation_output(*,
         cwd = cwd,
         stderr = subprocess.STDOUT,
     ).decode())
+
+def get_cubin_name(*, compiler_id : str, file : pathlib.Path, arch : NVIDIAArch) -> str:
+    """
+    When the compilation produces an executable binary (instead of an object file),
+    the resulting file may contain:
+
+    * more than one (usually 2) embedded CUDA binary files when using ``nvcc``
+    * only one when using ``clang``
+
+    For ``nvcc``, the first CUBIN is usually nearly empty.
+    """
+    match compiler_id:
+        case 'NVIDIA':
+            return f'{file.stem}.2.{arch.as_sm}.cubin'
+        case 'Clang':
+            return f'{file.stem}.1.{arch.as_sm}.cubin'
+        case _:
+            raise ValueError(f'unsupported compiler ID {compiler_id}')

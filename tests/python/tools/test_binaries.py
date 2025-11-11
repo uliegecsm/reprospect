@@ -12,7 +12,7 @@ from reprospect.tools.binaries     import CuObjDump, CuppFilt, LlvmCppFilt, Reso
 from reprospect.tools.binaries     import cuobjdump
 from reprospect.utils              import cmake
 
-from tests.python.compilation import get_compilation_output
+from tests.python.compilation import get_compilation_output, get_cubin_name
 from tests.python.parameters  import Parameters, PARAMETERS
 
 @pytest.fixture(scope = 'session')
@@ -260,7 +260,11 @@ class TestCuObjDump:
                 file = output,
                 arch = parameters.arch,
                 cwd = workdir,
-                cubin = output.name,
+                cubin = get_cubin_name(
+                    compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    file = output,
+                    arch = parameters.arch,
+                ),
             )
 
             assert cubin.is_file()
@@ -284,7 +288,11 @@ class TestCuObjDump:
                 file = output,
                 arch = parameters.arch,
                 cwd = workdir,
-                cubin = output.name,
+                cubin = get_cubin_name(
+                    compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    file = output,
+                    arch = parameters.arch,
+                ),
                 sass = False,
             )
 
@@ -345,7 +353,11 @@ class TestCuObjDump:
                 file = output,
                 arch = parameters.arch,
                 cwd = workdir,
-                cubin = output.name,
+                cubin = get_cubin_name(
+                    compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    file = output,
+                    arch = parameters.arch,
+                ),
             )
 
             assert cubin.is_file()
@@ -368,7 +380,11 @@ class TestCuObjDump:
                 file = output,
                 arch = parameters.arch,
                 cwd = workdir,
-                cubin = output.name,
+                cubin = get_cubin_name(
+                    compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    file = output,
+                    arch = parameters.arch,
+                ),
                 sass = False,
             )
 

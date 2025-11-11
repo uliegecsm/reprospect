@@ -144,7 +144,7 @@ class TestSASSDecoder:
         """
         Read SASS from a source.
         """
-        SOURCE = pathlib.Path(__file__).parent / 'test_sass' / 'saxpy.sass'
+        SOURCE = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass'
 
         decoder = sass.Decoder(source = SOURCE)
 
@@ -155,7 +155,7 @@ class TestSASSDecoder:
         """
         Read SASS dumped from ``cuobjdump``.
         """
-        CUDA_FILE = pathlib.Path(__file__).parent / 'test_binaries' / 'saxpy.cu'
+        CUDA_FILE = pathlib.Path(__file__).parent / 'assets' / 'saxpy.cu'
         output, _ = get_compilation_output(
             source = CUDA_FILE,
             cwd = workdir,
@@ -230,7 +230,7 @@ class TestSASSDecoder:
         ARTIFACT_DIR = pathlib.Path(os.environ['ARTIFACT_DIR'])
         ARTIFACT_DIR.mkdir(parents = True, exist_ok = True)
 
-        SOURCE = pathlib.Path(__file__).parent / 'test_sass' / 'saxpy.sass'
+        SOURCE = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass'
 
         decoder = sass.Decoder(source = SOURCE)
 
@@ -249,8 +249,8 @@ class TestSASSDecoder:
         """
         cfd = pathlib.Path(__file__).parent
 
-        d1281 = sass.Decoder(source = cfd / 'test_sass' / '12.8.1.sass')
-        d1300 = sass.Decoder(source = cfd / 'test_sass' / '13.0.0.sass')
+        d1281 = sass.Decoder(source = cfd / 'assets' / '12.8.1.sass')
+        d1300 = sass.Decoder(source = cfd / 'assets' / '13.0.0.sass')
 
         assert len(d1281.instructions) == len(d1300.instructions)
 

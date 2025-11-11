@@ -11,17 +11,19 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
     cwd : pathlib.Path,
     arch : NVIDIAArch,
     cmake_file_api : cmake.FileAPI,
-    object : bool = True, # pylint: disable=redefined-builtin
+    object_file : bool = True,
     resource_usage : bool = False,
     ptx : bool = False,
 ) -> typing.Tuple[pathlib.Path, str]:
     """
     Compile the `source` in `cwd` for `arch`.
+
+    :param object_file: Whether to compile into an object file.
     """
     cuda_toolchain = cmake_file_api.toolchains['CUDA']
     cuda_compiler_id = cuda_toolchain['compiler']['id']
 
-    output = cwd / (source.stem + ('.o' if object else ''))
+    output = cwd / (source.stem + ('.o' if object_file else ''))
 
     cmd = [
         cmake_file_api.cache['CMAKE_CUDA_COMPILER_LAUNCHER']['value'],
@@ -30,7 +32,7 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
     ]
 
     # For compiling an executable, if the source ends with '.cpp', we need '-x cu' for nvcc and '-x cuda' for clang.
-    if not object and source.suffix == '.cpp':
+    if not object_file and source.suffix == '.cpp':
         match cuda_compiler_id:
             case 'NVIDIA':
                 cmd += ['-x', 'cu']
@@ -61,7 +63,7 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
             raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
 
     # Append link flags if needed.
-    if not object:
+    if not object_file:
         match cuda_compiler_id:
             case 'NVIDIA':
                 pass
@@ -87,16 +89,18 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
         stderr = subprocess.STDOUT,
     ).decode())
 
-def get_cubin_name(*, compiler_id : str, file : pathlib.Path, arch : NVIDIAArch) -> str:
+def get_cubin_name(*, compiler_id : str, file : pathlib.Path, arch : NVIDIAArch, object_file : bool = False) -> str:
     """
-    When the compilation produces an executable binary (instead of an object file),
-    the resulting file may contain:
+    When the compilation is *not* into an object file, the resulting file may contain:
 
     * more than one (usually 2) embedded CUDA binary files when using ``nvcc``
     * only one when using ``clang``
 
-    For ``nvcc``, the first CUBIN is usually nearly empty.
+    For ``nvcc``, the first cubin is usually nearly empty.
     """
+    if object_file:
+        return f'{file.stem}.1.{arch.as_sm}.cubin'
+
     match compiler_id:
         case 'NVIDIA':
             return f'{file.stem}.2.{arch.as_sm}.cubin'

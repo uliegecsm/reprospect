@@ -9,6 +9,7 @@ Tools that can be used to extract SASS code and kernel attributes from executabl
 """
 
 import dataclasses
+import functools
 import io
 import logging
 import pathlib
@@ -26,6 +27,7 @@ import rich.table
 
 from reprospect.tools.architecture       import NVIDIAArch
 from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
+from reprospect.tools.binaries.elf       import ELFHeader
 from reprospect.utils.subprocess_helpers import popen_stream
 
 if sys.version_info >= (3, 11):
@@ -33,11 +35,9 @@ if sys.version_info >= (3, 11):
 else:
     from backports.strenum.strenum import StrEnum
 
-ResourceUsageDict : typing.TypeAlias = dict['ResourceUsage', typing.Union[int, dict[int, int]]]
-
-class ResourceUsage(StrEnum):
+class ResourceType(StrEnum):
     """
-    Support for resource usage fields.
+    Resource usage fields.
 
     References:
 
@@ -58,16 +58,20 @@ class ResourceUsage(StrEnum):
     SURFACE = 'SURFACE'
     TEXTURE = 'TEXTURE'
 
-    @staticmethod
-    def parse(line : str) -> ResourceUsageDict:
+class ResourceUsage(dict[ResourceType, typing.Union[int, dict[int, int]]]):
+    """
+    Dictionary of resource usage.
+    """
+    @classmethod
+    def parse(cls, line : str) -> 'ResourceUsage':
         """
         Parse a resource usage line, such as produced by ``cuobjdump`` with ``--dump-resource-usage``.
         """
-        res : ResourceUsageDict = {}
+        res : ResourceUsage = cls()
         for token in re.findall(r'([A-Z]+)(?:\[([0-9]+)\])?:([0-9]+)', line):
-            t = ResourceUsage(token[0])
+            t = ResourceType(token[0])
             match t:
-                case ResourceUsage.CONSTANT:
+                case ResourceType.CONSTANT:
                     if t not in res:
                         res[t] = {}
                     typing.cast(dict[int, int], res[t])[int(token[1])] = int(token[2])
@@ -79,10 +83,10 @@ class ResourceUsage(StrEnum):
 @dataclasses.dataclass(slots = True)
 class Function:
     """
-    Data structure holding the SASS code and resource usage of a kernel, as extracted from a binary.
+    Data structure holding the SASS code and resource usage of a kernel, as extracted from a binary file.
     """
     code : str #: The SASS code.
-    ru : ResourceUsageDict #: The resource usage.
+    ru : ResourceUsage | None = None #: The resource usage.
 
     def to_table(self, *, max_code_length : int = 130, descriptors : typing.Optional[dict[str, str]] = None) -> rich.table.Table:
         """
@@ -132,8 +136,11 @@ class CuObjDump:
         sass : bool = True,
         demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = CuppFilt,
     ) -> None:
+        """
+        :param file: Either a host binary file containing one or more embedded CUDA binary files, or itself a CUDA binary file.
+        """
         self.file = file #: The binary file.
-        self.arch = arch
+        self.arch = arch #: The NVIDIA architecture.
         self.functions : dict[str, Function] = {}
         if sass:
             self.parse_sass(demangler = demangler)
@@ -158,7 +165,7 @@ class CuObjDump:
         current_code : list[str] = []
 
         current_function_ru: typing.Optional[str] = None
-        current_ru : dict[str, ResourceUsageDict] = {}
+        current_ru : dict[str, ResourceUsage] = {}
 
         # Read the stream as it comes.
         # The cuobjdump output starts with the resource usage for all functions.
@@ -211,14 +218,16 @@ class CuObjDump:
         **kwargs,
     ) -> tuple['CuObjDump', pathlib.Path]:
         """
-        Extract the `ELF` file whose name contains `cubin` from `file`, for the given `arch`.
+        Extract the embedded CUDA binary file whose name contains `cubin`,
+        from `file`, for the given `arch`.
+
         The `file` can be inspected with the following command to list all `ELF` files::
 
             cuobjdump --list-elf <file>
 
-        Note that extracting a CUDA binary from a file to extract a specific subset of the SASS
-        instead of extracting the SASS straightforwardly from the whole `file` is
-        significantly faster.
+        Note that extracting an embedded CUDA binary from a file so as to extract a specific
+        subset of the SASS can be significantly faster than extracting all the SASS straightforwardly
+        from the whole `file`.
         """
         cmd : tuple[str | pathlib.Path, ...] = (
             'cuobjdump',
@@ -227,7 +236,7 @@ class CuObjDump:
             file,
         )
 
-        logging.info(f'Extracting ELF file containing {cubin} from {file} for architecture {arch} with {cmd} in {cwd}.')
+        logging.info(f'Extracting embedded CUDA binary file containing {cubin} from {file} for architecture {arch} with {cmd} in {cwd}.')
 
         files = subprocess.check_output(args = cmd, cwd = cwd).decode().splitlines()
 
@@ -249,13 +258,37 @@ class CuObjDump:
                 console.print(function.to_table(descriptors = {'Function' : name}), no_wrap = True)
         return capture.get()
 
-    @staticmethod
-    def symtab(*, cubin : pathlib.Path, arch : NVIDIAArch) -> pandas.DataFrame:
+    @functools.cached_property
+    def embedded_cubins(self) -> tuple[str, ...]:
         """
-        Extract the symbol table from `cubin` for `arch`.
+        Get the names of the embedded CUDA binary files contained in :py:attr:`file`.
         """
-        cmd : tuple[str | pathlib.Path, ...] = ('cuobjdump', '--gpu-architecture', arch.as_sm, '--dump-elf', cubin)
-        logging.info(f'Extracting the symbol table from {cubin} using {cmd}.')
+        cmd : tuple[str | pathlib.Path, ...] = (
+            'cuobjdump',
+            '--list-elf',
+            '--gpu-architecture', self.arch.as_sm,
+            self.file
+        )
+
+        return tuple(
+            m.group(1)
+            for f in popen_stream(args = cmd) if (m := re.match(r'ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+\.cubin)', f)) is not None
+        )
+
+    @functools.cached_property
+    def symtab(self) -> pandas.DataFrame:
+        """
+        Extract the symbol table from :py:attr:`file` for :py:attr:`arch`.
+
+        This function requires that :py:attr:`file` is either a host binary file containing
+        only a single embedded CUDA binary file or itself a CUDA binary file.
+        """
+        if not self.file_is_cubin:
+            if len(self.embedded_cubins) != 1:
+                raise RuntimeError('The host binary file contains more than one embedded CUDA binary file.')
+
+        cmd : tuple[str | pathlib.Path, ...] = ('cuobjdump', '--gpu-architecture', self.arch.as_sm, '--dump-elf', self.file)
+        logging.info(f'Extracting the symbol table from {self.file} using {cmd}.')
 
         # The section starts with
         #   .section .symtab
@@ -273,3 +306,10 @@ class CuObjDump:
         output.seek(0)
 
         return pandas.read_csv(output, sep = r'\s+')
+
+    @functools.cached_property
+    def file_is_cubin(self) -> bool:
+        """
+        Whether :py:attr:`file` is a CUDA binary file.
+        """
+        return ELFHeader.decode(file = self.file).is_cuda

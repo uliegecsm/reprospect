@@ -62,7 +62,7 @@ def get_decoder(*, cwd : pathlib.Path, arch : NVIDIAArch, file : pathlib.Path, c
         source = file,
         cwd = cwd,
         arch = arch,
-        object = True,
+        object_file = True,
         resource_usage = False,
         cmake_file_api = cmake_file_api,
         **kwargs,

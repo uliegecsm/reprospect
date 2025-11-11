@@ -8,8 +8,7 @@ import pytest
 import rich.console
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import CuObjDump, CuppFilt, LlvmCppFilt, ResourceUsage, Function
-from reprospect.tools.binaries     import cuobjdump
+from reprospect.tools.binaries     import CuObjDump, CuppFilt, LlvmCppFilt, Function, ResourceType, ResourceUsage
 from reprospect.utils              import cmake
 
 from tests.python.compilation import get_compilation_output, get_cubin_name
@@ -44,7 +43,7 @@ class TestResourceUsage:
                 source = self.FILE,
                 cwd = workdir,
                 arch = parameters.arch,
-                object = True,
+                object_file = True,
                 resource_usage = True,
                 cmake_file_api = cmake_file_api,
             )
@@ -70,7 +69,7 @@ class TestResourceUsage:
                 source = self.FILE,
                 cwd = workdir,
                 arch = parameters.arch,
-                object = True,
+                object_file = True,
                 resource_usage = True,
                 cmake_file_api = cmake_file_api,
             )
@@ -102,7 +101,7 @@ class TestResourceUsage:
                 source = self.FILE,
                 cwd = workdir,
                 arch = parameters.arch,
-                object = True,
+                object_file = True,
                 resource_usage = True,
                 cmake_file_api = cmake_file_api,
             )
@@ -146,16 +145,16 @@ class TestFunction:
                                                                                                             /* 0x000e6e0000002100 */
 """
 
-    RU : typing.Final[cuobjdump.ResourceUsageDict] = {
-        ResourceUsage.REGISTER : 10,
-        ResourceUsage.STACK    : 0,
-        ResourceUsage.SHARED   : 0,
-        ResourceUsage.LOCAL    : 0,
-        ResourceUsage.CONSTANT : {0: 924},
-        ResourceUsage.TEXTURE  : 0,
-        ResourceUsage.SURFACE  : 0,
-        ResourceUsage.SAMPLER  : 0
-    }
+    RU : typing.Final[ResourceUsage] = ResourceUsage({
+        ResourceType.REGISTER : 10,
+        ResourceType.STACK    : 0,
+        ResourceType.SHARED   : 0,
+        ResourceType.LOCAL    : 0,
+        ResourceType.CONSTANT : {0: 924},
+        ResourceType.TEXTURE  : 0,
+        ResourceType.SURFACE  : 0,
+        ResourceType.SAMPLER  : 0
+    })
 
     def test_string_representation(self) -> None:
         """
@@ -219,11 +218,13 @@ class TestCuObjDump:
                 source = self.CUDA_FILE,
                 cwd = workdir,
                 arch = parameters.arch,
-                object = True,
+                object_file = True,
                 cmake_file_api = cmake_file_api,
             )
 
             cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = True)
+
+            assert not cuobjdump.file_is_cubin
 
             TestCuObjDump.dump(
                 file = output.with_suffix(f'.{parameters.arch.compute_capability}.sass'),
@@ -239,16 +240,16 @@ class TestCuObjDump:
             else:
                 cst = 924
 
-            assert cuobjdump.functions[self.SIGNATURE].ru == {
-                ResourceUsage.REGISTER: 10,
-                ResourceUsage.STACK: 0,
-                ResourceUsage.SHARED: 0,
-                ResourceUsage.LOCAL: 0,
-                ResourceUsage.CONSTANT: {0: cst},
-                ResourceUsage.TEXTURE: 0,
-                ResourceUsage.SURFACE: 0,
-                ResourceUsage.SAMPLER: 0,
-            }, cuobjdump.functions[self.SIGNATURE].ru
+            assert cuobjdump.functions[self.SIGNATURE].ru == ResourceUsage({
+                ResourceType.REGISTER: 10,
+                ResourceType.STACK: 0,
+                ResourceType.SHARED: 0,
+                ResourceType.LOCAL: 0,
+                ResourceType.CONSTANT: {0: cst},
+                ResourceType.TEXTURE: 0,
+                ResourceType.SURFACE: 0,
+                ResourceType.SAMPLER: 0,
+            }), cuobjdump.functions[self.SIGNATURE].ru
 
         def test_extract_cubin_from_file(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
@@ -258,10 +259,11 @@ class TestCuObjDump:
                 source = self.CPP_FILE,
                 cwd = workdir,
                 arch = parameters.arch,
-                object = False,
+                object_file = False,
                 cmake_file_api = cmake_file_api,
             )
 
+            # Extract the embedded CUDA binary file and check that it contains the expected function.
             cuobjdump, cubin = CuObjDump.extract(
                 file = output,
                 arch = parameters.arch,
@@ -270,10 +272,12 @@ class TestCuObjDump:
                     compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
                     file = output,
                     arch = parameters.arch,
+                    object_file = False,
                 ),
             )
 
             assert cubin.is_file()
+            assert cuobjdump.file_is_cubin
 
             assert len(cuobjdump.functions) == 1
             assert self.SIGNATURE in cuobjdump.functions
@@ -286,11 +290,20 @@ class TestCuObjDump:
                 source = self.CPP_FILE,
                 cwd = workdir,
                 arch = parameters.arch,
-                object = False,
+                object_file = False,
                 cmake_file_api = cmake_file_api,
             )
 
-            cuobjdump, cubin = CuObjDump.extract(
+            cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = False)
+
+            # This binary is not compiled to an object file. With `nvcc` as the compiler, the binary then contains
+            # more than one embedded CUDA binary file. Hence, check that calling symtab raises.
+            if cmake_file_api.toolchains['CUDA']['compiler']['id'] == 'NVIDIA':
+                with pytest.raises(RuntimeError, match = 'The host binary file contains more than one embedded CUDA binary file.'):
+                    cuobjdump.symtab # pylint: disable=pointless-statement
+
+            # Extract the embedded CUDA binary file and check that calling its symtab works.
+            cuobjdump, _ = CuObjDump.extract(
                 file = output,
                 arch = parameters.arch,
                 cwd = workdir,
@@ -298,13 +311,12 @@ class TestCuObjDump:
                     compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
                     file = output,
                     arch = parameters.arch,
+                    object_file = False,
                 ),
                 sass = False,
             )
 
-            symbols = cuobjdump.symtab(cubin = cubin, arch = parameters.arch)
-
-            assert self.SYMBOL in symbols['name'].values
+            assert self.SYMBOL in cuobjdump.symtab['name'].values
 
     @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
     class TestMany:
@@ -318,7 +330,7 @@ class TestCuObjDump:
         CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'binaries' / 'assets' / 'many.cu'
         CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'binaries' / 'assets' / 'many.cpp'
 
-        SIGNATURES : typing.Final[dict[str, str]] = {
+        SYMBOLS : typing.Final[dict[str, str]] = {
             '_Z6say_hiv' : 'say_hi()',
             '_Z20vector_atomic_add_42PKfS0_Pfj' : 'vector_atomic_add_42(const float *, const float *, float *, unsigned int)',
         }
@@ -331,7 +343,7 @@ class TestCuObjDump:
                 source = self.CUDA_FILE,
                 cwd = workdir,
                 arch = parameters.arch,
-                object = True,
+                object_file = True,
                 cmake_file_api = cmake_file_api,
             )
 
@@ -342,7 +354,7 @@ class TestCuObjDump:
                 cuobjdump = cuobjdump,
             )
 
-            assert len(cuobjdump.functions) == len(self.SIGNATURES)
+            assert len(cuobjdump.functions) == len(self.SYMBOLS)
 
         def test_extract_cubin_from_file(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
@@ -352,7 +364,7 @@ class TestCuObjDump:
                 source = self.CPP_FILE,
                 cwd = workdir,
                 arch = parameters.arch,
-                object = False,
+                object_file = False,
                 cmake_file_api = cmake_file_api,
             )
 
@@ -364,12 +376,13 @@ class TestCuObjDump:
                     compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
                     file = output,
                     arch = parameters.arch,
+                    object_file = False,
                 ),
             )
 
             assert cubin.is_file()
 
-            assert set(cuobjdump.functions.keys()) == set(self.SIGNATURES.values())
+            assert set(cuobjdump.functions.keys()) == set(self.SYMBOLS.values())
 
         def test_extract_symbol_table(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
@@ -379,11 +392,11 @@ class TestCuObjDump:
                 source = self.CPP_FILE,
                 cwd = workdir,
                 arch = parameters.arch,
-                object = False,
+                object_file = False,
                 cmake_file_api = cmake_file_api,
             )
 
-            cuobjdump, cubin = CuObjDump.extract(
+            cuobjdump, _ = CuObjDump.extract(
                 file = output,
                 arch = parameters.arch,
                 cwd = workdir,
@@ -391,13 +404,12 @@ class TestCuObjDump:
                     compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
                     file = output,
                     arch = parameters.arch,
+                    object_file = False,
                 ),
                 sass = False,
             )
 
-            symbols = cuobjdump.symtab(cubin = cubin, arch = parameters.arch)
-
-            assert all(x in symbols['name'].values for x in self.SIGNATURES), symbols
+            assert all(x in cuobjdump.symtab['name'].values for x in self.SYMBOLS)
 
     def test_string_representation(self) -> None:
         """

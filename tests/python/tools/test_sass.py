@@ -160,7 +160,7 @@ class TestSASSDecoder:
             source = CUDA_FILE,
             cwd = workdir,
             arch = parameters.arch,
-            object = True,
+            object_file = True,
             cmake_file_api = cmake_file_api,
         )
 

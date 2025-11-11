@@ -22,8 +22,8 @@ from reprospect.test.sass          import AtomicMatcher, \
                                           ReductionMatcher, \
                                           StoreGlobalMatcher
 
-from tests.python.parameters          import Parameters, PARAMETERS
-from tests.python.tools.test_binaries import get_compilation_output
+from tests.python.compilation import get_compilation_output
+from tests.python.parameters  import Parameters, PARAMETERS
 
 @pytest.fixture(scope = 'session')
 def cmake_file_api() -> cmake.FileAPI:

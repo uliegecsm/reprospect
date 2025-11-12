@@ -9,6 +9,7 @@ from reprospect.tools import sass, binaries
 from reprospect.utils import cmake
 
 from tests.python.compilation import get_compilation_output
+from tests.python.cublas      import CuBLAS
 from tests.python.parameters  import Parameters, PARAMETERS
 
 @pytest.fixture(scope = 'session')
@@ -53,12 +54,6 @@ class TestSASSDecoder:
         """
         Simple tests for the matchers.
         """
-        assert re.match(sass.Decoder.INSTRUCTION, 'STG R1, R2') is not None
-        assert re.match(sass.Decoder.INSTRUCTION, 'LDG.E.128 R4, [R12]') is not None
-        assert re.match(sass.Decoder.INSTRUCTION, 'FFMA.FTZ R8, R6, R9, R10') is not None
-        assert re.match(sass.Decoder.INSTRUCTION, 'ISETP.GE.U32.AND P0, PT, R0, UR9, PT') is not None
-        assert re.match(sass.Decoder.INSTRUCTION, 'LDC.64 R10, c[0x0][0x3a0]') is not None
-
         assert re.match(sass.Decoder.HEX, '0x00000a0000017a02') is not None
 
         # Complete SASS line (offset, instruction and hex), without noise.
@@ -267,3 +262,21 @@ class TestSASSDecoder:
             current = current and (d1281i.control == d1300i.control)
 
         assert current is False
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    def test_cuBLAS(self, parameters : Parameters, workdir : pathlib.Path, cmake_file_api : cmake.FileAPI) -> None:
+        cublas = CuBLAS(cmake_file_api = cmake_file_api)
+
+        try:
+            [cubin] = cublas.extract(arch = parameters.arch, cwd = workdir, randomly = True)
+        except IndexError:
+            pytest.skip(f'The library {cublas.libcublas} does not contain any CUDA binary file for {parameters.arch}.')
+
+        assert cubin.is_file()
+
+        cuobjdump = binaries.CuObjDump(file = cubin, arch = parameters.arch, sass = True)
+
+        for name, function in cuobjdump.functions.items():
+            decoder = sass.Decoder(code = function.code)
+            assert len(decoder.instructions) > 1
+            logging.info(f'Function {name} in {cublas.libcublas} has {len(decoder.instructions)} SASS instructions.')

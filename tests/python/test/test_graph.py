@@ -1,5 +1,4 @@
 import logging
-import pathlib
 import sys
 import typing
 
@@ -36,8 +35,8 @@ class TestSASS(TestGraph):
     SASS-focused analysis.
     """
     @property
-    def cubin(self) -> pathlib.Path:
-        return self.cwd / f'graph.1.{self.arch.as_sm}.cubin'
+    def cubin(self) -> str:
+        return f'graph.1.{self.arch.as_sm}.cubin'
 
     @pytest.fixture(scope = 'class')
     def cuobjdump(self) -> CuObjDump:
@@ -46,7 +45,7 @@ class TestSASS(TestGraph):
             arch = self.arch,
             sass = True,
             cwd = self.cwd,
-            cubin = self.cubin.name,
+            cubin = self.cubin,
             demangler = self.demangler,
         )[0]
 

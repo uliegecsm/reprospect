@@ -10,6 +10,7 @@ setup(
             'reprospect/tools/architecture.py',
             'reprospect/tools/binaries/cuobjdump.py',
             'reprospect/tools/binaries/demangle.py',
+            'reprospect/tools/binaries/elf.py',
             'reprospect/tools/ncu.py',
             'reprospect/tools/sass.py',
             'reprospect/utils/cmake.py',

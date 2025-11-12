@@ -1,8 +1,10 @@
 import pathlib
 import re
-import subprocess
+import typing
 
-def get_shared_dependencies(*, file : str | pathlib.Path) -> list[pathlib.Path]:
+from reprospect.utils.subprocess_helpers import popen_stream
+
+def get_shared_dependencies(*, file : str | pathlib.Path) -> typing.Generator[pathlib.Path, None, None]:
     """
     Get the list of shared object dependencies.
 
@@ -10,9 +12,8 @@ def get_shared_dependencies(*, file : str | pathlib.Path) -> list[pathlib.Path]:
 
         libname => /path/to/lib.so (address)
     """
-    lines = subprocess.check_output(('ldd', file)).decode().splitlines()
-    return [
+    return (
         pathlib.Path(match.group(1))
-        for lib in lines
+        for lib in popen_stream(args = ('ldd', file))
         if (match := re.search(r'[A-Za-z0-9.\+_\-]+ => ([A-Za-z0-9.\+_\-/]+) \(0x[0-9a-f]+\)', lib)) is not None
-    ]
+    )

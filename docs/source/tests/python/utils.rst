@@ -15,3 +15,8 @@ Detect GPUs
 ~~~~~~~~~~~
 
 .. automodule:: tests.python.utils.test_detect
+
+:code:`subprocess`
+~~~~~~~~~~~~~~~~~~
+
+.. automodule:: tests.python.utils.test_subprocess_helpers

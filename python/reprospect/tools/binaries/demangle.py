@@ -2,6 +2,7 @@ import abc
 import pathlib
 import subprocess
 import sys
+import typing
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -23,6 +24,7 @@ class DemanglerMixin(abc.ABC):
             cls.get_executable(), s,
         )).decode().strip()
 
+@typing.final
 class CuppFilt(DemanglerMixin):
     """
     Convenient wrapper for ``cu++filt``.
@@ -32,6 +34,7 @@ class CuppFilt(DemanglerMixin):
     def get_executable(cls) -> str:
         return 'cu++filt'
 
+@typing.final
 class LlvmCppFilt(DemanglerMixin):
     """
     Convenient wrapper for ``llvm-cxxfilt``.

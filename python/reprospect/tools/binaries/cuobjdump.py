@@ -23,8 +23,9 @@ import rich.console
 import rich.text
 import rich.table
 
-from reprospect.tools.architecture      import NVIDIAArch
-from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
+from reprospect.tools.architecture       import NVIDIAArch
+from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
+from reprospect.utils.subprocess_helpers import popen_stream
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -79,7 +80,7 @@ class Function:
     Data structure holding the SASS code and resource usage of a kernel, as extracted from a binary.
     """
     code : str #: The SASS code.
-    ru : ResourceUsageDict | None = None #: The resource usage.
+    ru : ResourceUsageDict #: The resource usage.
 
     def to_table(self, *, max_code_length : int = 130, descriptors : typing.Optional[dict[str, str]] = None) -> rich.table.Table:
         """
@@ -132,11 +133,11 @@ class CuObjDump:
         self.arch = arch
         self.functions : dict[str, Function] = {}
         if sass:
-            self.extract_sass(demangler = demangler)
+            self.parse_sass(demangler = demangler)
 
-    def extract_sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None) -> None:
+    def parse_sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None) -> None:
         """
-        Extract SASS from :py:attr:`file`. Optionally demangle functions.
+        Parse SASS from :py:attr:`file`.
         """
         cmd : tuple[str | pathlib.Path, ...] = (
             'cuobjdump',
@@ -147,28 +148,56 @@ class CuObjDump:
 
         logging.info(f"Extracting 'SASS' from {self.file} using {cmd}.")
 
-        self.sass = subprocess.check_output(cmd).decode()
-
-        assert self.sass is not None
-
-        if demangler:
-            for mangled in re.finditer(pattern = r'\t\tFunction : ([A-Za-z0-9_]+)', string = self.sass):
-                self.sass = self.sass.replace(mangled.group(1), demangler.demangle(mangled.group(1)))
-
-        # Retrieve SASS code for each function.
         START = '\t\tFunction : ' # pylint: disable=invalid-name
         STOP = '\t\t.....' # pylint: disable=invalid-name
-        for match in re.finditer(rf'{START}(.*?){STOP}', self.sass, flags = re.DOTALL):
-            function = match.group(1)
-            name, code = function.split(sep = '\n', maxsplit = 1)
-            self.functions[name] = Function(code = code)
 
-        # Retrieve other function information.
-        lines = iter(self.sass.splitlines())
-        for line in lines:
-            if line.startswith(' Function ') and line.endswith(':') and any(x in line for x in self.functions):
-                function = line.replace(' Function ', '').rstrip(':')
-                self.functions[function].ru = ResourceUsage.parse(line = next(lines))
+        current_function_code : str | None = None
+        current_code : list[str] = []
+
+        current_function_ru: typing.Optional[str] = None
+        current_ru : dict[str, ResourceUsageDict] = {}
+
+        # Read the stream as it comes.
+        # The cuobjdump output starts with the resource usage for all functions.
+        # Then, it gives the SASS code for each function.
+        for line in popen_stream(args = cmd):
+
+            # Detect a function in the resource usage section.
+            if (matched := re.search(pattern = r' Function ([A-Za-z0-9_]+):', string = line)) is not None:
+                current_function_ru = demangler.demangle(matched.group(1)) if demangler else matched.group(1)
+
+            # If previous line indicated resource usage.
+            elif current_function_ru is not None:
+                current_ru[current_function_ru] = ResourceUsage.parse(line = line)
+                current_function_ru = None
+
+            # Start of function block.
+            elif line.startswith(START):
+                assert len(current_code) == 0 and current_function_code is None
+
+                current_function_code = line[len(START):].rstrip('\n')
+
+                if demangler:
+                    current_function_code = demangler.demangle(current_function_code)
+
+            # End of function block.
+            elif line.startswith(STOP):
+                assert len(current_code) > 0 and current_function_code is not None
+
+                self.functions[current_function_code] = Function(
+                    code = ''.join(current_code),
+                    ru = current_ru.pop(current_function_code),
+                )
+
+                current_function_code = None
+                current_code = []
+
+            # Inside a function block.
+            elif current_code is not None and current_function_code is not None:
+                current_code.append(line)
+
+            else:
+                pass
 
     @staticmethod
     def extract(*,
@@ -230,7 +259,7 @@ class CuObjDump:
         # and ends with a blank line.
         output = io.StringIO()
         dump = False
-        for line in subprocess.check_output(cmd).decode().splitlines():
+        for line in popen_stream(args = cmd):
             if line.startswith('.section .symtab'):
                 dump = True
             elif dump and len(line.strip()) == 0:

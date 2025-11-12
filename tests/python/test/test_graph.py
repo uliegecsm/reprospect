@@ -54,7 +54,7 @@ class TestSASS(TestGraph):
         Count how many kernels there are (1 per graph node).
         """
         assert len(cuobjdump.functions) == 4
-        logging.info(cuobjdump.sass)
+        logging.info(str(cuobjdump))
 
     def test_instruction_count(self, cuobjdump : CuObjDump) -> None:
         """

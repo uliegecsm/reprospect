@@ -1,9 +1,11 @@
 import dataclasses
+import io
 import logging
 import pathlib
 import re
 import typing
 
+import mypy_extensions
 import pandas
 import rich.console
 import rich.table
@@ -140,6 +142,7 @@ class ControlCode:
             reuse = reuse_flags,
         )
 
+@mypy_extensions.mypyc_attr(native_class = True)
 @dataclasses.dataclass(frozen = True, slots = True)
 class Instruction:
     """
@@ -150,18 +153,21 @@ class Instruction:
     hex : str             #: The hexadecimal representation of the instruction.
     control : ControlCode #: The decoded control code associated with the instruction.
 
+@mypy_extensions.mypyc_attr(native_class = True)
 class Decoder:
     """
     Parse the SASS assembly code extracted from a binary.
 
     The disassembled :py:attr:`instructions` are collected, and the associated control codes are decoded.
     """
-    HEX : typing.Final[str] = r'[a-f0-9x]+'
+    OFFSET : typing.Final[str] = r'[a-f0-9]+'
+
+    HEX : typing.Final[str] = r'0x[a-f0-9]+'
     """
     Matcher for an hex-like string, such as `0x00000a0000017a02`.
     """
 
-    INSTRUCTION : typing.Final[str] = r'[\w@!\.\[\],\+\-\s]+'
+    INSTRUCTION : typing.Final[str] = r'[\w@~!|\.\[\],\+\-\s]+'
     """
     Match an instruction string, such as:
 
@@ -169,14 +175,15 @@ class Decoder:
     - `LDC.64 R10, c[0x0][0x3a0]`
     """
 
+    MATCHER_CONTROL : typing.Final[re.Pattern[str]] = re.compile(rf'\/\* ({HEX}) \*\/')
+
     MATCHER : typing.Final[re.Pattern[str]] = re.compile(
-        rf'/\*({HEX})\*/'
+        rf'/\*({OFFSET})\*/'
         r'\s+'
         rf'({INSTRUCTION}?)'
-        r'(?:\s+(?:[&\?].*?)\s*)?'
+        r'(?:\s+[&\?][^\n]*)?'
         r';\s*'
-        rf'/\*\s*({HEX})\s*\*/',
-        re.IGNORECASE | re.VERBOSE
+        rf'/\*\s*({HEX})\s*\*/'
     )
     """
     Matcher for the full SASS line. It focuses on the offset, instruction and trailing hex encoding.
@@ -208,18 +215,22 @@ class Decoder:
         Parse SASS lines.
         """
         if self.source is not None:
-            self.code = self.source.read_text()
+            with self.source.open('r', encoding = 'utf-8') as fin:
+                return self._parse_lines(fin, skip_until_headerflags)
 
-        assert self.code is not None
+        if self.code is not None:
+            with io.StringIO(self.code) as fin:
+                return self._parse_lines(fin, skip_until_headerflags)
 
-        lines = self.code.splitlines()
+        raise RuntimeError('Neither code nor source was given.')
 
-        iline = 0
-
+    def _parse_lines(self, lines : typing.Iterable[str], skip_until_headerflags : bool) -> None:
         headerflags = False
 
-        while iline < len(lines):
-            line = lines[iline].strip()
+        iterator : typing.Iterator[str] = iter(lines)
+
+        for line in iterator:
+            line = line.strip()
 
             # The line containing '..........' means the end of the SASS code.
             if skip_until_headerflags:
@@ -228,15 +239,12 @@ class Decoder:
 
             # Skip empty lines.
             if not line:
-                iline += 1
                 continue
 
             # Skip lines until '.headerflags' is met.
-            if skip_until_headerflags:
-                if not headerflags:
-                    headerflags = '.headerflags' in line
-                    iline += 1
-                    continue
+            if skip_until_headerflags and not headerflags:
+                headerflags = '.headerflags' in line
+                continue
 
             match = re.match(self.MATCHER, line)
 
@@ -245,29 +253,29 @@ class Decoder:
                 raise RuntimeError(line)
 
             # Extract instruction components.
-            offset      = match.group(1).strip()
+            offset      = match.group(1)
             instruction = match.group(2).strip()
-            hex_        = match.group(3).strip()
+            hex_        = match.group(3)
             control     = None
 
-            # Check if next line contains the second hex word.
-            if iline + 1 < len(lines):
-                if (match := re.match(rf'\/\* ({self.HEX}) \*\/', lines[iline + 1].strip())):
-                    control = ControlCode.decode(code = match.group(1))
-                    iline += 1
+            # Peek next line safely (lookahead).
+            try:
+                next_line = next(iterator)
+            except StopIteration:
+                next_line = None
+
+            if next_line and (match := re.search(self.MATCHER_CONTROL, next_line)):
+                control = ControlCode.decode(code = match.group(1))
 
             assert control is not None
 
             # Create instruction.
-            instruction = Instruction(
+            self.instructions.append(Instruction(
                 offset = int(offset, base = 16),
                 instruction = instruction,
                 hex = hex_,
                 control = control,
-            )
-
-            self.instructions.append(instruction)
-            iline += 1
+            ))
 
     def to_df(self) -> pandas.DataFrame:
         """

@@ -18,6 +18,7 @@ import sys
 import textwrap
 import typing
 
+import mypy_extensions
 import pandas
 import rich.console
 import rich.text
@@ -74,6 +75,7 @@ class ResourceUsage(StrEnum):
                     res[t] = int(token[2])
         return res
 
+@mypy_extensions.mypyc_attr(native_class = True)
 @dataclasses.dataclass(slots = True)
 class Function:
     """
@@ -114,6 +116,7 @@ class Function:
             console.print(self.to_table(), no_wrap = True)
         return capture.get()
 
+@mypy_extensions.mypyc_attr(native_class = True)
 class CuObjDump:
     """
     Use ``cuobjdump`` for extracting SASS, symbol table, and so on.

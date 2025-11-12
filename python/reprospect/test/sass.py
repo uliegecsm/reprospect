@@ -21,9 +21,9 @@ while reducing the need to track low-level details of the evolving CUDA instruct
     >>> from reprospect.tools.architecture import NVIDIAArch
     >>> from reprospect.test.sass          import LoadGlobalMatcher
     >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('VOLTA70')).matches(inst = 'LDG.E.SYS R15, [R8+0x10]')
-    InstructionMatch(opcode='LDG', modifiers=('E', 'SYS'), operands=('R15', 'R8+0x10'), additional={'address': ['R8+0x10']})
+    InstructionMatch(opcode='LDG', modifiers=('E', 'SYS'), operands=('R15', 'R8+0x10'), predicate=None, additional={'address': ['R8+0x10']})
     >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('BLACKWELL120'), size = 128, readonly = True).matches(inst = 'LDG.E.128.CONSTANT R2, desc[UR15][R6.64+0x12]')
-    InstructionMatch(opcode='LDG', modifiers=('E', '128', 'CONSTANT'), operands=('R2', 'desc[UR15][R6.64+0x12]'), additional={'address': ['desc[UR15][R6.64+0x12]']})
+    InstructionMatch(opcode='LDG', modifiers=('E', '128', 'CONSTANT'), operands=('R2', 'desc[UR15][R6.64+0x12]'), predicate=None, additional={'address': ['desc[UR15][R6.64+0x12]']})
 
 References:
 
@@ -86,11 +86,18 @@ class PatternBuilder:
     """
 
     @staticmethod
-    def optional(s : str) -> str:
+    def zero_or_one(s : str) -> str:
         """
-        Build optional non-capturing pattern.
+        Build an optional non-capturing pattern that matches zero or one occurrence of the given pattern.
         """
         return rf'(?:{s})?'
+
+    @staticmethod
+    def zero_or_more(s : str) -> str:
+        """
+        Build an optional non-capturing pattern that matches zero or more occurrences of the given pattern.
+        """
+        return rf'(?:{s})*'
 
     @staticmethod
     def any(*args : str) -> str:
@@ -183,7 +190,7 @@ class PatternBuilder:
             for modifier in filter(None, modifiers):
                 modifier = typing.cast(int | str, modifier)
                 if isinstance(modifier, str) and modifier.startswith('?'):
-                    opcode += PatternBuilder.optional(r'\.' + PatternBuilder.group(modifier[1::], group = 'modifiers'))
+                    opcode += PatternBuilder.zero_or_one(r'\.' + PatternBuilder.group(modifier[1::], group = 'modifiers'))
                 else:
                     opcode += r'\.' + PatternBuilder.group(modifier, group = 'modifiers')
         return opcode
@@ -209,7 +216,7 @@ class PatternBuilder:
         """
         pattern = cls.REG
         if offset is None:
-            pattern += cls.optional(cls.OFFSET)
+            pattern += cls.zero_or_one(cls.OFFSET)
         elif offset is True:
             pattern += cls.OFFSET
         return rf"\[{cls.groups(pattern, groups = ('operands', 'address'))}\]"
@@ -226,7 +233,7 @@ class PatternBuilder:
         """
         pattern = cls.REG64
         if offset is None:
-            pattern += cls.optional(cls.OFFSET)
+            pattern += cls.zero_or_one(cls.OFFSET)
         elif offset is True:
             pattern += cls.OFFSET
         return rf"\[({cls.groups(pattern, groups = ('operands', 'address'))})\]"
@@ -240,7 +247,7 @@ class PatternBuilder:
         """
         pattern = rf'desc\[({cls.UREG})\]'
         if offset is None:
-            pattern += rf'\[({cls.REG64}{cls.optional(cls.OFFSET)})\]'
+            pattern += rf'\[({cls.REG64}{cls.zero_or_one(cls.OFFSET)})\]'
         elif offset is True:
             pattern += rf'\[({cls.REG64}{cls.OFFSET})\]'
         else:
@@ -265,17 +272,30 @@ class InstructionMatch:
     opcode : str
     modifiers : tuple[str, ...]
     operands : tuple[str, ...]
+    predicate : str | None = None
 
     additional : dict[str, list[str]] | None = None
 
     @staticmethod
     def parse(*, bits : regex.Match[str]) -> 'InstructionMatch':
+        """
+        The only mandatory capture group is `opcode`.
+        """
         captured = bits.capturesdict()
+
+        opcode = captured.pop('opcode')
+        assert len(opcode) == 1
+
+        predicate = captured.pop('predicate', None)
+        if predicate is not None:
+            assert len(predicate) <= 1
+
         return InstructionMatch(
-            opcode = captured.pop('opcode')[0],
+            opcode = opcode[0],
             modifiers = tuple(captured.pop('modifiers', ())),
             operands = tuple(captured.pop('operands', ())),
-            additional = captured,
+            predicate = predicate[0] if (predicate is not None and len(predicate) == 1) else None,
+            additional = captured or None,
         )
 
 @mypy_extensions.mypyc_attr(allow_interpreted_subclasses = True)
@@ -655,7 +675,7 @@ class OpcodeModsMatcher(PatternMatcher):
     >>> OpcodeModsMatcher(opcode = 'ISETP', modifiers = ('NE', 'AND')).matches(
     ...     'ISETP.NE.AND P2, PT, R4, RZ, PT'
     ... )
-    InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), additional={})
+    InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), predicate=None, additional=None)
     """
     def __init__(self, *,
         opcode : str,
@@ -685,7 +705,7 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
     ...         PatternBuilder.PREDT,
     ...     )
     ... ).matches('ISETP.NE.AND P2, PT, R4, RZ, PT')
-    InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), additional={})
+    InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), predicate=None, additional=None)
     """
     def __init__(self, *,
         opcode : str,
@@ -696,6 +716,42 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
             PatternBuilder.group(op, group = 'operands') for op in operands
         )
         super().__init__(pattern = rf'^{PatternBuilder.opcode_mods(opcode, modifiers)}\s+{operands}')
+
+class AnyMatcher(PatternMatcher):
+    """
+    Match any instruction.
+
+    .. note::
+
+        The instruction is decomposed into its components.
+
+    .. warning::
+
+        As explained in https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L251-LL258,
+        nearly all operands are comma-separated.
+        Notable exceptions::
+
+            RET.REL.NODEC R10 0x0
+
+    >>> from reprospect.test.sass import AnyMatcher
+    >>> AnyMatcher().matches(inst = 'FADD.FTZ.RN R0, R1, R2')
+    InstructionMatch(opcode='FADD', modifiers=('FTZ', 'RN'), operands=('R0', 'R1', 'R2'), predicate=None, additional=None)
+    >>> AnyMatcher().matches(inst = 'RET.REL.NODEC R4 0x0')
+    InstructionMatch(opcode='RET', modifiers=('REL', 'NODEC'), operands=('R4', '0x0'), predicate=None, additional=None)
+    """
+    PATTERN : typing.Final[regex.Pattern[str]] = regex.compile(
+        r'^'
+        + PatternBuilder.zero_or_one(PatternBuilder.group(s = r'@!?U?P[T0-9]+', group = 'predicate') + r'\s*')
+        + PatternBuilder.group(s = r'[A-Z0-9]+', group = 'opcode')
+        + PatternBuilder.zero_or_more(s = r'\.' + PatternBuilder.group(s = r'[A-Z0-9_]+', group = 'modifiers'))
+        + r'\s*'
+        + PatternBuilder.zero_or_more(s = PatternBuilder.group(s = r'[^,\s]+', group = 'operands') + PatternBuilder.any(r'\s*,\s*', r'\s+'))
+        + PatternBuilder.zero_or_one(s = PatternBuilder.group(s = r'[^,\s]+', group = 'operands'))
+        + r'$'
+    )
+
+    def __init__(self):
+        super().__init__(pattern = self.PATTERN)
 
 class AnyOfMatcher(InstructionMatcher):
     """

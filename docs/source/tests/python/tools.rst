@@ -11,6 +11,11 @@ Binaries
 
 .. automodule:: tests.python.tools.test_binaries
 
+.. toctree::
+   :maxdepth: 4
+
+   tools/binaries/elf
+
 Cacher
 ~~~~~~
 

@@ -224,7 +224,7 @@ class CuObjDump:
             file,
         )
 
-        logging.info(f'Extracting ELF file containing {cubin} from {file} for architecture {arch} with {cmd}.')
+        logging.info(f'Extracting ELF file containing {cubin} from {file} for architecture {arch} with {cmd} in {cwd}.')
 
         files = subprocess.check_output(args = cmd, cwd = cwd).decode().splitlines()
 

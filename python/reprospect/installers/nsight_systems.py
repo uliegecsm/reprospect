@@ -10,6 +10,8 @@ import semantic_version
 
 import system_helpers.apt.install
 
+from reprospect.utils import nvcc
+
 PACKAGE : typing.Final[str] = 'cuda-nsight-systems'
 
 def parse_args() -> argparse.Namespace:
@@ -44,22 +46,19 @@ def detect_cuda_version() -> str:
     #. ``nvidia-smi --query``
     #. ``nvcc --version``
     """
-    def convert(version : re.Match[str]) -> str:
-        logging.info(f"Detected CUDA version is {version.group(0)}.")
-        return f'{version.group(1)}-{version.group(2)}'
-
     if 'CUDA_VERSION' in os.environ:
         version = semantic_version.Version(os.environ['CUDA_VERSION'])
         return f'{version.major}-{version.minor}'
-    elif shutil.which('nvidia-smi') is not None:
-        output = subprocess.check_output(('nvidia-smi', '--query')).decode()
-        for line in output.splitlines():
+
+    if shutil.which('nvidia-smi') is not None:
+        for line in subprocess.check_output(('nvidia-smi', '--version')).decode().splitlines():
             if "CUDA Version" in line and (matched := re.search(pattern = r'([0-9]+).([0-9]+)', string = line)) is not None:
-                return convert(version = matched)
-    elif shutil.which('nvcc') is not None:
-        output = subprocess.check_output(('nvcc', '--version')).decode()
-        if (matched := re.search(pattern = r'release ([0-9]+).([0-9]+)', string = output)) is not None:
-            return convert(version = matched)
+                return f'{matched.group(1)}-{matched.group(2)}'
+
+    if shutil.which('nvcc') is not None:
+        version = nvcc.get_version()
+        return f'{version.major}-{version.minor}'
+
     raise RuntimeError("Could not deduce CUDA version.")
 
 def main() -> None:

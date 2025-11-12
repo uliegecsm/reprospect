@@ -107,9 +107,11 @@ EOF
 # Install Nsight Systems.
 FROM python-requirements AS nsight-systems
 
-RUN --mount=target=/python/reprospect/installers/nsight_systems.py,type=bind,source=python/reprospect/installers/nsight_systems.py <<EOF
+RUN --mount=target=/python/reprospect/installers/nsight_systems.py,type=bind,source=python/reprospect/installers/nsight_systems.py \
+    --mount=target=/python/reprospect/utils/nvcc.py,type=bind,source=python/reprospect/utils/nvcc.py <<EOF
     set -ex
 
+    export PYTHONPATH=/python${PYTHONPATH+:}${PYTHONPATH}
     python3 /python/reprospect/installers/nsight_systems.py
 EOF
 

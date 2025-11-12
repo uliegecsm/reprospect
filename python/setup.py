@@ -15,6 +15,7 @@ setup(
             'reprospect/utils/cmake.py',
             'reprospect/utils/detect.py',
             'reprospect/utils/ldd.py',
+            'reprospect/utils/nvcc.py',
             'reprospect/utils/subprocess_helpers.py',
         ],
         verbose = True,

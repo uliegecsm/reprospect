@@ -1,6 +1,4 @@
 import logging
-import os
-import pathlib
 import subprocess
 
 import pytest
@@ -13,16 +11,6 @@ from reprospect.utils      import cmake
 
 from tests.python.parameters import Parameters, PARAMETERS
 from tests.python.test.sass.test_sass import get_decoder
-
-@pytest.fixture(scope = 'session')
-def cmake_file_api() -> cmake.FileAPI:
-    return cmake.FileAPI(
-        cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
-    )
-
-@pytest.fixture(scope = 'session')
-def workdir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
 
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestAtomicMatcher:

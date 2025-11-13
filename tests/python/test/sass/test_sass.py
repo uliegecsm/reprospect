@@ -25,16 +25,6 @@ from reprospect.test.sass          import AtomicMatcher, \
 from tests.python.compilation import get_compilation_output
 from tests.python.parameters  import Parameters, PARAMETERS
 
-@pytest.fixture(scope = 'session')
-def cmake_file_api() -> cmake.FileAPI:
-    return cmake.FileAPI(
-        cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
-    )
-
-@pytest.fixture(scope = 'session')
-def workdir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
-
 CODE_ELEMENTWISE_ADD_RESTRICT = """\
 __global__ void elementwise_add_restrict(int* __restrict__ const dst, const int* __restrict__ const src) {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;

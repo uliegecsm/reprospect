@@ -1,5 +1,4 @@
 import logging
-import os
 import pathlib
 import shutil
 import typing
@@ -13,16 +12,6 @@ from reprospect.utils              import cmake
 
 from tests.python.compilation import get_compilation_output, get_cubin_name
 from tests.python.parameters  import Parameters, PARAMETERS
-
-@pytest.fixture(scope = 'session')
-def workdir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
-
-@pytest.fixture(scope = 'session')
-def cmake_file_api() -> cmake.FileAPI:
-    return cmake.FileAPI(
-        cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
-    )
 
 @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
 class TestResourceUsage:

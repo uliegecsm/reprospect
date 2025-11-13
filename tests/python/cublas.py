@@ -27,6 +27,8 @@ class CuBLAS:
 
         :param cwd: Where to extract the files.
         :param randomly: If :py:obj:`True`, extract only one file (randomly). Otherwise, extract *all* files.
+
+        :raises IndexError: If `randomly` is :py:obj:`True` but there is no embedded cubin for `arch`.
         """
         name : typing.Final[str | None] = random.choice(
             tuple(CuObjDump.list_elf(arch = arch, file = self.libcublas))

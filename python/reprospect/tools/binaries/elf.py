@@ -8,12 +8,16 @@ References:
 * https://en.wikipedia.org/wiki/Executable_and_Linkable_Format
 * https://github.com/llvm/llvm-project/blob/46e9d6325a825b516826d0c56b6231abfaac16ab/llvm/include/llvm/BinaryFormat/ELF.h
 * https://github.com/eliben/pyelftools
+* https://refspecs.linuxfoundation.org/elf/elf.pdf
+* https://uclibc.org/docs/elf-64-gen.pdf
 """
 import dataclasses
 import pathlib
 import struct
 import sys
 import typing
+
+from reprospect.tools.architecture import NVIDIAArch
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -41,6 +45,25 @@ ELFABIVERSION_CUDA : typing.Final[tuple[int, int]] = (7, 8)
 References:
 
 * https://github.com/llvm/llvm-project/blob/46e9d6325a825b516826d0c56b6231abfaac16ab/llvm/include/llvm/BinaryFormat/ELF.h#L391-L392
+"""
+
+EF_CUDA_SM_PRE_BLACKWELL: typing.Final[int] = 0xFF
+"""
+Mask for compute capability field pre BLACKWELL.
+
+References:
+
+* https://github.com/llvm/llvm-project/blob/12322b22c68a588caeee8702946695de0a8ba788/llvm/include/llvm/BinaryFormat/ELF.h#L932-L988
+"""
+
+EF_CUDA_SM_POST_BLACKWELL: typing.Final[int] = 0xFF00
+"""
+Mask for compute capability field post BLACKWELL.
+"""
+
+EF_CUDA_SM_OFFSET_POST_BLACKWELL: typing.Final[int] = 8
+"""
+Offset for compute capability field post BLACKWELL.
 """
 
 class ELFHeaderEIdentClass(StrEnum):
@@ -113,11 +136,20 @@ class ELFHeaderEType(StrEnum):
 class ELFHeader:
     """
     ELF header.
+
+    .. note:
+
+        This class assumes the cubin to be of class 64-bit. CUDA 12.0 dropped support for 32-bit development.
+
+    References:
+
+    * https://nvidia.custhelp.com/app/answers/detail/a_id/5615/~/support-plan-for-32-bit-cuda
     """
     e_ident : ELFHeaderEIdent
     e_type : ELFHeaderEType #: ELF type.
     e_machine : int #: Target architecture.
     e_version : int #: ELF file version.
+    e_flags : int #: Target-specific flags.
 
     @classmethod
     def decode(cls, *, file : pathlib.Path) -> 'ELFHeader':
@@ -133,6 +165,9 @@ class ELFHeader:
             # e_ident fields (12 bytes after the 4 ELF magic number).
             e_ident = ELFHeaderEIdent.decode(data = fin.read(12))
 
+            if e_ident.ei_class != ELFHeaderEIdentClass.ELF_64:
+                raise RuntimeError(f"expecting cubin class to be 64-bit but got {e_ident.ei_class}")
+
             byte_order = '<' if e_ident.ei_data == Endianness.LITTLE else '>'
 
             # e_type (offset 0x10).
@@ -147,11 +182,19 @@ class ELFHeader:
             e_version_bytes = fin.read(4)
             e_version = struct.unpack(byte_order + 'I', e_version_bytes)[0]
 
+            # Skip e_entry, e_phoff and e_shoff.
+            fin.seek(struct.calcsize('QQQ'), 1) # 3 x 8-byte unsigned long long
+
+            # e_flags.
+            e_flags_bytes = fin.read(4)
+            e_flags = struct.unpack(byte_order + 'I', e_flags_bytes)[0]
+
             return ELFHeader(
                 e_ident = e_ident,
                 e_type = e_type,
                 e_machine = e_machine,
                 e_version = e_version,
+                e_flags = e_flags,
             )
 
     @property
@@ -162,3 +205,26 @@ class ELFHeader:
         return self.e_machine == EM_CUDA \
             and self.e_ident.ei_osabi in ELFOSABI_CUDA \
             and self.e_ident.ei_abiversion in ELFABIVERSION_CUDA
+
+    @property
+    def arch(self) -> NVIDIAArch:
+        """
+        Return NVIDIA architecture encoded in :py:attr:`e_flags`.
+        """
+        return self.arch_from_e_flags(e_flags = self.e_flags)
+
+    @staticmethod
+    def arch_from_e_flags(e_flags : int) -> NVIDIAArch:
+        """
+        Return NVIDIA architecture encoded in `e_flags`.
+        """
+        misc = (e_flags >> 24) & 0xFF
+
+        # Decode following the convention pre BLACKWELL.
+        cc = e_flags & EF_CUDA_SM_PRE_BLACKWELL
+
+        # Bits 24-31 were zero pre BLACKWELL.
+        if misc != 0 or cc not in range(70, 100):
+            cc = (e_flags & EF_CUDA_SM_POST_BLACKWELL) >> EF_CUDA_SM_OFFSET_POST_BLACKWELL
+
+        return NVIDIAArch.from_compute_capability(cc = cc)

@@ -7,6 +7,7 @@ Tests
 
    tests/nvtx
    tests/python/compilation
+   tests/python/cublas
    tests/python/extensibility
    tests/python/parameters
    tests/python/test

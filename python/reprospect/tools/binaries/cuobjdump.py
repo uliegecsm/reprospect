@@ -14,7 +14,6 @@ import io
 import logging
 import pathlib
 import re
-import subprocess
 import sys
 import textwrap
 import typing
@@ -209,8 +208,8 @@ class CuObjDump:
             else:
                 pass
 
-    @staticmethod
-    def extract(*,
+    @classmethod
+    def extract(cls, *,
         file : pathlib.Path,
         arch : NVIDIAArch,
         cwd : pathlib.Path,
@@ -229,24 +228,45 @@ class CuObjDump:
         subset of the SASS can be significantly faster than extracting all the SASS straightforwardly
         from the whole `file`.
         """
-        cmd : tuple[str | pathlib.Path, ...] = (
-            'cuobjdump',
-            '--extract-elf', cubin,
-            '--gpu-architecture', arch.as_sm,
-            file,
-        )
-
-        logging.info(f'Extracting embedded CUDA binary file containing {cubin} from {file} for architecture {arch} with {cmd} in {cwd}.')
-
-        files = subprocess.check_output(args = cmd, cwd = cwd).decode().splitlines()
+        files = tuple(cls.extract_elf(file = file, arch = arch, name = cubin, cwd = cwd))
 
         if len(files) != 1:
             raise RuntimeError(files)
 
-        if (matched := re.match(r'Extracting ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+.cubin)', files[0])) is not None:
-            file = cwd / matched.group(1)
-            return CuObjDump(file = file, arch = arch, **kwargs), file
-        raise RuntimeError(files[0])
+        file = cwd / files[0]
+
+        return CuObjDump(file = file, arch = arch, **kwargs), file
+
+    @staticmethod
+    def extract_elf(*,
+        file : pathlib.Path,
+        cwd : typing.Optional[pathlib.Path] = None,
+        arch : typing.Optional[NVIDIAArch] = None,
+        name : typing.Optional[str] = None,
+    ) -> typing.Generator[str, None, None]:
+        """
+        Extract ELF files from `file`.
+
+        :param arch: Optionally filter for a given architecture.
+        :param name: Optionally filter by name.
+        """
+        cmd : list[str | pathlib.Path] = [
+            'cuobjdump',
+            '--extract-elf',
+        ]
+
+        if name is not None:
+            cmd.append(name)
+
+        if arch is not None:
+            cmd.extend(('--gpu-architecture', arch.as_sm,))
+
+        cmd.append(file)
+
+        return (
+            m.group(1)
+            for f in popen_stream(args = cmd, cwd = cwd) if (m := re.match(r'Extracting ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+\.cubin)', f)) is not None
+        )
 
     def __str__(self) -> str:
         """

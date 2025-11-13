@@ -11,23 +11,12 @@ import pytest
 
 from reprospect.test.cmake import get_demangler_for_compiler
 
-from reprospect.utils import cmake
 from reprospect.tools import ncu
 from reprospect.utils import detect
 
 @pytest.fixture(scope = 'session')
-def workdir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
-
-@pytest.fixture(scope = 'session')
-def bindir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_BINARY_DIR'])
-
-@pytest.fixture(scope = 'session')
-def cmake_cuda_compiler(bindir) -> dict:
-    return cmake.FileAPI(
-        cmake_build_directory = bindir,
-    ).toolchains['CUDA']['compiler']
+def cmake_cuda_compiler(cmake_file_api) -> dict:
+    return cmake_file_api.toolchains['CUDA']['compiler']
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:

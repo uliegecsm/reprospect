@@ -11,10 +11,6 @@ from reprospect.utils import cmake
 from tests.python.compilation import get_compilation_output
 from tests.python.parameters  import Parameters, PARAMETERS
 
-@pytest.fixture(scope = 'session')
-def workdir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
-
 FFMA = \
 """\
         /*00c0*/                   FFMA R7, R2, c[0x0][0x160], R7 ;                  /* 0x0000580002077a23 */
@@ -38,12 +34,6 @@ ISETP_NE_U32_AND = \
         /*00c0*/                   ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT ;       /* 0x000000ff0000720c */
                                                                                      /* 0x040fe40003f05070 */
 """
-
-@pytest.fixture(scope = 'session')
-def cmake_file_api() -> cmake.FileAPI:
-    return cmake.FileAPI(
-        cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
-    )
 
 class TestSASSDecoder:
     """

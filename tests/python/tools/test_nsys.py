@@ -11,14 +11,6 @@ import semantic_version
 from reprospect.tools.nsys import Report, Session, strip_cuda_api_suffix, Cacher
 from reprospect.utils      import detect
 
-@pytest.fixture(scope = 'session')
-def workdir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
-
-@pytest.fixture(scope = 'session')
-def bindir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_BINARY_DIR'])
-
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:
     """

@@ -1,5 +1,4 @@
 import logging
-import os
 import pathlib
 import subprocess
 import typing
@@ -12,16 +11,6 @@ from reprospect.tools.binaries.elf import ELFHeader
 from reprospect.utils              import cmake
 
 from tests.python.cublas import CuBLAS
-
-@pytest.fixture(scope = 'session')
-def cmake_file_api() -> cmake.FileAPI:
-    return cmake.FileAPI(
-        cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
-    )
-
-@pytest.fixture(scope = 'session')
-def workdir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
 
 class TestELFHeader:
     """

@@ -263,14 +263,26 @@ class CuObjDump:
         """
         Get the names of the embedded CUDA binary files contained in :py:attr:`file`.
         """
-        cmd : tuple[str | pathlib.Path, ...] = (
+        return tuple(self.list_elf(arch = self.arch, file = self.file))
+
+    @staticmethod
+    def list_elf(*, file : pathlib.Path, arch : typing.Optional[NVIDIAArch] = None) -> typing.Generator[str, None, None]:
+        """
+        List ELF files in `file`.
+
+        :param arch: Optionally filter for a given architecture.
+        """
+        cmd : list[str | pathlib.Path] = [
             'cuobjdump',
             '--list-elf',
-            '--gpu-architecture', self.arch.as_sm,
-            self.file
-        )
+        ]
 
-        return tuple(
+        if arch is not None:
+            cmd.extend(('--gpu-architecture', arch.as_sm,))
+
+        cmd.append(file)
+
+        return (
             m.group(1)
             for f in popen_stream(args = cmd) if (m := re.match(r'ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+\.cubin)', f)) is not None
         )

@@ -6,6 +6,7 @@ import typing
 
 import pytest
 
+from reprospect.tools.binaries     import CuObjDump
 from reprospect.tools.binaries.elf import ELFHeader
 from reprospect.utils              import cmake
 
@@ -23,7 +24,7 @@ class TestELFHeader:
     """
     Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader`.
     """
-    def test_cudart(self, cmake_file_api : cmake.FileAPI, workdir : pathlib.Path) -> None:
+    def test_cudart(self, cmake_file_api : cmake.FileAPI) -> None:
         """
         The CUDA runtime shared library is not a cubin and does not contain embedded cubins.
         """
@@ -37,11 +38,9 @@ class TestELFHeader:
 
         assert not descriptor.is_cuda
 
-        result = subprocess.run(('cuobjdump', '--list-elf', cudart), stdout = subprocess.PIPE, stderr = subprocess.PIPE, cwd = workdir, check = False)
-
-        assert result.returncode != 0
-        assert result.stdout == b''
-        assert b'does not contain device code' in result.stderr
+        with pytest.raises(subprocess.CalledProcessError) as exc:
+            tuple(CuObjDump.list_elf(file = cudart))
+        assert 'does not contain device code' in exc.value.stderr
 
     def test_cublas(self, cmake_file_api : cmake.FileAPI, workdir : pathlib.Path) -> None:
         """

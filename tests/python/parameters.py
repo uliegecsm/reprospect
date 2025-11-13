@@ -16,7 +16,7 @@ def architectures(version : semantic_version.Version = semantic_version.Version(
     """
     Get the list of architectures to test, that are supported by `version`.
     """
-    return tuple({
+    return tuple(
         arch for cc in [
             70,
             75,
@@ -27,6 +27,6 @@ def architectures(version : semantic_version.Version = semantic_version.Version(
             100,
             120,
         ] if (arch := NVIDIAArch.from_compute_capability(cc = cc)).compute_capability.supported(version = version)
-    })
+    )
 
 PARAMETERS : typing.Final[tuple[Parameters, ...]] = tuple(Parameters(arch = arch) for arch in architectures())

@@ -23,7 +23,7 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
     cuda_toolchain = cmake_file_api.toolchains['CUDA']
     cuda_compiler_id = cuda_toolchain['compiler']['id']
 
-    output = cwd / (source.stem + ('.o' if object_file else ''))
+    output = cwd / (source.stem + '.' + arch.as_sm + ('.o' if object_file else ''))
 
     cmd = [
         cmake_file_api.cache['CMAKE_CUDA_COMPILER_LAUNCHER']['value'],

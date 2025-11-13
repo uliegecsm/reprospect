@@ -171,9 +171,26 @@ class CuObjDump:
         # Then, it gives the SASS code for each function.
         for line in popen_stream(args = cmd):
 
+            # End of function block.
+            if line.startswith(STOP):
+                assert len(current_code) > 0 and current_function_code is not None
+
+                self.functions[current_function_code] = Function(
+                    code = ''.join(current_code),
+                    ru = current_ru.pop(current_function_code),
+                )
+
+                current_function_code = None
+                current_code.clear()
+
+            # Inside a function block.
+            elif current_function_code is not None:
+                current_code.append(line)
+
             # Detect a function in the resource usage section.
-            if (matched := re.search(pattern = r' Function ([A-Za-z0-9_]+):', string = line)) is not None:
-                current_function_ru = demangler.demangle(matched.group(1)) if demangler else matched.group(1)
+            elif line.startswith(' Function '):
+                mangled = line[10 : line.index(':', 10)]
+                current_function_ru = demangler.demangle(mangled) if demangler else mangled
 
             # If previous line indicated resource usage.
             elif current_function_ru is not None:
@@ -188,22 +205,6 @@ class CuObjDump:
 
                 if demangler:
                     current_function_code = demangler.demangle(current_function_code)
-
-            # End of function block.
-            elif line.startswith(STOP):
-                assert len(current_code) > 0 and current_function_code is not None
-
-                self.functions[current_function_code] = Function(
-                    code = ''.join(current_code),
-                    ru = current_ru.pop(current_function_code),
-                )
-
-                current_function_code = None
-                current_code = []
-
-            # Inside a function block.
-            elif current_code is not None and current_function_code is not None:
-                current_code.append(line)
 
             else:
                 pass

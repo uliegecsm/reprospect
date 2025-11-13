@@ -167,22 +167,13 @@ class Decoder:
     Matcher for an hex-like string, such as `0x00000a0000017a02`.
     """
 
-    INSTRUCTION : typing.Final[str] = r'[\w@~!|\.\[\],\+\-\s]+'
-    """
-    Match an instruction string, such as:
-
-    - `ISETP.GE.U32.AND P0, PT, R0, UR9, PT`
-    - `LDC.64 R10, c[0x0][0x3a0]`
-    """
-
     MATCHER_CONTROL : typing.Final[re.Pattern[str]] = re.compile(rf'\/\* ({HEX}) \*\/')
 
     MATCHER : typing.Final[re.Pattern[str]] = re.compile(
         rf'/\*({OFFSET})\*/'
         r'\s+'
-        rf'({INSTRUCTION}?)'
-        r'(?:\s+[&\?][^\n]*)?'
-        r';\s*'
+        r'(.*?)(?=\s{2,}|[;?&])'
+        r'.*?'
         rf'/\*\s*({HEX})\s*\*/'
     )
     """
@@ -246,17 +237,11 @@ class Decoder:
                 headerflags = '.headerflags' in line
                 continue
 
-            match = re.match(self.MATCHER, line)
+            matchl = self.MATCHER.match(line)
 
-            if not match:
+            if not matchl:
                 logging.error(f'The line:\n\t{line}\ndid not match {self.MATCHER}.')
                 raise RuntimeError(line)
-
-            # Extract instruction components.
-            offset      = match.group(1)
-            instruction = match.group(2).strip()
-            hex_        = match.group(3)
-            control     = None
 
             # Peek next line safely (lookahead).
             try:
@@ -264,16 +249,18 @@ class Decoder:
             except StopIteration:
                 next_line = None
 
-            if next_line and (match := re.search(self.MATCHER_CONTROL, next_line)):
-                control = ControlCode.decode(code = match.group(1))
+            control : ControlCode | None = None
+
+            if next_line and (matchc := self.MATCHER_CONTROL.search(next_line)):
+                control = ControlCode.decode(code = matchc.group(1))
 
             assert control is not None
 
             # Create instruction.
             self.instructions.append(Instruction(
-                offset = int(offset, base = 16),
-                instruction = instruction,
-                hex = hex_,
+                offset = int(matchl.group(1), base = 16),
+                instruction = matchl.group(2).rstrip(),
+                hex = matchl.group(3),
                 control = control,
             ))
 

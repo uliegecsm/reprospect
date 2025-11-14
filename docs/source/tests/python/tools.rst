@@ -9,6 +9,8 @@ Architecture
 Binaries
 --------
 
+.. automodule:: tests.python.tools.binaries.test_nvdisasm
+
 .. toctree::
    :maxdepth: 1
 

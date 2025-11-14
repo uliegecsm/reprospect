@@ -36,6 +36,12 @@ ISETP_NE_U32_AND = \
                                                                                      /* 0x040fe40003f05070 */
 """
 
+class TestRegisterType:
+    """
+    Test :py:class:`reprospect.tools.sass.RegisterType`.
+    """
+    assert sass.RegisterType.GPR.prefix == 'R'
+
 class TestDecoder:
     """
     Test :py:class:`reprospect.tools.sass.Decoder`.

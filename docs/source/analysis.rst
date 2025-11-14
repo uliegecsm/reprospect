@@ -10,6 +10,7 @@ Binary analysis
 ~~~~~~~~~~~~~~~
 
 * :py:class:`reprospect.tools.binaries.CuObjDump`
+* :py:class:`reprospect.tools.binaries.NVDisasm`
 * :py:class:`reprospect.tools.sass.Decoder`
 
 Kernel profiling |:female_detective:|

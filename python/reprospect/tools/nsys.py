@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import shlex
 import shutil
 import sqlite3
@@ -242,13 +243,13 @@ class Report:
             raise RuntimeError(data)
         return data.squeeze()
 
-    @dataclasses.dataclass(frozen = True)
+    @dataclasses.dataclass(frozen = True, slots = True)
     class PatternSelector:
         """
         A :py:class:`pandas.DataFrame` selector that returns which rows match a regex pattern
         in a specific column.
         """
-        pattern : str
+        pattern : str | re.Pattern[str]
         column : str = 'Name'
 
         def __call__(self, table : pandas.DataFrame) -> pandas.Series:

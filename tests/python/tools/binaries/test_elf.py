@@ -5,56 +5,161 @@ import typing
 
 import pytest
 
-from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump
-from reprospect.tools.binaries.elf import ELFHeader
+from reprospect.tools.binaries.elf import ELFHeader, get_compute_capability_from_e_flags, get_arch_from_elf_header
 from reprospect.utils              import cmake
 
-from tests.python.cublas import CuBLAS
+from tests.python.compilation import get_compilation_output
+from tests.python.cublas      import CuBLAS
+from tests.python.parameters  import Parameters, PARAMETERS
 
-class TestELFHeader:
+class TestGetComputeCapabilityFromEFlags:
+    CC_E_FLAGS : typing.Final[dict[int, int]] = {
+        70  : 0b10001100000010101000110,     # 0x460546
+        75  : 0b10010110000010101001011,     # 0x4b054b
+        80  : 0b10100000000010101010000,     # 0x500550
+        86  : 0b10101100000010101010110,     # 0x560556
+        89  : 0b10110010000010101011001,     # 0x590559
+        90  : 0b10110100000010101011010,     # 0x5a055a
+        100 : 0b110000000000110010000000010, # 0x6006402
+        103 : 0b110000000000110011100000010, # 0x6006702
+        110 : 0b110000000000110111000000010, # 0x6006e02
+        120 : 0b110000000000111100000000010, # 0x6007802
+        121 : 0b110000000000111100100000010, # 0x6007902
+    }
     """
-    Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader`.
+    Values of `e_flags` obtained by calling ``cuobjdump --dump-elf`` on a cubin
+    and reading the value of `flags` from the header for each architecture.
     """
-    def test_cudart(self, cmake_file_api : cmake.FileAPI) -> None:
-        """
-        The CUDA runtime shared library is not a cubin and does not contain embedded cubins.
-        """
+
+    @pytest.mark.parametrize('cc,e_flags', CC_E_FLAGS.items())
+    def test(self, cc : int, e_flags : int) -> None:
+        b0 = e_flags         & 0xFF
+        b1 = (e_flags >> 8)  & 0xFF
+        b2 = (e_flags >> 16) & 0xFF
+        b3 =  e_flags >> 24
+
+        # The compute capatbility is encoded in the low byte pre BLACKWELL,
+        # and in byte 1 (i.e., with an offset of 8) post BLACKWELL.
+        if cc < 100:
+            assert b0  == cc and b3 == 0
+        else:
+            assert b1 == cc
+
+        logging.info(f'For cc {cc}, the e_flags {e_flags} are composed of {b0}, {b1}, {b2} and {b3}.')
+
+    @pytest.mark.parametrize('cc,e_flags', CC_E_FLAGS.items())
+    def test_get_compute_capability_from_e_flags(self, cc : int, e_flags : int) -> None:
+        assert get_compute_capability_from_e_flags(e_flags) == cc
+
+class TestCUDART:
+    """
+    Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader` using the CUDA runtime shared library.
+    """
+    @pytest.fixture(scope = 'class')
+    def cudart(self, cmake_file_api : cmake.FileAPI) -> pathlib.Path:
         cudart = pathlib.Path(cmake_file_api.cache['CUDA_CUDART']['value'])
         assert cudart.is_file()
+        return cudart
 
-        descriptor = ELFHeader.decode(file = cudart)
-        logging.info(descriptor)
+    def test_shared_library(self, cudart : pathlib.Path) -> None:
+        """
+        The CUDA runtime shared library is a shared library and not itself a cubin.
+        """
+        header = ELFHeader.decode(file = cudart)
+        logging.info(header)
 
-        assert descriptor.e_type == 'shared'
+        assert header.e_type == 'shared'
+        assert not header.is_cuda
 
-        assert not descriptor.is_cuda
-
+    def test_embedded_cubin(self, cudart : pathlib.Path) -> None:
+        """
+        The CUDA runtime shared library does not contain embedded cubins.
+        """
         with pytest.raises(subprocess.CalledProcessError) as exc:
             tuple(CuObjDump.list_elf(file = cudart))
         assert 'does not contain device code' in exc.value.stderr
 
-    def test_cublas(self, cmake_file_api : cmake.FileAPI, workdir : pathlib.Path) -> None:
+class TestCuBLAS:
+    """
+    Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader` using the cuBLAS shared library.
+    """
+    @pytest.fixture(scope = 'class')
+    def cublas(self, cmake_file_api : cmake.FileAPI) -> CuBLAS:
+        return CuBLAS(cmake_file_api = cmake_file_api)
+
+    def test_shared_library(self, cublas : CuBLAS) -> None:
         """
-        The cuBLAS shared library is not a cubin but it contains embedded cubins.
+        The cuBLAS shared library is a shared library and not itself a cubin.
         """
-        cublas = CuBLAS(cmake_file_api = cmake_file_api)
+        header = ELFHeader.decode(file = cublas.libcublas)
+        logging.info(header)
 
-        descriptor = ELFHeader.decode(file = cublas.libcublas)
-        logging.info(descriptor)
+        assert header.e_type == 'shared'
+        assert not header.is_cuda
 
-        assert descriptor.e_type == 'shared'
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    def test_embedded_cubin(self, parameters : Parameters, cublas : CuBLAS, workdir : pathlib.Path) -> None:
+        """
+        The cuBLAS shared library contains embedded cubins for many, but not all, architectures.
+        """
+        try:
+            [cubin] = cublas.extract(arch = parameters.arch, cwd = workdir, randomly = True)
+        except IndexError:
+            pytest.skip(f"cuBLAS shared library does not contain an embedded cubin for arch {parameters.arch}")
 
-        assert not descriptor.is_cuda
-
-        ARCH : typing.Final[NVIDIAArch] = NVIDIAArch.from_str('AMPERE80')
-
-        [cubin] = cublas.extract(arch = ARCH, cwd = workdir, randomly = True)
         assert cubin.is_file()
 
-        descriptor = ELFHeader.decode(file = cubin)
-        logging.info(descriptor)
+        header = ELFHeader.decode(file = cubin)
+        logging.info(header)
 
-        assert descriptor.is_cuda
+        assert header.e_type == 'executable'
+        assert header.is_cuda
+        assert get_arch_from_elf_header(header) == parameters.arch
 
-        assert descriptor.e_type == 'executable'
+@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+class TestSaxpy:
+    """
+    Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader` using an object file.
+    """
+    FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
+
+    @pytest.fixture(scope = 'function')
+    def object_file(self, parameters : Parameters, cmake_file_api : cmake.FileAPI, workdir : pathlib.Path) -> pathlib.Path:
+        """
+        Compile into object file.
+        """
+        object_file, _ = get_compilation_output(
+            source = self.FILE,
+            cwd = workdir,
+            arch = parameters.arch,
+            object_file = True,
+            resource_usage = True,
+            cmake_file_api = cmake_file_api,
+        )
+        assert object_file.is_file()
+        return object_file
+
+    def test_object_file_and_embedded_cubin(self, parameters : Parameters, object_file : pathlib.Path, workdir : pathlib.Path) -> None:
+        """
+        Check that the object file:
+
+        * is a relocatable and not itself a cubin
+        * contains an embedded cubin for the target architecture
+        """
+        header = ELFHeader.decode(file = object_file)
+        logging.info(header)
+
+        assert header.e_type == 'relocatable'
+        assert not header.is_cuda
+
+        [name] = CuObjDump.extract_elf(file = object_file, arch = parameters.arch, name = 'saxpy', cwd = workdir)
+        cubin = workdir / name
+        assert cubin.is_file()
+
+        header = ELFHeader.decode(file = cubin)
+        logging.info(header)
+
+        assert header.e_type == 'executable'
+        assert header.is_cuda
+        assert get_arch_from_elf_header(header) == parameters.arch

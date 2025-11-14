@@ -304,7 +304,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['no_restrict'].instructions))) == 0
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['ldg'        ].instructions))) == 1
 
-@pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestStoreGlobalMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.StoreGlobalMatcher`.
@@ -413,7 +413,7 @@ class TestFloatAddMatcher:
             assert matched.additional is not None
             assert 'dst' in matched.additional
 
-@pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestReductionMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.ReductionMatcher`.

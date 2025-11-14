@@ -13,7 +13,7 @@ from reprospect.utils              import cmake
 from tests.python.compilation import get_compilation_output, get_cubin_name
 from tests.python.parameters  import Parameters, PARAMETERS
 
-@pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestResourceUsage:
     """
     All tests related to reading resource usage from compilation output.
@@ -189,7 +189,7 @@ class TestCuObjDump:
         logging.info(f'Writing parsed SASS to {file}.')
         file.write_text(str(cuobjdump))
 
-    @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     class TestSaxpy:
         """
         When the kernel performs a `saxpy`.
@@ -307,7 +307,7 @@ class TestCuObjDump:
 
             assert self.SYMBOL in cuobjdump.symtab['name'].values
 
-    @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     class TestMany:
         """
         When there are many kernels.

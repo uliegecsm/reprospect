@@ -26,7 +26,7 @@ import rich.table
 
 from reprospect.tools.architecture       import NVIDIAArch
 from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
-from reprospect.tools.binaries.elf       import ELFHeader
+from reprospect.tools.binaries.elf       import ELF
 from reprospect.utils.subprocess_helpers import popen_stream
 
 if sys.version_info >= (3, 11):
@@ -345,4 +345,5 @@ class CuObjDump:
         """
         Whether :py:attr:`file` is a CUDA binary file.
         """
-        return ELFHeader.decode(file = self.file).is_cuda
+        with ELF(file = self.file) as elf:
+            return elf.is_cuda

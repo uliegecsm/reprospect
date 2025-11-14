@@ -6,7 +6,7 @@ import typing
 import pytest
 
 from reprospect.tools.binaries     import CuObjDump
-from reprospect.tools.binaries.elf import ELFHeader, get_compute_capability_from_e_flags, get_arch_from_elf_header
+from reprospect.tools.binaries.elf import ELF
 from reprospect.utils              import cmake
 
 from tests.python.compilation import get_compilation_output
@@ -50,11 +50,11 @@ class TestGetComputeCapabilityFromEFlags:
 
     @pytest.mark.parametrize('cc,e_flags', CC_E_FLAGS.items())
     def test_get_compute_capability_from_e_flags(self, cc : int, e_flags : int) -> None:
-        assert get_compute_capability_from_e_flags(e_flags) == cc
+        assert ELF.compute_capability(e_flags).as_int == cc
 
 class TestCUDART:
     """
-    Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader` using the CUDA runtime shared library.
+    Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using the CUDA runtime shared library.
     """
     @pytest.fixture(scope = 'class')
     def cudart(self, cmake_file_api : cmake.FileAPI) -> pathlib.Path:
@@ -66,11 +66,11 @@ class TestCUDART:
         """
         The CUDA runtime shared library is a shared library and not itself a cubin.
         """
-        header = ELFHeader.decode(file = cudart)
-        logging.info(header)
+        with ELF(file = cudart) as elf:
+            logging.info(elf.header)
 
-        assert header.e_type == 'shared'
-        assert not header.is_cuda
+            assert elf.header['e_type'] == 'ET_DYN'
+            assert not elf.is_cuda
 
     def test_embedded_cubin(self, cudart : pathlib.Path) -> None:
         """
@@ -82,7 +82,7 @@ class TestCUDART:
 
 class TestCuBLAS:
     """
-    Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader` using the cuBLAS shared library.
+    Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using the cuBLAS shared library.
     """
     @pytest.fixture(scope = 'class')
     def cublas(self, cmake_file_api : cmake.FileAPI) -> CuBLAS:
@@ -92,11 +92,11 @@ class TestCuBLAS:
         """
         The cuBLAS shared library is a shared library and not itself a cubin.
         """
-        header = ELFHeader.decode(file = cublas.libcublas)
-        logging.info(header)
+        with ELF(file = cublas.libcublas) as elf:
+            logging.info(elf.header)
 
-        assert header.e_type == 'shared'
-        assert not header.is_cuda
+            assert elf.header['e_type'] == 'ET_DYN'
+            assert not elf.is_cuda
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_embedded_cubin(self, parameters : Parameters, cublas : CuBLAS, workdir : pathlib.Path) -> None:
@@ -110,17 +110,17 @@ class TestCuBLAS:
 
         assert cubin.is_file()
 
-        header = ELFHeader.decode(file = cubin)
-        logging.info(header)
+        with ELF(file = cubin) as elf:
+            logging.info(elf.header)
 
-        assert header.e_type == 'executable'
-        assert header.is_cuda
-        assert get_arch_from_elf_header(header) == parameters.arch
+            assert elf.header['e_type'] == 'ET_EXEC'
+            assert elf.is_cuda
+            assert elf.arch == parameters.arch
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestSaxpy:
     """
-    Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader` using an object file.
+    Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using an object file.
     """
     FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
 
@@ -147,19 +147,19 @@ class TestSaxpy:
         * is a relocatable and not itself a cubin
         * contains an embedded cubin for the target architecture
         """
-        header = ELFHeader.decode(file = object_file)
-        logging.info(header)
+        with ELF(file = object_file) as elf:
+            logging.info(elf.header)
 
-        assert header.e_type == 'relocatable'
-        assert not header.is_cuda
+            assert elf.header['e_type'] == 'ET_REL'
+            assert not elf.is_cuda
 
         [name] = CuObjDump.extract_elf(file = object_file, arch = parameters.arch, name = 'saxpy', cwd = workdir)
         cubin = workdir / name
         assert cubin.is_file()
 
-        header = ELFHeader.decode(file = cubin)
-        logging.info(header)
+        with ELF(file = cubin) as elf:
+            logging.info(elf.header)
 
-        assert header.e_type == 'executable'
-        assert header.is_cuda
-        assert get_arch_from_elf_header(header) == parameters.arch
+            assert elf.header['e_type'] == 'ET_EXEC'
+            assert elf.is_cuda
+            assert elf.arch == parameters.arch

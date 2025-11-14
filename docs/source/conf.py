@@ -108,6 +108,7 @@ nitpick_ignore_regex = [
     ('py:class', r'_regex.Match'),
     ('py:class', r'_regex.Pattern'),
     ('py:class', r'NestedProfilingResults'),
+    ('py:class', r'elftools.*'),
 ]
 
 # Configuration for 'myst_nb', see also https://myst-nb.readthedocs.io/en/latest/configuration.html.

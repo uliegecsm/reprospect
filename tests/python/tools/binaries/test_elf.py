@@ -5,16 +5,15 @@ import typing
 
 import pytest
 
-from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump
-from reprospect.tools.binaries.elf import ELFHeader
+from reprospect.tools.binaries.elf import ELFHeader, get_compute_capability_from_e_flags, get_arch_from_elf_header
 from reprospect.utils              import cmake
 
 from tests.python.compilation import get_compilation_output
-from tests.python.cublas     import CuBLAS
-from tests.python.parameters import Parameters, PARAMETERS
+from tests.python.cublas      import CuBLAS
+from tests.python.parameters  import Parameters, PARAMETERS
 
-class TestELFHeader:
+class TestGetComputeCapabilityFromEFlags:
     CC_E_FLAGS : typing.Final[dict[int, int]] = {
         70  : 0b10001100000010101000110,     # 0x460546
         75  : 0b10010110000010101001011,     # 0x4b054b
@@ -34,25 +33,24 @@ class TestELFHeader:
     """
 
     @pytest.mark.parametrize('cc,e_flags', CC_E_FLAGS.items())
-    def test(self, cc: int, e_flags: int) -> None:
-        decomposed = {
-            'low': e_flags & 0xFF,
-            'byte1': (e_flags >> 8) & 0xFF,
-            'byte2': (e_flags >> 16) & 0xFF,
-            'high': e_flags >> 24
-        }
+    def test(self, cc : int, e_flags : int) -> None:
+        b0 = e_flags         & 0xFF
+        b1 = (e_flags >> 8)  & 0xFF
+        b2 = (e_flags >> 16) & 0xFF
+        b3 =  e_flags >> 24
+
         # The compute capatbility is encoded in the low byte pre BLACKWELL,
-        # and in byte1 (i.e., with an offset of 8) post BLACKWELL.
+        # and in byte 1 (i.e., with an offset of 8) post BLACKWELL.
         if cc < 100:
-            assert decomposed['low']  == cc
-            assert decomposed['high'] == 0
+            assert b0  == cc and b3 == 0
         else:
-            assert decomposed['byte1'] == cc
-        logging.info(f'For cc {cc}, the e_flags {e_flags} are composed of {decomposed}.')
+            assert b1 == cc
+
+        logging.info(f'For cc {cc}, the e_flags {e_flags} are composed of {b0}, {b1}, {b2} and {b3}.')
 
     @pytest.mark.parametrize('cc,e_flags', CC_E_FLAGS.items())
-    def test_arch_from_e_flags(self, cc: int, e_flags: int) -> None:
-        assert ELFHeader.arch_from_e_flags(e_flags) == NVIDIAArch.from_compute_capability(cc = cc)
+    def test_get_compute_capability_from_e_flags(self, cc : int, e_flags : int) -> None:
+        assert get_compute_capability_from_e_flags(e_flags) == cc
 
 class TestCUDART:
     """
@@ -68,11 +66,11 @@ class TestCUDART:
         """
         The CUDA runtime shared library is a shared library and not itself a cubin.
         """
-        descriptor = ELFHeader.decode(file = cudart)
-        logging.info(descriptor)
+        header = ELFHeader.decode(file = cudart)
+        logging.info(header)
 
-        assert descriptor.e_type == 'shared'
-        assert not descriptor.is_cuda
+        assert header.e_type == 'shared'
+        assert not header.is_cuda
 
     def test_embedded_cubin(self, cudart : pathlib.Path) -> None:
         """
@@ -94,11 +92,11 @@ class TestCuBLAS:
         """
         The cuBLAS shared library is a shared library and not itself a cubin.
         """
-        descriptor = ELFHeader.decode(file = cublas.libcublas)
-        logging.info(descriptor)
+        header = ELFHeader.decode(file = cublas.libcublas)
+        logging.info(header)
 
-        assert descriptor.e_type == 'shared'
-        assert not descriptor.is_cuda
+        assert header.e_type == 'shared'
+        assert not header.is_cuda
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_embedded_cubin(self, parameters : Parameters, cublas : CuBLAS, workdir : pathlib.Path) -> None:
@@ -112,18 +110,17 @@ class TestCuBLAS:
 
         assert cubin.is_file()
 
-        descriptor = ELFHeader.decode(file = cubin)
-        logging.info(descriptor)
+        header = ELFHeader.decode(file = cubin)
+        logging.info(header)
 
-        assert descriptor.e_type == 'executable'
-        assert descriptor.is_cuda
-        assert descriptor.arch == parameters.arch
+        assert header.e_type == 'executable'
+        assert header.is_cuda
+        assert get_arch_from_elf_header(header) == parameters.arch
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestSaxpy:
     """
-    Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader` using an object file
-    with a kernel that carries out a `saxpy`.
+    Tests for :py:class:`reprospect.tools.binaries.elf.ELFHeader` using an object file.
     """
     FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
 
@@ -147,24 +144,22 @@ class TestSaxpy:
         """
         Check that the object file:
 
-        * is a relocatable and not itself a cubin.
-        * contains an embedded cubin for the target architecture.
+        * is a relocatable and not itself a cubin
+        * contains an embedded cubin for the target architecture
         """
-        # object file
-        descriptor = ELFHeader.decode(file = object_file)
-        logging.info(descriptor)
+        header = ELFHeader.decode(file = object_file)
+        logging.info(header)
 
-        assert descriptor.e_type == 'relocatable'
-        assert not descriptor.is_cuda
+        assert header.e_type == 'relocatable'
+        assert not header.is_cuda
 
-        # embedded cubin
-        result = CuObjDump.extract_elf(file = object_file, arch = parameters.arch, name = 'saxpy', cwd = workdir)
-        cubin = workdir / next(result)
+        [name] = CuObjDump.extract_elf(file = object_file, arch = parameters.arch, name = 'saxpy', cwd = workdir)
+        cubin = workdir / name
         assert cubin.is_file()
 
-        descriptor = ELFHeader.decode(file = cubin)
-        logging.info(descriptor)
+        header = ELFHeader.decode(file = cubin)
+        logging.info(header)
 
-        assert descriptor.e_type == 'executable'
-        assert descriptor.is_cuda
-        assert descriptor.arch == parameters.arch
+        assert header.e_type == 'executable'
+        assert header.is_cuda
+        assert get_arch_from_elf_header(header) == parameters.arch

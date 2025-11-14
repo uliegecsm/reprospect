@@ -206,25 +206,23 @@ class ELFHeader:
             and self.e_ident.ei_osabi in ELFOSABI_CUDA \
             and self.e_ident.ei_abiversion in ELFABIVERSION_CUDA
 
-    @property
-    def arch(self) -> NVIDIAArch:
-        """
-        Return NVIDIA architecture encoded in :py:attr:`e_flags`.
-        """
-        return self.arch_from_e_flags(e_flags = self.e_flags)
+def get_compute_capability_from_e_flags(value: int) -> int:
+    """
+    Return compute capability encoded in `e_flags`.
+    """
+    misc = (value >> 24) & 0xFF
 
-    @staticmethod
-    def arch_from_e_flags(e_flags : int) -> NVIDIAArch:
-        """
-        Return NVIDIA architecture encoded in `e_flags`.
-        """
-        misc = (e_flags >> 24) & 0xFF
+    # Decode following the convention pre BLACKWELL.
+    cc = value & EF_CUDA_SM_PRE_BLACKWELL
 
-        # Decode following the convention pre BLACKWELL.
-        cc = e_flags & EF_CUDA_SM_PRE_BLACKWELL
+    # Bits 24-31 were zero pre BLACKWELL.
+    if misc != 0 or cc not in range(70, 100):
+        cc = (value & EF_CUDA_SM_POST_BLACKWELL) >> EF_CUDA_SM_OFFSET_POST_BLACKWELL
 
-        # Bits 24-31 were zero pre BLACKWELL.
-        if misc != 0 or cc not in range(70, 100):
-            cc = (e_flags & EF_CUDA_SM_POST_BLACKWELL) >> EF_CUDA_SM_OFFSET_POST_BLACKWELL
+    return cc
 
-        return NVIDIAArch.from_compute_capability(cc = cc)
+def get_arch_from_elf_header(header : ELFHeader) -> NVIDIAArch:
+    """
+    Get compute capability encoded in `header` as NVIDIA architecture.
+    """
+    return NVIDIAArch.from_compute_capability(cc = get_compute_capability_from_e_flags(header.e_flags))

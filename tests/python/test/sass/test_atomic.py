@@ -12,7 +12,7 @@ from reprospect.utils      import cmake
 from tests.python.parameters import Parameters, PARAMETERS
 from tests.python.test.sass.test_sass import get_decoder
 
-@pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestAtomicMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.AtomicMatcher`.

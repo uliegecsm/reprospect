@@ -135,7 +135,7 @@ class TestSASSDecoder:
 
         assert len(decoder.instructions) == 32, len(decoder.instructions)
 
-    @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_from_cuobjdump(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Read SASS dumped from ``cuobjdump``.

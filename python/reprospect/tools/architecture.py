@@ -119,17 +119,17 @@ class NVIDIAFamily(StrEnum):
         See :cite:`nvidia-cuda-gpu-compute-capability`.
         """
         value = cc.as_int if isinstance(cc, ComputeCapability) else cc
-        if value in [70, 72]:
+        if value in (70, 72):
             return NVIDIAFamily.VOLTA
         if value == 75:
             return NVIDIAFamily.TURING
-        if value in [80, 86, 87]:
+        if value in (80, 86, 87):
             return NVIDIAFamily.AMPERE
         if value == 89:
             return NVIDIAFamily.ADA
         if value == 90:
             return NVIDIAFamily.HOPPER
-        if value in [100, 103, 110, 120]:
+        if value in (100, 103, 110, 120, 121):
             return NVIDIAFamily.BLACKWELL
         raise ValueError(f"unsupported compute capability {cc}")
 

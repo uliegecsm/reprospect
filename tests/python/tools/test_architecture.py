@@ -8,6 +8,8 @@ import semantic_version
 
 from reprospect.tools.architecture import CUDA_SUPPORT, ComputeCapability, NVIDIAFamily, NVIDIAArch
 
+from tests.python.parameters import Parameters, PARAMETERS
+
 class TestComputeCapability:
     """
     Tests for :py:class:`reprospect.tools.architecture.ComputeCapability`.
@@ -94,6 +96,14 @@ class TestNVIDIAArch:
     def test_repr(self) -> None:
         assert repr(NVIDIAArch.from_compute_capability(86)) == "NVIDIAArch(family=<NVIDIAFamily.AMPERE: 'AMPERE'>, compute_capability=ComputeCapability(major=8, minor=6))"
 
-    def test_str_cycle(self) -> None:
-        arch = NVIDIAArch.from_compute_capability(70)
-        assert NVIDIAArch.from_str(str(arch)) == arch
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    def test_str_cycle(self, parameters : Parameters) -> None:
+        assert NVIDIAArch.from_str(str(parameters.arch)) == parameters.arch
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    def test_cc_cycle(self, parameters : Parameters) -> None:
+        assert NVIDIAArch.from_compute_capability(parameters.arch.compute_capability.as_int) == parameters.arch
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    def test_in_cuda_support(self, parameters : Parameters) -> None:
+        assert parameters.arch.compute_capability.as_int in CUDA_SUPPORT

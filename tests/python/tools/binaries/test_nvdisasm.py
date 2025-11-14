@@ -4,33 +4,28 @@ import typing
 
 import pytest
 
-from reprospect.tools.binaries     import CuObjDump, CuppFilt, ResourceType, NVDisasm
-from reprospect.utils              import cmake
+from reprospect.tools.binaries import CuObjDump, CuppFilt, ResourceType, NVDisasm
+from reprospect.utils          import cmake
 
-from tests.python.parameters          import Parameters, PARAMETERS
-from tests.python.tools.test_binaries import get_compilation_output
-
-@pytest.fixture(scope = 'session')
-def workdir() -> pathlib.Path:
-    return pathlib.Path(os.environ['CMAKE_CURRENT_BINARY_DIR'])
-
-@pytest.fixture(scope = 'session')
-def cmake_file_api() -> cmake.FileAPI:
-    return cmake.FileAPI(
-        cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
-    )
+from tests.python.compilation import get_compilation_output
+from tests.python.parameters  import Parameters, PARAMETERS
 
 class TestNVDisasm:
     """
     Tests related to :py:class:`reprospect.tools.binaries.NVDisasm`.
+
     .. note:
+
             In this test, we observe that ``cuobjdump`` indicates a register usage of 10 registers,
             whereas ``nvdisasm`` indicates that the span ``R0-R7``, hence a total of 8 registers,
             is used. The reason why ``cuobjdump`` indicates a use of 2 more registers than ``nvdisasm``
-            is not clear, but it has been observed elsewhere too, see for instance:
+            is not clear, but it has been observed elsewhere too.
+
+            See for instance:
+
             * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/UserGuide.md?plain=1#L262
     """
-    @pytest.mark.parametrize("parameters", PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     class TestSaxpy:
         """
         When the kernel performs a `saxpy`.
@@ -63,7 +58,7 @@ class TestNVDisasm:
 
             # ``nvdisasm`` indicates that the span ``R0-R7`` of GPR registers is used.
             disasm = NVDisasm(file = cubin, arch = parameters.arch)
-            disasm.extract_register_usage(mangled = [self.SYMBOL])
+            disasm.parse_sass_with_liveness_range_info(mangled = [self.SYMBOL])
 
             assert len(disasm.functions) == 1
             assert self.SYMBOL in disasm.functions

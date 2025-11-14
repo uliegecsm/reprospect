@@ -1,10 +1,12 @@
 import logging
 import math
 import pathlib
+import re
 import sys
 import typing
 
 import numpy
+import pandas
 import pytest
 
 import reprospect
@@ -29,7 +31,9 @@ class Memory(StrEnum):
 
 class TestAllocation(reprospect.CMakeAwareTestCase):
     """
-    Explore the behavior of `Kokkos::View` allocation under different scenarios.
+    Trace the CUDA API calls during :code:`Kokkos::View` allocation under different scenarios.
+
+    It uses :file:`examples/kokkos/view/example_allocation_tracing.cpp`.
     """
     KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter = pathlib.Path)
 
@@ -43,7 +47,7 @@ class TestNSYS(TestAllocation):
     """
     `nsys`-focused analysis.
     """
-    HEADER_SIZE = 128
+    HEADER_SIZE : typing.Final[int] = 128
     """Size of the `Kokkos::Impl::SharedAllocationHeader` type, see https://github.com/kokkos/kokkos/blob/c1a715cab26da9407867c6a8c04b2a1d6b2fc7ba/core/src/impl/Kokkos_SharedAlloc.hpp#L23."""
 
     @pytest.fixture(scope = 'class')
@@ -61,9 +65,9 @@ class TestNSYS(TestAllocation):
                 nvtx_capture = 'AllocationProfiling',
                 opts = ['--cuda-memory-usage=true'],
                 executable = self.executable,
-                args = [
+                args = (
                     f"--kokkos-tools-libs={self.KOKKOS_TOOLS_NVTX_CONNECTOR_LIB}",
-                ],
+                ),
                 cwd = self.cwd,
             )
 
@@ -88,9 +92,9 @@ class TestNSYS(TestAllocation):
 
     def checks(self, *,
         report : nsys.Report,
-        expt_cuda_api_calls_allocation : typing.Iterable[str],
-        expt_cuda_api_calls_deallocation : typing.Iterable[str],
-        selectors : dict[str, nsys.Report.PatternSelector],
+        expt_cuda_api_calls_allocation : typing.Sequence[str],
+        expt_cuda_api_calls_deallocation : typing.Sequence[str],
+        selectors : dict[str, nsys.Report.PatternSelector | None],
         memory : Memory,
         size : int,
     ) -> None:
@@ -113,11 +117,11 @@ class TestNSYS(TestAllocation):
 
             # Allocation goes through the expected Cuda API calls.
             assert len(cuda_api_trace_allocation['name']) == len(expt_cuda_api_calls_allocation)
-            assert cuda_api_trace_allocation['name'].apply(nsys.strip_cuda_api_suffix).tolist() == expt_cuda_api_calls_allocation
+            assert cuda_api_trace_allocation['name'].apply(nsys.strip_cuda_api_suffix).equals(pandas.Series(expt_cuda_api_calls_allocation))
 
             # Deallocation goes through the expected Cuda API calls.
             assert len(cuda_api_trace_deallocation['name']) == len(expt_cuda_api_calls_deallocation)
-            assert cuda_api_trace_deallocation['name'].apply(nsys.strip_cuda_api_suffix).tolist() == expt_cuda_api_calls_deallocation
+            assert cuda_api_trace_deallocation['name'].apply(nsys.strip_cuda_api_suffix).equals(pandas.Series(expt_cuda_api_calls_deallocation))
 
             # Check size and kind of allocation.
             cuda_gpu_memory_usage_events = report.table(name = 'CUDA_GPU_MEMORY_USAGE_EVENTS')
@@ -162,13 +166,13 @@ class TestNSYS(TestAllocation):
             report = report,
             size = 39000,
             memory = Memory.DEVICE,
-            expt_cuda_api_calls_allocation = [
+            expt_cuda_api_calls_allocation = (
                 'cudaMalloc',
                 'cudaMemcpyAsync',
-            ],
-            expt_cuda_api_calls_deallocation = [
+            ),
+            expt_cuda_api_calls_deallocation = (
                 'cudaFree',
-            ],
+            ),
             selectors = {
                 'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMalloc'),
                 'memcpy' : report.PatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
@@ -184,16 +188,16 @@ class TestNSYS(TestAllocation):
             report = report,
             size = 39000,
             memory = Memory.SHARED,
-            expt_cuda_api_calls_allocation = [
+            expt_cuda_api_calls_allocation = (
                 'cudaDeviceSynchronize',
                 'cudaMallocManaged',
                 'cudaDeviceSynchronize',
-            ],
-            expt_cuda_api_calls_deallocation = [
+            ),
+            expt_cuda_api_calls_deallocation = (
                 'cudaDeviceSynchronize',
                 'cudaFree',
                 'cudaDeviceSynchronize',
-            ],
+            ),
             selectors = {
                 'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMallocManaged'),
                 'memcpy' : None,
@@ -209,16 +213,16 @@ class TestNSYS(TestAllocation):
             report = report,
             size = 41000,
             memory = Memory.DEVICE,
-            expt_cuda_api_calls_allocation = [
+            expt_cuda_api_calls_allocation = (
                 'cudaMallocAsync',
                 'cudaStreamSynchronize',
                 'cudaMemcpyAsync',
-            ],
-            expt_cuda_api_calls_deallocation = [
+            ),
+            expt_cuda_api_calls_deallocation = (
                 'cudaDeviceSynchronize',
                 'cudaFreeAsync',
                 'cudaDeviceSynchronize',
-            ],
+            ),
             selectors = {
                 'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMallocAsync'),
                 'memcpy' : report.PatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
@@ -234,19 +238,19 @@ class TestNSYS(TestAllocation):
             report = report,
             size = 41000,
             memory = Memory.SHARED,
-            expt_cuda_api_calls_allocation = [
+            expt_cuda_api_calls_allocation = (
                 'cudaDeviceSynchronize',
                 'cudaMallocManaged',
                 'cudaDeviceSynchronize',
-            ],
-            expt_cuda_api_calls_deallocation = [
+            ),
+            expt_cuda_api_calls_deallocation = (
                 'cudaDeviceSynchronize',
                 'cudaFree',
                 'cudaDeviceSynchronize',
-            ],
+            ),
             selectors = {
-                'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMallocManaged'),
+                'malloc' : report.PatternSelector(column = 'name', pattern = re.compile(r'^cudaMallocManaged')),
                 'memcpy' : None,
-                'free'   : report.PatternSelector(column = 'name', pattern = r'^cudaFree'),
+                'free'   : report.PatternSelector(column = 'name', pattern = re.compile(r'^cudaFree')),
             },
         )

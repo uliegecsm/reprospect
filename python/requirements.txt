@@ -8,6 +8,7 @@ cmake_file_api @ git+https://github.com/madebr/python-cmake-file-api@fc02aa8522b
 ijson
 mypy_extensions
 pandas
+pyelftools
 regex
 rich
 semantic_version

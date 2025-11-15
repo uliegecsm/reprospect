@@ -9,14 +9,13 @@ Architecture
 Binaries
 --------
 
-.. automodule:: tests.python.tools.binaries.test_nvdisasm
-
 .. toctree::
    :maxdepth: 1
 
    tools/binaries/cuobjdump
    tools/binaries/demangle
    tools/binaries/elf
+   tools/binaries/nvdisasm
 
 Cacher
 ------

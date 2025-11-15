@@ -5,10 +5,14 @@ import re
 import sys
 import typing
 
+import rich.table
+
 from reprospect.tools.architecture       import NVIDIAArch
 from reprospect.tools.binaries.cuobjdump import CuObjDump
+from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
 from reprospect.tools.binaries.elf       import ELF
 from reprospect.tools.sass               import RegisterType
+from reprospect.utils                    import rich_helpers
 from reprospect.utils.subprocess_helpers import popen_stream
 
 if sys.version_info >= (3, 11):
@@ -16,8 +20,13 @@ if sys.version_info >= (3, 11):
 else:
     from backports.strenum import StrEnum
 
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
 @dataclasses.dataclass(slots = True)
-class NVDisasmFunction:
+class NVDisasmFunction(rich_helpers.TableMixin):
     """
     Data structure holding resource usage information of a kernel, as extracted from a binary.
 
@@ -33,6 +42,29 @@ class NVDisasmFunction:
     """
     registers : dict[RegisterType, tuple[int, int]] | None = None
 
+    @override
+    def to_table(self) -> rich.table.Table:
+        """
+        Convert the register usage to a :py:class:`rich.table.Table`.
+        """
+        assert self.registers is not None
+
+        rt = rich.table.Table()
+
+        rt.add_column()
+        rt.add_column("Span")
+        rt.add_column("Used")
+
+        for reg, info in self.registers.items():
+            assert info[0] > 0
+            rt.add_row(
+                str(reg),
+                f'{reg.prefix}0-{reg.prefix}{info[0] - 1}' if info[0] > 1 else f'{reg.prefix}0',
+                str(info[1])
+            )
+
+        return rt
+
 class NVDisasmRegisterState(StrEnum):
     """
     Register state, typically found in the output of ``nvdisasm``.
@@ -41,24 +73,27 @@ class NVDisasmRegisterState(StrEnum):
 
     * https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html#nvdisasm
     """
-    ASSIGNMENT             = '^'
-    USAGE                  = 'v'
-    USAGE_AND_REASSIGNMENT = 'x'
-    IN_USE                 = ':'
-    NOT_IN_USE             = ' '
+    ASSIGNMENT             : typing.Final[str] = '^'
+    USAGE                  : typing.Final[str] = 'v'
+    USAGE_AND_REASSIGNMENT : typing.Final[str] = 'x'
+    IN_USE                 : typing.Final[str] = ':'
+    NOT_IN_USE             : typing.Final[str] = ' '
 
     @property
     def used(self) -> bool:
+        """
+        Whether the state corresponds to a state in which the register is in use.
+        """
         return self != self.NOT_IN_USE
 
 class NVDisasm:
     """
     Extract information from CUDA binaries using ``nvdisasm``.
 
-    ``nvdisasm`` serves to disassemble CUDA binary files. It can also annotate the SASS assembly
-    with information, such as register liveness range information. ``nvdisasm`` provides liveness
-    ranges for all register types: ``GPR``, ``PRED``, ``UGPR``, ``UPRED``; see also
-    :py:class:reprospect.tools.sass.RegisterType`.
+    The main purpose of ``nvdisasm`` is to disassemble CUDA binary files. Beyond the raw
+    disassembly, it can also annotate the disassembled SASS with information, such as register
+    liveness range information. ``nvdisasm`` provides liveness ranges for all register types:
+    ``GPR``, ``PRED``, ``UGPR``, ``UPRED``; see also :py:class:reprospect.tools.sass.RegisterType`.
 
     This class provides functionalities to parse this register liveness range information to
     deduce how many registers each kernel uses.
@@ -82,8 +117,8 @@ class NVDisasm:
       use ``R2-R3`` and ``R8-R9``, but only ``R2`` and ``R8`` appear explicitly.
 
     There are also complexities such as tracking register usage across function calls.
-    Hence, this class relies on parsing the output of ``nvdisasm``, rather than on implementing
-    its own parser.
+    Hence, to obtain the register usage information, this class relies on parsing the output
+    of ``nvdisasm``, rather than on implementing its own parser.
 
     References:
 
@@ -97,10 +132,15 @@ class NVDisasm:
     TABLE_CUT   : typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\.]+')
     TABLE_END   : typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\-\+]+\+$')
 
-    def __init__(self, file : pathlib.Path, arch : typing.Optional[NVIDIAArch] = None) -> None:
+    def __init__(
+        self,
+        file : pathlib.Path,
+        arch : typing.Optional[NVIDIAArch] = None,
+        demangler : typing.Type[CuppFilt | LlvmCppFilt] = CuppFilt,
+    ) -> None:
         # Inspect the passed `file` using :py:class:`reprospect.tools.binaries.elf.ELF`.
         with ELF(file = file) as elf:
-            # Check that `file` is a CUDA binary file.    
+            # Check that `file` is a CUDA binary file.
             if not elf.is_cuda:
                 raise ValueError(f'file {file} is not a CUDA binary file')
 
@@ -113,6 +153,8 @@ class NVDisasm:
 
         self.file = file
         self.arch = arch
+        self.demangler = demangler
+
         self.cuobjdump = CuObjDump(file = self.file, arch = self.arch, sass = False)
 
         self.functions : dict[str, NVDisasmFunction] = {}
@@ -232,3 +274,17 @@ class NVDisasm:
             }
 
             self.functions[function_mangled] = self.Function(registers = registers)
+
+    def __str__(self) -> str:
+        """
+        Rich representation.
+        """
+        with rich.console.Console(width = 200) as console, console.capture() as capture:
+            console.print(f'NVDisasm of {self.file} for architecture {self.arch}:')
+            for name, function in self.functions.items():
+                rt = rich.table.Table(show_header = False)
+                rt.add_column(width = 130, overflow = "ellipsis", no_wrap = True)
+                rt.add_row(self.demangler.demangle(name))
+                rt.add_row(function.to_table())
+                console.print(rt, no_wrap = True)
+        return capture.get()

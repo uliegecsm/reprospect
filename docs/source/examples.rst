@@ -2,8 +2,7 @@ Examples
 ========
 
 .. toctree::
-   :maxdepth: 4
-   :caption: Contents:
+   :maxdepth: 3
 
    examples/cuda
    examples/kokkos

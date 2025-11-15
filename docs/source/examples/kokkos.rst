@@ -2,7 +2,6 @@
 ========
 
 .. toctree::
-   :maxdepth: 4
-   :caption: Contents:
+   :maxdepth: 2
 
    kokkos/view

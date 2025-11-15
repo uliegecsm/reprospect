@@ -2,6 +2,6 @@ CUDA
 ====
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 3
 
    cuda/example_atomics.ipynb

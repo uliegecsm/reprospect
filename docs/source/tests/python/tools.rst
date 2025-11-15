@@ -9,11 +9,11 @@ Architecture
 Binaries
 --------
 
-.. automodule:: tests.python.tools.test_binaries
-
 .. toctree::
    :maxdepth: 1
 
+   tools/binaries/cuobjdump
+   tools/binaries/demangle
    tools/binaries/elf
 
 Cacher

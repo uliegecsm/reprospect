@@ -28,6 +28,8 @@ function(add_pytest FILE)
 
 endfunction()
 
+add_pytest(compilation)
+
 add_subdirectory(test)
 add_subdirectory(tools)
 add_subdirectory(utils)

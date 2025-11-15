@@ -175,7 +175,7 @@ class TestSASSDecoder:
 
     def test_string_representation(self) -> None:
         """
-        Test :py:meth:`reprospect.tools.sass.Decoder.__str__`.
+        Test the string representation :py:obj:`reprospect.tools.sass.Decoder`.
         """
         decoder = sass.Decoder()
 

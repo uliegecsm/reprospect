@@ -3,12 +3,19 @@ import io
 import logging
 import pathlib
 import re
+import sys
 import typing
 
 import mypy_extensions
 import pandas
-import rich.console
 import rich.table
+
+from reprospect.utils import rich_helpers
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class ControlCode:
@@ -154,7 +161,7 @@ class Instruction:
     control : ControlCode #: The decoded control code associated with the instruction.
 
 @mypy_extensions.mypyc_attr(native_class = True)
-class Decoder:
+class Decoder(rich_helpers.TableMixin):
     """
     Parse the SASS assembly code extracted from a binary.
 
@@ -298,6 +305,7 @@ class Decoder:
 
         return pandas.DataFrame(data)
 
+    @override
     def to_table(self) -> rich.table.Table:
         """
         Convert the decoded SASS to a :py:class:`rich.table.Table`.
@@ -313,14 +321,6 @@ class Decoder:
             rt.add_row(*[str(x) for x in values])
 
         return rt
-
-    def __str__(self) -> str:
-        """
-        Rich representation with :py:meth:`to_table`.
-        """
-        with rich.console.Console() as console, console.capture() as capture:
-            console.print(self.to_table(), no_wrap = True)
-        return capture.get()
 
     def to_html(self) -> str:
         """

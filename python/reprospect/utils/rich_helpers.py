@@ -1,4 +1,5 @@
 import abc
+import typing
 
 import rich.console
 import rich.table
@@ -8,11 +9,13 @@ class TableMixin(metaclass = abc.ABCMeta):
     """
     Define :py:meth:`__str__` based on the :py:class:`rich.table.Table` representation from :py:meth:`to_table`.
     """
+    @abc.abstractmethod
     def to_table(self) -> rich.table.Table:
         """
         Convert to a :py:class:`rich.table.Table`.
         """
 
+    @typing.final
     def __str__(self) -> str:
         """
         Use :py:class:`rich.console.Console` in capture mode.
@@ -31,6 +34,7 @@ class TreeMixin(metaclass = abc.ABCMeta):
         Convert to a :py:class:`rich.tree.Tree`.
         """
 
+    @typing.final
     def __str__(self) -> str:
         """
         Use :py:class:`rich.console.Console` in capture mode.

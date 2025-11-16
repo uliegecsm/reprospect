@@ -27,6 +27,7 @@ import rich.table
 from reprospect.tools.architecture       import NVIDIAArch
 from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
 from reprospect.tools.binaries.elf       import ELF
+from reprospect.utils                    import rich_helpers
 from reprospect.utils.subprocess_helpers import popen_stream
 
 if sys.version_info >= (3, 11):
@@ -115,9 +116,7 @@ class Function:
         """
         Rich representation with :py:meth:`to_table`.
         """
-        with rich.console.Console(width = 200) as console, console.capture() as capture:
-            console.print(self.to_table(), no_wrap = True)
-        return capture.get()
+        return rich_helpers.to_string(self.to_table())
 
 @mypy_extensions.mypyc_attr(native_class = True)
 class CuObjDump:

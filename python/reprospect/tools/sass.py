@@ -9,6 +9,7 @@ import typing
 import mypy_extensions
 import pandas
 import rich.table
+import rich_tools
 
 from reprospect.utils import rich_helpers
 
@@ -310,17 +311,7 @@ class Decoder(rich_helpers.TableMixin):
         """
         Convert the decoded SASS to a :py:class:`rich.table.Table`.
         """
-        pd = self.to_df()
-
-        rt = rich.table.Table()
-
-        for column in pd.columns:
-            rt.add_column(column)
-
-        for values in pd.values:
-            rt.add_row(*[str(x) for x in values])
-
-        return rt
+        return rich_tools.df_to_table(self.to_df(), show_index = False)
 
     def to_html(self) -> str:
         """

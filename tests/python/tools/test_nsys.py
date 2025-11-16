@@ -5,11 +5,55 @@ import sys
 import tempfile
 import typing
 
+import pandas
 import pytest
+import rich_tools
 import semantic_version
 
 from reprospect.tools.nsys import Report, Session, strip_cuda_api_suffix, Cacher
 from reprospect.utils      import detect
+from reprospect.utils      import rich_helpers
+
+class TestTracingResults:
+    """
+    Test string representation of tracing results.
+    """
+    CUDA_API_TRACE : typing.Final[pandas.DataFrame] = pandas.DataFrame(
+        {
+            'Start (us)'    : [176741.213, 176855.658, 266224.028,],
+            'Duration (us)' : [0.942, 87265.752, 1.753],
+            'Name'          : ['cuModuleGetLoadingMode', 'cudaStreamCreate', 'cudaStreamCreate',],
+            'Result'        : [0, 0, 0,],
+            'CorrID'        : [1, 233, 234,],
+            'Pid'           : [52655, 52655, 52655,],
+            'Tid'           : [52655, 52655, 52655,],
+            'T-Pri'         : [20, 20, 20,],
+            'Thread Name'   : ['tests_cpp_cuda_', 'tests_cpp_cuda_', 'tests_cpp_cuda_',],
+        }
+    )
+
+    def test(self) -> None:
+        """
+        Test string representation of tracing results through conversion to a :py:class:`rich.table.Table`.
+        """
+        assert rich_helpers.to_string(rich_tools.df_to_table(self.CUDA_API_TRACE, show_index = False)) == """\
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Start (us) ┃ Duration (us) ┃ Name                   ┃ Result ┃ CorrID ┃ Pid   ┃ Tid   ┃ T-Pri ┃ Thread Name     ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ 176741.213 │ 0.942         │ cuModuleGetLoadingMode │ 0      │ 1      │ 52655 │ 52655 │ 20    │ tests_cpp_cuda_ │
+│ 176855.658 │ 87265.752     │ cudaStreamCreate       │ 0      │ 233    │ 52655 │ 52655 │ 20    │ tests_cpp_cuda_ │
+│ 266224.028 │ 1.753         │ cudaStreamCreate       │ 0      │ 234    │ 52655 │ 52655 │ 20    │ tests_cpp_cuda_ │
+└────────────┴───────────────┴────────────────────────┴────────┴────────┴───────┴───────┴───────┴─────────────────┘
+"""
+
+        single_row = self.CUDA_API_TRACE[self.CUDA_API_TRACE['Name'] == 'cuModuleGetLoadingMode'].squeeze()
+        assert rich_helpers.to_string(rich_helpers.ds_to_table(single_row)) == """\
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Start (us) ┃ Duration (us) ┃ Name                   ┃ Result ┃ CorrID ┃ Pid   ┃ Tid   ┃ T-Pri ┃ Thread Name     ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ 176741.213 │ 0.942         │ cuModuleGetLoadingMode │ 0      │ 1      │ 52655 │ 52655 │ 20    │ tests_cpp_cuda_ │
+└────────────┴───────────────┴────────────────────────┴────────┴────────┴───────┴───────┴───────┴─────────────────┘
+"""
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:
@@ -45,7 +89,7 @@ class TestSession:
 
         cuda_api_trace = ns.extract_statistical_report(report = 'cuda_api_trace')
 
-        logging.info(cuda_api_trace['Name'])
+        logging.info(f'Report cuda_api_trace:\n{rich_helpers.to_string(rich_tools.df_to_table(cuda_api_trace, show_index = False))}')
 
         expt = [
             'cuModuleGetLoadingMode',
@@ -96,11 +140,11 @@ class TestSession:
 
             cupti_activity_kind_synchronization = report.table(name = 'CUPTI_ACTIVITY_KIND_SYNCHRONIZATION')
 
-            logging.info(cupti_activity_kind_synchronization)
+            logging.info(f'Table CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:\n{rich_helpers.to_string(rich_tools.df_to_table(cupti_activity_kind_synchronization, show_index = False))}')
 
             cuda_stream_synchronize = cuda_api_trace[cuda_api_trace['Name'].str.startswith('cudaStreamSynchronize')]
 
-            logging.info(cuda_stream_synchronize)
+            logging.info(f'Results selected from report cuda_api_trace:\n{rich_helpers.to_string(rich_tools.df_to_table(cuda_stream_synchronize, show_index = False))}')
 
             assert len(cuda_stream_synchronize) == 2
 
@@ -130,10 +174,13 @@ class TestSession:
 
             # Check 'saxpy' kernels launch type.
             ENUM_CUDA_KERNEL_LAUNCH_TYPE = report.table(name = 'ENUM_CUDA_KERNEL_LAUNCH_TYPE')
+            logging.info(f'Table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_tools.df_to_table(ENUM_CUDA_KERNEL_LAUNCH_TYPE, show_index = False))}')
 
-            CUDA_KERNEL_LAUNCH_TYPE_REGULAR = report.single_row(data = ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])['id']
-            assert saxpy_kernel_first ['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR
-            assert saxpy_kernel_second['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR
+            CUDA_KERNEL_LAUNCH_TYPE_REGULAR = report.single_row(data = ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])
+            logging.info(f'Results selected from table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_helpers.ds_to_table(CUDA_KERNEL_LAUNCH_TYPE_REGULAR))}')
+
+            assert saxpy_kernel_first ['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR['id']
+            assert saxpy_kernel_second['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR['id']
 
             # Check 'saxpy' kernels mangled and demangled names.
             stringids = report.table(name = 'StringIds')

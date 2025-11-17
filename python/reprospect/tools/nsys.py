@@ -173,7 +173,7 @@ class Session:
         cwd : pathlib.Path = pathlib.Path.cwd(),
     ) -> pandas.DataFrame:
         """
-        Extract the CUDA `API` call stats, filtering the database with `filter_nvtx`.
+        Extract `report`, filtering the database with `filter_nvtx`.
         """
         cmd : list[str | pathlib.Path] = [
             'nsys', 'stats',

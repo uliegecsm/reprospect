@@ -78,7 +78,17 @@ class PatternBuilder:
 
     OPERAND : typing.Final[str] = r'[\w@!\.\[\]\+\-\s]+'
 
-    CONSTANT : typing.Final[str] = r'c\[0x[0-9]+\]\[(0x[0-9c]+|' + REG + r')\]'
+    CONSTANT_BANK : typing.Final[str] = r'0x[0-9]+'
+    """
+    Constant memory bank.
+    """
+
+    CONSTANT_OFFSET : typing.Final[str] = r'(0x[0-9c]+|' + REG + '|' + UREG + ')'
+    """
+    Constant memory offset.
+    """
+
+    CONSTANT : typing.Final[str] = r'c\[' + CONSTANT_BANK + r'\]\[' + CONSTANT_OFFSET + r'\]'
     """
     Match constant memory location.
     The bank looks like ``0x3`` while the address is either compile-time (*e.g.*
@@ -198,7 +208,7 @@ class PatternBuilder:
         return cls.group(s = cls.PREDICATE, group = 'predicate')
 
     @staticmethod
-    def opcode_mods(opcode : str, modifiers : typing.Optional[typing.Iterable[int | str]] = None) -> str:
+    def opcode_mods(opcode : str, modifiers : typing.Optional[typing.Iterable[int | str | None]] = None) -> str:
         """
         Append each modifier with a `.`, within a proper named capture group.
 
@@ -355,6 +365,9 @@ class PatternMatcher(InstructionMatcher):
             return InstructionMatch.parse(bits = matched)
         return None
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(pattern={self.pattern})'
+
 class FloatAddMatcher(PatternMatcher):
     """
     Matcher for floating-point add (``FADD``) instructions.
@@ -452,6 +465,45 @@ class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
                 return PatternBuilder.opcode_mods('LDG', ('E', self.params.size, self.params.cache)) + f' {PatternBuilder.reg()}, {PatternBuilder.desc_reg64_addr()}'
             case _:
                 raise ValueError(f'unsupported {self.arch}')
+
+class LoadConstantMatcher(PatternMatcher):
+    """
+    Matcher for constant load (``LDC``) instructions, like:
+
+    * ``LDC.64 R2, c[0x0][0x388]``
+    * ``LDC R4, c[0x3][R0]``
+    * ``LDCU UR4, c[0x3][UR0]``
+    """
+    CONSTANT : typing.Final[str] = PatternBuilder.group(
+        r'c\['
+        + PatternBuilder.group(PatternBuilder.CONSTANT_BANK, group = 'bank')
+        + r'\]\['
+        + PatternBuilder.group(PatternBuilder.CONSTANT_OFFSET, group = 'offset')
+        + r'\]',
+        group = 'operands',
+    )
+
+    def __init__(self, uniform : typing.Optional[bool] = None, size : typing.Optional[int] = None) -> None:
+        """
+        :param size: Optional bit size (e.g., 32, 64, 128).
+        :param uniform: Optionally require uniformness.
+        """
+        if size is not None:
+            check_memory_instruction_word_size(size = int(size / 8))
+
+        if uniform is None:
+            opcode = PatternBuilder.any('LDC', 'LDCU')
+            dest   = PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG)
+        elif uniform is True:
+            opcode = 'LDCU'
+            dest   = PatternBuilder.UREG
+        else:
+            opcode = 'LDC'
+            dest   = PatternBuilder.REG
+
+        pattern = PatternBuilder.opcode_mods(opcode, (size,)) + ' ' + PatternBuilder.group(dest, group = 'operands') + ', ' + self.CONSTANT
+
+        super().__init__(pattern = pattern)
 
 class StoreGlobalMatcher(ArchitectureAwarePatternMatcher):
     """

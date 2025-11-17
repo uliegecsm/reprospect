@@ -230,9 +230,8 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 
         inst_ro, matched_ro = load_ro[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst_ro.instruction)
-        logging.info(matched_ro)
+        logging.info(f'{matcher} matched instruction {inst_ro.instruction} as {matched_ro}.')
+
         assert 'CONSTANT' in matched_ro.modifiers
         assert len(matched_ro.additional['address']) == 1
         assert len(matched_ro.operands) == 2
@@ -244,9 +243,8 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 
         inst, matched = load[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert 'CONSTANT' not in matched.modifiers
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
@@ -325,9 +323,8 @@ class TestStoreGlobalMatcher:
 
         inst, matched = store[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
 
@@ -347,9 +344,8 @@ class TestStoreGlobalMatcher:
 
         inst, matched = store[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert '128' in matched.modifiers
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
@@ -458,9 +454,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert {'ADD'}.issubset(matched.modifiers)
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
@@ -485,9 +480,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert {'ADD'}.issubset(matched.modifiers)
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
@@ -514,9 +508,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert {'ADD', '64'}.issubset(matched.modifiers)
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
@@ -537,9 +530,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert {'F32', 'FTZ', 'RN'}.issubset(matched.modifiers)
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
@@ -560,9 +552,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert {'F64', 'RN'}.issubset(matched.modifiers)
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
@@ -604,9 +595,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert {'MAX', 'S64'}.issubset(matched.modifiers)
 
     def test_max_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
@@ -630,9 +620,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert {'MAX', '64'}.issubset(matched.modifiers)
 
     def test_max_strong_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
@@ -651,9 +640,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert {'MAX', 'S32'}.issubset(matched.modifiers)
 
     def test_max_strong_device_unsigned_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
@@ -672,9 +660,8 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
+
         assert {'MAX'}.issubset(matched.modifiers)
 
 class TestOpcodeModsMatcher:
@@ -728,9 +715,9 @@ class TestOpcodeModsWithOperandsMatcher:
             PatternBuilder.PREDT,
         ))
 
-        logging.info(matcher.pattern)
-
         matched = matcher.matches(instruction)
+
+        logging.info(f'{matcher} matched instruction {instruction} as {matched}.')
 
         assert matched is not None
         assert matched.operands == ('P2', 'PT', 'R4', 'RZ', 'PT')

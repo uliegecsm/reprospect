@@ -156,10 +156,9 @@ class Session:
         Export report to ``.sqlite``.
         """
         cmd : tuple[str | pathlib.Path, ...] = (
-            'nsys', 'stats',
-            '--force-overwrite=true',
-            '--force-export=true',
-            f'--sqlite={self.output_file_sqlite}',
+            'nsys', 'export',
+            '--type', 'sqlite',
+            f'--output={self.output_file_sqlite}',
             self.output_file_nsys_rep,
         )
 

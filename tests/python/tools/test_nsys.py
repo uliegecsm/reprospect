@@ -7,7 +7,6 @@ import typing
 
 import pandas
 import pytest
-import rich_tools
 import semantic_version
 
 from reprospect.tools.nsys import Report, Session, strip_cuda_api_suffix, Cacher
@@ -36,7 +35,7 @@ class TestTracingResults:
         """
         Test string representation of tracing results through conversion to a :py:class:`rich.table.Table`.
         """
-        assert rich_helpers.to_string(rich_tools.df_to_table(self.CUDA_API_TRACE, show_index = False)) == """\
+        assert rich_helpers.to_string(rich_helpers.df_to_table(self.CUDA_API_TRACE)) == """\
 ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━┓
 ┃ Start (us) ┃ Duration (us) ┃ Name                   ┃ Result ┃ CorrID ┃ Pid   ┃ Tid   ┃ T-Pri ┃ Thread Name     ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━┩
@@ -89,7 +88,7 @@ class TestSession:
 
         cuda_api_trace = ns.extract_statistical_report(report = 'cuda_api_trace')
 
-        logging.info(f'Report cuda_api_trace:\n{rich_helpers.to_string(rich_tools.df_to_table(cuda_api_trace, show_index = False))}')
+        logging.info(f'Report cuda_api_trace:\n{rich_helpers.to_string(rich_helpers.df_to_table(cuda_api_trace))}')
 
         expt = [
             'cuModuleGetLoadingMode',
@@ -140,11 +139,11 @@ class TestSession:
 
             cupti_activity_kind_synchronization = report.table(name = 'CUPTI_ACTIVITY_KIND_SYNCHRONIZATION')
 
-            logging.info(f'Table CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:\n{rich_helpers.to_string(rich_tools.df_to_table(cupti_activity_kind_synchronization, show_index = False))}')
+            logging.info(f'Table CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:\n{rich_helpers.to_string(rich_helpers.df_to_table(cupti_activity_kind_synchronization))}')
 
             cuda_stream_synchronize = cuda_api_trace[cuda_api_trace['Name'].str.startswith('cudaStreamSynchronize')]
 
-            logging.info(f'Results selected from report cuda_api_trace:\n{rich_helpers.to_string(rich_tools.df_to_table(cuda_stream_synchronize, show_index = False))}')
+            logging.info(f'Results selected from report cuda_api_trace:\n{rich_helpers.to_string(rich_helpers.df_to_table(cuda_stream_synchronize))}')
 
             assert len(cuda_stream_synchronize) == 2
 
@@ -174,7 +173,7 @@ class TestSession:
 
             # Check 'saxpy' kernels launch type.
             ENUM_CUDA_KERNEL_LAUNCH_TYPE = report.table(name = 'ENUM_CUDA_KERNEL_LAUNCH_TYPE')
-            logging.info(f'Table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_tools.df_to_table(ENUM_CUDA_KERNEL_LAUNCH_TYPE, show_index = False))}')
+            logging.info(f'Table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_helpers.df_to_table(ENUM_CUDA_KERNEL_LAUNCH_TYPE))}')
 
             CUDA_KERNEL_LAUNCH_TYPE_REGULAR = report.single_row(data = ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])
             logging.info(f'Results selected from table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_helpers.ds_to_table(CUDA_KERNEL_LAUNCH_TYPE_REGULAR))}')

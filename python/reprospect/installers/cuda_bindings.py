@@ -60,7 +60,7 @@ def install_cuda_bindings(target : packaging.version.Version) -> None:
         logging.info(f'Installing \'cuda-bindings\' {candidate}.')
         requirement = f'cuda-bindings=={candidate}'
     else:
-        logging.warning(f'Could not find a suitable version of \'cuda-bindings\'.')
+        logging.warning('Could not find a suitable version of \'cuda-bindings\'.')
 
         versions = get_available(package = 'cuda-python')
         logging.info(f'Available versions for \'cuda-python\': {versions}.')
@@ -68,7 +68,7 @@ def install_cuda_bindings(target : packaging.version.Version) -> None:
         candidate = get_candidate(target = target, versions = versions)
 
         if candidate is None:
-            raise RuntimeError(f'Could not find a suitable version of \'cuda-python\'.')
+            raise RuntimeError('Could not find a suitable version of \'cuda-python\'.')
 
         logging.info(f'Installing \'cuda-python\' {candidate}.')
         requirement = f'cuda-python=={candidate}'

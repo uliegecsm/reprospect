@@ -1,9 +1,34 @@
 import abc
 import typing
 
+import pandas
 import rich.console
 import rich.table
 import rich.tree
+
+def to_string(
+    ro : rich.table.Table | rich.tree.Tree,
+    width : int = 200,
+    no_wrap : bool = True,
+    **kwargs
+) -> str:
+    """
+    Use :py:class:`rich.console.Console` in capture mode to render a :py:mod:`rich`
+    object to a string.
+    """
+    with rich.console.Console(width = width, **kwargs) as console, console.capture() as capture:
+        console.print(ro, no_wrap = no_wrap)
+    return capture.get()
+
+def ds_to_table(ds : pandas.Series) -> rich.table.Table:
+    """
+    Convert a :py:class:`pandas.Series` to a :py:class:`rich.table.Table`.
+    """
+    rt = rich.table.Table()
+    for k in ds.index:
+        rt.add_column(str(k))
+    rt.add_row(*(str(v) for v in ds.values))
+    return rt
 
 class TableMixin(metaclass = abc.ABCMeta):
     """
@@ -20,9 +45,7 @@ class TableMixin(metaclass = abc.ABCMeta):
         """
         Use :py:class:`rich.console.Console` in capture mode.
         """
-        with rich.console.Console(width = 200) as console, console.capture() as capture:
-            console.print(self.to_table(), no_wrap = True)
-        return capture.get()
+        return to_string(self.to_table())
 
 class TreeMixin(metaclass = abc.ABCMeta):
     """
@@ -39,6 +62,4 @@ class TreeMixin(metaclass = abc.ABCMeta):
         """
         Use :py:class:`rich.console.Console` in capture mode.
         """
-        with rich.console.Console(width = 200) as console, console.capture() as capture:
-            console.print(self.to_tree(), no_wrap = True)
-        return capture.get()
+        return to_string(self.to_tree())

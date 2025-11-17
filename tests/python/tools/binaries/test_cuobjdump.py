@@ -3,11 +3,11 @@ import pathlib
 import typing
 
 import pytest
-import rich.console
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump, CuppFilt, Function, ResourceType, ResourceUsage
 from reprospect.utils              import cmake
+from reprospect.utils              import rich_helpers
 
 from tests.python.compilation import get_compilation_output, get_cubin_name
 from tests.python.parameters  import Parameters, PARAMETERS
@@ -42,10 +42,8 @@ class TestFunction:
         function = Function(code = self.CODE, ru = self.RU)
 
         # Check that the conversion to a table with truncation of long lines works as expected.
-        with rich.console.Console(width = 200) as console, console.capture() as capture:
-            console.print(function.to_table(max_code_length = 120), no_wrap = True)
-
-        assert capture.get() == """\
+        rt = function.to_table(max_code_length = 120)
+        assert rich_helpers.to_string(rt) == """\
 ┌─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Code            │ .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"                                                       │
 │                 │ /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b… │

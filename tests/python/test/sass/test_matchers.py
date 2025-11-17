@@ -1,9 +1,11 @@
 import random
+import typing
 
 import pytest
 
 from reprospect.test          import sass
-from reprospect.test.matchers import InSequenceAtMatcher, \
+from reprospect.test.matchers import AnyOfMatcher, \
+                                     InSequenceAtMatcher, \
                                      InSequenceMatcher, \
                                      OneOrMoreInSequenceMatcher, \
                                      OrderedInSequenceMatcher, \
@@ -57,6 +59,9 @@ class TestInSequenceAtMatcher:
         with pytest.raises(RuntimeError, match = 'did not match'):
             InSequenceAtMatcher(matcher = MATCHER_DADD).assert_matches(instructions = list(reversed(DADD_DMUL)))
 
+    def test_explain(self) -> None:
+        assert InSequenceAtMatcher(matcher = MATCHER_DADD).explain(instructions = NOP_DMUL_NOP_DADD) == f'{MATCHER_DADD} did not match {NOP_DMUL_NOP_DADD[0]}.'
+
 class TestZeroOrMoreInSequenceMatcher:
     """
     Tests for :py:class:`reprospect.test.matchers.ZeroOrMoreInSequenceMatcher`.
@@ -71,7 +76,7 @@ class TestZeroOrMoreInSequenceMatcher:
 
     def test_assert_matches_always_true(self):
         """
-        :py:meth:`reprospect.test.matchers.ZeroOrMoreInSequenceMatcher.assert_matches` never raises.
+        Matching zero time is fine.
         """
         assert not ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).assert_matches(instructions = DADD_NOP_DMUL)
 
@@ -84,6 +89,10 @@ class TestZeroOrMoreInSequenceMatcher:
         matched = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).matches(instructions = DADD_NOP_DMUL, start = 1)
 
         assert len(matched) == 3 and all(x.opcode == 'NOP' for x in matched)
+
+    def test_explain(self) -> None:
+        with pytest.raises(RuntimeError, match = 'It always matches'):
+            ZeroOrMoreInSequenceMatcher(matcher = MATCHER_DADD).explain(instructions = NOP_DMUL_NOP_DADD)
 
 class TestOneOrMoreInSequenceMatcher:
     """
@@ -118,19 +127,24 @@ class TestOneOrMoreInSequenceMatcher:
         assert len(matcher.matches(instructions = DADD_NOP_DMUL, start = 1)) == 3
         assert len(matcher.assert_matches(instructions = DADD_NOP_DMUL, start = 1)) == 3
 
+    def test_explain(self) -> None:
+        assert OneOrMoreInSequenceMatcher(matcher = MATCHER_NOP).explain(instructions = DADD_NOP_DMUL) == f'{MATCHER_NOP} did not match {DADD_NOP_DMUL[0]}.'
+
 class TestOrderedInSequenceMatcher:
     """
     Tests for :py:class:`reprospect.test.matchers.OrderedInSequenceMatcher`.
     """
+    MATCHER : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = (
+        MATCHER_DADD,
+        ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
+        MATCHER_DMUL,
+    ))
+
     def test_match_with_nop(self):
         """
         Matches the sequence :py:const:`DADD_NOP_DMUL`.
         """
-        matched = OrderedInSequenceMatcher((
-            MATCHER_DADD,
-            ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
-            MATCHER_DMUL,
-        )).matches(instructions = DADD_NOP_DMUL)
+        matched = self.MATCHER.matches(instructions = DADD_NOP_DMUL)
 
         assert len(matched) == 5
         assert matched[0].opcode == 'DADD'
@@ -141,13 +155,7 @@ class TestOrderedInSequenceMatcher:
         """
         Matches the sequence :py:const:`DADD_DMUL`.
         """
-        matched = OrderedInSequenceMatcher(
-            matchers = (
-                MATCHER_DADD,
-                ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
-                MATCHER_DMUL,
-            ),
-        ).matches(instructions = DADD_DMUL)
+        matched = self.MATCHER.matches(instructions = DADD_DMUL)
 
         assert len(matched) == 2
         assert matched[0].opcode == 'DADD'
@@ -158,13 +166,10 @@ class TestOrderedInSequenceMatcher:
         Does not match reversed sequence :py:const:`DADD_DMUL`.
         """
         with pytest.raises(RuntimeError, match = 'did not match'):
-            OrderedInSequenceMatcher(
-                matchers = (
-                    MATCHER_DADD,
-                    ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
-                    MATCHER_DMUL,
-                ),
-            ).assert_matches(instructions = list(reversed(DADD_DMUL)))
+            self.MATCHER.assert_matches(instructions = list(reversed(DADD_DMUL)))
+
+    def test_explain(self) -> None:
+        assert self.MATCHER.explain(instructions = DADD_NOP_DMUL) == f'{self.MATCHER.matchers} did not match {DADD_NOP_DMUL[0:3]}.'
 
 class TestUnorderedInSequenceMatcher:
     """
@@ -234,6 +239,9 @@ class TestUnorderedInSequenceMatcher:
         with pytest.raises(RuntimeError, match = 'No permutation of '):
             UnorderedInSequenceMatcher(matchers = inners).assert_matches(instructions = NOP_DMUL_NOP_DADD)
 
+    def test_explain(self) -> None:
+        assert UnorderedInSequenceMatcher(matchers = (MATCHER_DADD,)).explain(instructions = NOP_DMUL_NOP_DADD) == f'No permutation of {(MATCHER_DADD,)} did match {NOP_DMUL_NOP_DADD[0:1]}.'
+
 class TestInSequenceMatcher:
     """
     Tests for :py:class:`reprospect.test.matchers.InSequenceMatcher`.
@@ -245,9 +253,43 @@ class TestInSequenceMatcher:
 
         assert matcher.index == 4
 
-    def test_assert_matches(self) -> None:
+    def test_no_match(self) -> None:
         matcher = InSequenceMatcher(matcher = MATCHER_NOP)
 
         assert matcher.matches(instructions = DADD_DMUL) is None
 
         assert matcher.index is None
+
+    def test_explain(self) -> None:
+        assert InSequenceMatcher(matcher = MATCHER_NOP).explain(instructions = DADD_DMUL) == f'{MATCHER_NOP} did not match.'
+
+class TestAnyOfMatcher:
+    """
+    Tests for :py:class:`reprospect.test.matchers.AnyOfMatcher`.
+    """
+    def test_matches(self) -> None:
+        matcher = AnyOfMatcher(
+            InSequenceMatcher(OrderedInSequenceMatcher(matchers = (MATCHER_NOP, MATCHER_NOP, MATCHER_DADD))),
+            MATCHER_DADD,
+        )
+
+        assert matcher.matches(instructions = NOP_DMUL_NOP_DADD) is not None
+
+        assert matcher.index == 0
+
+        assert matcher.matches(instructions = (DADD,)) is not None
+
+        assert matcher.index == 1
+
+    def test_no_match(self) -> None:
+        matcher = AnyOfMatcher(
+            MATCHER_DADD,
+            MATCHER_DMUL,
+        )
+
+        assert matcher.matches(instructions = (NOP, DADD, DMUL)) is None
+
+        assert matcher.index is None
+
+    def test_explain(self) -> None:
+        assert AnyOfMatcher(MATCHER_DADD, MATCHER_DMUL).explain(instructions = DADD_NOP_DMUL) == f'None of {(MATCHER_DADD, MATCHER_DMUL)} did match {DADD_NOP_DMUL[0]}.'

@@ -23,9 +23,17 @@ class SequenceMatcher(abc.ABC):
     def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
         pass
 
-    @abc.abstractmethod
+    @typing.final
     def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
-        pass
+        """
+        Derived matchers are allowed to provide a nice message by implementing :py:meth:`explain`.
+        """
+        if (matched := self.matches(instructions = instructions, start = start)) is None:
+            raise RuntimeError(self.explain(instructions = instructions, start = start))
+        return matched
+
+    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str: # pylint: disable=unused-argument
+        return f'{self!r} did not match.'
 
 class InSequenceAtMatcher(SequenceMatcher):
     """
@@ -46,11 +54,8 @@ class InSequenceAtMatcher(SequenceMatcher):
         return [matched] if matched is not None else None
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
-        matched = self.matches(instructions = instructions, start = start)
-        if matched is None:
-            raise RuntimeError(f'{self.matcher!r} did not match {instructions[start]!r}.')
-        return matched
+    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
+        return f'{self.matcher!r} did not match {instructions[start]!r}.'
 
 class OneOrMoreInSequenceMatcher(SequenceMatcher):
     """
@@ -78,11 +83,8 @@ class OneOrMoreInSequenceMatcher(SequenceMatcher):
         return matches or None
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
-        matched = self.matches(instructions = instructions, start = start)
-        if matched is None:
-            raise RuntimeError(f'{self.matcher!r} did not match {instructions[start]!r}.')
-        return matched
+    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
+        return f'{self.matcher!r} did not match {instructions[start]!r}.'
 
 class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
     """
@@ -93,11 +95,8 @@ class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
         return super().matches(instructions = instructions, start = start) or []
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
-        """
-        It is always matching.
-        """
-        return self.matches(instructions = instructions, start = start) or []
+    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
+        raise RuntimeError('It always matches.')
 
 class OrderedInSequenceMatcher(SequenceMatcher):
     """
@@ -125,11 +124,8 @@ class OrderedInSequenceMatcher(SequenceMatcher):
         return matches
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
-        matched = self.matches(instructions = instructions, start = start)
-        if matched is None:
-            raise RuntimeError(f'{self.matchers!r} did not match {instructions[start:start + len(self.matchers)]!r}.')
-        return matched
+    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
+        return f'{self.matchers!r} did not match {instructions[start:start + len(self.matchers)]!r}.'
 
 class UnorderedInSequenceMatcher(SequenceMatcher):
     """
@@ -159,11 +155,8 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
         return None
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
-        matched = self.matches(instructions = instructions, start = start)
-        if matched is None:
-            raise RuntimeError(f'No permutation of {self.matchers!r} did match {instructions[start:start + len(self.matchers)]!r}.')
-        return matched
+    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
+        return f'No permutation of {self.matchers!r} did match {instructions[start:start + len(self.matchers)]!r}.'
 
 class InSequenceMatcher(SequenceMatcher):
     """
@@ -188,8 +181,37 @@ class InSequenceMatcher(SequenceMatcher):
         return None
 
     @override
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
-        matched = self.matches(instructions = instructions, start = start)
-        if matched is None:
-            raise RuntimeError(f'{self.matcher.matchers[0]!r} did not match.')
-        return matched
+    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
+        return f'{self.matcher.matchers[0]!r} did not match.'
+
+class AnyOfMatcher(SequenceMatcher):
+    """
+    Match any of the :py:attr:`matchers`.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
+    """
+    __slots__ = ('matchers', 'index',)
+
+    def __init__(self, *matchers : SequenceMatcher | InstructionMatcher) -> None:
+        self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
+        self.index : int | None = None
+
+    @override
+    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
+        """
+        Loop over the :py:attr:`matchers` and return the first match.
+        """
+        for index, matcher in enumerate(self.matchers):
+            if isinstance(matcher, InstructionMatcher) and (single := matcher.matches(inst = instructions[start])) is not None:
+                self.index = index
+                return [single]
+            if isinstance(matcher, SequenceMatcher) and (many := matcher.matches(instructions = instructions, start = start)) is not None:
+                self.index = index
+                return many
+        return None
+
+    @override
+    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
+        return f'None of {self.matchers!r} did match {instructions[start]}.'

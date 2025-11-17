@@ -5,6 +5,7 @@ import pandas
 import rich.console
 import rich.table
 import rich.tree
+import rich_tools
 
 def to_string(
     ro : rich.table.Table | rich.tree.Tree,
@@ -29,6 +30,27 @@ def ds_to_table(ds : pandas.Series) -> rich.table.Table:
         rt.add_column(str(k))
     rt.add_row(*(str(v) for v in ds.values))
     return rt
+
+def df_to_table(
+    df : pandas.DataFrame,
+    rich_table : typing.Optional[rich.table.Table] = None,
+    show_index : bool = False,
+    **kwargs
+) -> rich.table.Table:
+    """
+    Convert a :py:class:`pandas.DataFrame` to a :py:class:`rich.table.Table`.
+
+    .. note:
+
+        This wrapper around the equivalent function from the `rich-tools` package
+        can be avoided once an issue with their function is resolved:
+
+        * https://github.com/avi-perl/rich_tools/issues/10
+    """
+    if rich_table is None:
+        rich_table = rich.table.Table()
+
+    return rich_tools.df_to_table(df, rich_table = rich_table, show_index = show_index, **kwargs)
 
 class TableMixin(metaclass = abc.ABCMeta):
     """

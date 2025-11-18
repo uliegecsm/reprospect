@@ -54,4 +54,4 @@ class TestAnyMatcher:
         assert matched == expected
 
     def test_no_match(self) -> None:
-        assert AnyMatcher().matches(inst = 'this-is-really-not-a-good-looking-instruction') is None
+        assert self.MATCHER.matches(inst = 'this-is-really-not-a-good-looking-instruction') is None

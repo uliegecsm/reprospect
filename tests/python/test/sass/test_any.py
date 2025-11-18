@@ -1,6 +1,8 @@
 import logging
 import typing
 
+import pytest
+
 from reprospect.test.sass import AnyMatcher, InstructionMatch
 
 class TestAnyMatcher:
@@ -40,12 +42,16 @@ class TestAnyMatcher:
     Zoo of real SASS instructions.
     """
 
-    def test(self) -> None:
-        for instruction, expected in self.INSTRUCTIONS.items():
-            matched = AnyMatcher().matches(inst = instruction)
+    MATCHER : typing.Final[AnyMatcher] = AnyMatcher()
 
-            logging.info(instruction)
-            logging.info(matched)
+    @pytest.mark.parametrize('instruction,expected', INSTRUCTIONS.items())
+    def test(self, instruction : str, expected : InstructionMatch) -> None:
+        matched = self.MATCHER.matches(inst = instruction)
 
-            assert matched is not None
-            assert matched == expected
+        logging.info(f'{self.MATCHER} matched {instruction} as {matched}.')
+
+        assert matched is not None
+        assert matched == expected
+
+    def test_no_match(self) -> None:
+        assert AnyMatcher().matches(inst = 'this-is-really-not-a-good-looking-instruction') is None

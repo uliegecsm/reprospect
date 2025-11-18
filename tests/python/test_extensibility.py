@@ -17,7 +17,7 @@ import regex
 
 from reprospect.tools.sass    import Instruction, ControlCode
 from reprospect.test.sass     import InstructionMatch, InstructionMatcher, PatternMatcher, FloatAddMatcher
-from reprospect.test.matchers import OrderedInSequenceMatcher
+from reprospect.test.matchers import instruction_is
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -57,9 +57,6 @@ class TestInspect:
         logging.info(inspect.getfile(InstructionMatch))
         logging.info(inspect.getfile(InstructionMatcher))
 
-    def test_OrderedInSequenceMatcher(self) -> None:
-        logging.info(inspect.getfile(OrderedInSequenceMatcher))
-
 class TestInstructionMatching:
     """
     Match instructions with :py:class:`NewInstructionMatcher` and :py:class:`NewPatternMatcher`.
@@ -75,22 +72,14 @@ class TestInstructionMatching:
     NOP  : typing.Final[Instruction] = Instruction(offset = 0, instruction = 'NOP',                        hex = '0x2', control = CONTROLCODE)
 
     def test_NewInstructionMatcher(self) -> None:
-        result = OrderedInSequenceMatcher(matchers = (
-            NewInstructionMatcher(),
-            NewInstructionMatcher(),
-            NewInstructionMatcher(),
-        )).matches(instructions = (self.DADD, self.DMUL, self.NOP))
+        result = instruction_is(matcher = NewInstructionMatcher()).times(3).matches(instructions = (self.DADD, self.DMUL, self.NOP))
 
         assert result is not None
 
         assert len(result) == 3
 
     def test_NewPatternMatcher(self) -> None:
-        result = OrderedInSequenceMatcher(matchers = (
-            NewPatternMatcher(),
-            NewPatternMatcher(),
-            NewPatternMatcher(),
-        )).matches(instructions = (self.DADD, self.DMUL, self.NOP))
+        result = instruction_is(matcher = NewPatternMatcher()).times(3).matches(instructions = (self.DADD, self.DMUL, self.NOP))
 
         assert result is not None
 

@@ -1,217 +1,141 @@
 """
-Combine matchers from :py:mod:`reprospect.test.sass` into sequence matchers.
+Thin user-facing factories for the matchers in :py:mod:`reprospect.test.matchers_impl`.
 """
 
-import abc
-import itertools
 import sys
 import typing
 
-from reprospect.test.sass  import InstructionMatcher, InstructionMatch
 from reprospect.tools.sass import Instruction
+from reprospect.test       import matchers_impl, sass
 
 if sys.version_info >= (3, 12):
     from typing import override
 else:
     from typing_extensions import override
 
-class SequenceMatcher(abc.ABC):
+class Fluentizer(sass.InstructionMatcher):
     """
-    Base class for matchers of a sequence of instructions.
-    """
-    @abc.abstractmethod
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
-        pass
-
-    @typing.final
-    def assert_matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch]:
-        """
-        Derived matchers are allowed to provide a nice message by implementing :py:meth:`explain`.
-        """
-        if (matched := self.matches(instructions = instructions, start = start)) is None:
-            raise RuntimeError(self.explain(instructions = instructions, start = start))
-        return matched
-
-    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str: # pylint: disable=unused-argument
-        return f'{self!r} did not match.'
-
-class InSequenceAtMatcher(SequenceMatcher):
-    """
-    Check that the element matches exactly.
-
     .. note::
 
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
     __slots__ = ('matcher',)
 
-    def __init__(self, matcher : InstructionMatcher) -> None:
-        self.matcher : typing.Final[InstructionMatcher] = matcher
+    def __init__(self, matcher : sass.InstructionMatcher) -> None:
+        self.matcher : typing.Final[sass.InstructionMatcher] = matcher
 
-    @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
-        matched = self.matcher.matches(instructions[start])
-        return [matched] if matched is not None else None
-
-    @override
-    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
-        return f'{self.matcher!r} did not match {instructions[start]!r}.'
-
-class OneOrMoreInSequenceMatcher(SequenceMatcher):
-    """
-    Match one or more times.
-
-    .. note::
-
-        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
-    """
-    __slots__ = ('matcher',)
-
-    def __init__(self, matcher : InstructionMatcher) -> None:
-        self.matcher : typing.Final[InstructionMatcher] = matcher
-
-    @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
-        matches : list[InstructionMatch] = []
-
-        for instruction in instructions[start:]:
-            if (matched := self.matcher.matches(instruction)) is not None:
-                matches.append(matched)
-            else:
-                break
-
-        return matches or None
-
-    @override
-    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
-        return f'{self.matcher!r} did not match {instructions[start]!r}.'
-
-class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
-    """
-    Match zero or more times.
-    """
-    @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
-        return super().matches(instructions = instructions, start = start) or []
-
-    @override
-    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
-        raise RuntimeError('It always matches.')
-
-class OrderedInSequenceMatcher(SequenceMatcher):
-    """
-    Match a sequence of matchers in the order they are provided.
-
-    .. note::
-
-        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
-    """
-    __slots__ = ('matchers',)
-
-    def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
-        self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
-
-    @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
-        matches : list[InstructionMatch] = []
-        for matcher in self.matchers:
-            if isinstance(matcher, InstructionMatcher) and (single := matcher.matches(inst = instructions[start + len(matches)])) is not None:
-                matches.append(single)
-            elif isinstance(matcher, SequenceMatcher) and (many := matcher.matches(instructions = instructions, start = start + len(matches))) is not None:
-                matches.extend(many)
-            else:
-                return None
-        return matches
-
-    @override
-    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
-        return f'{self.matchers!r} did not match {instructions[start:start + len(self.matchers)]!r}.'
-
-class UnorderedInSequenceMatcher(SequenceMatcher):
-    """
-    Match a sequence of matchers in some permutation of the order they are provided.
-
-    .. note::
-
-        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
-    """
-    __slots__ = ('matchers',)
-
-    def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
-        self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
-
-    @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
+    def times(self, num : int) -> matchers_impl.SequenceMatcher:
         """
-        Cycle through all permutations of :py:attr:`matchers` (breaks on match).
+        Match :py:attr:`matcher` `num` times (consecutively).
 
         .. note::
 
-            The implementation can be further optimized because it currently re-matches for each new permutation.
+            If `num` is 0, it tests for the absence of a match.
         """
-        for permutation in itertools.permutations(self.matchers):
-            if (matched := OrderedInSequenceMatcher(matchers = permutation).matches(instructions = instructions, start = start)) is not None:
-                return matched
-        return None
+        if num < 0:
+            raise RuntimeError()
+        if num == 0:
+            raise NotImplementedError()
+        if num == 1:
+            return matchers_impl.InSequenceAtMatcher(matcher = self.matcher)
+        return matchers_impl.OrderedInSequenceMatcher(matchers = (self.matcher,) * num)
+
+    def one_or_more_times(self) -> matchers_impl.OneOrMoreInSequenceMatcher:
+        """
+        Match :py:attr:`matcher` one or more times (consecutively).
+        """
+        return matchers_impl.OneOrMoreInSequenceMatcher(matcher = self.matcher)
+
+    def zero_or_more_times(self) -> matchers_impl.ZeroOrMoreInSequenceMatcher:
+        """
+        Match :py:attr:`matcher` zero or more times (consecutively).
+        """
+        return matchers_impl.ZeroOrMoreInSequenceMatcher(matcher = self.matcher)
 
     @override
-    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
-        return f'No permutation of {self.matchers!r} did match {instructions[start:start + len(self.matchers)]!r}.'
+    @typing.final
+    def matches(self, inst : Instruction | str) -> typing.Optional[sass.InstructionMatch]:
+        return self.matcher.matches(inst = inst)
 
-class InSequenceMatcher(SequenceMatcher):
+def instruction_is(matcher : sass.InstructionMatcher) -> Fluentizer:
     """
-    Check that a sequence contains an element that matches exactly.
+    Match the current instruction with `matcher`.
+
+    >>> from reprospect.test.matchers import instruction_is
+    >>> from reprospect.test.sass     import FloatAddMatcher
+    >>> instruction_is(FloatAddMatcher()).matches(inst = 'FADD R2, R2, R3')
+    InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']})
+    >>> instruction_is(FloatAddMatcher()).one_or_more_times().matches(instructions = ('FADD R2, R2, R3', 'FADD R4, R4, R5'))
+    [InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']}), InstructionMatch(opcode='FADD', modifiers=(), operands=('R4', 'R4', 'R5'), predicate=None, additional={'dst': ['R4']})]
+    """
+    return Fluentizer(matcher)
+
+def instructions_are(*matchers : sass.InstructionMatcher | matchers_impl.SequenceMatcher) -> matchers_impl.OrderedInSequenceMatcher:
+    """
+    Match a sequence of instructions against `matchers`.
+
+    >>> from reprospect.test.matchers import instructions_are
+    >>> from reprospect.test.sass     import OpcodeModsMatcher
+    >>> instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     instruction_is(OpcodeModsMatcher(opcode = 'NOP', operands = False)).zero_or_more_times(),
+    ... ).matches(instructions = ('YIELD', 'NOP', 'NOP'))
+    [InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None)]
+    """
+    return matchers_impl.OrderedInSequenceMatcher(matchers = matchers)
+
+def unordered_instructions_are(*matchers : sass.InstructionMatcher | matchers_impl.SequenceMatcher) -> matchers_impl.UnorderedInSequenceMatcher:
+    """
+    Match a sequence of instructions against `matchers` (unordered).
+
+    >>> from reprospect.test.matchers import unordered_instructions_are
+    >>> from reprospect.test.sass     import OpcodeModsMatcher
+    >>> unordered_instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
+    ... ).matches(instructions = ('NOP', 'YIELD'))
+    [InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None)]
+    """
+    return matchers_impl.UnorderedInSequenceMatcher(matchers = matchers)
+
+def instructions_contain(matcher : sass.InstructionMatcher | matchers_impl.SequenceMatcher) -> matchers_impl.InSequenceMatcher:
+    """
+    Check that a sequence of instructions contains at least one instruction matching `matcher`.
+
+    ..note::
+
+        Stops on the first match.
+
+    >>> from reprospect.test.matchers import instructions_are, instructions_contain
+    >>> from reprospect.test.sass     import OpcodeModsMatcher
+    >>> matcher = instructions_contain(instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'FADD', operands = True),
+    ... ))
+    >>> matcher.matches(instructions = ('NOP', 'NOP', 'YIELD', 'FADD R1, R1, R2'))
+    [InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='FADD', modifiers=(), operands=('R1', 'R1', 'R2'), predicate=None, additional=None)]
+    >>> matcher.index
+    2
+    """
+    return matchers_impl.InSequenceMatcher(matcher)
+
+def any_of(*matchers : sass.InstructionMatcher | matchers_impl.SequenceMatcher) -> matchers_impl.AnyOfMatcher:
+    """
+    Match a sequence of instructions against any of the `matchers`.
 
     .. note::
 
-        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
+        Returns the first match.
+
+    >>> from reprospect.test.matchers import any_of
+    >>> from reprospect.test.sass     import OpcodeModsMatcher
+    >>> matcher = any_of(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
+    ... )
+    >>> matcher.matches(instructions = ('FADD R1, R1, R2',)) is None
+    True
+    >>> matcher.index is None
+    True
     """
-    __slots__ = ('matcher', 'index',)
-
-    def __init__(self, matcher : SequenceMatcher | InstructionMatcher) -> None:
-        self.matcher : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = [matcher])
-        self.index : int | None = None
-
-    @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
-        for index in range(start, len(instructions)):
-            if (matched := self.matcher.matches(instructions = instructions, start = index)) is not None:
-                self.index = index
-                return matched
-        return None
-
-    @override
-    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
-        return f'{self.matcher.matchers[0]!r} did not match.'
-
-class AnyOfMatcher(SequenceMatcher):
-    """
-    Match any of the :py:attr:`matchers`.
-
-    .. note::
-
-        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
-    """
-    __slots__ = ('matchers', 'index',)
-
-    def __init__(self, *matchers : SequenceMatcher | InstructionMatcher) -> None:
-        self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
-        self.index : int | None = None
-
-    @override
-    def matches(self, instructions : typing.Sequence[Instruction], start : int = 0) -> list[InstructionMatch] | None:
-        """
-        Loop over the :py:attr:`matchers` and return the first match.
-        """
-        for index, matcher in enumerate(self.matchers):
-            if isinstance(matcher, InstructionMatcher) and (single := matcher.matches(inst = instructions[start])) is not None:
-                self.index = index
-                return [single]
-            if isinstance(matcher, SequenceMatcher) and (many := matcher.matches(instructions = instructions, start = start)) is not None:
-                self.index = index
-                return many
-        return None
-
-    @override
-    def explain(self, *, instructions : typing.Sequence[Instruction], start : int = 0) -> str:
-        return f'None of {self.matchers!r} did match {instructions[start]}.'
+    return matchers_impl.AnyOfMatcher(*matchers)

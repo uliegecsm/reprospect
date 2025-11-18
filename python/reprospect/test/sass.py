@@ -812,7 +812,7 @@ class AnyMatcher(PatternMatcher):
     """
     PATTERN : typing.Final[regex.Pattern[str]] = regex.compile(
         r'^'
-        + PatternBuilder.zero_or_one(PatternBuilder.group(s = r'@!?U?P[T0-9]+', group = 'predicate') + r'\s*')
+        + PatternBuilder.zero_or_one(PatternBuilder.predicate() + r'\s*')
         + PatternBuilder.group(s = r'[A-Z0-9]+', group = 'opcode')
         + PatternBuilder.zero_or_more(s = r'\.' + PatternBuilder.group(s = r'[A-Z0-9_]+', group = 'modifiers'))
         + r'\s*'

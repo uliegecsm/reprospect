@@ -125,9 +125,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 
         inst, matched = red[0]
 
-        logging.info(matcher.pattern)
-        logging.info(inst.instruction)
-        logging.info(matched)
+        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
 
         return matcher, inst, matched
 

@@ -57,21 +57,28 @@ class PatternBuilder:
     """
     Helper class to build patterns for instruction components.
     """
-    OFFSET : typing.Final[str] = r'\+0x[0-9A-Fa-f]+'
+    HEX : typing.Final[str] = r'0x[0-9A-Fa-f]+'
+    OFFSET : typing.Final[str] = r'\+' + HEX
     PRED : typing.Final[str] = r'P[0-9]+'
     REG : typing.Final[str] = r'R[0-9]+'
     REG64 : typing.Final[str] = r'R[0-9]+\.64'
     UREG : typing.Final[str] = r'UR[0-9]+'
 
     #: Match a register or ``RZ``.
-    REGZ : typing.Final[str] = rf'RZ|{REG}'
+    REGZ : typing.Final[str] = r'R(?:Z|\d+)'
 
     #: Match a predicate register or ``PT``.
-    PREDT : typing.Final[str] = rf'PT|{PRED}'
+    PREDT : typing.Final[str] = r'P(?:T|\d+)'
+
+    #: Match a uniform predicate register.
+    UPRED : typing.Final[str] = r'UP[0-9]+'
+
+    #: Match a uniform predicate register or ``UPT``.
+    UPREDT : typing.Final[str] = r'UP(?:T|\d+)'
 
     OPERAND : typing.Final[str] = r'[\w@!\.\[\]\+\-\s]+'
 
-    CONSTANT : typing.Final[str] = rf'c\[0x[0-9]+\]\[(0x[0-9c]+|{REG})\]'
+    CONSTANT : typing.Final[str] = r'c\[0x[0-9]+\]\[(0x[0-9c]+|' + REG + r')\]'
     """
     Match constant memory location.
     The bank looks like ``0x3`` while the address is either compile-time (*e.g.*
@@ -83,6 +90,11 @@ class PatternBuilder:
     References:
 
     * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L34
+    """
+
+    PREDICATE : typing.Final[str] = r'@!?U?P(?:T|\d+)'
+    """
+    Predicate for the whole instruction (comes before the opcode).
     """
 
     @staticmethod
@@ -177,6 +189,13 @@ class PatternBuilder:
         :py:attr:`IMMEDIATE` with `operands` group.
         """
         return cls.group(cls.IMMEDIATE, group = 'operands')
+
+    @classmethod
+    def predicate(cls) -> str:
+        """
+        :py:attr:`PREDICATE` with `predicate` group.
+        """
+        return cls.group(s = cls.PREDICATE, group = 'predicate')
 
     @staticmethod
     def opcode_mods(opcode : str, modifiers : typing.Optional[typing.Iterable[int | str]] = None) -> str:
@@ -775,3 +794,23 @@ class AnyOfMatcher(InstructionMatcher):
             if (matched := matcher.matches(inst = inst)) is not None:
                 return matched
         return None
+
+class BranchMatcher(PatternMatcher):
+    """
+    Matcher for a ``BRA`` branch instruction.
+
+    Typically::
+
+        @!UP5 BRA 0x456
+    """
+    BRA : typing.Final[str] = (
+        PatternBuilder.opcode_mods(opcode = 'BRA')
+        + r'\s*'
+        + PatternBuilder.group(PatternBuilder.HEX, group = 'operands')
+        + r'$'
+    )
+
+    INSTRUCTION_PREDICATE : typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.predicate() + r'\s*')
+
+    def __init__(self, predicate : typing.Optional[str] = None):
+        super().__init__(pattern = r'^' + (self.INSTRUCTION_PREDICATE if predicate is None else PatternBuilder.group(predicate, group = 'predicate') + r'\s+') + self.BRA)

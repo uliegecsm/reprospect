@@ -1,4 +1,5 @@
 add_pytest(any)
 add_pytest(atomic)
+add_pytest(branch)
 add_pytest(matchers)
 add_pytest(sass)

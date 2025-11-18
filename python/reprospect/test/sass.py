@@ -234,38 +234,22 @@ class PatternBuilder:
         return rf'{op}(?:\s*,\s*{op})*'
 
     @classmethod
-    def reg_addr(cls, offset : typing.Optional[bool] = None) -> str:
+    def address(cls, store : str, offset : typing.Optional[bool] = None) -> str:
         """
         Address operand. A few examples:
 
-        * ``[R0]``
+        * ``[R4]``
+        * ``[R1.64]``
         * ``[R2+0x10]``
 
+        :param store: The pattern storing the address, *e.g.* :py:attr:`REG`.
         :param offset: If not given, the offset matching is optional. It `True`, there must be an offset. If `False`, there must not be an offset.
         """
-        pattern = cls.REG
         if offset is None:
-            pattern += cls.zero_or_one(cls.OFFSET)
+            store += cls.zero_or_one(cls.OFFSET)
         elif offset is True:
-            pattern += cls.OFFSET
-        return rf"\[{cls.groups(pattern, groups = ('operands', 'address'))}\]"
-
-    @classmethod
-    def reg64_addr(cls, offset : typing.Optional[bool] = None) -> str:
-        """
-        Address operand with 64-bit modifier. A few examples:
-
-        * ``[R0.64]``
-        * ``[R0.64+0x10]``
-
-        :param offset: If not given, the offset matching is optional. It `True`, there must be an offset. If `False`, there must not be an offset.
-        """
-        pattern = cls.REG64
-        if offset is None:
-            pattern += cls.zero_or_one(cls.OFFSET)
-        elif offset is True:
-            pattern += cls.OFFSET
-        return rf"\[({cls.groups(pattern, groups = ('operands', 'address'))})\]"
+            store += cls.OFFSET
+        return rf"\[{cls.groups(store, groups = ('operands', 'address'))}\]"
 
     @classmethod
     def desc_reg64_addr(cls, offset : typing.Optional[bool] = None) -> str:
@@ -458,9 +442,9 @@ class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
     def _build_pattern(self) -> str:
         match self.arch.compute_capability.as_int:
             case 70 | 75:
-                return PatternBuilder.opcode_mods('LDG', ('E', self.params.size, self.params.cache, 'SYS')) + f' {PatternBuilder.reg()}, {PatternBuilder.reg_addr()}'
+                return PatternBuilder.opcode_mods('LDG', ('E', self.params.size, self.params.cache, 'SYS')) + f' {PatternBuilder.reg()}, {PatternBuilder.address(PatternBuilder.REG)}'
             case 80 | 86 | 89:
-                return PatternBuilder.opcode_mods('LDG', ('E', self.params.size, self.params.cache)) + f' {PatternBuilder.reg()}, {PatternBuilder.reg64_addr()}'
+                return PatternBuilder.opcode_mods('LDG', ('E', self.params.size, self.params.cache)) + f' {PatternBuilder.reg()}, {PatternBuilder.address(PatternBuilder.REG64)}'
             case 90 | 100 | 120:
                 return PatternBuilder.opcode_mods('LDG', ('E', self.params.size, self.params.cache)) + f' {PatternBuilder.reg()}, {PatternBuilder.desc_reg64_addr()}'
             case _:
@@ -527,9 +511,9 @@ class StoreGlobalMatcher(ArchitectureAwarePatternMatcher):
     def _build_pattern(self) -> str:
         match self.arch.compute_capability.as_int:
             case 70 | 75:
-                return PatternBuilder.opcode_mods('STG', ('E', self.params.size, 'SYS')) + f' {PatternBuilder.reg_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('STG', ('E', self.params.size, 'SYS')) + f' {PatternBuilder.address(PatternBuilder.REG)}, {PatternBuilder.reg()}'
             case 80 | 86 | 89:
-                return PatternBuilder.opcode_mods('STG', ('E', self.params.size)) + f' {PatternBuilder.reg64_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('STG', ('E', self.params.size)) + f' {PatternBuilder.address(PatternBuilder.REG64)}, {PatternBuilder.reg()}'
             case 90 | 100 | 120:
                 return PatternBuilder.opcode_mods('STG', ('E', self.params.size)) + f' {PatternBuilder.desc_reg64_addr()}, {PatternBuilder.reg()}'
             case _:
@@ -629,9 +613,9 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
 
         match self.arch.compute_capability.as_int:
             case 70 | 75:
-                return PatternBuilder.opcode_mods('RED', ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)) + f' {PatternBuilder.reg_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('RED', ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)) + f' {PatternBuilder.address(PatternBuilder.REG)}, {PatternBuilder.reg()}'
             case 80 | 86 | 89:
-                return PatternBuilder.opcode_mods('RED', ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)) + f' {PatternBuilder.reg64_addr()}, {PatternBuilder.reg()}'
+                return PatternBuilder.opcode_mods('RED', ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)) + f' {PatternBuilder.address(PatternBuilder.REG64)}, {PatternBuilder.reg()}'
             case 90 | 100 | 120:
                 return PatternBuilder.opcode_mods('REDG', ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)) + f' {PatternBuilder.desc_reg64_addr()}, {PatternBuilder.reg()}'
             case _:
@@ -698,7 +682,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
                 operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
                 dtype = (self.params.dtype[1],) if self.params.dtype is not None and self.params.dtype[1] > 32 else ()
             case _:
-                operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.reg()}'
+                operands = rf'{PatternBuilder.predt()}, {PatternBuilder.regz()}, {{addr}}, {PatternBuilder.regz()}'
                 if self.params.dtype is not None and self.params.operation == 'EXCH':
                     dtype = (self.params.dtype[1],) if self.params.dtype[1] > 32 else ()
                 elif self.params.dtype is not None:
@@ -723,11 +707,11 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
 
         match self.arch.compute_capability.as_int:
             case 70 | 75:
-                addr = PatternBuilder.reg_addr()
+                addr = PatternBuilder.any(PatternBuilder.address(PatternBuilder.REG), PatternBuilder.address(PatternBuilder.UREG))
             case 80 | 86 | 89:
-                addr = PatternBuilder.any(PatternBuilder.reg_addr(), PatternBuilder.reg64_addr())
+                addr = PatternBuilder.any(PatternBuilder.address(PatternBuilder.REG), PatternBuilder.address(PatternBuilder.REG64))
             case 90 | 100 | 120:
-                addr = PatternBuilder.any(PatternBuilder.reg_addr(), PatternBuilder.desc_reg64_addr())
+                addr = PatternBuilder.any(PatternBuilder.address(PatternBuilder.REG), PatternBuilder.desc_reg64_addr())
             case _:
                 raise ValueError(f'unsupported {self.arch}')
 

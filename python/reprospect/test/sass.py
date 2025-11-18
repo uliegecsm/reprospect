@@ -824,29 +824,6 @@ class AnyMatcher(PatternMatcher):
     def __init__(self):
         super().__init__(pattern = self.PATTERN)
 
-class AnyOfMatcher(InstructionMatcher):
-    """
-    Match any of the :py:attr:`matchers`.
-
-    .. note::
-
-        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
-    """
-    __slots__ = ('matchers',)
-
-    def __init__(self, *matchers : InstructionMatcher) -> None:
-        self.matchers : typing.Final[tuple[InstructionMatcher, ...]] = tuple(matchers)
-
-    @override
-    def matches(self, inst : Instruction | str) -> InstructionMatch | None:
-        """
-        Loop over the :py:attr:`matchers` and return the first match.
-        """
-        for matcher in self.matchers:
-            if (matched := matcher.matches(inst = inst)) is not None:
-                return matched
-        return None
-
 class BranchMatcher(PatternMatcher):
     """
     Matcher for a ``BRA`` branch instruction.

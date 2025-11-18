@@ -17,4 +17,6 @@ SASS instruction matcher
 
 .. automodule:: tests.python.test.sass.test_matchers
 
+.. automodule:: tests.python.test.sass.test_matchers_impl
+
 .. automodule:: tests.python.test.sass.test_sass

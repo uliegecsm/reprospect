@@ -6,6 +6,7 @@ setup(
     ext_modules = mypycify(
         [
             'reprospect/test/matchers.py',
+            'reprospect/test/matchers_impl.py',
             'reprospect/test/sass.py',
             'reprospect/tools/architecture.py',
             'reprospect/tools/binaries/cuobjdump.py',

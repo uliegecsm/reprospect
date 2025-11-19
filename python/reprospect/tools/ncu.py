@@ -104,7 +104,7 @@ class Metric:
         self.subs  = {x: None for x in subs} if subs else {'' : None}
 
     def __repr__(self) -> str:
-        return self.name + '(' + ','.join([f'{sub}={value}' for sub, value in self.subs.items()]) + ')'
+        return self.name + '(' + ','.join(f'{sub}={value}' for sub, value in self.subs.items()) + ')'
 
     def gather(self) -> list[str]:
         """

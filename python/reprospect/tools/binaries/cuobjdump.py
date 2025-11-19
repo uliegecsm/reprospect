@@ -108,7 +108,7 @@ class Function:
 
         # Resource usage.
         if self.ru:
-            table.add_row("Resource usage", ", ".join([f"{key}: {value}" for key, value in self.ru.items()]))
+            table.add_row("Resource usage", ", ".join(f"{key}: {value}" for key, value in self.ru.items()))
 
         return table
 

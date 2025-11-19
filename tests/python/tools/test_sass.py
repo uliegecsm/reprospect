@@ -78,13 +78,13 @@ class TestSASSDecoder:
         """
         instructions = {
             IMAD : sass.Instruction(
-                offset = 64,
+                offset = '0040',
                 instruction = 'IMAD R4, R4, c[0x0][0x0], R3',
                 hex = '0x0000000004047a24',
                 control = sass.ControlCode(stall_count = 5, yield_flag = False, read = 7, write = 7, wait = [True, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
             ),
             IMAD_WIDE_U32 : sass.Instruction(
-                offset = 144,
+                offset = '0090',
                 instruction = 'IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170]',
                 hex = '0x00005c0004047625',
                 control = sass.ControlCode(stall_count = 4, yield_flag = False, read = 7, write = 7, wait = [False] * 6, reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
@@ -107,7 +107,7 @@ class TestSASSDecoder:
         decoder = sass.Decoder(code = FFMA, skip_until_headerflags = False)
         assert decoder.instructions == [
             sass.Instruction(
-                offset = 192, instruction = 'FFMA R7, R2, c[0x0][0x160], R7',
+                offset = '00c0', instruction = 'FFMA R7, R2, c[0x0][0x160], R7',
                 hex = '0x0000580002077a23',
                 control = sass.ControlCode(stall_count = 8, yield_flag = False, read = 7, write = 7, wait = [False, False, True, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False}))
         ], decoder.instructions
@@ -119,7 +119,7 @@ class TestSASSDecoder:
         decoder = sass.Decoder(code = ISETP_NE_U32_AND, skip_until_headerflags = False)
         assert decoder.instructions == [
             sass.Instruction(
-                offset = 192, instruction = 'ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT',
+                offset = '00c0', instruction = 'ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT',
                 hex = '0x000000ff0000720c',
                 control = sass.ControlCode(stall_count = 2, yield_flag = True, read = 7, write = 7, wait = [False] * 6, reuse = {'A' : True, 'B' : False, 'C' : False, 'D' : False})
             )
@@ -181,19 +181,19 @@ class TestSASSDecoder:
 
         decoder.instructions = [
             sass.Instruction(
-                offset = 0,
+                offset = '00f0',
                 instruction = 'LDC R1, c[0x0][0x37c]',
                 hex = '0x0000df00ff017b82',
-                control = sass.ControlCode(stall_count = 1, yield_flag = True, read = 7, write = 0, wait = [False, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
+                control = sass.ControlCode(stall_count = 1, yield_flag = True, read = 7, write = 0, wait = [True, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
             ),
             sass.Instruction(
-                offset = 16,
+                offset = '0190',
                 instruction = 'S2R R0, SR_TID.X',
                 hex = '0x0000000000007919',
                 control = sass.ControlCode(stall_count = 7, yield_flag = False, read = 7, write = 1, wait = [False, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
             ),
             sass.Instruction(
-                offset = 112,
+                offset = '01a0',
                 instruction = '@P0 EXIT',
                 hex = '0x000000000000094d',
                 control = sass.ControlCode(stall_count = 5, yield_flag = True, read = 2, write = 7, wait = [True, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
@@ -201,13 +201,13 @@ class TestSASSDecoder:
         ]
 
         assert str(decoder) == """\
-┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━┳━━━━┳━━━━┳━━━━┳━━━━┳━━━━┓
-┃ offset ┃ instruction           ┃ stall ┃ yield ┃ b0 ┃ b1 ┃ b2 ┃ b3 ┃ b4 ┃ b5 ┃
-┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━╇━━━━╇━━━━╇━━━━╇━━━━╇━━━━┩
-│ 0      │ LDC R1, c[0x0][0x37c] │ 1     │ True  │ Wr │    │    │    │    │    │
-│ 16     │ S2R R0, SR_TID.X      │ 7     │ False │    │ Wr │    │    │    │    │
-│ 112    │ @P0 EXIT              │ 5     │ True  │ Wa │    │ Re │    │    │    │
-└────────┴───────────────────────┴───────┴───────┴────┴────┴────┴────┴────┴────┘
+┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━┳━━━━┳━━━━┳━━━━┳━━━━┓
+┃ offset ┃ instruction           ┃ stall ┃ yield ┃ b0    ┃ b1 ┃ b2 ┃ b3 ┃ b4 ┃ b5 ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━╇━━━━╇━━━━╇━━━━╇━━━━┩
+│ 00f0   │ LDC R1, c[0x0][0x37c] │ 1     │ True  │ Wa/Wr │    │    │    │    │    │
+│ 0190   │ S2R R0, SR_TID.X      │ 7     │ False │       │ Wr │    │    │    │    │
+│ 01a0   │ @P0 EXIT              │ 5     │ True  │ Wa    │    │ Re │    │    │    │
+└────────┴───────────────────────┴───────┴───────┴───────┴────┴────┴────┴────┴────┘
 """
 
     def test_to_html(self) -> None:

@@ -155,7 +155,7 @@ class Instruction:
     """
     Represents a single SASS instruction with its components.
     """
-    offset : int          #: Offset of the instruction in the SASS code.
+    offset : str          #: Offset of the instruction in the SASS code.
     instruction : str     #: The disassembled SASS instruction including opcode, modifiers and operands.
     hex : str             #: The hexadecimal representation of the instruction.
     control : ControlCode #: The decoded control code associated with the instruction.
@@ -265,7 +265,7 @@ class Decoder(rich_helpers.TableMixin):
 
             # Create instruction.
             self.instructions.append(Instruction(
-                offset = int(matchl.group(1), base = 16),
+                offset = matchl.group(1),
                 instruction = matchl.group(2).rstrip(),
                 hex = matchl.group(3),
                 control = control,

@@ -42,4 +42,5 @@ SASS
 .. toctree::
    :maxdepth: 1
 
+   tools/sass/controlflow
    tools/sass/decode

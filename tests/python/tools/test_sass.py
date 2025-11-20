@@ -78,13 +78,13 @@ class TestSASSDecoder:
         """
         instructions = {
             IMAD : sass.Instruction(
-                offset = '0040',
+                offset = int('0040', base = 16),
                 instruction = 'IMAD R4, R4, c[0x0][0x0], R3',
                 hex = '0x0000000004047a24',
                 control = sass.ControlCode(stall_count = 5, yield_flag = False, read = 7, write = 7, wait = [True, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
             ),
             IMAD_WIDE_U32 : sass.Instruction(
-                offset = '0090',
+                offset = int('0090', base = 16),
                 instruction = 'IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170]',
                 hex = '0x00005c0004047625',
                 control = sass.ControlCode(stall_count = 4, yield_flag = False, read = 7, write = 7, wait = [False] * 6, reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
@@ -107,7 +107,7 @@ class TestSASSDecoder:
         decoder = sass.Decoder(code = FFMA, skip_until_headerflags = False)
         assert decoder.instructions == [
             sass.Instruction(
-                offset = '00c0', instruction = 'FFMA R7, R2, c[0x0][0x160], R7',
+                offset = int('00c0', base = 16), instruction = 'FFMA R7, R2, c[0x0][0x160], R7',
                 hex = '0x0000580002077a23',
                 control = sass.ControlCode(stall_count = 8, yield_flag = False, read = 7, write = 7, wait = [False, False, True, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False}))
         ], decoder.instructions
@@ -119,7 +119,7 @@ class TestSASSDecoder:
         decoder = sass.Decoder(code = ISETP_NE_U32_AND, skip_until_headerflags = False)
         assert decoder.instructions == [
             sass.Instruction(
-                offset = '00c0', instruction = 'ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT',
+                offset = int('00c0', base = 16), instruction = 'ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT',
                 hex = '0x000000ff0000720c',
                 control = sass.ControlCode(stall_count = 2, yield_flag = True, read = 7, write = 7, wait = [False] * 6, reuse = {'A' : True, 'B' : False, 'C' : False, 'D' : False})
             )
@@ -181,19 +181,19 @@ class TestSASSDecoder:
 
         decoder.instructions = [
             sass.Instruction(
-                offset = '00f0',
+                offset = int('00f0', base = 16),
                 instruction = 'LDC R1, c[0x0][0x37c]',
                 hex = '0x0000df00ff017b82',
                 control = sass.ControlCode(stall_count = 1, yield_flag = True, read = 7, write = 0, wait = [True, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
             ),
             sass.Instruction(
-                offset = '0190',
+                offset = int('0190', base = 16),
                 instruction = 'S2R R0, SR_TID.X',
                 hex = '0x0000000000007919',
                 control = sass.ControlCode(stall_count = 7, yield_flag = False, read = 7, write = 1, wait = [False, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),
             ),
             sass.Instruction(
-                offset = '01a0',
+                offset = int('01a0', base = 16),
                 instruction = '@P0 EXIT',
                 hex = '0x000000000000094d',
                 control = sass.ControlCode(stall_count = 5, yield_flag = True, read = 2, write = 7, wait = [True, False, False, False, False, False], reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False}),

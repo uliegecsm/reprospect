@@ -15,9 +15,9 @@ from reprospect.tools.sass         import ControlCode, Instruction
 
 CONTROL_CODE = ControlCode.decode(code = '0x000e220000000800')
 
-DADD = Instruction(offset = '0', instruction = 'DADD R4, R4, c[0x0][0x180]', hex = '0x0', control = CONTROL_CODE)
-DMUL = Instruction(offset = '0', instruction = 'DMUL R6, R6, c[0x0][0x188]', hex = '0x1', control = CONTROL_CODE)
-NOP  = Instruction(offset = '0', instruction = 'NOP',                        hex = '0x2', control = CONTROL_CODE)
+DADD = Instruction(offset = 0, instruction = 'DADD R4, R4, c[0x0][0x180]', hex = '0x0', control = CONTROL_CODE)
+DMUL = Instruction(offset = 0, instruction = 'DMUL R6, R6, c[0x0][0x188]', hex = '0x1', control = CONTROL_CODE)
+NOP  = Instruction(offset = 0, instruction = 'NOP',                        hex = '0x2', control = CONTROL_CODE)
 
 DADD_DMUL = (DADD, DMUL)
 """One DADD followed by a DMUL."""

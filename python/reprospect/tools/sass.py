@@ -289,7 +289,7 @@ class Decoder(rich_helpers.TableMixin):
         }
 
         for instruction in self.instructions:
-            data['offset'].append(instruction.offset)
+            data['offset'].append(f'{instruction.offset:04x}')
             data['instruction'].append(instruction.instruction)
             data['stall'].append(instruction.control.stall_count)
             data['yield'].append(instruction.control.yield_flag)

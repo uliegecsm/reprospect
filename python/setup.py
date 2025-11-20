@@ -13,7 +13,7 @@ setup(
             'reprospect/tools/binaries/demangle.py',
             'reprospect/tools/binaries/elf.py',
             'reprospect/tools/ncu.py',
-            'reprospect/tools/sass.py',
+            'reprospect/tools/sass/decode.py',
             'reprospect/utils/cmake.py',
             'reprospect/utils/detect.py',
             'reprospect/utils/ldd.py',
@@ -21,5 +21,6 @@ setup(
             'reprospect/utils/subprocess_helpers.py',
         ],
         verbose = True,
+        strict_dunder_typing = True,
     ),
 )

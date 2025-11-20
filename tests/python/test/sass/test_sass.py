@@ -83,12 +83,12 @@ class TestPatternBuilder:
         assert regex.match(PatternBuilder.UREG,   'UR42') is not None
         assert regex.match(PatternBuilder.ureg(), 'UR42') is not None
 
-    def test_reg_addr(self):
+    def test_address_reg(self):
         """
-        Test :py:meth`reprospect.test.sass.PatternBuilder.reg_addr`.
+        Test :py:meth:`reprospect.test.sass.PatternBuilder.address` for :py:attr:`reprospect.test.sass.PatternBuilder.REG`.
         """
         # Defaulted offset behaviour.
-        pattern = PatternBuilder.reg_addr()
+        pattern = PatternBuilder.address(PatternBuilder.REG)
 
         matched = regex.match(pattern, string = '[R0]')
         assert matched is not None
@@ -101,7 +101,7 @@ class TestPatternBuilder:
         assert matched.group('operands') == 'R2+0x10' and matched.captures('operands') == ['R2+0x10']
 
         # Enforced offset behaviour.
-        pattern = PatternBuilder.reg_addr(True)
+        pattern = PatternBuilder.address(PatternBuilder.REG, offset = True)
 
         assert regex.match(pattern, string = '[R0]') is None
 
@@ -111,7 +111,7 @@ class TestPatternBuilder:
         assert matched.group('operands') == 'R2+0x10' and matched.captures('operands') == ['R2+0x10']
 
         # Disabled offset behaviour.
-        pattern = PatternBuilder.reg_addr(False)
+        pattern = PatternBuilder.address(PatternBuilder.REG, offset = False)
 
         matched = regex.match(pattern, string = '[R0]')
         assert matched is not None
@@ -120,12 +120,12 @@ class TestPatternBuilder:
 
         assert regex.match(pattern, string = '[R2+0x10]') is None
 
-    def test_reg64_addr(self):
+    def test_address_reg64(self):
         """
-        Test :py:meth`reprospect.test.sass.PatternBuilder.reg64_addr`.
+        Test :py:meth:`reprospect.test.sass.PatternBuilder.address` for :py:attr:`reprospect.test.sass.PatternBuilder.REG64`.
         """
         # Default offset behaviour.
-        pattern = PatternBuilder.reg64_addr()
+        pattern = PatternBuilder.address(PatternBuilder.REG64)
 
         matched = regex.match(pattern, string = '[R0.64]')
         assert matched is not None
@@ -138,7 +138,7 @@ class TestPatternBuilder:
         assert matched.group('operands') == 'R2.64+0x10' and matched.captures('operands') == ['R2.64+0x10']
 
         # Enforced offset behaviour.
-        pattern = PatternBuilder.reg64_addr(True)
+        pattern = PatternBuilder.address(PatternBuilder.REG64, offset = True)
 
         assert regex.match(pattern, string = '[R0.64]') is None
 
@@ -148,7 +148,7 @@ class TestPatternBuilder:
         assert matched.group('operands') == 'R2.64+0x10' and matched.captures('operands') == ['R2.64+0x10']
 
         # Disabled offset behaviour.
-        pattern = PatternBuilder.reg64_addr(False)
+        pattern = PatternBuilder.address(PatternBuilder.REG64, offset = False)
 
         matched = regex.match(pattern, string = '[R0.64]')
         assert matched is not None

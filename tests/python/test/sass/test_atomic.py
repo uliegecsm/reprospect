@@ -1,5 +1,7 @@
 import logging
+import pathlib
 import subprocess
+import typing
 
 import pytest
 import regex
@@ -111,6 +113,14 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
             new_val
         );
     } while (old != assumed);
+}
+"""
+
+    CODE_EXCH_DEVICE_PTR : typing.Final[str] = """\
+__device__ __constant__ int32_t* ptr;
+
+__global__ void atomic_exch_kernel() {
+    atomicExch(ptr, 0);
 }
 """
 
@@ -444,3 +454,50 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
         )
 
         assert {'EXCH'}.issubset(matched.modifiers)
+
+    def test_exch_device_ptr(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        """
+        This test demonstrates that while ``nvcc`` emits an ``ATOMG`` instruction for an atomic exchange using a device pointer marked with
+        :code:`__constant__`, ``clang`` (as of 21.1.5) is not able to infer that the referenced memory resides in global memory and therefore falls back
+        emitting a generic ``ATOM`` instruction.
+
+        ``nvcc`` appears to generate better code in this case: because the device pointer is declared as :code:`__constant__`,
+        the compiler can reasonably assume that it cannot point to local or shared memory, and thus must refer to global memory.
+        This allows ``nvcc`` to use the more specific global-memory atomic instruction.
+        """
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_EXCH_DEVICE_PTR)
+
+        decoder, output = get_decoder(
+            cwd = workdir, arch = parameters.arch, file = FILE,
+            cmake_file_api = cmake_file_api, ptx = True,
+        )
+
+        # Find the atomic exchange.
+        memory : str
+        match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+            case 'NVIDIA':
+                memory = 'G'
+            case 'Clang':
+                memory = ''
+            case _:
+                raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
+
+        _, _, matched = self.match_one(
+            decoder = decoder,
+            arch = parameters.arch, operation = 'EXCH', dtype = (None, 32), scope = 'DEVICE', consistency = 'STRONG',
+            memory = memory,
+        )
+
+        assert {'EXCH'}.issubset(matched.modifiers)
+
+        # In the PTX, we can see the '.global' for NVIDIA, but not for Clang.
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
+
+        match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+            case 'NVIDIA':
+                assert 'atom.global.exch.b32' in result
+            case 'Clang':
+                assert 'atom.exch.b32' in result
+            case _:
+                raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")

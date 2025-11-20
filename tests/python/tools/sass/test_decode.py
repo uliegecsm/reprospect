@@ -36,7 +36,7 @@ ISETP_NE_U32_AND = \
                                                                                      /* 0x040fe40003f05070 */
 """
 
-class TestSASSDecoder:
+class TestDecoder:
     """
     Test :py:class:`reprospect.tools.sass.Decoder`.
     """
@@ -140,7 +140,7 @@ class TestSASSDecoder:
         """
         Read SASS dumped from ``cuobjdump``.
         """
-        CUDA_FILE = pathlib.Path(__file__).parent / 'assets' / 'saxpy.cu'
+        CUDA_FILE = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
         output, _ = get_compilation_output(
             source = CUDA_FILE,
             cwd = workdir,

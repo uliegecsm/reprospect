@@ -33,6 +33,7 @@ packages = [
     "reprospect.test",
     "reprospect.tools",
     "reprospect.tools.binaries",
+    "reprospect.tools.sass",
     "reprospect.utils",
 ]
 
@@ -42,6 +43,7 @@ packages = [
 "reprospect.test" = "reprospect/test"
 "reprospect.tools" = "reprospect/tools"
 "reprospect.tools.binaries" = "reprospect/tools/binaries"
+"reprospect.tools.sass" = "reprospect/tools/sass"
 "reprospect.utils" = "reprospect/utils"
 
 [tool.setuptools.dynamic]

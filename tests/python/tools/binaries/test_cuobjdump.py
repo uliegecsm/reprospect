@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import random
 import typing
 
 import pytest
@@ -10,6 +11,7 @@ from reprospect.utils              import cmake
 from reprospect.utils              import rich_helpers
 
 from tests.python.compilation import get_compilation_output, get_cubin_name
+from tests.python.cublas      import CuBLAS
 from tests.python.parameters  import Parameters, PARAMETERS
 
 class TestFunction:
@@ -287,6 +289,53 @@ class TestCuObjDump:
             )
 
             assert all(x in cuobjdump.symtab['name'].values for x in self.SYMBOLS)
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    class TestCuBLAS:
+        """
+        Play with the cuBLAS shared library.
+        """
+        def test_extract_functions(self, parameters : Parameters, workdir : pathlib.Path, cmake_file_api : cmake.FileAPI) -> None:
+            """
+            Extract a subset of all functions from a randomly picked cubin.
+
+            .. note::
+
+                Sometimes, ``cuobjdump`` will still dump the SASS of unwanted functions.
+                That is, even if `--function=...` is passed N mangled function names, it might
+                output the SASS for more than N functions.
+
+            .. note::
+
+                The symbol table of cubin files from cuBLAS may contain internal CUDA runtime
+                helper functions with symbols such as `$__internal_11_$__cuda_sm20_div_u64`.
+
+                While these symbols appear in the ELF symbol table as valid STT_FUNC,
+                ``cuobjdump`` cannot dump any SASS code for them.
+
+                This test therefore filters out any function whose name starts with `$__internal`.
+            """
+            cublas = CuBLAS(cmake_file_api = cmake_file_api)
+            try:
+                [cubin] = cublas.extract(arch = parameters.arch, cwd = workdir, randomly = True)
+            except IndexError:
+                pytest.skip(f'{cublas} does not contain an embedded cubin for {parameters.arch}.')
+
+            symbols = CuObjDump(file = cubin, arch = parameters.arch, sass = False).symtab
+
+            functions = symbols[
+                (symbols['type'] == 'STT_FUNC') &
+                (~symbols['name'].str.startswith('$__internal'))
+            ]
+
+            if functions['name'].shape[0] == 0:
+                pytest.skip(f'There is no function or other executable code in {cubin} for {parameters.arch}.')
+
+            chosen = random.sample(functions['name'].values.tolist(), min(functions['name'].shape[0], 3))
+
+            cuobjdump = CuObjDump(file = cubin, arch = parameters.arch, sass = True, keep = chosen)
+
+            assert len(chosen) <= len(cuobjdump.functions.keys()) < symbols.shape[0]
 
     def test_string_representation(self) -> None:
         """

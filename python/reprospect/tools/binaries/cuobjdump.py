@@ -132,17 +132,19 @@ class CuObjDump:
         arch : NVIDIAArch,
         sass : bool = True,
         demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = CuppFilt,
+        keep : typing.Iterable[str] | None = None,
     ) -> None:
         """
         :param file: Either a host binary file containing one or more embedded CUDA binary files, or itself a CUDA binary file.
+        :param keep: Optionally filter the functions to be kept.
         """
-        self.file = file #: The binary file.
-        self.arch = arch #: The NVIDIA architecture.
+        self.file : typing.Final[pathlib.Path] = file #: The binary file.
+        self.arch : typing.Final[NVIDIAArch] = arch #: The NVIDIA architecture.
         self.functions : dict[str, Function] = {}
         if sass:
-            self.parse_sass(demangler = demangler)
+            self.parse_sass(demangler = demangler, keep = keep)
 
-    def parse_sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None) -> None:
+    def parse_sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None, keep : typing.Iterable[str] | None = None) -> None:
         """
         Parse SASS from :py:attr:`file`.
         """
@@ -150,6 +152,7 @@ class CuObjDump:
             'cuobjdump',
             '--gpu-architecture', self.arch.as_sm,
             '--dump-sass', '--dump-resource-usage',
+            *((f'--function={",".join(keep)}',) if keep is not None else ()),
             self.file,
         )
 

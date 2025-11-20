@@ -81,12 +81,12 @@ class Cacher(abc.ABC):
         logging.info(f'Creating table \'{self.TABLE}\' in {self.file}.')
         db = sqlite3.connect(file)
         cursor = db.cursor()
-        cursor.execute('\n'.join([
+        cursor.execute('\n'.join((
             f'CREATE TABLE IF NOT EXISTS {self.TABLE} (',
                 'hash TEXT PRIMARY KEY,',
                 'timestamp REAL',
             ')',
-        ]))
+        )))
         db.commit()
         return db
 

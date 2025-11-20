@@ -1,6 +1,6 @@
 from .cuobjdump import CuObjDump, Function, ResourceType, ResourceUsage
 from .demangle  import CuppFilt, LlvmCppFilt
-from .nvdisasm  import NVDisasm, NVDisasmFunction
+from .nvdisasm  import NVDisasm
 
 __all__ = [
     'CuObjDump',
@@ -10,5 +10,4 @@ __all__ = [
     'CuppFilt',
     'LlvmCppFilt',
     'NVDisasm',
-    'NVDisasmFunction',
 ]

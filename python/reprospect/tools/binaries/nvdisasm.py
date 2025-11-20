@@ -1,4 +1,3 @@
-import dataclasses
 import logging
 import pathlib
 import re
@@ -11,7 +10,7 @@ from reprospect.tools.architecture       import NVIDIAArch
 from reprospect.tools.binaries.cuobjdump import CuObjDump
 from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
 from reprospect.tools.binaries.elf       import ELF
-from reprospect.tools.sass               import RegisterType
+from reprospect.tools.sass.decode        import RegisterType
 from reprospect.utils                    import rich_helpers
 from reprospect.utils.subprocess_helpers import popen_stream
 
@@ -25,8 +24,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-@dataclasses.dataclass(slots = True)
-class NVDisasmFunction(rich_helpers.TableMixin):
+class Function(rich_helpers.TableMixin):
     """
     Data structure holding resource usage information of a kernel, as extracted from a binary.
 
@@ -37,10 +35,17 @@ class NVDisasmFunction(rich_helpers.TableMixin):
     * the number of registers actually used within that span
 
     For instance, if a kernel uses registers ``R0``, ``R1``, and ``R3``, then the entry for
-    :py:const:`reprospect.tools.sass.RegisterType.GPR` will be `(4, 3)` because the span ``R0-R3``
+    :py:const:`reprospect.tools.sass.decode.RegisterType.GPR` will be `(4, 3)` because the span ``R0-R3``
     contains 4 registers, from which 3 are actually used.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    registers : dict[RegisterType, tuple[int, int]] | None = None
+    __slots__ = ('registers',)
+
+    def __init__(self, registers : typing.Optional[dict[RegisterType, tuple[int, int]]] = None) -> None:
+        self.registers : dict[RegisterType, tuple[int, int]] | None = registers
 
     @override
     def to_table(self) -> rich.table.Table:
@@ -56,16 +61,15 @@ class NVDisasmFunction(rich_helpers.TableMixin):
         rt.add_column("Used")
 
         for reg, info in self.registers.items():
-            assert info[0] > 0
             rt.add_row(
-                str(reg),
-                f'{reg.prefix}0-{reg.prefix}{info[0] - 1}' if info[0] > 1 else f'{reg.prefix}0',
+                reg.name,
+                f'{reg}0-{reg}{info[0] - 1}' if info[0] > 1 else f'{reg}0',
                 str(info[1])
             )
 
         return rt
 
-class NVDisasmRegisterState(StrEnum):
+class RegisterState(StrEnum):
     """
     Register state, typically found in the output of ``nvdisasm``.
 
@@ -73,11 +77,11 @@ class NVDisasmRegisterState(StrEnum):
 
     * https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html#nvdisasm
     """
-    ASSIGNMENT             : typing.Final[str] = '^'
-    USAGE                  : typing.Final[str] = 'v'
-    USAGE_AND_REASSIGNMENT : typing.Final[str] = 'x'
-    IN_USE                 : typing.Final[str] = ':'
-    NOT_IN_USE             : typing.Final[str] = ' '
+    ASSIGNMENT             = '^'
+    USAGE                  = 'v'
+    USAGE_AND_REASSIGNMENT = 'x'
+    IN_USE                 = ':'
+    NOT_IN_USE             = ' '
 
     @property
     def used(self) -> bool:
@@ -93,13 +97,13 @@ class NVDisasm:
     The main purpose of ``nvdisasm`` is to disassemble CUDA binary files. Beyond the raw
     disassembly, it can also annotate the disassembled SASS with information, such as register
     liveness range information. ``nvdisasm`` provides liveness ranges for all register types:
-    ``GPR``, ``PRED``, ``UGPR``, ``UPRED``; see also :py:class:reprospect.tools.sass.RegisterType`.
+    ``GPR``, ``PRED``, ``UGPR``, ``UPRED``; see also :py:class:reprospect.tools.sass.decode.RegisterType`.
 
     This class provides functionalities to parse this register liveness range information to
     deduce how many registers each kernel uses.
 
     Note that the register use information extracted by :py:class:`reprospect.tools.binaries.CuObjDump`
-    concerns only the :py:const:`reprospect.tools.sass.RegisterType.GPR` register type. As compared with
+    concerns only the :py:const:`reprospect.tools.sass.decode.RegisterType.GPR` register type. As compared with
     :py:class:`reprospect.tools.binaries.CuObjDump`, this class provides details for all register types.
 
     Note that register liveness range information can also be obtained by parsing the SASS
@@ -117,51 +121,44 @@ class NVDisasm:
       use ``R2-R3`` and ``R8-R9``, but only ``R2`` and ``R8`` appear explicitly.
 
     There are also complexities such as tracking register usage across function calls.
-    Hence, to obtain the register usage information, this class relies on parsing the output
-    of ``nvdisasm``, rather than on implementing its own parser.
+    Consequently, to deduce the register usage, this class relies on parsing the register
+    annotations provided by ``nvdisasm``, rather than on implementing its own logic to infer
+    register usage from dumped SASS code.
 
     References:
 
     * https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html#nvdisasm
     """
-    Function      : typing.Final[typing.Type[NVDisasmFunction]]      = NVDisasmFunction      # pylint: disable=invalid-name
-    RegisterState : typing.Final[typing.Type[NVDisasmRegisterState]] = NVDisasmRegisterState # pylint: disable=invalid-name
+    HEADER_SEP      : typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \+[\-\+]+\+$')
+    HEADER_COLS     : typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \|(?:([A-Z ]+\|)+),?$')
+    TABLE_CUT       : typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\.]+')
+    TABLE_BEGIN_END : typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\-\+]+\+$')
 
-    HEADER_SEP  : typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \+[\-\+]+\+$')
-    HEADER_COLS : typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \|(?:([A-Z ]+\|)+),?$')
-    TABLE_CUT   : typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\.]+')
-    TABLE_END   : typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\-\+]+\+$')
-
-    def __init__(
-        self,
+    def __init__(self,
         file : pathlib.Path,
         arch : typing.Optional[NVIDIAArch] = None,
         demangler : typing.Type[CuppFilt | LlvmCppFilt] = CuppFilt,
     ) -> None:
-        # Inspect the passed `file` using :py:class:`reprospect.tools.binaries.elf.ELF`.
+        """
+        :param arch: Optionally check that `file` is a CUDA binary file for that `arch`.
+        """
         with ELF(file = file) as elf:
-            # Check that `file` is a CUDA binary file.
             if not elf.is_cuda:
-                raise ValueError(f'file {file} is not a CUDA binary file')
-
-            # If the NVIDIA architecture is passed, check that `file` is a CUDA binary file for that arch.
-            if arch:
-                if elf.arch != arch:
-                    raise ValueError(f'file {file} is not a CUDA binary file for arch {arch}')
-            else:
-                arch = elf.arch
+                raise ValueError(f'{file} is not a CUDA binary file')
+            if arch is not None and elf.arch != arch:
+                raise ValueError(f'{file} is not a CUDA binary file for {arch}')
 
         self.file = file
-        self.arch = arch
+        self.arch = arch or elf.arch
         self.demangler = demangler
 
         self.cuobjdump = CuObjDump(file = self.file, arch = self.arch, sass = False)
 
-        self.functions : dict[str, NVDisasmFunction] = {}
+        self.functions : dict[str, Function] = {}
 
-    def parse_sass_with_liveness_range_info(self, mangled : typing.Iterable[str]) -> None: # pylint: disable=too-many-branches, too-many-statements
+    def extract_register_usage_from_liveness_range_info(self, mangled : typing.Iterable[str]) -> None:
         """
-        Parse the SASS with the livness range information so as to extract the register usage information.
+        Extract register usage from liveness range information.
 
         ..note:
 
@@ -169,14 +166,13 @@ class NVDisasm:
             Otherwise, the "life range mode" adds to *all* kernels as many columns as
             needed by the most resource intensive kernel.
         """
-        for function_mangled in mangled: # pylint: disable=too-many-nested-blocks
+        for function_mangled in mangled:
             # Find the function in the symbol table to determine its index.
             matches = self.cuobjdump.symtab[self.cuobjdump.symtab['name'] == function_mangled]
             if matches.shape[0] != 1:
                 raise RuntimeError(f'The function {function_mangled} does not appear or appears more than once in the symbol table.')
             function_idx = matches.iloc[0]['index']
 
-            # Command to run nvdisasm for the given function index.
             cmd : tuple[str | pathlib.Path, ...] = (
                 'nvdisasm',
                 '--life-range-mode=wide',
@@ -188,103 +184,121 @@ class NVDisasm:
 
             logging.info(f'Disassembling function {function_mangled} from {self.file} using {cmd}.')
 
-            found_function   = False
-            reg_types : typing.Optional[list[RegisterType]] = None
-            positions : typing.Optional[dict[RegisterType, list[tuple[int, int]]]] = None
-            used : dict[RegisterType, list[bool]] = {}
+            self.functions[function_mangled] = self.parse_sass_with_liveness_range_info(function_mangled, popen_stream(args = cmd))
 
-            for line in popen_stream(args = cmd):
-                # Find the line that looks like:
-                #   //--------------------- .text.<mangled-function> --------------------------
-                if not found_function:
-                    if re.match(rf'\/\/[\-]+ \.text\.{function_mangled}[ ]+[\-]+', line):
-                        found_function = True
-                    else:
-                        continue
+    @classmethod
+    def parse_sass_with_liveness_range_info(cls, function_mangled : str, sass : typing.Iterator[str]) -> Function: # pylint: disable=too-many-branches, too-many-statements
+        """
+        Parse the SASS with the liveness range information to extract the resource usage.
+
+        It typically looks like::
+
+            // +--------------------+--------+----------------+
+            // |    GPR             | PRED   |   UGPR         |
+            // | # 0 1 2 3 4 5 6 7  |  # 0   | # 0 1 2 3 4 5  |
+            // +--------------------+--------+----------------+
+            // |                    |        |                |
+            // | 1   ^              |        |                |
+            // | 2 ^ :              |        |                |
+            // | 2 : :              |        | 1 ^            |
+            // | 2 v :              |        | 1 :            |
+            // +--------------------+--------+----------------+
+        """
+        found_function = False
+        reg_types : typing.Optional[tuple[RegisterType, ...]] = None
+        positions : typing.Optional[dict[RegisterType, tuple[tuple[int, int], ...]]] = None
+        used : dict[RegisterType, tuple[bool, ...]] = {}
+
+        for line in sass: # pylint: disable=too-many-nested-blocks
+            # Find the line that looks like:
+            #   //--------------------- .text.<mangled-function> --------------------------
+            if not found_function:
+                if re.match(rf'\/\/[\-]+ \.text\.{function_mangled}[ ]+[\-]+', line):
+                    found_function = True
                 else:
-                    # Let's process lines with the headers. They look like:
-                    #   // +--------------------+--------+----------------+
-                    #   // |    GPR             | PRED   |   UGPR         |
-                    #   // | # 0 1 2 3 4 5 6 7  |  # 0   | # 0 1 2 3 4 5  |
-                    #   // +--------------------+--------+----------------+
-                    if reg_types is None:
-                        if re.match(self.HEADER_COLS, line) is not None:
-                            reg_types = [RegisterType[reg] for reg in re.findall(r'[A-Z]+', line)]
-                        # Skipping lines with:
-                        #   .section
-                        #   .sectionflags
-                        #   .sectioninfo
-                        #   .align
-                        elif re.match(pattern = r'^\t\.(section|sectionflags|sectioninfo|align)', string = line) is not None:
-                            continue
-                        # Skip empty lines.
-                        elif len(line.strip()) == 0:
-                            continue
-                        elif re.match(self.HEADER_SEP, line) is not None:
-                            continue
+                    continue
+            else:
+                # Process lines with the headers.
+                if reg_types is None:
+                    if re.match(cls.HEADER_COLS, line) is not None:
+                        reg_types = tuple(RegisterType[reg] for reg in re.findall(r'[A-Z]+', line))
+                    # Skipping lines with:
+                    #   .section
+                    #   .sectionflags
+                    #   .sectioninfo
+                    #   .align
+                    elif re.match(pattern = r'^\t\.(section|sectionflags|sectioninfo|align)', string = line) is not None:
+                        continue
+                    # Skip empty lines.
+                    elif len(line.strip()) == 0:
+                        continue
+                    elif re.match(cls.HEADER_SEP, line) is not None:
+                        continue
+                    else:
+                        raise RuntimeError('unexpected format')
+                else:
+                    if positions is None:
+                        # Extract the register positions for each register type.
+                        if (
+                            (start := line.find('// |')) != -1
+                            and (matched := re.match(pattern = r'^\/\/ \| (?:[0-9]+)?', string = line[start:])) is not None
+                        ):
+                            sections = tuple(x.strip() for x in line[start + matched.span()[1]-1::].strip().rstrip('|').split('|'))
+                            positions = {}
+                            for reg_type, section in zip(reg_types, sections):
+                                matches = re.finditer(r'\d+', section)
+                                if matches is None:
+                                    raise RuntimeError(f'No register positions found for {reg_type} in section "{section}"')
+                                positions[reg_type] = tuple(matched.span() for matched in matches)
+                            used = {reg_type : (False,) * len(positions[reg_type]) for reg_type in reg_types}
                         else:
                             raise RuntimeError('unexpected format')
                     else:
-                        if positions is None:
-                            # Extract the register positions for each register type.
-                            if (
-                                (start := line.find('// |')) != -1
-                                and (matched := re.match(pattern = r'^\/\/ \| (?:[0-9]+)?', string = line[start:])) is not None
-                            ):
-                                sections = [x.strip() for x in line[start + matched.span()[1]-1::].strip().rstrip('|').split('|')]
-                                positions = {}
-                                for (reg_type, section) in zip(reg_types, sections):
-                                    matches = re.finditer(r'\d+', section)
-                                    assert matches is not None, f'No register positions found for {reg_type} in section "{section}"'
-                                    positions[reg_type] = [matched.span() for matched in matches]
-                                used = {reg_type : [False] * len(positions[reg_type]) for reg_type in reg_types}
-                            else:
-                                raise RuntimeError('unexpected format')
-                        else:
-                            # Parse the register usage for each line.
-                            if (
-                                (start := line.find('// |')) != -1
-                                and (matched := re.match(pattern = r'^\/\/ \| (?:[0-9]+)?', string = line[start:])) is not None
-                            ):
-                                sections = [x.strip() for x in line[start + matched.span()[1]-1::].strip().rstrip('|').split('|')]
-                                for (reg_type, section) in zip(reg_types, sections):
-                                    offset = len(section) - len(section.lstrip('0123456789')) - 1
-                                    statuses_as_str = [
-                                        section[pos[0] + offset:pos[1] + offset].strip()
-                                        for pos in positions[reg_type]
-                                    ]
-                                    statuses = [self.RegisterState(s) if s else self.RegisterState.NOT_IN_USE for s in statuses_as_str]
-                                    used[reg_type] = [
-                                        already_used or status.used
-                                        for already_used, status in zip(used[reg_type], statuses)
-                                    ]
-                            elif re.match(self.TABLE_CUT, line) is not None:
+                        # Parse the register usage for each line.
+                        if (
+                            (start := line.find('// |')) != -1
+                            and (matched := re.match(pattern = r'^\/\/ \| (?:[0-9]+)?', string = line[start:])) is not None
+                        ):
+                            sections = tuple(x.strip() for x in line[start + matched.span()[1]-1::].strip().rstrip('|').split('|'))
+                            for reg_type, section in zip(reg_types, sections):
+                                offset = len(section) - len(section.lstrip('0123456789')) - 1
+                                statuses_as_str = tuple(
+                                    section[pos[0] + offset:pos[1] + offset].strip()
+                                    for pos in positions[reg_type]
+                                )
+                                statuses = tuple(RegisterState(s) if s else RegisterState.NOT_IN_USE for s in statuses_as_str)
+                                used[reg_type] = tuple(
+                                    already_used or status.used
+                                    for already_used, status in zip(used[reg_type], statuses)
+                                )
+                        elif re.match(cls.TABLE_CUT, line) is not None:
+                            continue
+                        elif re.match(cls.TABLE_BEGIN_END, line) is not None:
+                            # If all register usages are False, we're beginning rather than ending, so we continue.
+                            if not any(used[RegisterType.GPR]):
                                 continue
-                            elif re.match(self.TABLE_END, line) is not None:
-                                if all(reg is False for reg in used[RegisterType.GPR]):
-                                    continue
-                                break
-                            else:
-                                raise RuntimeError('unexpected format')
+                            break
+                        else:
+                            raise RuntimeError('unexpected format')
 
-            # Extract how many registers are used.
-            registers : dict[RegisterType, tuple[int, int]] = {
-                reg_type: (len(used[reg_type]), sum(1 for is_used in used[reg_type] if is_used))
-                for reg_type in used.keys()
-            }
+        # Extract how many registers are used.
+        registers : dict[RegisterType, tuple[int, int]] = {
+            reg_type : (len(vals), sum(vals)) for reg_type, vals in used.items()
+        }
 
-            self.functions[function_mangled] = self.Function(registers = registers)
+        return Function(registers = registers)
 
     def __str__(self) -> str:
         """
         Rich representation.
         """
-        with rich.console.Console(width = 200) as console, console.capture() as capture:
-            console.print(f'NVDisasm of {self.file} for architecture {self.arch}:')
-            for name, function in self.functions.items():
-                rt = rich.table.Table(show_header = False)
-                rt.add_column(width = 130, overflow = "ellipsis", no_wrap = True)
-                rt.add_row(self.demangler.demangle(name))
-                rt.add_row(function.to_table())
-                console.print(rt, no_wrap = True)
-        return capture.get()
+        def to_table(name : str, function : Function) -> rich.table.Table:
+            rt = rich.table.Table(show_header = False)
+            rt.add_column(width = 130, overflow = "ellipsis", no_wrap = True)
+            rt.add_row(self.demangler.demangle(name))
+            rt.add_row(function.to_table())
+            return rt
+
+        return f'NVDisasm of {self.file} for architecture {self.arch}:\n' + ''.join(
+            rich_helpers.to_string(to_table(name, func)) for name, func in self.functions.items()
+        )

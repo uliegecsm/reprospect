@@ -163,24 +163,10 @@ class RegisterType(StrEnum):
     * ``UGPR``: Uniform General Purpose Registers.
     * ``UPRED``: Uniform Predicate Registers.
     """
-    GPR = 'GPR'
-    PRED = 'PRED'
-    UGPR = 'UGPR'
-    UPRED = 'UPRED'
-
-    @property
-    def prefix(self) -> str:
-        match self:
-            case self.GPR:
-                return 'R'
-            case self.PRED:
-                return 'P'
-            case self.UGPR:
-                return 'UR'
-            case self.UPRED:
-                return 'UP'
-            case _:
-                raise ValueError(f'unsupported register type {self!r}')
+    GPR = 'R'
+    PRED = 'P'
+    UGPR = 'UR'
+    UPRED = 'UP'
 
 @mypy_extensions.mypyc_attr(native_class = True)
 @dataclasses.dataclass(frozen = True, slots = True)

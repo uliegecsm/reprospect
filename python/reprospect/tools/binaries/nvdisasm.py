@@ -178,7 +178,7 @@ class NVDisasm:
                 '--life-range-mode=wide',
                 '--separate-functions',
                 '--print-code',
-                '--cuda-function-index', function_idx,
+                '--cuda-function-index', str(function_idx),
                 self.file,
             )
 

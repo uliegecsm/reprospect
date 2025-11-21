@@ -4,7 +4,6 @@ import functools
 import importlib
 import json
 import logging
-import operator
 import os
 import pathlib
 import re
@@ -187,8 +186,8 @@ class MetricCorrelation:
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
     name : str
-    correlated : dict[str, int] | None = None
-    value : float | None = None
+    correlated : dict[str, int | float] | None = None
+    value : float | int | None = None
 
     def gather(self) -> tuple[str]:
         return (self.name,)
@@ -613,70 +612,72 @@ class NvtxDomain:
 #: A single metric value in profiling results.
 MetricValue : typing.TypeAlias = typing.Union[MetricCorrelation, int, float, str, None]
 
-#: Profiling results for a single entry.
-ProfilingResult : typing.TypeAlias = dict[str, MetricValue]
-
-#: Nested profiling results data structure.
-NestedProfilingResults : typing.TypeAlias = dict[str, typing.Union['NestedProfilingResults', MetricValue]]
-
-class ProfilingResults(rich_helpers.TreeMixin, NestedProfilingResults):
+class ProfilingResults(rich_helpers.TreeMixin, dict):
     """
     Data structure for storing profiling results.
 
     This data structure is a nested (ordered) dictionary.
     It has helper functions that ease dealing with nested values.
     """
-    def query(self, accessors : typing.Iterable[str]) -> typing.Union[NestedProfilingResults, ProfilingResult, MetricValue]:
+    def query(self, accessors : typing.Iterable[str]) -> typing.Union[dict, MetricValue]:
         """
         Get (nested) value from the `accessors` path.
         """
-        return functools.reduce(operator.getitem, accessors, typing.cast(dict, self))
+        current = self
+        for key in accessors:
+            if not isinstance(current, dict):
+                raise TypeError(f'Expected dict at {accessors}, got {type(current).__name__} instead.')
+            current = current[key]
+        return current
 
-    def set(self, accessors: typing.Sequence[str], data : dict[str, MetricValue]) -> None:
+    def query_single_next(self, accessors : typing.Iterable[str]) -> typing.Union[dict, MetricValue]:
         """
-        Set or create (nested) `data` from the `accessors` path.
+        Get (nested) profiling result(s) from the `accessors` path.
+        The last accessor is assumed to provide a dictionary with a single item.
+        This item is returned.
+        """
+        current = self.query(accessors = accessors)
+        if isinstance(current, dict):
+            if len(current) != 1:
+                raise RuntimeError(f'Expected a single item at {accessors}, got {len(current)} items instead.')
+            return next(iter(current.values()))
+        raise TypeError(f'Expected dict at {accessors}, got {type(current).__name__} instead.')
+
+    def assign(self, accessors: typing.Sequence[str], data : dict[str, MetricValue]) -> None:
+        """
+        Assign or create (nested) `data` from the `accessors` path.
         Creates intermediate dictionaries as needed.
         """
-        current = typing.cast(dict, self)
+        current : dict = self
         for accessor in accessors[0:-1]:
-            current = current.setdefault(accessor, {})
+            value = current.setdefault(accessor, {})
+            if not isinstance(value, dict):
+                raise TypeError(f'Expected dict at {accessor}, got {type(value).__name__} instead.')
+            current = value
         current[accessors[-1]] = data
 
-    def aggregate(self, accessors : typing.Iterable[str], keys : typing.Optional[typing.Iterable] = None) -> dict:
+    def aggregate(self, accessors : typing.Iterable[str], keys : typing.Optional[typing.Iterable[str]] = None) -> dict:
         """
         Aggregate values of dictionaries selected by `accessors`.
 
         The selected dictionaries are assumed to be at the last nesting level and to all have the same keys.
         """
         # Get all dictionaries that match 'accessors'.
-        results = self.query(accessors = accessors)
+        current = self.query(accessors = accessors)
 
-        if not isinstance(results, dict):
-            raise TypeError(f'Expected dictionary at {accessors}, got {type(results).__name__}.')
-
-        samples = typing.cast(dict[str, dict[str, MetricValue]], results)
+        if not isinstance(current, dict):
+            raise TypeError(f'Expected dictionary at {accessors}, got {type(current).__name__}.')
 
         # Create the aggregate results.
         # Get keys of the first sample if no keys provided. We assume all samples have the same keys.
         if keys is None:
-            keys = samples[next(iter(samples.keys()))].keys()
+            keys = next(iter(current.values())).keys()
 
-        return {key: sum(s[key] for s in samples.values()) for key in keys}
+        return {key : sum(s[key] for s in current.values()) for key in keys}
 
     @override
     def to_tree(self) -> rich.tree.Tree:
-        def add_branch(*, tree : rich.tree.Tree, data : dict) -> None:
-            for key, value in data.items():
-                if isinstance(value, dict):
-                    branch = tree.add(key)
-                    add_branch(tree = branch, data = value)
-                else:
-                    tree.add(f'{key}: {value}')
-
-        tree = rich.tree.Tree('Profiling results')
-        add_branch(tree = tree, data = self)
-
-        return tree
+        return rich_helpers.nested_dict_to_tree(nested = self, label = 'Profiling results')
 
 def load_ncu_report() -> types.ModuleType:
     """
@@ -803,12 +804,12 @@ class Report:
             # Note that domains are only available if NVTX was enabled during collection.
             if action.domains:
                 for domain in action.domains:
-                    profiling_results.set(
+                    profiling_results.assign(
                         accessors = domain.push_pop_ranges() + (f'{action.name()}-{action.index}',),
                         data = results,
                     )
             else:
-                profiling_results.set((f'{action.name()}-{action.index}',), results)
+                profiling_results.assign((f'{action.name()}-{action.index}',), results)
 
         return profiling_results
 

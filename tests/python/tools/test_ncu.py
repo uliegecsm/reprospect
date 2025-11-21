@@ -13,10 +13,109 @@ from reprospect.test.cmake import get_demangler_for_compiler
 
 from reprospect.tools import ncu
 from reprospect.utils import detect
+from reprospect.utils import rich_helpers
 
 @pytest.fixture(scope = 'session')
 def cmake_cuda_compiler(cmake_file_api) -> dict:
     return cmake_file_api.toolchains['CUDA']['compiler']
+
+class TestProfilingResults:
+    """
+    Tests for :py:class:`reprospect.tools.ncu.ProfilingResults`.
+    """
+    RESULTS : typing.Final[ncu.ProfilingResults] = ncu.ProfilingResults({
+        'nvtx_range_name' : {
+            'nvtx_push_region_A' : {
+                'nvtx_push_region_kernel' : {
+                    'kernel' : {
+                        'smsp__inst_executed.sum' : 100.0,
+                        'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16.0, 'LDC': 16.0,}),
+                        'L1/TEX cache global load sectors.sum' : 0.0
+                    }
+                }
+            },
+            'nvtx_push_region_B' : {
+                'nvtx_push_region_other_kernel' : {
+                    'other_kernel' : {
+                        'smsp__inst_executed.sum' : 100.0,
+                        'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16.0, 'LDC': 16.0,}),
+                        'L1/TEX cache global load sectors.sum' : 0.0
+                    }
+                }
+            }
+        }
+    })
+
+    def test_type(self) -> None:
+        """
+        It derives from :py:class:`dict`.
+        """
+        assert issubclass(ncu.ProfilingResults, dict)
+
+    def test_query(self) -> None:
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query`.
+        """
+        with pytest.raises(KeyError, match = "'nvtx_range_not_in_results'"):
+            self.RESULTS.query(('nvtx_range_not_in_results',))
+
+        assert self.RESULTS.query(('nvtx_range_name',)) == self.RESULTS['nvtx_range_name']
+        assert self.RESULTS.query(('nvtx_range_name', 'nvtx_push_region_A')) == self.RESULTS['nvtx_range_name']['nvtx_push_region_A']
+        assert self.RESULTS.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel')) == self.RESULTS['nvtx_range_name']['nvtx_push_region_A']['nvtx_push_region_kernel']
+        assert self.RESULTS.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel', 'smsp__inst_executed.sum')) == 100.0
+
+    def test_query_single_next(self):
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next`.
+        """
+        assert self.RESULTS.query_single_next(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',)) \
+            == self.RESULTS.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel',))
+
+    def test_assign(self) -> None:
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.assign`.
+        """
+        results = ncu.ProfilingResults()
+
+        results.assign(
+            accessors = ('nvtx_range_name', 'nvtx_push_region_XS', 'nice-kernel'),
+            data = {'my-value' : 42}
+        )
+
+        assert results.query(('nvtx_range_name', 'nvtx_push_region_XS', 'nice-kernel', 'my-value')) == 42
+
+    def test_string_representation(self) -> None:
+        """
+        Test the string representation of :py:meth:`reprospect.tools.ncu.ProfilingResults`.
+        """
+        print(self.RESULTS)
+        assert str(self.RESULTS) == """\
+Profiling results
+└── nvtx_range_name
+    ├── nvtx_push_region_A
+    │   └── nvtx_push_region_kernel
+    │       └── kernel
+    │           ├── smsp__inst_executed.sum: 100.0
+    │           ├── sass__inst_executed_per_opcode: MetricCorrelation(name='sass__inst_executed_per_opcode', correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
+    │           └── L1/TEX cache global load sectors.sum: 0.0
+    └── nvtx_push_region_B
+        └── nvtx_push_region_other_kernel
+            └── other_kernel
+                ├── smsp__inst_executed.sum: 100.0
+                ├── sass__inst_executed_per_opcode: MetricCorrelation(name='sass__inst_executed_per_opcode', correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
+                └── L1/TEX cache global load sectors.sum: 0.0
+"""
+
+        results_A = self.RESULTS.query(("nvtx_range_name", "nvtx_push_region_A"))
+        assert isinstance(results_A, dict)
+        assert rich_helpers.to_string(rich_helpers.nested_dict_to_tree(nested = results_A, label = 'nvtx_push_region_A')) == """\
+nvtx_push_region_A
+└── nvtx_push_region_kernel
+    └── kernel
+        ├── smsp__inst_executed.sum: 100.0
+        ├── sass__inst_executed_per_opcode: MetricCorrelation(name='sass__inst_executed_per_opcode', correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
+        └── L1/TEX cache global load sectors.sum: 0.0
+"""
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:
@@ -255,80 +354,6 @@ class TestSession:
             with pytest.raises(subprocess.CalledProcessError):
                 session.run(executable = bindir / self.GRAPH, opts = ['--something-ncu-does-not-know'], retries = 5)
             mock_sleep.assert_not_called()
-
-class TestProfilingResults:
-    """
-    Tests for :py:class:`reprospect.tools.ncu.ProfilingResults`.
-    """
-    RESULTS : typing.Final[ncu.ProfilingResults] = ncu.ProfilingResults({
-        'nvtx_range_name' : {
-            'push_region_A' : {
-                'push_region_B' : {
-                    'my-kernel' : {
-                        'metric_A' : None,
-                        'metric_B' : 42,
-                        'metric_V' : 'some-nice-value',
-                    }
-                }
-            }
-        }
-    })
-
-    def test_type(self) -> None:
-        """
-        It derives from :py:class:`dict`.
-        """
-        assert issubclass(ncu.ProfilingResults, dict)
-
-    def test_query(self) -> None:
-        """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query`.
-        """
-        with pytest.raises(KeyError, match = "'nvtx_range_not_in_results'"):
-            self.RESULTS.query(('nvtx_range_not_in_results',))
-
-        assert self.RESULTS.query(('nvtx_range_name',)) == self.RESULTS['nvtx_range_name']
-        assert self.RESULTS.query(('nvtx_range_name', 'push_region_A')) == self.RESULTS['nvtx_range_name']['push_region_A']
-        assert self.RESULTS.query(('nvtx_range_name', 'push_region_A', 'push_region_B')) == self.RESULTS['nvtx_range_name']['push_region_A']['push_region_B']
-        assert self.RESULTS.query(('nvtx_range_name', 'push_region_A', 'push_region_B', 'my-kernel', 'metric_V')) == 'some-nice-value'
-
-    def test_set(self) -> None:
-        """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.set`.
-        """
-        self.RESULTS.set(
-            accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel'),
-            data = {'my-value' : 42}
-        )
-
-        assert self.RESULTS.query(('nvtx_range_name', 'push_region_XS', 'nice-kernel', 'my-value')) == 42
-
-    def test_string_representation(self) -> None:
-        """
-        Test the string representation of :py:meth:`reprospect.tools.ncu.ProfilingResults`.
-        """
-        results = ncu.ProfilingResults()
-
-        # Add nested data.
-        results.set(accessors = ("nvtx_range_name", "global_function_name_a_idx_0"), data = {
-            'metric_i' : 15,
-            'metric_ii' : 7,
-        })
-        results.set(accessors = ("nvtx_range_name", "global_function_name_b_idx_1"), data = {
-            'metric_i' : 15,
-            'metric_ii' : 9.456,
-        })
-
-        assert str(results) == """\
-Profiling results
-└── nvtx_range_name
-    ├── global_function_name_a_idx_0
-    │   ├── metric_i: 15
-    │   └── metric_ii: 7
-    └── global_function_name_b_idx_1
-        ├── metric_i: 15
-        └── metric_ii: 9.456
-"""
 
 class TestCacher:
     """

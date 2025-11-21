@@ -102,7 +102,7 @@ class TestNCU(TestGraph):
         """
         Check metric `launch__registers_per_thread_allocated` for graph node A.
         """
-        def matcher(value : ncu.NestedProfilingResults | ncu.MetricValue) -> bool:
+        def matcher(value : dict | ncu.MetricValue) -> bool:
             if isinstance(value, dict):
                 return value['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]
             return False

@@ -95,7 +95,7 @@ class TestNVDisasm:
             match parameters.arch.compute_capability.as_int:
                 case 70 | 75:
                     expt_register_usage_details = {
-                        RegisterType.GPR  : (8, 6), # span of 8 registers (R0-R7), from which 6 are actually used
+                        RegisterType.GPR  : (8, 6),
                         RegisterType.PRED : (1, 1),
                     }
                 case 80 | 86 | 89:

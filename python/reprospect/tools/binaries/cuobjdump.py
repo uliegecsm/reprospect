@@ -10,7 +10,6 @@ Tools that can be used to extract SASS code and kernel attributes from executabl
 
 import dataclasses
 import functools
-import io
 import logging
 import pathlib
 import re
@@ -319,25 +318,26 @@ class CuObjDump:
             if len(self.embedded_cubins) != 1:
                 raise RuntimeError('The host binary file contains more than one embedded CUDA binary file.')
 
-        cmd : tuple[str | pathlib.Path, ...] = ('cuobjdump', '--gpu-architecture', self.arch.as_sm, '--dump-elf', self.file)
-        logging.info(f'Extracting the symbol table from {self.file} using {cmd}.')
+        with ELF(file = self.file) as elf:
+            assert elf.elf is not None
+            [section] = elf.elf.iter_sections(type = 'SHT_SYMTAB')
 
-        # The section starts with
-        #   .section .symtab
-        # and ends with a blank line.
-        output = io.StringIO()
-        dump = False
-        for line in popen_stream(args = cmd):
-            if line.startswith('.section .symtab'):
-                dump = True
-            elif dump and len(line.strip()) == 0:
-                break
-            elif dump:
-                output.write(line + '\n')
-
-        output.seek(0)
-
-        return pandas.read_csv(output, sep = r'\s+')
+            return pandas.DataFrame(
+                data = (
+                    (
+                        idx,
+                        symbol['st_value'],
+                        symbol['st_size'],
+                        symbol['st_info']['bind'],
+                        symbol['st_info']['type'],
+                        symbol['st_other']['visibility'],
+                        symbol['st_shndx'],
+                        symbol.name or '(null)',
+                    )
+                    for idx, symbol in enumerate(section.iter_symbols())
+                ),
+                columns = ('index', 'value', 'size', 'bind', 'type', 'visibility', 'shndx', 'name'),
+            )
 
     @functools.cached_property
     def file_is_cubin(self) -> bool:

@@ -30,6 +30,7 @@ extensions = [
     'sphinx.ext.intersphinx',
     'sphinx_github_style',
     'sphinxcontrib.bibtex',
+    'sphinxcontrib.mermaid',
     'sphinxcontrib.tikz',
     'sphinxemoji.sphinxemoji',
     'myst_nb',

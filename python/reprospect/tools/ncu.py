@@ -106,11 +106,11 @@ class Metric:
     def __repr__(self) -> str:
         return self.name + '(' + ','.join(f'{sub}={value}' for sub, value in self.subs.items()) + ')'
 
-    def gather(self) -> list[str]:
+    def gather(self) -> tuple[str, ...]:
         """
         Get the list of sub-metric names or the metric name itself if no sub-metrics are defined.
         """
-        return [f'{self.name}{sub}' for sub in self.subs.keys()]
+        return tuple(f'{self.name}{sub}' for sub in self.subs.keys())
 
 class MetricCounterRollUp(StrEnum):
     """
@@ -190,8 +190,8 @@ class MetricCorrelation:
     correlated : dict[str, int] | None = None
     value : float | None = None
 
-    def gather(self) -> list[str]:
-        return [self.name]
+    def gather(self) -> tuple[str]:
+        return (self.name,)
 
 def counter_name_from(
     *,
@@ -383,11 +383,11 @@ class L1TEXCache:
 
     LocalStore : typing.Final[typing.Type[L1TEXCacheLocalStore]] = L1TEXCacheLocalStore # pylint: disable=invalid-name
 
-def gather(metrics : typing.Iterable[Metric | MetricCorrelation]) -> list[str]:
+def gather(metrics : typing.Iterable[Metric | MetricCorrelation]) -> tuple[str, ...]:
     """
     Retrieve all sub-metric names, e.g. to pass them to ``ncu``.
     """
-    return [name for metric in metrics for name in metric.gather()]
+    return tuple(name for metric in metrics for name in metric.gather())
 
 @attrs.define(frozen = True, slots = True)
 class SessionCommand:
@@ -545,7 +545,7 @@ class Range:
 
     This class loads the actions that are in the range.
     """
-    def __init__(self, report, index : int, includes : typing.Optional[list[str]] = None, excludes : typing.Optional[list[str]] = None) -> None:
+    def __init__(self, report, index : int, includes : typing.Optional[typing.Iterable[str]] = None, excludes : typing.Optional[typing.Iterable[str]] = None) -> None:
         self.index = index
         self.range = report.range_by_idx(self.index)
 
@@ -553,7 +553,7 @@ class Range:
 
         self._load_actions_by_nvtx(includes = includes, excludes = excludes)
 
-    def _load_actions_by_nvtx(self, includes : typing.Optional[list[str]] = None, excludes : typing.Optional[list[str]] = None) -> None:
+    def _load_actions_by_nvtx(self, includes : typing.Optional[typing.Iterable[str]] = None, excludes : typing.Optional[typing.Iterable[str]] = None) -> None:
         """
         If both `includes` and `excludes` are empty, load all actions.
         """
@@ -770,8 +770,8 @@ class Report:
         self,
         range_idx : int,
         metrics : typing.Iterable[Metric | MetricCorrelation],
-        includes : typing.Optional[list[str]] = None,
-        excludes : typing.Optional[list[str]] = None,
+        includes : typing.Optional[typing.Iterable[str]] = None,
+        excludes : typing.Optional[typing.Iterable[str]] = None,
         demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None,
     ) -> ProfilingResults:
         """
@@ -899,7 +899,7 @@ class Cacher(cacher.Cacher):
     def hash_impl(self, *,
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
-        nvtx_includes : typing.Optional[list[str]] = None,
+        nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
         metrics : typing.Optional[typing.Iterable[Metric | MetricCorrelation]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
         env : typing.Optional[typing.MutableMapping] = None,

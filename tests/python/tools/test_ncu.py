@@ -65,7 +65,7 @@ class TestSession:
             metrics = METRICS,
             nvtx_includes = map(
                 lambda x: f'application_domain@{x}/',
-                ['launch_saxpy_kernel_first_time', 'launch_saxpy_kernel_second_time'],
+                ('launch_saxpy_kernel_first_time', 'launch_saxpy_kernel_second_time'),
             ),
             retries = 5,
         )
@@ -91,9 +91,9 @@ class TestSession:
 
         # Extract results with NVTX filtering. Request only the 2 first metrics.
         with pytest.raises(RuntimeError, match = 'no action found'):
-            results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ['outer_useless_range'])
+            results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ('outer_useless_range',))
 
-        results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ['application_domain@outer_useless_range'])
+        results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ('application_domain@outer_useless_range',))
 
         logging.info(results_filtered)
 
@@ -221,10 +221,10 @@ class TestSession:
         assert isinstance(metrics_node_C, dict)
         assert isinstance(metrics_node_D, dict)
 
-        metrics_aggregate = results.aggregate(accessors = [], keys = [
+        metrics_aggregate = results.aggregate(accessors = (), keys = (
             'L1/TEX cache global store sectors.sum',
             'L1/TEX cache global load sectors.sum',
-        ])
+        ))
 
         # Node A makes one load and one store.
         assert metrics_node_A['L1/TEX cache global load sectors.sum']  == 1

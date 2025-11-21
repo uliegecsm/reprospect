@@ -1,5 +1,6 @@
 import pathlib
 import sys
+import typing
 
 import pytest
 
@@ -19,9 +20,9 @@ class TestSaxpy(reprospect.CMakeAwareTestCase):
     """
     General test class.
     """
-    NAME = 'tests_cpp_cuda_saxpy'
+    NAME : typing.Final[str] = 'tests_cpp_cuda_saxpy'
 
-    TARGET_SOURCE = pathlib.Path('tests') / 'cpp' / 'cuda' / 'test_saxpy.cpp'
+    TARGET_SOURCE : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'test_saxpy.cpp'
 
     @classmethod
     @override
@@ -55,14 +56,14 @@ class TestNCU(TestSaxpy):
     `ncu`-focused analysis.
     """
 
-    METRICS = [
-        ncu.Metric(name = 'launch__registers_per_thread_allocated')
-    ]
+    METRICS : typing.Final[tuple[ncu.Metric]] = (
+        ncu.Metric(name = 'launch__registers_per_thread_allocated'),
+    )
 
-    NVTX_INCLUDES = [
+    NVTX_INCLUDES : typing.Final[tuple[str, ...]] = (
         'application_domain@launch_saxpy_kernel_first_time/',
         'application_domain@launch_saxpy_kernel_second_time/',
-    ]
+    )
 
     @pytest.fixture(scope = 'class')
     def report(self) -> ncu.Report:

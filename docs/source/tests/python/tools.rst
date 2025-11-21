@@ -15,6 +15,7 @@ Binaries
    tools/binaries/cuobjdump
    tools/binaries/demangle
    tools/binaries/elf
+   tools/binaries/nvdisasm
 
 Cacher
 ------

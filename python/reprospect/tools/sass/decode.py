@@ -17,6 +17,11 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum import StrEnum
+
 @dataclasses.dataclass(frozen = True, slots = True)
 class ControlCode:
     """
@@ -148,6 +153,20 @@ class ControlCode:
             wait = wait_barriers,
             reuse = reuse_flags,
         )
+
+class RegisterType(StrEnum):
+    """
+    Register types:
+
+    * ``GPR``: General Purpose Registers.
+    * ``PRED``: Predicate Registers.
+    * ``UGPR``: Uniform General Purpose Registers.
+    * ``UPRED``: Uniform Predicate Registers.
+    """
+    GPR = 'R'
+    PRED = 'P'
+    UGPR = 'UR'
+    UPRED = 'UP'
 
 @mypy_extensions.mypyc_attr(native_class = True)
 @dataclasses.dataclass(frozen = True, slots = True)

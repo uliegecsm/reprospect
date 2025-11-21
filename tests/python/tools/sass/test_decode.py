@@ -5,8 +5,9 @@ import re
 
 import pytest
 
-from reprospect.tools import sass, binaries
-from reprospect.utils import cmake
+from reprospect.tools             import sass, binaries
+from reprospect.tools.sass.decode import RegisterType
+from reprospect.utils             import cmake
 
 from tests.python.compilation import get_compilation_output
 from tests.python.cublas      import CuBLAS
@@ -35,6 +36,13 @@ ISETP_NE_U32_AND = \
         /*00c0*/                   ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT ;       /* 0x000000ff0000720c */
                                                                                      /* 0x040fe40003f05070 */
 """
+
+class TestRegisterType:
+    """
+    Test :py:class:`reprospect.tools.sass.decode.RegisterType`.
+    """
+    assert str(RegisterType.GPR) == 'R'
+    assert RegisterType.GPR.name == 'GPR'
 
 class TestDecoder:
     """

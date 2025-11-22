@@ -52,24 +52,6 @@ def df_to_table(
 
     return rich_tools.df_to_table(df, rich_table = rich_table, show_index = show_index, **kwargs)
 
-def nested_dict_to_tree(
-    nested : dict[str, typing.Any],
-    label : str,
-) -> rich.tree.Tree:
-    """
-    Convert a nested dictionary to a :py:class:`rich.tree.Tree`.
-    """
-    rt = rich.tree.Tree(label)
-    def add_branch(*, tree : rich.tree.Tree, data : dict) -> None:
-        for key, value in data.items():
-            if isinstance(value, dict):
-                branch = tree.add(str(key))
-                add_branch(tree = branch, data = value)
-            else:
-                tree.add(f'{key}: {value}')
-    add_branch(tree = rt, data = nested)
-    return rt
-
 class TableMixin(metaclass = abc.ABCMeta):
     """
     Define :py:meth:`__str__` based on the :py:class:`rich.table.Table` representation from :py:meth:`to_table`.

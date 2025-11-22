@@ -13,7 +13,6 @@ from reprospect.test.cmake import get_demangler_for_compiler
 
 from reprospect.tools import ncu
 from reprospect.utils import detect
-from reprospect.utils import rich_helpers
 
 @pytest.fixture(scope = 'session')
 def cmake_cuda_compiler(cmake_file_api) -> dict:
@@ -23,73 +22,80 @@ class TestProfilingResults:
     """
     Tests for :py:class:`reprospect.tools.ncu.ProfilingResults`.
     """
-    RESULTS : typing.Final[ncu.ProfilingResults] = ncu.ProfilingResults({
-        'nvtx_range_name' : {
-            'nvtx_push_region_A' : {
-                'nvtx_push_region_kernel' : {
-                    'kernel' : {
-                        'smsp__inst_executed.sum' : 100.0,
-                        'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16.0, 'LDC': 16.0,}),
-                        'L1/TEX cache global load sectors.sum' : 0.0
-                    }
-                }
-            },
-            'nvtx_push_region_B' : {
-                'nvtx_push_region_other_kernel' : {
-                    'other_kernel' : {
-                        'smsp__inst_executed.sum' : 100.0,
-                        'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16.0, 'LDC': 16.0,}),
-                        'L1/TEX cache global load sectors.sum' : 0.0
-                    }
-                }
+    @pytest.fixture(scope = 'class')
+    def results(self) -> ncu.ProfilingResults:
+        results = ncu.ProfilingResults()
+        results.assign_metrics(
+            accessors = ('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
+            data = {
+                'smsp__inst_executed.sum' : 100.0,
+                'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16.0, 'LDC': 16.0,}),
+                'L1/TEX cache global load sectors.sum' : 0.0
             }
-        }
-    })
+        )
+        results.assign_metrics(
+            accessors = ('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
+            data = {
+                'smsp__inst_executed.sum' : 96.0,
+                'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16.0, 'LDC': 16.0,}),
+                'L1/TEX cache global load sectors.sum' : 0.0
+            }
+        )
+        return results
 
-    def test_type(self) -> None:
-        """
-        It derives from :py:class:`dict`.
-        """
-        assert issubclass(ncu.ProfilingResults, dict)
-
-    def test_query(self) -> None:
+    def test_query(self, results : ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query`.
         """
         with pytest.raises(KeyError, match = "'nvtx_range_not_in_results'"):
-            self.RESULTS.query(('nvtx_range_not_in_results',))
+            results.query(('nvtx_range_not_in_results',))
 
-        assert self.RESULTS.query(('nvtx_range_name',)) == self.RESULTS['nvtx_range_name']
-        assert self.RESULTS.query(('nvtx_range_name', 'nvtx_push_region_A')) == self.RESULTS['nvtx_range_name']['nvtx_push_region_A']
-        assert self.RESULTS.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel')) == self.RESULTS['nvtx_range_name']['nvtx_push_region_A']['nvtx_push_region_kernel']
-        assert self.RESULTS.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel', 'smsp__inst_executed.sum')) == 100.0
+        results_A = results.query(('nvtx_range_name', 'nvtx_push_region_A'))
+        assert isinstance(results_A, ncu.ProfilingResults)
 
-    def test_query_single_next(self):
+        metrics_A_kernel = results.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'))
+        assert isinstance(metrics_A_kernel, ncu.ProfilingMetrics)
+        assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.0
+
+    def test_query_metrics(self, results : ncu.ProfilingResults) -> None:
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_metrics`.
+        """
+        metrics_A_kernel = results.query_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'))
+        assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.0
+
+    def test_query_single_next(self, results : ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next`.
         """
-        assert self.RESULTS.query_single_next(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',)) \
-            == self.RESULTS.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel',))
+        assert results.query_single_next(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',)) \
+            == results.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel',))
 
-    def test_assign(self) -> None:
+    def test_query_single_next_metrics(self, results : ncu.ProfilingResults) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.assign`.
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next_metrics`.
         """
-        results = ncu.ProfilingResults()
+        metrics_A_kernel = results.query_single_next_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',))
+        assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.0
 
-        results.assign(
-            accessors = ('nvtx_range_name', 'nvtx_push_region_XS', 'nice-kernel'),
-            data = {'my-value' : 42}
+    def test_assign_metrics(self) -> None:
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.assign_metrics`.
+        """
+        other_results = ncu.ProfilingResults()
+
+        other_results.assign_metrics(
+            accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel'),
+            data = {'my-value' : 42},
         )
 
-        assert results.query(('nvtx_range_name', 'nvtx_push_region_XS', 'nice-kernel', 'my-value')) == 42
+        assert other_results.query_metrics(accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel',))['my-value'] == 42
 
-    def test_string_representation(self) -> None:
+    def test_string_representation(self, results : ncu.ProfilingResults) -> None:
         """
         Test the string representation of :py:meth:`reprospect.tools.ncu.ProfilingResults`.
         """
-        print(self.RESULTS)
-        assert str(self.RESULTS) == """\
+        assert str(results) == """\
 Profiling results
 └── nvtx_range_name
     ├── nvtx_push_region_A
@@ -101,15 +107,15 @@ Profiling results
     └── nvtx_push_region_B
         └── nvtx_push_region_other_kernel
             └── other_kernel
-                ├── smsp__inst_executed.sum: 100.0
+                ├── smsp__inst_executed.sum: 96.0
                 ├── sass__inst_executed_per_opcode: MetricCorrelation(name='sass__inst_executed_per_opcode', correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
                 └── L1/TEX cache global load sectors.sum: 0.0
 """
 
-        results_A = self.RESULTS.query(("nvtx_range_name", "nvtx_push_region_A"))
-        assert isinstance(results_A, dict)
-        assert rich_helpers.to_string(rich_helpers.nested_dict_to_tree(nested = results_A, label = 'nvtx_push_region_A')) == """\
-nvtx_push_region_A
+        results_A = results.query(("nvtx_range_name", "nvtx_push_region_A"))
+        assert isinstance(results_A, ncu.ProfilingResults)
+        assert str(results_A) == """\
+Profiling results
 └── nvtx_push_region_kernel
     └── kernel
         ├── smsp__inst_executed.sum: 100.0
@@ -178,16 +184,10 @@ class TestSession:
 
         logging.info(results)
 
-        assert isinstance(results, dict)
-
-        assert len(results) > 1
-        assert 'saxpy_kernel-0' in results.keys()
-        assert 'saxpy_kernel-1' in results.keys()
-        assert isinstance(results['saxpy_kernel-0'], dict)
-        assert isinstance(results['saxpy_kernel-1'], dict)
-        assert all(x in results['saxpy_kernel-0'] for x in EXPT_METRICS_AND_METADATA)
-        assert all(x in results['saxpy_kernel-1'] for x in EXPT_METRICS_AND_METADATA)
-
+        metrics_saxpy_kernel_0 = results.query_metrics(('saxpy_kernel-0',))
+        metrics_saxpy_kernel_1 = results.query_metrics(('saxpy_kernel-1',))
+        assert all(x in metrics_saxpy_kernel_0 for x in EXPT_METRICS_AND_METADATA)
+        assert all(x in metrics_saxpy_kernel_1 for x in EXPT_METRICS_AND_METADATA)
         # Extract results with NVTX filtering. Request only the 2 first metrics.
         with pytest.raises(RuntimeError, match = 'no action found'):
             results_filtered = report.extract_metrics_in_range(0, metrics = METRICS[:2], includes = ('outer_useless_range',))
@@ -196,37 +196,31 @@ class TestSession:
 
         logging.info(results_filtered)
 
-        assert isinstance(results_filtered, dict)
+        results_filtered_first  = results_filtered.query(('launch_saxpy_kernel_first_time',))
+        results_filtered_second = results_filtered.query(('launch_saxpy_kernel_second_time',))
 
-        results_filtered_first  = results_filtered['launch_saxpy_kernel_first_time']
-        results_filtered_second = results_filtered['launch_saxpy_kernel_second_time']
+        assert isinstance(results_filtered_first,  ncu.ProfilingResults)
+        assert isinstance(results_filtered_second, ncu.ProfilingResults)
 
-        assert isinstance(results_filtered_first, dict)
-        assert isinstance(results_filtered_second, dict)
-
-        assert len(results_filtered_first)  == 1
-        assert len(results_filtered_second) == 1
-        assert 'saxpy_kernel-0' in results_filtered_first .keys()
-        assert 'saxpy_kernel-1' in results_filtered_second.keys()
-        assert isinstance(results_filtered_first ['saxpy_kernel-0'], dict)
-        assert isinstance(results_filtered_second['saxpy_kernel-1'], dict)
-        assert all(x in results_filtered_first ['saxpy_kernel-0'] for x in EXPT_METRICS_AND_METADATA[:2])
-        assert all(x in results_filtered_second['saxpy_kernel-1'] for x in EXPT_METRICS_AND_METADATA[:2])
+        metrics_filtered_first_saxpy_kernel_0  = results_filtered_first.query_metrics( ('saxpy_kernel-0',))
+        metrics_filtered_second_saxpy_kernel_1 = results_filtered_second.query_metrics(('saxpy_kernel-1',))
+        assert all(x in metrics_filtered_first_saxpy_kernel_0  for x in EXPT_METRICS_AND_METADATA[:2])
+        assert all(x in metrics_filtered_second_saxpy_kernel_1 for x in EXPT_METRICS_AND_METADATA[:2])
 
         # A few checks.
-        assert results['saxpy_kernel-0']['launch__block_dim_x'] == 128
-        assert results['saxpy_kernel-0']['launch__block_dim_y'] == 1
-        assert results['saxpy_kernel-0']['launch__block_dim_z'] == 1
-        assert results['saxpy_kernel-0']['launch__grid_dim_x'] == 8
-        assert results['saxpy_kernel-0']['launch__grid_dim_y'] == 1
-        assert results['saxpy_kernel-0']['launch__grid_dim_z'] == 1
+        assert metrics_saxpy_kernel_0['launch__block_dim_x'] == 128
+        assert metrics_saxpy_kernel_0['launch__block_dim_y'] == 1
+        assert metrics_saxpy_kernel_0['launch__block_dim_z'] == 1
+        assert metrics_saxpy_kernel_0['launch__grid_dim_x'] == 8
+        assert metrics_saxpy_kernel_0['launch__grid_dim_y'] == 1
+        assert metrics_saxpy_kernel_0['launch__grid_dim_z'] == 1
 
-        assert results['saxpy_kernel-0']['mangled'] == '_Z12saxpy_kerneljfPKfPf'
-        assert results['saxpy_kernel-0']['demangled'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
+        assert metrics_saxpy_kernel_0['mangled'] == '_Z12saxpy_kerneljfPKfPf'
+        assert metrics_saxpy_kernel_0['demangled'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
 
         for metric in EXPT_METRICS_AND_METADATA[:2]:
-            assert results_filtered_first ['saxpy_kernel-0'][metric] == results['saxpy_kernel-0'][metric]
-            assert results_filtered_second['saxpy_kernel-1'][metric] == results['saxpy_kernel-1'][metric]
+            assert metrics_filtered_first_saxpy_kernel_0 [metric] == metrics_saxpy_kernel_0[metric]
+            assert metrics_filtered_second_saxpy_kernel_1[metric] == metrics_saxpy_kernel_1[metric]
 
     def test_collect_correlated_metrics_saxpy(self, bindir, workdir) -> None:
         """
@@ -246,22 +240,20 @@ class TestSession:
 
         logging.info(results)
 
-        assert 'saxpy_kernel-0' in results.keys()
-        assert isinstance(results['saxpy_kernel-0'], dict)
-        assert 'sass__inst_executed_per_opcode' in results['saxpy_kernel-0']
+        metrics_saxpy_kernel_0 = results.query_metrics(('saxpy_kernel-0',))
+        assert isinstance(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'], ncu.MetricCorrelation)
 
-        assert sum(results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated.values()) == results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].value
+        # Check that the sum of correlated values matches the total value.
+        assert sum(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated.values()) == metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].value
 
         # Check that the executed instructions include FFMA and IMAD.
-        assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['FFMA'] > 0
-        assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['IMAD'] > 0
+        assert metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated['FFMA'] > 0
+        assert metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated['IMAD'] > 0
 
         # Check load instructions.
-        assert isinstance(results['saxpy_kernel-0'], dict)
-        assert isinstance(results['saxpy_kernel-0']['sass__inst_executed_per_opcode'], ncu.MetricCorrelation)
-        assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated is not None
-        assert 'LD' not in results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated
-        assert results['saxpy_kernel-0']['sass__inst_executed_per_opcode'].correlated['LDG'] > 0
+        assert metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated is not None
+        assert 'LD' not in metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated
+        assert metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated['LDG'] > 0
 
     def test_collect_basic_metrics_graph(self, bindir, workdir, cmake_cuda_compiler : dict) -> None:
         """
@@ -282,7 +274,6 @@ class TestSession:
         assert report.report.num_ranges() == 1
 
         # Extract results.
-        # For some reason, ncu cannot demangle the signature of node A when compiling with clang 21.1.3.
         results = report.extract_metrics_in_range(0, metrics = METRICS, demangler = get_demangler_for_compiler(cmake_cuda_compiler['id']))
 
         logging.info(results)
@@ -293,14 +284,18 @@ class TestSession:
         match cmake_cuda_compiler['id']:
             case 'NVIDIA':
                 NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0EJEEvPj'
-                assert all(f'add_and_increment_kernel-{idx}' == k for idx, k in enumerate(results.keys()))
+                # Check that the nodes are all present and signatures are as expected. If a node is node present, we expect a KeyError.
+                metrics_node_A = results.query_metrics(accessors = ('add_and_increment_kernel-0',))
             case 'Clang':
                 # For some reason, ncu cannot demangle the signature of node A when compiling with clang 21.1.3.
                 NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0ETpTnjJEEvPj'
-                assert NODE_A_MANGLED + '-0' in results.keys()
-                assert all(f'add_and_increment_kernel-{idx}' in results.keys() for idx in range(1, 4))
+                metrics_node_A = results.query_metrics(accessors = (f'{NODE_A_MANGLED}-0',))
             case _:
                 raise ValueError(f"unsupported compiler ID {cmake_cuda_compiler['id']}")
+
+        metrics_node_B = results.query_metrics(accessors = ('add_and_increment_kernel-1',))
+        metrics_node_C = results.query_metrics(accessors = ('add_and_increment_kernel-2',))
+        metrics_node_D = results.query_metrics(accessors = ('add_and_increment_kernel-3',))
 
         # Check global load/store for each node, and aggregated as well.
         SIGNATURES = {
@@ -310,17 +305,12 @@ class TestSession:
             'node_D' : lambda x : re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)3, \(unsigned int\)1, \(unsigned int\)2|3u, 1u, 2u)>\(unsigned int\s*\*\)', x['demangled']),
         }
 
-        metrics_node_A = next(filter(SIGNATURES['node_A'], results.values()))
-        metrics_node_B = next(filter(SIGNATURES['node_B'], results.values()))
-        metrics_node_C = next(filter(SIGNATURES['node_C'], results.values()))
-        metrics_node_D = next(filter(SIGNATURES['node_D'], results.values()))
+        assert SIGNATURES['node_A'](metrics_node_A)
+        assert SIGNATURES['node_B'](metrics_node_B)
+        assert SIGNATURES['node_C'](metrics_node_C)
+        assert SIGNATURES['node_D'](metrics_node_D)
 
-        assert isinstance(metrics_node_A, dict)
-        assert isinstance(metrics_node_B, dict)
-        assert isinstance(metrics_node_C, dict)
-        assert isinstance(metrics_node_D, dict)
-
-        metrics_aggregate = results.aggregate(accessors = (), keys = (
+        metrics_aggregate = results.aggregate_metrics(accessors = (), keys = (
             'L1/TEX cache global store sectors.sum',
             'L1/TEX cache global load sectors.sum',
         ))

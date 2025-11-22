@@ -102,14 +102,15 @@ class TestNCU(TestGraph):
         """
         Check metric `launch__registers_per_thread_allocated` for graph node A.
         """
-        def matcher(value : dict | ncu.MetricValue) -> bool:
-            if isinstance(value, dict):
-                return value['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]
-            return False
+        match self.toolchains['CUDA']['compiler']['id']:
+            case 'NVIDIA':
+                metrics_node_A = results.query_metrics(accessors = ('add_and_increment_kernel-0',))
+            case 'Clang':
+                NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0ETpTnjJEEvPj'
+                metrics_node_A = results.query_metrics(accessors = (f'{NODE_A_MANGLED}-0',))
+            case _:
+                raise ValueError(f"unsupported compiler ID {self.toolchains['CUDA']['compiler']['id']}")
 
-        metrics = list(filter(matcher, results.values()))
+        assert metrics_node_A['demangled'] == self.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]
 
-        assert len(metrics) == 1
-        kernel = metrics[0]
-
-        assert kernel[self.METRICS[0].name] == 512
+        assert metrics_node_A['launch__registers_per_thread_allocated'] == 512

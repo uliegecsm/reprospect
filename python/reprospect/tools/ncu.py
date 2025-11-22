@@ -1,3 +1,5 @@
+# pylint: disable=too-many-lines
+
 import copy
 import dataclasses
 import functools
@@ -187,7 +189,7 @@ class MetricCorrelation:
     """
     name : str
     correlated : dict[str, int | float] | None = None
-    value : float | int | None = None
+    value : int | float | None = None
 
     def gather(self) -> tuple[str]:
         return (self.name,)
@@ -612,72 +614,174 @@ class NvtxDomain:
 #: A single metric value in profiling results.
 MetricValue : typing.TypeAlias = typing.Union[MetricCorrelation, int, float, str, None]
 
-class ProfilingResults(rich_helpers.TreeMixin, dict):
+@typing.runtime_checkable
+class ProfilingMetrics(typing.Protocol):
     """
-    Data structure for storing profiling results.
+    Protocol representing a mapping of profiling metric keys to their values.
+    """
+    def __getitem__(self, key : str, /) -> MetricValue:
+        ...
 
-    This data structure is a nested (ordered) dictionary.
-    It has helper functions that ease dealing with nested values.
+    def __contains__(self, key: str, /) -> bool:
+        ...
+
+    def keys(self) -> typing.Iterable[str]:
+        ...
+
+    def values(self) -> typing.Iterable[MetricValue]:
+        ...
+
+    def items(self) -> typing.Iterable[tuple[str, MetricValue]]:
+        ...
+
+@dataclasses.dataclass(slots = True, frozen = False)
+class ProfilingResults(rich_helpers.TreeMixin):
     """
-    def query(self, accessors : typing.Iterable[str]) -> typing.Union[dict, MetricValue]:
+    Nested tree data structure for storing profiling results.
+
+    The data structure consists of internal nodes and leaf nodes:
+
+    * The internal nodes are themselves :py:class:`ProfilingResults` instances. They
+      organise results hierarchically by the profiling range (e.g. NVTX range)
+      that they were obtained from, terminating by the kernel name.
+    * The leaf nodes contain the actual profiling metric key-value pairs. Any type implementing
+      the protocol :py:class:`ProfilingMetrics` can be used as a profiling metrics entry.
+
+    This class provides convenient methods for hierarchical data access and manipulation.
+
+    Example structure::
+
+        Profiling results
+        └── 'nvtx range'
+            ├── 'nvtx region'
+            │   └── 'kernel'
+            │       ├── 'metric i'  -> MetricValue
+            │       └── 'metric ii' -> MetricValue
+            └── 'other nvtx region'
+                └── 'other kernel'
+                    ├── 'metric i'  -> MetricValue
+                    └── 'metric ii' -> MetricValue
+    """
+    data : dict[str, 'ProfilingResults | ProfilingMetrics'] = dataclasses.field(default_factory = dict)
+
+    def query(self, accessors : typing.Iterable[str]) -> typing.Union['ProfilingResults', ProfilingMetrics]:
         """
-        Get (nested) value from the `accessors` path.
+        Get the internal node in the hierarchy or the leaf node with profiling metrics
+        at accessor path `accessors`.
         """
-        current = self
-        for key in accessors:
-            if not isinstance(current, dict):
-                raise TypeError(f'Expected dict at {accessors}, got {type(current).__name__} instead.')
-            current = current[key]
+        current : ProfilingResults | ProfilingMetrics = self
+        for accessor in accessors:
+            if not isinstance(current, ProfilingResults):
+                raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__} instead.')
+            current = current.data[accessor]
         return current
 
-    def query_single_next(self, accessors : typing.Iterable[str]) -> typing.Union[dict, MetricValue]:
+    def query_metrics(self, accessors : typing.Iterable[str]) -> ProfilingMetrics:
         """
-        Get (nested) profiling result(s) from the `accessors` path.
-        The last accessor is assumed to provide a dictionary with a single item.
-        This item is returned.
+        Query the accessor path `accessors`, check that it leads to a leaf node with profiling metrics,
+        and return this leaf node with profiling metrics.
         """
         current = self.query(accessors = accessors)
-        if isinstance(current, dict):
-            if len(current) != 1:
-                raise RuntimeError(f'Expected a single item at {accessors}, got {len(current)} items instead.')
-            return next(iter(current.values()))
-        raise TypeError(f'Expected dict at {accessors}, got {type(current).__name__} instead.')
+        if not isinstance(current, ProfilingMetrics):
+            raise TypeError(f'Expecting leaf node with profiling metrics at {accessors}, got {type(current).__name__} instead.')
+        return current
 
-    def assign(self, accessors: typing.Sequence[str], data : dict[str, MetricValue]) -> None:
+    def query_single_next(self, accessors : typing.Iterable[str]) -> typing.Union['ProfilingResults', ProfilingMetrics]:
         """
-        Assign or create (nested) `data` from the `accessors` path.
-        Creates intermediate dictionaries as needed.
+        Query the accessor path `accessors`, check that it leads to an internal node with exactly
+        one entry, and return this single entry.
+
+        This member function is useful for instance to access a single kernel
+        within an NVTX range or region.
+
+        >>> from reprospect.tools.ncu import ProfilingResults
+        >>> results = ProfilingResults()
+        >>> results.assign_metrics(('my_nvtx_range', 'my_nvtx_region', 'my_kernel'), {'my_metric' : 42})
+        >>> results.query_single_next(('my_nvtx_range', 'my_nvtx_region'))
+        {'my_metric': 42}
         """
-        current : dict = self
+        current = self.query(accessors = accessors)
+        if isinstance(current, ProfilingResults):
+            if len(current.data) != 1:
+                raise RuntimeError(f'Expecting a single entry at {accessors}, got {len(current.data)} entries instead.')
+            return next(iter(current.data.values()))
+        raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__} instead.')
+
+    def query_single_next_metrics(self, accessors : typing.Iterable[str]) -> ProfilingMetrics:
+        """
+        Query the accessor path `accessors`, check that it leads to an internal node with exactly
+        one entry, check that this entry is a leaf node with profiling metrics, and return this
+        leaf node with profiling metrics.
+        """
+        current = self.query_single_next(accessors = accessors)
+        if not isinstance(current, ProfilingMetrics):
+            raise TypeError(f'Expecting leaf node with profiling metrics as the single entry at {accessors}, got {type(current).__name__} instead.')
+        return current
+
+    def assign_metrics(self, accessors: typing.Sequence[str], data : ProfilingMetrics) -> None:
+        """
+        Set the leaf node with profiling metrics `data` at accessor path `accessors`.
+
+        Creates the internal nodes in the hierarchy if needed.
+        """
+        current = self
         for accessor in accessors[0:-1]:
-            value = current.setdefault(accessor, {})
-            if not isinstance(value, dict):
-                raise TypeError(f'Expected dict at {accessor}, got {type(value).__name__} instead.')
+            value = current.data.setdefault(accessor, ProfilingResults())
+            if not isinstance(value, ProfilingResults):
+                raise TypeError(f'Expecting internal node at {accessor}, got {type(value).__name__} instead.')
             current = value
-        current[accessors[-1]] = data
+        current.data[accessors[-1]] = data
 
-    def aggregate(self, accessors : typing.Iterable[str], keys : typing.Optional[typing.Iterable[str]] = None) -> dict:
+    def aggregate_metrics(self, accessors : typing.Iterable[str], keys : typing.Optional[typing.Iterable[str]] = None) -> dict[str, int | float]:
         """
-        Aggregate values of dictionaries selected by `accessors`.
+        Aggregate metric values across multiple leaf nodes with profiling metrics at accessor path `accessors`.
 
-        The selected dictionaries are assumed to be at the last nesting level and to all have the same keys.
+        The selected leaf nodes with profiling metrics are expected to all have the same metric keys.
         """
         # Get all dictionaries that match 'accessors'.
         current = self.query(accessors = accessors)
 
-        if not isinstance(current, dict):
-            raise TypeError(f'Expected dictionary at {accessors}, got {type(current).__name__}.')
+        if not isinstance(current, ProfilingResults):
+            raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__}.')
 
         # Create the aggregate results.
-        # Get keys of the first sample if no keys provided. We assume all samples have the same keys.
+        # Get keys of the first sample if no keys provided. All entries are expected to have the same keys.
         if keys is None:
-            keys = next(iter(current.values())).keys()
+            value = next(iter(current.data.values()))
+            assert isinstance(value, ProfilingMetrics)
+            keys = value.keys()
 
-        return {key : sum(s[key] for s in current.values()) for key in keys}
+        def get(s : ProfilingResults | ProfilingMetrics, key : str) -> int | float:
+            if not isinstance(s, ProfilingMetrics):
+                raise TypeError(f'Expecting leaf node with profiling metrics within the hierarchy at {accessors}, got {type(s).__name__}')
+            v = s[key]
+            if not isinstance(v, int | float):
+                raise TypeError(f'Expecting int or float for {key}, got {type(v).__name__}')
+            return v
+
+        return {key : sum(get(s, key) for s in current.data.values()) for key in keys}
+
+    def __len__(self) -> int:
+        """
+        Get the number of internal nodes.
+        """
+        return len(self.data)
 
     @override
     def to_tree(self) -> rich.tree.Tree:
-        return rich_helpers.nested_dict_to_tree(nested = self, label = 'Profiling results')
+        """
+        Convert to a :py:class:`rich.tree.Tree` for nice printing.
+        """
+        rt = rich.tree.Tree('Profiling results')
+        def add_branch(*, tree : rich.tree.Tree, data : ProfilingResults | ProfilingMetrics) -> None:
+            for key, value in data.data.items() if isinstance(data, ProfilingResults) else data.items():
+                if isinstance(value, ProfilingResults | ProfilingMetrics):
+                    branch = tree.add(str(key))
+                    add_branch(tree = branch, data = value)
+                else:
+                    tree.add(f'{key}: {value}')
+        add_branch(tree = rt, data = self)
+        return rt
 
 def load_ncu_report() -> types.ModuleType:
     """
@@ -804,12 +908,12 @@ class Report:
             # Note that domains are only available if NVTX was enabled during collection.
             if action.domains:
                 for domain in action.domains:
-                    profiling_results.assign(
+                    profiling_results.assign_metrics(
                         accessors = domain.push_pop_ranges() + (f'{action.name()}-{action.index}',),
                         data = results,
                     )
             else:
-                profiling_results.assign((f'{action.name()}-{action.index}',), results)
+                profiling_results.assign_metrics((f'{action.name()}-{action.index}',), results)
 
         return profiling_results
 

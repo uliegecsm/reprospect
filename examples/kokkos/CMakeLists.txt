@@ -37,4 +37,5 @@ find_package(
     COMPONENTS kp_nvtx_connector
 )
 
+add_subdirectory(graph)
 add_subdirectory(view)

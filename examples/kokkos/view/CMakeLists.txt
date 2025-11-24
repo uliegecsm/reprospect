@@ -1,2 +1,1 @@
 add_one_example(allocation_tracing)
-test_environment(examples_kokkos_view_allocation_tracing KOKKOS_TOOLS_NVTX_CONNECTOR_LIB set $<TARGET_FILE:KokkosTools::kp_nvtx_connector>)

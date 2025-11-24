@@ -23,9 +23,12 @@ function(add_one_example FILE)
 
     pytest_skip_mark(${EXECUTABLE})
 
-    test_environment(${EXECUTABLE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
+    if(ReProspect_EXAMPLES_WITH_SOURCES)
+        test_environment(${EXECUTABLE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
+    endif()
     test_environment(${EXECUTABLE} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
     test_environment(${EXECUTABLE} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
+    test_environment(${EXECUTABLE} KOKKOS_TOOLS_NVTX_CONNECTOR_LIB set $<TARGET_FILE:KokkosTools::kp_nvtx_connector>)
 
 endfunction()
 

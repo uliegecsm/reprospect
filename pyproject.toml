@@ -106,3 +106,9 @@ disable = [
     "too-many-locals",
     "too-many-positional-arguments",
 ]
+
+[tool.cibuildwheel]
+build = []
+archs = []
+
+build-verbosity = 1

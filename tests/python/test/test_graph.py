@@ -102,9 +102,11 @@ class TestNCU(TestGraph):
         """
         Check metric `launch__registers_per_thread_allocated` for graph node A.
         """
-        def matcher(value : ncu.ProfilingMetrics) -> bool:
-            return value['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]
+        def matcher(value : tuple[str, ncu.ProfilingMetrics]) -> bool:
+            return value[1]['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]
 
-        [metrics] = list(filter(matcher, results.iter_metrics(accessors = ())))
+        [(key, metrics)] = filter(matcher, results.iter_metrics(accessors = ()))
+
+        logging.info(f'Kernel {key!r} matched. Its metrics are {metrics}.')
 
         assert metrics['launch__registers_per_thread_allocated'] == 512

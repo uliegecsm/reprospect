@@ -672,7 +672,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
         current : ProfilingResults | ProfilingMetrics = self
         for accessor in accessors:
             if not isinstance(current, ProfilingResults):
-                raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__} instead.')
+                raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r} instead.')
             current = current.data[accessor]
         return current
 
@@ -683,10 +683,10 @@ class ProfilingResults(rich_helpers.TreeMixin):
         """
         current = self.query(accessors = accessors)
         if not isinstance(current, ProfilingMetrics):
-            raise TypeError(f'Expecting leaf node with profiling metrics at {accessors}, got {type(current).__name__} instead.')
+            raise TypeError(f'Expecting leaf node with profiling metrics at {accessors}, got {type(current).__name__!r} instead.')
         return current
 
-    def query_single_next(self, accessors : typing.Iterable[str]) -> typing.Union['ProfilingResults', ProfilingMetrics]:
+    def query_single_next(self, accessors : typing.Iterable[str]) -> tuple[str, typing.Union['ProfilingResults', ProfilingMetrics]]:
         """
         Query the accessor path `accessors`, check that it leads to an internal node with exactly
         one entry, and return this single entry.
@@ -698,37 +698,38 @@ class ProfilingResults(rich_helpers.TreeMixin):
         >>> results = ProfilingResults()
         >>> results.assign_metrics(('my_nvtx_range', 'my_nvtx_region', 'my_kernel'), {'my_metric' : 42})
         >>> results.query_single_next(('my_nvtx_range', 'my_nvtx_region'))
-        {'my_metric': 42}
+        ('my_kernel', {'my_metric': 42})
         """
         current = self.query(accessors = accessors)
         if isinstance(current, ProfilingResults):
-            if len(current.data) != 1:
-                raise RuntimeError(f'Expecting a single entry at {accessors}, got {len(current.data)} entries instead.')
-            return next(iter(current.data.values()))
-        raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__} instead.')
+            if len(current) != 1:
+                raise RuntimeError(f'Expecting a single entry at {accessors}, got {len(current)} entries instead.')
+            return next(iter(current.data.items()))
+        raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r} instead.')
 
-    def query_single_next_metrics(self, accessors : typing.Iterable[str]) -> ProfilingMetrics:
+    def query_single_next_metrics(self, accessors : typing.Iterable[str]) -> tuple[str, ProfilingMetrics]:
         """
         Query the accessor path `accessors`, check that it leads to an internal node with exactly
         one entry, check that this entry is a leaf node with profiling metrics, and return this
         leaf node with profiling metrics.
         """
-        current = self.query_single_next(accessors = accessors)
-        if not isinstance(current, ProfilingMetrics):
-            raise TypeError(f'Expecting leaf node with profiling metrics as the single entry at {accessors}, got {type(current).__name__} instead.')
-        return current
+        key, value = self.query_single_next(accessors = accessors)
+        if not isinstance(value, ProfilingMetrics):
+            raise TypeError(f'Expecting leaf node {key!r} with profiling metrics as the single entry at {accessors}, got {type(value).__name__!r} instead.')
+        return key, value
 
-    def iter_metrics(self, accessors : typing.Iterable[str]) -> typing.Iterator[ProfilingMetrics]:
+    def iter_metrics(self, accessors : typing.Iterable[str]) -> typing.Generator[tuple[str, ProfilingMetrics], None, None]:
         """
         Query the accessor path `accessors`, check that it leads to an internal node, check that all entries
         are leaf nodes with profiling metrics, and return an iterator over these leaf nodes with profiling metrics.
         """
         current = self.query(accessors = accessors)
         if not isinstance(current, ProfilingResults):
-            raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__} instead.')
-        if not all(isinstance(value, ProfilingMetrics) for value in current.data.values()):
-            raise TypeError(f'Expecting all entries to be leaf nodes with profiling metrics at {accessors}.')
-        return iter(m for m in current.data.values() if isinstance(m, ProfilingMetrics))
+            raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r} instead.')
+        for key, value in current.data.items():
+            if not isinstance(value, ProfilingMetrics):
+                raise TypeError(f'Expecting entry {key!r} to be a leaf node with profiling metrics at {accessors}.')
+            yield key, value
 
     def assign_metrics(self, accessors: typing.Sequence[str], data : ProfilingMetrics) -> None:
         """
@@ -748,21 +749,23 @@ class ProfilingResults(rich_helpers.TreeMixin):
         """
         Aggregate metric values across multiple leaf nodes with profiling metrics at accessor path `accessors`.
 
-        The selected leaf nodes with profiling metrics are expected to all have the same metric keys.
+        :param keys: Specific metric keys to aggregate. If :py:obj:`None`, uses all keys from the first leaf node.
         """
         current = self.query(accessors = accessors)
 
         if not isinstance(current, ProfilingResults):
-            raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__}.')
+            raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r}.')
 
-        # Get keys of the first sample if no keys provided. All entries are expected to have the same keys.
         if keys is None:
             value = next(iter(current.data.values()))
             assert isinstance(value, ProfilingMetrics)
             keys = value.keys()
 
         return {
-            key : sum(v for m in current.data.values() if isinstance(m, ProfilingMetrics) if isinstance(v := m[key], int | float))
+            key : sum(
+                v for _, m in current.iter_metrics(accessors = ())
+                if isinstance(v := m[key], int | float)
+            )
             for key in keys
         }
 

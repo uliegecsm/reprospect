@@ -28,17 +28,17 @@ class TestProfilingResults:
         results.assign_metrics(
             accessors = ('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
             data = {
-                'smsp__inst_executed.sum' : 100.0,
-                'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16.0, 'LDC': 16.0,}),
-                'L1/TEX cache global load sectors.sum' : 0.0
+                'smsp__inst_executed.sum' : 100.,
+                'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16., 'LDC': 16.,}),
+                'L1/TEX cache global load sectors.sum' : 0.
             }
         )
         results.assign_metrics(
             accessors = ('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
             data = {
-                'smsp__inst_executed.sum' : 96.0,
-                'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16.0, 'LDC': 16.0,}),
-                'L1/TEX cache global load sectors.sum' : 0.0
+                'smsp__inst_executed.sum' : 96.,
+                'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16., 'LDC': 16.,}),
+                'L1/TEX cache global load sectors.sum' : 0.
             }
         )
         return results
@@ -55,35 +55,38 @@ class TestProfilingResults:
 
         metrics_A_kernel = results.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'))
         assert isinstance(metrics_A_kernel, ncu.ProfilingMetrics)
-        assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.0
+        assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.
 
     def test_query_metrics(self, results : ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_metrics`.
         """
-        metrics_A_kernel = results.query_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'))
-        assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.0
+        metrics = results.query_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'))
+        assert metrics['smsp__inst_executed.sum'] == 100.
 
     def test_query_single_next(self, results : ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next`.
         """
-        assert results.query_single_next(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',)) \
-            == results.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel',))
+        key, metrics = results.query_single_next(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',))
+        assert key == 'kernel'
+        assert metrics == results.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel',))
 
     def test_query_single_next_metrics(self, results : ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next_metrics`.
         """
-        metrics_A_kernel = results.query_single_next_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',))
-        assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.0
+        key, metrics = results.query_single_next_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',))
+        assert key == 'kernel'
+        assert metrics['smsp__inst_executed.sum'] == 100.
 
     def test_iter_metrics(self, results : ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.iter_metrics`.
         """
-        metrics_A_kernel = next(results.iter_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel')))
-        assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.0
+        [(key, metrics)] = results.iter_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel'))
+        assert key == 'kernel'
+        assert metrics['smsp__inst_executed.sum'] == 100.
 
     def test_assign_metrics(self) -> None:
         """
@@ -97,6 +100,23 @@ class TestProfilingResults:
         )
 
         assert other_results.query_metrics(accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel',))['my-value'] == 42
+
+    def test_aggregate_metrics(self) -> None:
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.aggregate_metrics`.
+        """
+        other_results = ncu.ProfilingResults()
+        other_results.assign_metrics(accessors = ('range-0', 'range-1', 'kernel-A'), data = {'my-counter-int' : 42, 'my-counter-float' : 666.})
+        other_results.assign_metrics(accessors = ('range-0', 'range-1', 'kernel-B'), data = {'my-counter-int' : 43, 'my-counter-float' : 667.})
+        other_results.assign_metrics(accessors = ('range-0', 'range-1', 'kernel-C'), data = {'my-counter-int' : 44, 'my-counter-float' : 668.})
+
+        aggregated = {'my-counter-int' : 42 + 43 + 44, 'my-counter-float' : 666. + 667. + 668.}
+
+        assert other_results.aggregate_metrics(accessors = ('range-0', 'range-1')) == aggregated
+
+        aggregated.pop('my-counter-float')
+
+        assert other_results.aggregate_metrics(accessors = ('range-0', 'range-1'), keys = ('my-counter-int',)) == aggregated
 
     def test_string_representation(self, results : ncu.ProfilingResults) -> None:
         """
@@ -291,7 +311,6 @@ class TestSession:
         match cmake_cuda_compiler['id']:
             case 'NVIDIA':
                 NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0EJEEvPj'
-                # Check that the nodes are all present and signatures are as expected. If a node is node present, we expect a KeyError.
                 metrics_node_A = results.query_metrics(accessors = ('add_and_increment_kernel-0',))
             case 'Clang':
                 # For some reason, ncu cannot demangle the signature of node A when compiling with clang 21.1.3.

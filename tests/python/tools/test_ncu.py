@@ -78,6 +78,13 @@ class TestProfilingResults:
         metrics_A_kernel = results.query_single_next_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',))
         assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.0
 
+    def test_iter_metrics(self, results : ncu.ProfilingResults) -> None:
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.iter_metrics`.
+        """
+        metrics_A_kernel = next(results.iter_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel')))
+        assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.0
+
     def test_assign_metrics(self) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.assign_metrics`.

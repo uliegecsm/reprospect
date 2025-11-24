@@ -718,6 +718,18 @@ class ProfilingResults(rich_helpers.TreeMixin):
             raise TypeError(f'Expecting leaf node with profiling metrics as the single entry at {accessors}, got {type(current).__name__} instead.')
         return current
 
+    def iter_metrics(self, accessors : typing.Iterable[str]) -> typing.Iterator[ProfilingMetrics]:
+        """
+        Query the accessor path `accessors`, check that it leads to an internal node, check that all entries
+        are leaf nodes with profiling metrics, and return an iterator over these leaf nodes with profiling metrics.
+        """
+        current = self.query(accessors = accessors)
+        if not isinstance(current, ProfilingResults):
+            raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__} instead.')
+        if not all(isinstance(value, ProfilingMetrics) for value in current.data.values()):
+            raise TypeError(f'Expecting all entries to be leaf nodes with profiling metrics at {accessors}.')
+        return iter(m for m in current.data.values() if isinstance(m, ProfilingMetrics))
+
     def assign_metrics(self, accessors: typing.Sequence[str], data : ProfilingMetrics) -> None:
         """
         Set the leaf node with profiling metrics `data` at accessor path `accessors`.
@@ -738,28 +750,21 @@ class ProfilingResults(rich_helpers.TreeMixin):
 
         The selected leaf nodes with profiling metrics are expected to all have the same metric keys.
         """
-        # Get all dictionaries that match 'accessors'.
         current = self.query(accessors = accessors)
 
         if not isinstance(current, ProfilingResults):
             raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__}.')
 
-        # Create the aggregate results.
         # Get keys of the first sample if no keys provided. All entries are expected to have the same keys.
         if keys is None:
             value = next(iter(current.data.values()))
             assert isinstance(value, ProfilingMetrics)
             keys = value.keys()
 
-        def get(s : ProfilingResults | ProfilingMetrics, key : str) -> int | float:
-            if not isinstance(s, ProfilingMetrics):
-                raise TypeError(f'Expecting leaf node with profiling metrics within the hierarchy at {accessors}, got {type(s).__name__}')
-            v = s[key]
-            if not isinstance(v, int | float):
-                raise TypeError(f'Expecting int or float for {key}, got {type(v).__name__}')
-            return v
-
-        return {key : sum(get(s, key) for s in current.data.values()) for key in keys}
+        return {
+            key : sum(v for m in current.data.values() if isinstance(m, ProfilingMetrics) if isinstance(v := m[key], int | float))
+            for key in keys
+        }
 
     def __len__(self) -> int:
         """

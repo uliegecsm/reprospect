@@ -48,26 +48,26 @@
     \node[box, below = 1.5cm of binaries] (profiling) {
         \textbf{\textcolor{NavyBlue}{Kernel profiling}}\\
         {\small \emph{Nsight Compute}}\\
-        {\small Hardware counters.}
+        {\small Metrics}
     };
 
     % Binary analysis.
     \node[box, left = 2.25cm of profiling] (static) {
         \textbf{\textcolor{NavyBlue}{Binary analysis}}\\
-        {\small \texttt{Cuda} \emph{binary utilities}}\\
-        {\small SASS}
+        {\small CUDA \emph{binary utilities}}\\
+        {\small ELF and SASS}
     };
 
     % API tracing.
     \node[box, right = 2.25cm of profiling] (tracing) {
         \textbf{\textcolor{NavyBlue}{API tracing}}\\
         {\small \emph{Nsight Systems}}\\
-        {\small Event records}
+        {\small Records}
     };
 
     % Analysis results.
     \node[box, below = 1.5cm of profiling] (analysis) {
-        \textbf{\textcolor{NavyBlue}{Collected data}}\\
+        \textbf{\textcolor{NavyBlue}{Programmatic analysis}}\\
         {\small Assertions}
     };
 
@@ -84,7 +84,7 @@
     \end{scope}
 
     \node[draw = black, fill = white, anchor = west] at ($(reprospect.south west)!0.5!(reprospect.south)$) {
-        \texttt{ReProspect} - Framework for ReProducible \texttt{Cuda} prospecting
+        \texttt{ReProspect} - Framework for ReProducible CUDA prospecting
     };
 
     % Generate arrow.

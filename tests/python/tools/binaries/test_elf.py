@@ -11,10 +11,10 @@ import semantic_version
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuObjDump
-from reprospect.tools.binaries.elf import ELF, TkInfo, CuInfo
+from reprospect.tools.binaries.elf import ELF, TkInfo, CuInfo, NvInfo, NvInfoEntry, NvInfoEIFMT, NvInfoEIATTR
 from reprospect.utils              import cmake, nvcc
 
-from tests.python.compilation import get_compilation_output
+from tests.python.compilation import get_compilation_output, get_cubin_name
 from tests.python.cublas      import CuBLAS
 from tests.python.parameters  import Parameters, PARAMETERS
 
@@ -268,3 +268,167 @@ class TestSaxpy:
             assert tkinfo.tool_version == expt_tool_version
 
             assert all(x in tkinfo.tool_options for x in expt_tool_options)
+
+class TestNvInfo:
+    """
+    Tests for :py:class:`reprospect.tools.binaries.elf.NvInfo`.
+    """
+    DATA_0 : typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\t\x00\x00\x00`\x018\x00\x03\x198\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x00\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x08\x00`\x00\x00\x00p\x01\x00\x00\x04\x05\x0c\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x04\x1e\x04\x00\x00\x00\x00\x00'
+    DATA_1 : typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\x0c\x00\x00\x00`\x01x\x00\x03\x19x\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x04\x00\x10\x00\x00\x00'
+    DATA_2 : typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\x0f\x00\x00\x00`\x01x\x00\x03\x19x\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x04\x00\x10\x00\x00\x00'
+    DATA_3 : typing.Final[bytes] = b'\x046\x04\x00\x01\x00\x00\x00\x047\x04\x00\x80\x00\x00\x00\x04\n\x08\x00\x02\x00\x00\x00`\x01\x1c\x00\x03\x19\x1c\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x03\x00\x18\x00\x00\xf0\x11\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x02\x00\x10\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x01\x00\x08\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\x11\x00\x03\x1b\xff\x00\x041\x04\x00\x10\x00\x00\x00\x04\x1c\x08\x00`\x00\x00\x00\xe0\x00\x00\x00'
+
+    def test_parse_data_0(self) -> None:
+        """
+        Parse :py:attr:`DATA_0`.
+        """
+        assert NvInfo.parse(data = self.DATA_0).attributes == (
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION,    value = (int('0x82', base = 16),)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.NVAL, eiattr = NvInfoEIATTR.SW2861232_WAR,       value = None),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.PARAM_CBANK,         value = (int('0x9', base = 16), int('0x380160', base = 16))),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE,    value = int('0x38', base = 16)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,         value = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x00'),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,        value = int('0xff', base = 16)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MERCURY_ISA_VERSION, value = 0),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value = (int('0x60', base = 16), int('0x170', base = 16))),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.MAX_THREADS,         value = 3 * (int('0x1', base = 16),)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CRS_STACK_SIZE,      value = (int('0x0', base = 16),)),
+        )
+
+    def test_parse_data_1(self) -> None:
+        """
+        Parse :py:attr:`DATA_1`.
+        """
+        assert NvInfo.parse(data = self.DATA_1).attributes == (
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION,    value = (int('0x82', base = 16),)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.NVAL, eiattr = NvInfoEIATTR.SW2861232_WAR,       value = None),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.PARAM_CBANK,         value = (int('0xc', base = 16), int('0x780160', base = 16))),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE,    value = int('0x78', base = 16)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,         value = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01'),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,        value = int('0xff', base = 16)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MERCURY_ISA_VERSION, value = 0),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value = (int('0x10', base = 16),)),
+        )
+
+    def test_parse_data_2(self) -> None:
+        """
+        Parse :py:attr:`DATA_2`.
+        """
+        assert NvInfo.parse(data = self.DATA_2).attributes == (
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION,    value = (int('0x82', base = 16),)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.NVAL, eiattr = NvInfoEIATTR.SW2861232_WAR,       value = None),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.PARAM_CBANK,         value = (int('0xf', base = 16), int('0x780160', base = 16))),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE,    value = int('0x78', base = 16)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,         value = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01'),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,        value = int('0xff', base = 16)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MERCURY_ISA_VERSION, value = 0),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value = (int('0x10', base = 16),)),
+        )
+
+    def test_parse_data_3(self) -> None:
+        """
+        Parse :py:attr:`DATA_3`.
+
+        ``cuobjdump`` parses :py:attr:`DATA_3` as::
+
+            <0x1>
+            Attribute: EIATTR_SW_WAR
+            Format: EIFMT_SVAL
+            Value: 0x1
+            <0x2>
+            Attribute: EIATTR_CUDA_API_VERSION
+            Format: EIFMT_SVAL
+            Value: 0x80
+            <0x3>
+            Attribute: EIATTR_PARAM_CBANK
+            Format: EIFMT_SVAL
+            Value: 0x2 0x1c0160
+            <0x4>
+            Attribute: EIATTR_CBANK_PARAM_SIZE
+            Format: EIFMT_HVAL
+            Value: 0x1c
+            <0x5>
+            Attribute: EIATTR_KPARAM_INFO
+            Format: EIFMT_SVAL
+            Value: Index : 0x0 Ordinal : 0x3 Offset  : 0x18 Size    : 0x4
+                Pointee's logAlignment : 0x0 Space : 0x0 cbank : 0x1f Parameter Space : CBANK
+            <0x6>
+            Attribute: EIATTR_KPARAM_INFO
+            Format: EIFMT_SVAL
+            Value: Index : 0x0 Ordinal : 0x2 Offset  : 0x10 Size    : 0x8
+                Pointee's logAlignment : 0x0 Space : 0x0 cbank : 0x1f Parameter Space : CBANK
+            <0x7>
+            Attribute: EIATTR_KPARAM_INFO
+            Format: EIFMT_SVAL
+            Value: Index : 0x0 Ordinal : 0x1 Offset  : 0x8 Size    : 0x8
+                Pointee's logAlignment : 0x0 Space : 0x0 cbank : 0x1f Parameter Space : CBANK
+            <0x8>
+            Attribute: EIATTR_KPARAM_INFO
+            Format: EIFMT_SVAL
+            Value: Index : 0x0 Ordinal : 0x0 Offset  : 0x0 Size    : 0x4
+                Pointee's logAlignment : 0x0 Space : 0x0 cbank : 0x1f Parameter Space : CBANK
+            <0x9>
+            Attribute: EIATTR_MAXREG_COUNT
+            Format: EIFMT_HVAL
+            Value: 0xff
+            <0x10>
+            Attribute: EIATTR_INT_WARP_WIDE_INSTR_OFFSETS
+            Format: EIFMT_SVAL
+            Value: 0x10
+            <0x11>
+            Attribute: EIATTR_EXIT_INSTR_OFFSETS
+            Format: EIFMT_SVAL
+            Value: 0x60 0xe0
+        """
+        assert NvInfo.parse(data = self.DATA_3).attributes == (
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.SW_WAR,                  value = (int('0x1', base = 16),)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION,        value = (int('0x80', base = 16),)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.PARAM_CBANK,             value = (int('0x2', base = 16), int('0x1c0160', base = 16))),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE,        value = int('0x1c', base = 16)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,             value = b'\x00\x00\x00\x00\x03\x00\x18\x00\x00\xf0\x11\x00'),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,             value = b'\x00\x00\x00\x00\x02\x00\x10\x00\x00\xf0!\x00'),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,             value = b'\x00\x00\x00\x00\x01\x00\x08\x00\x00\xf0!\x00'),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,             value = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\x11\x00'),
+            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,            value = int('0xff', base = 16)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.WARP_WIDE_INSTR_OFFSETS, value = (int('0x10', base = 16),)),
+            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.EXIT_INSTR_OFFSETS,      value = (int('0x60', base = 16), int('0xe0', base = 16))),
+        )
+
+    @pytest.fixture(scope = 'class')
+    @staticmethod
+    def version() -> semantic_version.Version:
+        return nvcc.get_version()
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    def test(self, version, parameters : Parameters, cmake_file_api : cmake.FileAPI, workdir : pathlib.Path) -> None:
+        """
+        Extract the `.nv.info.<mangled>` section of the kernel.
+        """
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
+
+        output, _ = get_compilation_output(
+            source = FILE,
+            cwd = workdir,
+            arch = parameters.arch,
+            object_file = False,
+            resource_usage = False,
+            cmake_file_api = cmake_file_api,
+        )
+        _, cubin = CuObjDump.extract(
+            file = output,
+            arch = parameters.arch,
+            cwd = workdir,
+            sass = False,
+            cubin = get_cubin_name(
+                compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                file = output,
+                arch = parameters.arch,
+                object_file = False,
+            ),
+        )
+        with ELF(file = cubin) as elf:
+            assert {
+                NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION, value = (int(f'{version.major}{version.minor}'),)),
+                NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE, value = int('0x1c', base = 16)),
+                NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,     value = int('0xff', base = 16)),
+            }.issubset(elf.nvinfo(mangled = '_Z12saxpy_kernelfPKfPfj').attributes)

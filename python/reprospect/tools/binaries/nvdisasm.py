@@ -187,7 +187,7 @@ class NVDisasm:
             self.functions[function_mangled] = self.parse_sass_with_liveness_range_info(function_mangled, popen_stream(args = cmd))
 
     @classmethod
-    def parse_sass_with_liveness_range_info(cls, function_mangled : str, sass : typing.Iterator[str]) -> Function: # pylint: disable=too-many-branches, too-many-statements
+    def parse_sass_with_liveness_range_info(cls, function_mangled : str, sass : typing.Iterator[str]) -> Function: # pylint: disable=too-many-branches
         """
         Parse the SASS with the liveness range information to extract the resource usage.
 

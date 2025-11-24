@@ -84,3 +84,26 @@ packages = ["reprospect"]
 
 [tool.ruff.lint.per-file-ignores]
 "docs/source/conf.py" = ["E402"]
+
+[tool.pylint.main]
+fail-on = [
+    "I",
+]
+fail-under = 10
+
+[tool.pylint."messages control"]
+enable = [
+    "useless-suppression",
+]
+disable = [
+    "c-extension-no-member",
+    "line-too-long",
+    "logging-fstring-interpolation",
+    "missing-class-docstring",
+    "missing-function-docstring",
+    "missing-module-docstring",
+    "too-few-public-methods",
+    "too-many-arguments",
+    "too-many-locals",
+    "too-many-positional-arguments",
+]

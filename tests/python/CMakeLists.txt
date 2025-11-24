@@ -15,7 +15,6 @@ function(add_pytest FILE)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-    test_environment(${FILENAME} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR}/python)
     test_environment(${FILENAME} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
     test_environment(${FILENAME} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
     test_environment(${FILENAME} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})

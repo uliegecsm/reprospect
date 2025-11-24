@@ -11,13 +11,8 @@ PROJECT_DIR = pathlib.Path(__file__).parent.parent.parent
 
 sys.path.append(str(PROJECT_DIR))
 
-PATH_TO_REPROSPECT = PROJECT_DIR / 'python'
-
-# Allow Sphinx to find it.
-sys.path.append(str(PATH_TO_REPROSPECT))
-
-# Allow subprocesses launched by Sphinx to find it.
-os.environ['PYTHONPATH'] = str(PATH_TO_REPROSPECT) + os.path.pathsep + os.environ.get('PYTHONPATH', '')
+# Allow subprocesses launched by Sphinx to find ReProspect.
+os.environ['PYTHONPATH'] = str(PROJECT_DIR) + os.path.pathsep + os.environ.get('PYTHONPATH', '')
 
 from reprospect import __version__
 release = __version__
@@ -69,7 +64,7 @@ autodoc_default_options = {
 
 apidoc_modules = [
     {
-        'path' : PROJECT_DIR / 'python' / 'reprospect',
+        'path' : PROJECT_DIR / 'reprospect',
         'destination' : 'api',
         'max_depth' : 4,
         'implicit_namespaces' : True,

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.27 FATAL_ERROR)
 
 # Retrieve the version.
-file(READ "${CMAKE_SOURCE_DIR}/python/reprospect/__init__.py" VERSION_FILE_CONTENTS)
+file(READ "${CMAKE_SOURCE_DIR}/reprospect/__init__.py" VERSION_FILE_CONTENTS)
 string(REGEX MATCH "__version__ = '([^']+)'" _match "${VERSION_FILE_CONTENTS}")
 
 # Define the project.

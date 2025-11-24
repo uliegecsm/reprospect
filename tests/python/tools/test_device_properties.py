@@ -62,10 +62,10 @@ class TestCuda(unittest.TestCase):
 
         for device in range(instance.device_count):
             logging.info(f'Looking at attributes of device {device}.')
-            # For now, all Cuda devices have a 32 warp size.
+            # For now, all CUDA devices have a 32 warp size.
             assert instance.get_device_attribute(value_type = ctypes.c_int, attribute = cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_WARP_SIZE, device = device) == 32
 
-            # For now, all Cuda devices have a 1024 max threads per block.
+            # For now, all CUDA devices have a 1024 max threads per block.
             assert instance.get_device_attribute(value_type = ctypes.c_int, attribute = cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK, device = device) == 1024
 
             # Get a few interesting attributes.

@@ -96,7 +96,7 @@ def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDic
     # CMake preset.
     partial['cmake_preset'] = '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CUDA'].ID])))
 
-    # We always compile for the 'real' Cuda architecture, see also
+    # We always compile for the 'real' CUDA architecture, see also
     # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
     partial['cmake_cuda_architectures'] = f'{partial['nvidia_compute_capability']}-real'
 

@@ -9,7 +9,7 @@
 
 namespace reprospect::tests
 {
-//! Check a @c Cuda driver call returns @c cudaError::cudaSuccess.
+//! Check a CUDA driver call returns @c cudaError::cudaSuccess.
 inline void check_cuda_call(
     const cudaError_enum status,
     const char* const statement,

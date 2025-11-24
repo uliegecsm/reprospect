@@ -455,7 +455,7 @@ jobs:
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v5
-            - run: ruff check --config ruff.toml
+            - run: ruff check --config python/pyproject.toml
 
     deploy:
         needs: [setup-job-matrix, build-images, tests, examples, install-as-package-and-test, documentation, pylint, ruff]

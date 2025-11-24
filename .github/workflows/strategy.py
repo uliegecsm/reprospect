@@ -78,7 +78,7 @@ def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDic
         case 'clang':
             partial['compilers']['CXX'].path = 'clang++'
         case _:
-            raise ValueError(f'unsupported CXX compiler ID {partial['compilers']['CXX'].ID}')
+            raise ValueError(f"unsupported CXX compiler ID {partial['compilers']['CXX'].ID}")
 
     # Complete CUDA compiler.
     if 'CUDA' not in partial['compilers']:
@@ -91,14 +91,14 @@ def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDic
         case 'clang':
             pass
         case _:
-            raise ValueError(f'unsupported CUDA compiler ID {partial['compilers']['CUDA'].ID}')
+            raise ValueError(f"unsupported CUDA compiler ID {partial['compilers']['CUDA'].ID}")
 
     # CMake preset.
     partial['cmake_preset'] = '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CUDA'].ID])))
 
     # We always compile for the 'real' CUDA architecture, see also
     # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
-    partial['cmake_cuda_architectures'] = f'{partial['nvidia_compute_capability']}-real'
+    partial['cmake_cuda_architectures'] = f"{partial['nvidia_compute_capability']}-real"
 
     # Name and tag of the image.
     name = 'cuda-' + '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CXX'].version, partial['compilers']['CUDA'].ID])))
@@ -253,13 +253,13 @@ def main(*, args : argparse.Namespace) -> None:
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')
 
     # All jobs in the matrix build an image.
-    print(f'matrix_images={json.dumps(matrix, default = str)}')
+    print(f"matrix_images={json.dumps(matrix, default = str)}")
 
     # But some jobs in the matrix don't require running the tests, because we don't have resources for them.
-    print(f'matrix_tests={json.dumps([x for x in matrix if x['tests']], default = str)}')
+    print(f"matrix_tests={json.dumps([x for x in matrix if x['tests']], default = str)}")
 
-    print(f'deploy_image={matrix[0]['image']}')
-    print(f'doc_image={matrix[0]['kokkos']}')
+    print(f"deploy_image={matrix[0]['image']}")
+    print(f"doc_image={matrix[0]['kokkos']}")
 
 if __name__ == '__main__':
 

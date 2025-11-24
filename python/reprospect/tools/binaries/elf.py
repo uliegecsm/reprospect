@@ -12,6 +12,7 @@ References:
 * https://uclibc.org/docs/elf-64-gen.pdf
 """
 import dataclasses
+import enum
 import pathlib
 import struct
 import sys
@@ -26,6 +27,163 @@ if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+
+class NvInfoEIATTR(enum.IntEnum):
+    """
+    Attribute type that can be found in a `.nv.info.<mangled>` section.
+
+    References:
+
+    * :cite:`hayes-2019-decoding-cubin`
+    """
+    MAX_THREADS = 5
+    PARAM_CBANK = 10
+    KPARAM_INFO = 23
+    CBANK_PARAM_SIZE = 25
+    MAXREG_COUNT = 27
+    EXIT_INSTR_OFFSETS = 28
+    CRS_STACK_SIZE = 30
+    WARP_WIDE_INSTR_OFFSETS = 49
+    SW2861232_WAR = 53
+    SW_WAR = 54
+    CUDA_API_VERSION = 55
+    VRC_CTA_INIT_COUNT = 74
+    SPARSE_MMA_MASK = 80
+    MERCURY_ISA_VERSION = 95
+
+class NvInfoEIFMT(enum.IntEnum):
+    """
+    Attribute format in a `.nv.info.<mangled>` section.
+
+    References:
+
+    * :cite:`hayes-2019-decoding-cubin`
+    """
+    NVAL = 1
+    BVAL = 2
+    HVAL = 3
+    SVAL = 4
+
+@dataclasses.dataclass(slots = True, frozen = True, unsafe_hash = True)
+class NvInfoEntry:
+    """
+    A single entry in a `.nv.info.<mangled>` section.
+    """
+    eifmt : NvInfoEIFMT
+    eiattr : NvInfoEIATTR
+    value : typing.Union[bytes, int, tuple[int, ...]] | None = None
+
+@dataclasses.dataclass(frozen = True, slots = True)
+class NvInfo:
+    """
+    Specialized decoder for a `.nv.info.<mangled>` section.
+
+    Here is a typical section as parsed by ``cuobjdump``::
+
+        .nv.info._ZN6Kokkos4Impl33cuda_parallel_launch_local_memoryINS0_11ParallelForINS0_11ThenWrapperIN10reprospect8examples6kokkos5graph7FunctorINS_4ViewIiJNS_12CudaUVMSpaceEEEEEEEENS_11RangePolicyIJNS_4CudaENS0_16IsGraphKernelTagENS_12LaunchBoundsILj1ELj0EEEEEESF_EELj1ELj0EEEvT_
+            <0x1>
+            Attribute: EIATTR_CUDA_API_VERSION
+            Format: EIFMT_SVAL
+            Value: 0x82
+            <0x2>
+            Attribute: EIATTR_SW2861232_WAR
+            Format: EIFMT_NVAL
+            <0x3>
+            Attribute: EIATTR_PARAM_CBANK
+            Format: EIFMT_SVAL
+            Value: 0x9 0x380160
+            <0x4>
+            Attribute: EIATTR_CBANK_PARAM_SIZE
+            Format: EIFMT_HVAL
+            Value: 0x38
+            <0x5>
+            Attribute: EIATTR_KPARAM_INFO
+            Format: EIFMT_SVAL
+            Value: Index : 0x0 Ordinal : 0x0 Offset  : 0x0 Size    : 0x38
+                Pointee's logAlignment : 0x0 Space : 0x0 cbank : 0x1f Parameter Space : CBANK
+            <0x6>
+            Attribute: EIATTR_MAXREG_COUNT
+            Format: EIFMT_HVAL
+            Value: 0xff
+            <0x7>
+            Attribute: EIATTR_MERCURY_ISA_VERSION
+            Format: EIFMT_HVAL
+            Value: 0.0
+            <0x8>
+            Attribute: EIATTR_EXIT_INSTR_OFFSETS
+            Format: EIFMT_SVAL
+            Value: 0x60 0x170
+            <0x9>
+            Attribute: EIATTR_MAX_THREADS
+            Format: EIFMT_SVAL
+            Value: 0x1 0x1 0x1
+            <0x10>
+            Attribute: EIATTR_CRS_STACK_SIZE
+            Format: EIFMT_SVAL
+            Value: 0x0
+
+    References:
+
+    * :cite:`hayes-2019-decoding-cubin`
+    * https://github.com/decodecudabinary/Decoding-CUDA-Binary/blob/d696075315006c8a94012071a91cdfec6ee23bd7/tools/src/elfmanip.hpp#L144
+    """
+    attributes : tuple[NvInfoEntry, ...]
+
+    def iter(self, eiattr : NvInfoEIATTR) -> typing.Generator[NvInfoEntry, None, None]:
+        """
+        Get attribute(s) of type `eiattr`.
+        """
+        return (attr for attr in self.attributes if attr.eiattr == eiattr)
+
+    @classmethod
+    def decode(cls, *, section : elftools.elf.sections.Section) -> 'NvInfo':
+        return cls.parse(data = section.data())
+
+    @classmethod
+    def parse(cls, *, data : bytes) -> 'NvInfo':
+        """
+        Parse a single `.nv.info.<mangled>` section according to the per-format rules.
+        """
+        offset = 0
+        attrs = []
+
+        while offset + 2 <= len(data):
+            # Skip padding byte.
+            if data[offset] == 0:
+                offset += 1
+                continue
+
+            eifmt  = NvInfoEIFMT (data[offset])
+            eiattr = NvInfoEIATTR(data[offset + 1])
+            offset += 2
+
+            value : bytes | int | tuple[int, ...] | None = None
+
+            match eifmt:
+                case NvInfoEIFMT.NVAL:
+                    pass
+                case NvInfoEIFMT.BVAL:
+                    value = data[offset]
+                    offset += 1
+                case NvInfoEIFMT.HVAL:
+                    value = struct.unpack('<H', data[offset : offset + 2])[0]
+                    offset += 2
+                case NvInfoEIFMT.SVAL:
+                    length = struct.unpack("<H", data[offset : offset + 2])[0]
+                    offset += 2
+                    payload = data[offset : offset + length]
+                    offset += length
+                    # cuobjdump often prints SVAL payload as 32-bit little-endian words if length %4 == 0
+                    if length >= 4 and length % 4 == 0 and eiattr not in (NvInfoEIATTR.KPARAM_INFO,):
+                        value = tuple(struct.unpack("<I", payload[i:i+4])[0] for i in range(0, length, 4))
+                    else:
+                        value = payload
+                case _:
+                    raise ValueError(f'unsupported {eifmt}')
+
+            attrs.append(NvInfoEntry(eifmt = eifmt, eiattr = eiattr, value = value))
+
+        return NvInfo(attributes = tuple(attrs))
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class TkInfo:
@@ -184,6 +342,7 @@ class ELF:
     def __exit__(self, *args, **kwargs) -> None:
         assert self.elf is not None
         self.elf.close()
+        self.elf = None
 
     @classmethod
     def is_cuda_impl(cls, *, header : elftools.construct.lib.container.Container) -> bool:
@@ -225,3 +384,15 @@ class ELF:
         Get compute capability encoded in `header` as NVIDIA architecture.
         """
         return NVIDIAArch.from_compute_capability(cc = self.compute_capability(value = self.header['e_flags']).as_int)
+
+    def nvinfo(self, mangled : str) -> NvInfo:
+        """
+        Extract and parse the `.nv.info.<mangled>` section.
+        """
+        assert self.elf is not None
+
+        name : str = f'.nv.info.{mangled}'
+
+        if (section := self.elf.get_section_by_name(name = name)) is not None:
+            return NvInfo.decode(section = section)
+        raise ValueError(f'There is no {name!r} section.')

@@ -1,5 +1,5 @@
 """
-This module helps reading ELF headers to help detect if a file is a cubin.
+This module provides tools to parse CUDA ELF files.
 
 References:
 

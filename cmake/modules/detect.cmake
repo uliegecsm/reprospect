@@ -1,7 +1,7 @@
 # Detect GPUs.
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_SOURCE_DIR}/python
-            ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/python/reprospect/utils/detect.py --sep=\; --cc
+    COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${CMAKE_SOURCE_DIR}
+            ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/reprospect/utils/detect.py --sep=\; --cc
     OUTPUT_VARIABLE ReProspect_DETECTED_GPUS
     COMMAND_ERROR_IS_FATAL ANY
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}

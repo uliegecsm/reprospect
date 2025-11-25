@@ -49,7 +49,7 @@ packages = [
 [tool.setuptools.dynamic]
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#dynamic-metadata
 version = {attr = "reprospect.__version__"}
-dependencies = {file = ["requirements.txt"]}
+dependencies = {file = ["requirements/requirements.txt"]}
 
 [project]
 name = "reprospect"

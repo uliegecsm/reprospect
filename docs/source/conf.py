@@ -2,6 +2,7 @@ import datetime
 import pathlib
 import os
 import sys
+import tomllib
 
 project = 'ReProspect'
 author = 'Tomasetti, R and Arnst, M.'
@@ -14,8 +15,8 @@ sys.path.append(str(PROJECT_DIR))
 # Allow subprocesses launched by Sphinx to find ReProspect.
 os.environ['PYTHONPATH'] = str(PROJECT_DIR) + os.path.pathsep + os.environ.get('PYTHONPATH', '')
 
-from reprospect import __version__
-release = __version__
+with (PROJECT_DIR / 'pyproject.toml').open('rb') as f:
+    release = tomllib.load(f)['project']['version']
 
 extensions = [
     'sphinx.ext.apidoc',

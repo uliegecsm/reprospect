@@ -386,6 +386,13 @@ jobs:
                 cd papers/joss
                 inara -o pdf -p -v paper.md
 
+            - if: steps.changed-files.outputs.any_changed == 'true'
+              uses: actions/upload-artifact@v5
+              with:
+                  name: papers
+                  path: papers/**/*.pdf
+                  retention-days: 1
+
     pylint:
         runs-on: [self-hosted, linux, docker, amd64]
         needs: [setup-job-matrix, build-images]

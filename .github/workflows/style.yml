@@ -6,7 +6,7 @@ jobs:
     whitespace:
         runs-on: ubuntu-latest
         steps:
-          - uses: actions/checkout@v5
+          - uses: actions/checkout@v6
 
           - uses: andreasabel/fix-whitespace-action@v1.3.1
             with:
@@ -19,7 +19,7 @@ jobs:
         container:
             image: python:3.12
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - run: pip install nbstripout
 

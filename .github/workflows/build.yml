@@ -28,7 +28,7 @@ jobs:
             build-images: ${{ steps.build-images.outputs.build-images }}
             setup-job-matrix-image: ${{ steps.setup-job-matrix-image.outputs.setup-job-matrix-image }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
               with:
                   set-safe-directory: true
 
@@ -98,7 +98,7 @@ jobs:
         needs: [setup-skips]
         if: ${{ needs.setup-skips.outputs.setup-job-matrix-image == 'true' }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - uses: docker/login-action@v3
               with:
@@ -131,7 +131,7 @@ jobs:
             matrix_tests: ${{ steps.strategy.outputs.matrix_tests }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - id  : strategy
               run : |
@@ -149,7 +149,7 @@ jobs:
             packages: write
         if: ${{ needs.setup-skips.outputs.build-images == 'true' }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - uses: docker/login-action@v3
               with:
@@ -190,7 +190,7 @@ jobs:
         env: ${{ matrix.environment }}
         if: ${{ ! failure() && ! cancelled() && needs.setup-skips.outputs.build-images == 'true' }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - uses: docker/login-action@v3
               with:
@@ -250,7 +250,7 @@ jobs:
         container: ${{ matrix.tests.container }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
@@ -280,7 +280,7 @@ jobs:
         container: ${{ matrix.examples.container }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
@@ -306,7 +306,7 @@ jobs:
         steps:
             # Since it is still a private repository, let's avoid authentication burden by
             # installing from the files directly.
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
               with:
                   path: install-from
 
@@ -346,7 +346,7 @@ jobs:
             image: ${{ needs.setup-job-matrix.outputs.doc_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - run: |
                 cmake -S . --preset=gnu-nvidia \
@@ -371,7 +371,7 @@ jobs:
         steps:
             - run: apk add git
 
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
               with:
                   set-safe-directory: true
 
@@ -393,7 +393,7 @@ jobs:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - name: On the sources.
               run: |
@@ -424,7 +424,7 @@ jobs:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
 
             - name: On the strategy.
               run: |
@@ -453,7 +453,7 @@ jobs:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - run: ruff check --config python/pyproject.toml
 
     deploy:
@@ -463,7 +463,7 @@ jobs:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v5
+            - uses: actions/checkout@v6
             - run: |
                 cd python
                 python -m build --verbose .

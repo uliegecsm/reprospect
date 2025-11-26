@@ -14,6 +14,7 @@ setup(
             'reprospect/tools/binaries/nvdisasm.py',
             'reprospect/tools/binaries/elf.py',
             'reprospect/tools/ncu.py',
+            'reprospect/tools/sass/controlflow.py',
             'reprospect/tools/sass/decode.py',
             'reprospect/utils/cmake.py',
             'reprospect/utils/detect.py',

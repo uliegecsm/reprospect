@@ -625,6 +625,9 @@ class ProfilingMetrics(typing.Protocol):
     def __contains__(self, key: str, /) -> bool:
         ...
 
+    def __len__(self) -> int:
+        ...
+
     def keys(self) -> typing.Iterable[str]:
         ...
 
@@ -718,7 +721,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
             raise TypeError(f'Expecting leaf node {key!r} with profiling metrics as the single entry at {accessors}, got {type(value).__name__!r} instead.')
         return key, value
 
-    def iter_metrics(self, accessors : typing.Iterable[str]) -> typing.Generator[tuple[str, ProfilingMetrics], None, None]:
+    def iter_metrics(self, accessors : typing.Iterable[str] = ()) -> typing.Generator[tuple[str, ProfilingMetrics], None, None]:
         """
         Query the accessor path `accessors`, check that it leads to an internal node, check that all entries
         are leaf nodes with profiling metrics, and return an iterator over these leaf nodes with profiling metrics.

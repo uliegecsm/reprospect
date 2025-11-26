@@ -321,7 +321,6 @@ jobs:
                 . ${{ github.job }}/bin/activate
                 cd $RUNNER_TEMP
                 python -m pip show reprospect
-                python -c "import reprospect; print(reprospect); print(reprospect.__version__)"
                 python -c "from reprospect.utils.detect import GPUDetector as u; print(u.get())"
 
             - name: Scripts.
@@ -474,7 +473,7 @@ jobs:
                 python -m build --verbose .
                 tree dist/
             - run: |
-                VERSION=$(python3 -c "import pathlib, re; version = re.search(r'\d+.\d+.\d+', pathlib.Path('reprospect/__init__.py').read_text()); print(version.group());")
+                VERSION=$(python3 -c "import pathlib, tomllib; print(tomllib.load(pathlib.Path('pyproject.toml').open('rb'))['project']['version'])")
                 echo "Version of the project is ${VERSION}."
                 echo "VERSION=${VERSION}" >> $GITHUB_ENV
             - if: github.ref == 'refs/heads/main'

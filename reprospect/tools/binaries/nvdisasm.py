@@ -97,7 +97,7 @@ class NVDisasm:
     The main purpose of ``nvdisasm`` is to disassemble CUDA binary files. Beyond the raw
     disassembly, it can also annotate the disassembled SASS with information, such as register
     liveness range information. ``nvdisasm`` provides liveness ranges for all register types:
-    ``GPR``, ``PRED``, ``UGPR``, ``UPRED``; see also :py:class:reprospect.tools.sass.decode.RegisterType`.
+    ``GPR``, ``PRED``, ``UGPR``, ``UPRED``; see also :py:class:`reprospect.tools.sass.decode.RegisterType`.
 
     This class provides functionalities to parse this register liveness range information to
     deduce how many registers each kernel uses.

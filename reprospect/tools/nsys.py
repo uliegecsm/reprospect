@@ -271,6 +271,23 @@ class Report:
             return cls.single_row(data = dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
         raise RuntimeError()
 
+    @classmethod
+    def get_correlated_rows(cls, *,
+        src : pandas.DataFrame | pandas.Series,
+        dst : pandas.DataFrame,
+        selector : typing.Optional[typing.Callable[[pandas.DataFrame], pandas.Series]] = None,
+        correlation_src : str = 'correlationId',
+        correlation_dst : str = 'correlationId',
+    ) -> pandas.DataFrame:
+        """
+        Similar to :py:meth:`get_correlated_row`, but *may* match more than one row.
+        """
+        if isinstance(src, pandas.Series) and selector is None:
+            return dst[dst[correlation_dst] == src[correlation_src]]
+        if isinstance(src, pandas.DataFrame) and selector is not None:
+            return dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]]
+        raise RuntimeError()
+
     class NvtxEvents(rich_helpers.TreeMixin):
         def __init__(self, events : pandas.DataFrame) -> None:
             self.events = events
@@ -380,10 +397,12 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
 
         return Report.NvtxEvents(events = events)
 
-    def get_events(self, table : str, accessors : typing.Sequence[str]) -> pandas.DataFrame:
+    def get_events(self, table : str, accessors : typing.Sequence[str], stringids : typing.Optional[str] = 'nameId') -> pandas.DataFrame:
         """
         Query all rows in `table` that happen between the `start`/`end` time points
         of the nested NVTX range matching `accessors`.
+
+        :param stringids: Some tables have a column to be correlated with the `StringIds` table.
 
         .. note::
 
@@ -394,22 +413,26 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
         filtered = self.nvtx_events.get(accessors = accessors)
 
         if len(filtered) != 1:
-            raise RuntimeError('For now, only one NVTX event is supported.')
+            raise RuntimeError(f'Expecting exactly one NVTX event, got {len(filtered)}.')
 
         filtered = filtered.squeeze()
 
         logging.info(f"Events will be filtered in the time frame {filtered['start']} -> {filtered['end']}.")
 
+        select = [f'{table}.*']
+        join   = []
+
+        if stringids is not None:
+            select.append('StringIds.value AS name')
+            join  .append(f'LEFT JOIN StringIds ON {table}.{stringids} = StringIds.id')
+
         query = f"""
-SELECT
-    {table}.*,
-    StringIds.value AS name
+SELECT {', '.join(select)}
 FROM {table}
-LEFT JOIN StringIds
-    ON {table}.nameId = StringIds.id
+{' '.join(join)}
 WHERE {table}.start >= {filtered['start']} AND {table}.end <= {filtered['end']}
 ORDER BY {table}.start ASC
-        """
+"""
         return pandas.read_sql_query(query, self.conn)
 
 def strip_cuda_api_suffix(call : str) -> str:

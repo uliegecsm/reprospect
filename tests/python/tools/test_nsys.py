@@ -295,6 +295,11 @@ class TestReport:
                 'cudaStreamCreate',
             ]
 
+            # Stream synchronize events can also be retrieved using NVTX filtering.
+            # But their table does not have string IDs to correlate.
+            api = report.get_events(table = 'CUPTI_ACTIVITY_KIND_SYNCHRONIZATION', accessors = ('outer_useless_range', 'initialize_data'), stringids = None)
+            assert len(api) == 1
+
     class TestNvtxEvents:
         """
         Tests for :py:class:`reprospect.tools.nsys.Report.NvtxEvents`.
@@ -306,11 +311,11 @@ class TestReport:
             with report:
                 events = report.nvtx_events
 
-                assert len(events.events['text']) == 6
+                assert len(events.events['text']) == 7
 
-                assert len(events.get(accessors = [])) == 6
+                assert len(events.get(accessors = ())) == 7
 
-                assert len(events.get(accessors = ['outer'])) == 0
+                assert len(events.get(accessors = ('outer',))) == 0
 
                 assert events.get(accessors = ['outer_useless_range'])['text'].tolist() == ['outer_useless_range']
 
@@ -327,6 +332,7 @@ NVTX events
 ├── Starting my application. (NvtxMark)
 └── outer_useless_range (NvtxStartEndRange)
     ├── create_streams (NvtxPushPopRange)
+    ├── initialize_data (NvtxPushPopRange)
     ├── launch_saxpy_kernel_first_time (NvtxPushPopRange)
     └── launch_saxpy_kernel_second_time (NvtxPushPopRange)
 """

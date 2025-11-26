@@ -35,7 +35,7 @@ int main()
     //! Create streams.
     cudaStream_t stream_A = nullptr, stream_B = nullptr;
     {
-        ::nvtx3::scoped_range_in<MyAppDomain> range{"create_streams"};
+        const ::nvtx3::scoped_range_in<MyAppDomain> range{"create_streams"};
         REPROSPECT_CHECK_CUDART_CALL(cudaStreamCreate(&stream_A));
         REPROSPECT_CHECK_CUDART_CALL(cudaStreamCreate(&stream_B));
     }
@@ -47,6 +47,7 @@ int main()
     REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&vec_y, size * sizeof(float), stream_B));
 
     {
+        const ::nvtx3::scoped_range_in<MyAppDomain> range{"initialize_data"};
         const std::vector<float> vec_x_h(size, 1.f), vec_y_h(size, 2.f);
         REPROSPECT_CHECK_CUDART_CALL(cudaMemcpyAsync(vec_x, vec_x_h.data(), size * sizeof(float), cudaMemcpyHostToDevice, stream_A));
         REPROSPECT_CHECK_CUDART_CALL(cudaMemcpyAsync(vec_y, vec_y_h.data(), size * sizeof(float), cudaMemcpyHostToDevice, stream_B));
@@ -57,7 +58,7 @@ int main()
     constexpr index_t grid_size  = (size + block_size - 1) / block_size;
 
     {
-        ::nvtx3::scoped_range_in<MyAppDomain> range{"launch_saxpy_kernel_first_time"};
+        const ::nvtx3::scoped_range_in<MyAppDomain> range{"launch_saxpy_kernel_first_time"};
         saxpy_kernel<<<dim3{grid_size, 1, 1}, dim3{block_size, 1, 1} , 0, stream_B>>>(size, 2.f, vec_x, vec_y);
         REPROSPECT_CHECK_CUDART_CALL(cudaGetLastError());
     }

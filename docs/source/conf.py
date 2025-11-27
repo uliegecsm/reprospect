@@ -2,7 +2,11 @@ import datetime
 import pathlib
 import os
 import sys
+import subprocess
 import tomllib
+
+import docutils.nodes
+import docutils.parsers.rst.states
 
 project = 'ReProspect'
 author = 'Tomasetti, R and Arnst, M.'
@@ -48,6 +52,7 @@ extlinks = {
 intersphinx_mapping = {
     'cuda-bindings' : ('https://nvidia.github.io/cuda-python/cuda-bindings/latest/', None),
     'cuda-core' : ('https://nvidia.github.io/cuda-python/cuda-core/latest/', None),
+    'matplotlib' : ('https://matplotlib.org/stable/', None),
     'numpy' : ('https://numpy.org/doc/stable/', None),
     'packaging' : ('https://packaging.pypa.io/en/stable/', None),
     'pandas' : ('https://pandas.pydata.org/pandas-docs/stable/', None),
@@ -65,7 +70,7 @@ autodoc_default_options = {
 
 apidoc_modules = [
     {
-        'path' : PROJECT_DIR / 'reprospect',
+        'path' : PROJECT_DIR / project.lower(),
         'destination' : 'api',
         'max_depth' : 4,
         'implicit_namespaces' : True,
@@ -94,7 +99,7 @@ import semantic_version
 semantic_version.SimpleSpec.__module__ = 'semantic_version'
 semantic_version.Version.__module__ = 'semantic_version'
 
-linkcode_url = 'https://github.com/uliegecsm/reprospect'
+linkcode_url = 'https://github.com/uliegecsm/' + project.lower()
 
 # Some references are broken, or the package does not provide an object inventory file.
 # See also https://www.sphinx-doc.org/en/master/usage/configuration.html#confval-nitpick_ignore_regex.
@@ -111,3 +116,29 @@ nitpick_ignore_regex = [
 # Configuration for 'myst_nb', see also https://myst-nb.readthedocs.io/en/latest/configuration.html.
 nb_merge_streams = True
 nb_execution_in_temp = True
+
+def get_last_commit(*, file : pathlib.Path, cwd : pathlib.Path) -> str:
+    """
+    Get the last commit hash that modified `file`.
+    """
+    cmd = ('git', 'log', '-n', '1', '--pretty=format:%H', '--', file)
+    return subprocess.check_output(args = cmd, cwd = cwd, text = True).strip()
+
+def lastcommit(name : str, rawtext : str, text : str, lineno : int, inliner : docutils.parsers.rst.states.Inliner, **kwargs) -> tuple[list[docutils.nodes.Node], list[docutils.nodes.system_message]]:
+    """
+    References:
+
+    * https://www.sphinx-doc.org/en/master/development/tutorials/extending_syntax.html#writing-the-extension
+    """
+    commit_hash = get_last_commit(file = pathlib.Path(text), cwd = PROJECT_DIR)
+    url = f'{linkcode_url}/commit/{commit_hash}'
+    node = docutils.nodes.reference(
+        rawsource = rawtext,
+        text = project.lower() + '@' + commit_hash[:7],
+        refuri = url,
+        **kwargs,
+    )
+    return [node], []
+
+def setup(app):
+    app.add_role('lastcommit', lastcommit)

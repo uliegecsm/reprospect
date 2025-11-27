@@ -5,3 +5,7 @@ extend-ignore-identifiers-re = [
 
 [default.extend-identifiers]
 NervanaSystems = "NervanaSystems"
+
+[type.svg]
+extend-glob = ["*.svg"]
+check-file = false

@@ -7,17 +7,17 @@ import pytest
 import regex
 import semantic_version
 
-from reprospect.tools.sass import Instruction
-from reprospect.test.sass  import AtomicMatcher, InstructionMatch, PatternBuilder
-from reprospect.utils      import cmake
+from reprospect.tools.sass            import Instruction
+from reprospect.test.sass.instruction import AtomicMatcher, InstructionMatch, PatternBuilder
+from reprospect.utils                 import cmake
 
-from tests.python.parameters import Parameters, PARAMETERS
-from tests.python.test.sass.test_sass import get_decoder
+from tests.python.parameters                 import Parameters, PARAMETERS
+from tests.python.test.sass.test_instruction import get_decoder
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestAtomicMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.AtomicMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.AtomicMatcher`.
     """
     CODE_ADD_BASED_ON_CAS = """\
 __global__ void cas({type}* __restrict__ const dst, const {type}* __restrict__ const src)

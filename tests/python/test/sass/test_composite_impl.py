@@ -3,15 +3,15 @@ import typing
 
 import pytest
 
-from reprospect.test               import sass
-from reprospect.test.matchers_impl import AnyOfMatcher, \
-                                          InSequenceAtMatcher, \
-                                          InSequenceMatcher, \
-                                          OneOrMoreInSequenceMatcher, \
-                                          OrderedInSequenceMatcher, \
-                                          UnorderedInSequenceMatcher, \
-                                          ZeroOrMoreInSequenceMatcher
-from reprospect.tools.sass         import ControlCode, Instruction
+from reprospect.test.sass                import instruction
+from reprospect.test.sass.composite_impl import AnyOfMatcher, \
+                                                InSequenceAtMatcher, \
+                                                InSequenceMatcher, \
+                                                OneOrMoreInSequenceMatcher, \
+                                                OrderedInSequenceMatcher, \
+                                                UnorderedInSequenceMatcher, \
+                                                ZeroOrMoreInSequenceMatcher
+from reprospect.tools.sass               import ControlCode, Instruction
 
 CONTROL_CODE = ControlCode.decode(code = '0x000e220000000800')
 
@@ -28,13 +28,13 @@ DADD_NOP_DMUL = (DADD, NOP, NOP, NOP, DMUL)
 NOP_DMUL_NOP_DADD = (NOP, DMUL, NOP, NOP, DADD)
 """NOP instructions with one DADD and one DMUL."""
 
-MATCHER_DADD = sass.OpcodeModsWithOperandsMatcher(opcode = 'DADD', operands = ('R4', 'R4', sass.PatternBuilder.CONSTANT))
-MATCHER_DMUL = sass.OpcodeModsWithOperandsMatcher(opcode = 'DMUL', operands = ('R6', 'R6', sass.PatternBuilder.CONSTANT))
-MATCHER_NOP  = sass.OpcodeModsMatcher(opcode = 'NOP', operands = False)
+MATCHER_DADD = instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', operands = ('R4', 'R4', instruction.PatternBuilder.CONSTANT))
+MATCHER_DMUL = instruction.OpcodeModsWithOperandsMatcher(opcode = 'DMUL', operands = ('R6', 'R6', instruction.PatternBuilder.CONSTANT))
+MATCHER_NOP  = instruction.OpcodeModsMatcher(opcode = 'NOP', operands = False)
 
 class TestInSequenceAtMatcher:
     """
-    Tests for :py:class:`reprospect.test.matchers_impl.InSequenceAtMatcher`.
+    Tests for :py:class:`reprospect.test.sass.composite_impl.InSequenceAtMatcher`.
     """
     def test_match_first_element(self):
         """
@@ -64,7 +64,7 @@ class TestInSequenceAtMatcher:
 
 class TestZeroOrMoreInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.test.matchers_impl.ZeroOrMoreInSequenceMatcher`.
+    Tests for :py:class:`reprospect.test.sass.composite_impl.ZeroOrMoreInSequenceMatcher`.
     """
     def test_matches_zero(self):
         """
@@ -96,7 +96,7 @@ class TestZeroOrMoreInSequenceMatcher:
 
 class TestOneOrMoreInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.test.matchers_impl.OneOrMoreInSequenceMatcher`.
+    Tests for :py:class:`reprospect.test.sass.composite_impl.OneOrMoreInSequenceMatcher`.
     """
     def test_matches_zero(self):
         """
@@ -132,7 +132,7 @@ class TestOneOrMoreInSequenceMatcher:
 
 class TestOrderedInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.test.matchers_impl.OrderedInSequenceMatcher`.
+    Tests for :py:class:`reprospect.test.sass.composite_impl.OrderedInSequenceMatcher`.
     """
     MATCHER : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = (
         MATCHER_DADD,
@@ -173,7 +173,7 @@ class TestOrderedInSequenceMatcher:
 
 class TestUnorderedInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.test.matchers_impl.UnorderedInSequenceMatcher`.
+    Tests for :py:class:`reprospect.test.sass.composite_impl.UnorderedInSequenceMatcher`.
     """
     def test_match_with_nop(self):
         """
@@ -244,7 +244,7 @@ class TestUnorderedInSequenceMatcher:
 
 class TestInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.test.matchers_impl.InSequenceMatcher`.
+    Tests for :py:class:`reprospect.test.sass.composite_impl.InSequenceMatcher`.
     """
     def test_matches(self) -> None:
         matcher = InSequenceMatcher(matcher = MATCHER_DADD)
@@ -265,7 +265,7 @@ class TestInSequenceMatcher:
 
 class TestAnyOfMatcher:
     """
-    Tests for :py:class:`reprospect.test.matchers_impl.AnyOfMatcher`.
+    Tests for :py:class:`reprospect.test.sass.composite_impl.AnyOfMatcher`.
     """
     def test_matches(self) -> None:
         matcher = AnyOfMatcher(

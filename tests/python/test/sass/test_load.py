@@ -5,15 +5,15 @@ import typing
 
 import pytest
 
-from reprospect.test.sass import InstructionMatch, LoadConstantMatcher, PatternBuilder
-from reprospect.utils     import cmake
+from reprospect.test.sass.instruction import InstructionMatch, LoadConstantMatcher, PatternBuilder
+from reprospect.utils                 import cmake
 
-from tests.python.parameters import Parameters, PARAMETERS
-from tests.python.test.sass.test_sass import get_decoder
+from tests.python.parameters                 import Parameters, PARAMETERS
+from tests.python.test.sass.test_instruction import get_decoder
 
 class TestLoadConstantMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.LoadConstantMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.LoadConstantMatcher`.
     """
     INSTRUCTIONS : typing.Final[dict[str, tuple[LoadConstantMatcher, InstructionMatch]]] = {
         'LDC R1, c[0x0][0x37c]' : (

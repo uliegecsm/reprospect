@@ -8,18 +8,20 @@ import pytest
 import regex
 import semantic_version
 
-from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import CuObjDump
-from reprospect.tools.sass         import Decoder
-from reprospect.utils              import cmake
-from reprospect.test.sass          import AtomicMatcher, \
-                                          FloatAddMatcher, \
-                                          OpcodeModsMatcher, \
-                                          OpcodeModsWithOperandsMatcher, \
-                                          LoadGlobalMatcher, \
-                                          PatternBuilder, \
-                                          ReductionMatcher, \
-                                          StoreGlobalMatcher
+from reprospect.tools.architecture    import NVIDIAArch
+from reprospect.tools.binaries        import CuObjDump
+from reprospect.tools.sass            import Decoder
+from reprospect.tools.sass.decode     import RegisterType
+from reprospect.utils                 import cmake
+from reprospect.test.sass.instruction import AtomicMatcher, \
+                                             FloatAddMatcher, \
+                                             OpcodeModsMatcher, \
+                                             OpcodeModsWithOperandsMatcher, \
+                                             LoadGlobalMatcher, \
+                                             PatternBuilder, \
+                                             ReductionMatcher, \
+                                             RegisterMatch, \
+                                             StoreGlobalMatcher
 
 from tests.python.compilation import get_compilation_output
 from tests.python.parameters  import Parameters, PARAMETERS
@@ -65,12 +67,12 @@ def get_decoder(*, cwd : pathlib.Path, arch : NVIDIAArch, file : pathlib.Path, c
 
 class TestPatternBuilder:
     """
-    Tests for :py:class:`reprospect.test.sass.PatternBuilder`.
+    Tests for :py:class:`reprospect.test.sass.instruction.PatternBuilder`.
     """
     def test_reg_vs_ureg(self) -> None:
         """
-        Ensure that :py:attr:`reprospect.test.sass.PatternBuilder.REG` does not
-        match what :py:attr:`reprospect.test.sass.PatternBuilder.UREG` matches (and
+        Ensure that :py:attr:`reprospect.test.sass.instruction.PatternBuilder.REG` does not
+        match what :py:attr:`reprospect.test.sass.instruction.PatternBuilder.UREG` matches (and
         vice versa).
         """
         assert regex.match(PatternBuilder.REG,    'R42') is not None
@@ -85,7 +87,7 @@ class TestPatternBuilder:
 
     def test_address_reg(self):
         """
-        Test :py:meth:`reprospect.test.sass.PatternBuilder.address` for :py:attr:`reprospect.test.sass.PatternBuilder.REG`.
+        Test :py:meth:`reprospect.test.sass.instruction.PatternBuilder.address` for :py:attr:`reprospect.test.sass.instruction.PatternBuilder.REG`.
         """
         # Defaulted offset behaviour.
         pattern = PatternBuilder.address(PatternBuilder.REG)
@@ -122,7 +124,7 @@ class TestPatternBuilder:
 
     def test_address_reg64(self):
         """
-        Test :py:meth:`reprospect.test.sass.PatternBuilder.address` for :py:attr:`reprospect.test.sass.PatternBuilder.REG64`.
+        Test :py:meth:`reprospect.test.sass.instruction.PatternBuilder.address` for :py:attr:`reprospect.test.sass.instruction.PatternBuilder.REG64`.
         """
         # Default offset behaviour.
         pattern = PatternBuilder.address(PatternBuilder.REG64)
@@ -159,7 +161,7 @@ class TestPatternBuilder:
 
     def test_desc_reg64_addr(self):
         """
-        Test :py:meth`reprospect.test.sass.PatternBuilder.desc_reg64_addr`.
+        Test :py:meth`reprospect.test.sass.instruction.PatternBuilder.desc_reg64_addr`.
         """
         # Default offset behaviour.
         pattern = PatternBuilder.desc_reg64_addr()
@@ -194,10 +196,52 @@ class TestPatternBuilder:
 
         assert regex.match(pattern, string = 'desc[UR86][R2.64+0x10]') is None
 
+    def test_anygpreg(self) -> None:
+        """
+        Test :py:meth:`reprospect.test.sass.instruction.PatternBuilder.anygpreg`.
+        """
+        assert regex.match(PatternBuilder.anygpreg(reuse = None, group = 'mygroup'),  'R42').captures('mygroup') == ['R42']
+        assert regex.match(PatternBuilder.anygpreg(reuse = None, group = 'mygroup'), 'UR42').captures('mygroup') == ['UR42']
+
+        assert regex.match(PatternBuilder.anygpreg(reuse = False), 'R66.reuse').group() == 'R66'
+        assert regex.match(PatternBuilder.anygpreg(reuse = True),  'R66.reuse').group() == 'R66.reuse'
+
+class TestRegisterMatch:
+    """
+    Tests for :py:class:`reprospect.test.sass.instruction.RegisterMatch`.
+    """
+    def test_reg(self) -> None:
+        assert RegisterMatch.parse('R42') == RegisterMatch(rtype = RegisterType.GPR, index = 42, reuse = False)
+
+    def test_regz(self) -> None:
+        assert RegisterMatch.parse('RZ') == RegisterMatch(rtype = RegisterType.GPR, index = -1, reuse = False)
+
+    def test_ureg(self) -> None:
+        assert RegisterMatch.parse('UR42') == RegisterMatch(rtype = RegisterType.UGPR, index = 42, reuse = False)
+
+    def test_reg_reuse(self) -> None:
+        assert RegisterMatch.parse('R42.reuse') == RegisterMatch(rtype = RegisterType.GPR, index = 42, reuse = True)
+
+    def test_pred(self) -> None:
+        assert RegisterMatch.parse('P3') == RegisterMatch(rtype = RegisterType.PRED, index = 3, reuse = False)
+
+    def test_predt(self) -> None:
+        assert RegisterMatch.parse('PT') == RegisterMatch(rtype = RegisterType.PRED, index = -1, reuse = False)
+
+    def test_upred(self) -> None:
+        assert RegisterMatch.parse('UP3') == RegisterMatch(rtype = RegisterType.UPRED, index = 3, reuse = False)
+
+    def test_upredt(self) -> None:
+        assert RegisterMatch.parse('UPT') == RegisterMatch(rtype = RegisterType.UPRED, index = -1, reuse = False)
+
+    def test_not_a_reg(self) -> None:
+        with pytest.raises(ValueError, match = "Invalid register format 'YOLO666'."):
+            RegisterMatch.parse('YOLO666')
+
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestLoadGlobalMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.LoadGlobalMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.LoadGlobalMatcher`.
     """
     CODE_ELEMENTWISE_ADD = """\
 __global__ void elementwise_add(int* const dst, const int* const src) {
@@ -304,7 +348,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestStoreGlobalMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.StoreGlobalMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.StoreGlobalMatcher`.
     """
     def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
@@ -351,7 +395,7 @@ class TestStoreGlobalMatcher:
 
 class TestFloatAddMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.FloatAddMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.FloatAddMatcher`.
     """
     def test(self) -> None:
         """
@@ -411,7 +455,7 @@ class TestFloatAddMatcher:
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestReductionMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.ReductionMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.ReductionMatcher`.
     """
     CODE_ADD = """\
 __global__ void add({type}* __restrict__ const dst, const {type}* __restrict__ const src)
@@ -665,7 +709,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
 class TestOpcodeModsMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.OpcodeModsMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.OpcodeModsMatcher`.
     """
     def test_with_square_brackets(self):
         instruction = 'IMAD R4, R4, c[0x0][0x0], R3'
@@ -701,7 +745,7 @@ class TestOpcodeModsMatcher:
 
 class TestOpcodeModsWithOperandsMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.OpcodeModsWithOperandsMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.OpcodeModsWithOperandsMatcher`.
     """
     def test(self):
         instruction = 'ISETP.NE.AND P2, PT, R4, RZ, PT'

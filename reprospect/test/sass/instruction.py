@@ -18,8 +18,8 @@ while reducing the need to track low-level details of the evolving CUDA instruct
 
 .. doctest::
 
-    >>> from reprospect.tools.architecture import NVIDIAArch
-    >>> from reprospect.test.sass          import LoadGlobalMatcher
+    >>> from reprospect.tools.architecture    import NVIDIAArch
+    >>> from reprospect.test.sass.instruction import LoadGlobalMatcher
     >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('VOLTA70')).matches(inst = 'LDG.E.SYS R15, [R8+0x10]')
     InstructionMatch(opcode='LDG', modifiers=('E', 'SYS'), operands=('R15', 'R8+0x10'), predicate=None, additional={'address': ['R8+0x10']})
     >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('BLACKWELL120'), size = 128, readonly = True).matches(inst = 'LDG.E.128.CONSTANT R2, desc[UR15][R6.64+0x12]')
@@ -47,6 +47,7 @@ import semantic_version
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass         import Instruction
+from reprospect.tools.sass.decode  import RegisterType
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -180,6 +181,20 @@ class PatternBuilder:
         return cls.group(cls.UREG, group = 'operands')
 
     @classmethod
+    def anygpreg(cls, reuse : typing.Optional[bool] = None, group : typing.Optional[str] = None) -> str:
+        """
+        Match any general purpose register.
+        """
+        pattern = cls.any(cls.REG, cls.UREG)
+        if reuse is None:
+            pattern += PatternBuilder.zero_or_one(r'\.reuse')
+        elif reuse is True:
+            pattern += r'\.reuse'
+        if group is not None:
+            pattern = cls.group(pattern, group = group)
+        return pattern
+
+    @classmethod
     def predt(cls) -> str:
         """
         :py:attr:`PREDT` with `operands` group.
@@ -276,6 +291,36 @@ def check_memory_instruction_word_size(*, size : int) -> None:
     ALLOWABLE_SIZES : tuple[int, ...] = (1, 2, 4, 8, 16) # pylint: disable=invalid-name
     if size not in ALLOWABLE_SIZES:
         raise RuntimeError(f'{size} is not an allowable memory instruction word size ({ALLOWABLE_SIZES} (in bytes)).')
+
+REGISTER_MATCH : typing.Final[regex.Pattern[str]] = regex.compile(
+    r'^(?P<rtype>(R|UR|P|UP))'
+    r'((?P<special>(T|Z))|(?P<index>\d+))?'
+    r'(?P<reuse>\.reuse)?$'
+)
+
+@dataclasses.dataclass(frozen = True, slots = True)
+class RegisterMatch:
+    rtype : RegisterType
+    index : int
+    reuse : bool = False
+
+    @classmethod
+    def parse(cls, value : str) -> 'RegisterMatch':
+        """
+        Parse an operand, assuming it is a register.
+
+        >>> from reprospect.test.sass.instruction import RegisterMatch
+        >>> RegisterMatch.parse('UR12')
+        RegisterMatch(rtype=<RegisterType.UGPR: 'UR'>, index=12, reuse=False)
+        """
+        if (matched := REGISTER_MATCH.match(value)) is not None:
+            if matched['index'] or matched['special']:
+                return cls(
+                    rtype = RegisterType(matched['rtype']),
+                    index = int(matched['index']) if matched['index'] else -1,
+                    reuse = bool(matched.group('reuse')),
+                )
+        raise ValueError(f'Invalid register format {value!r}.')
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class InstructionMatch:
@@ -477,7 +522,7 @@ class LoadConstantMatcher(PatternMatcher):
 
         if uniform is None:
             opcode = PatternBuilder.any('LDC', 'LDCU')
-            dest   = PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG)
+            dest   = PatternBuilder.anygpreg(reuse = False)
         elif uniform is True:
             opcode = 'LDCU'
             dest   = PatternBuilder.UREG
@@ -726,7 +771,7 @@ class OpcodeModsMatcher(PatternMatcher):
 
     Useful when the opcode and modifiers are known and the operands may need to be retrieved.
 
-    >>> from reprospect.test.sass import OpcodeModsMatcher
+    >>> from reprospect.test.sass.instruction import OpcodeModsMatcher
     >>> OpcodeModsMatcher(opcode = 'ISETP', modifiers = ('NE', 'AND')).matches(
     ...     'ISETP.NE.AND P2, PT, R4, RZ, PT'
     ... )
@@ -748,7 +793,7 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
 
     Similar to :py:class:`OpcodeModsMatcher`, but the operands can be better constrained.
 
-    >>> from reprospect.test.sass import OpcodeModsWithOperandsMatcher, PatternBuilder
+    >>> from reprospect.test.sass.instruction import OpcodeModsWithOperandsMatcher, PatternBuilder
     >>> OpcodeModsWithOperandsMatcher(
     ...     opcode = 'ISETP',
     ...     modifiers = ('NE', 'AND'),
@@ -761,16 +806,41 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
     ...     )
     ... ).matches('ISETP.NE.AND P2, PT, R4, RZ, PT')
     InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), predicate=None, additional=None)
+
+    .. note::
+
+        Some operands can be optionally matched.
+
+        >>> from reprospect.test.sass.instruction import OpcodeModsWithOperandsMatcher, PatternBuilder
+        >>> matcher = OpcodeModsWithOperandsMatcher(opcode = 'WHATEVER', operands = (
+        ...     PatternBuilder.zero_or_one('R0'),
+        ...     PatternBuilder.zero_or_one('R9'),
+        ... ))
+        >>> matcher.matches('WHATEVER')
+        InstructionMatch(opcode='WHATEVER', modifiers=(), operands=('',), predicate=None, additional=None)
+        >>> matcher.matches('WHATEVER R0')
+        InstructionMatch(opcode='WHATEVER', modifiers=(), operands=('R0',), predicate=None, additional=None)
+        >>> matcher.matches('WHATEVER R0, R9')
+        InstructionMatch(opcode='WHATEVER', modifiers=(), operands=('R0', 'R9'), predicate=None, additional=None)
     """
+    SEPARATOR : typing.Final[str] = r',\s+'
+
+    @classmethod
+    def operand(cls, *, op : str) -> str:
+        pattern = PatternBuilder.group(op, group = 'operands')
+        if op.startswith('(') and op.endswith(')?'):
+            return PatternBuilder.zero_or_more(cls.SEPARATOR + pattern)
+        return cls.SEPARATOR + pattern
+
     def __init__(self, *,
         opcode : str,
         operands : typing.Iterable[str],
         modifiers : typing.Optional[typing.Iterable[str]] = None,
     ) -> None:
-        operands = r',\s+'.join(
-            PatternBuilder.group(op, group = 'operands') for op in operands
-        )
-        super().__init__(pattern = rf'^{PatternBuilder.opcode_mods(opcode, modifiers)}\s+{operands}')
+        ops_iter = iter(operands)
+        ops : str = PatternBuilder.group(next(ops_iter), group = 'operands')
+        ops += ''.join(self.operand(op = op) for op in ops_iter)
+        super().__init__(pattern = rf'^{PatternBuilder.opcode_mods(opcode, modifiers)}\s*{ops}')
 
 class AnyMatcher(PatternMatcher):
     """
@@ -788,7 +858,7 @@ class AnyMatcher(PatternMatcher):
 
             RET.REL.NODEC R10 0x0
 
-    >>> from reprospect.test.sass import AnyMatcher
+    >>> from reprospect.test.sass.instruction import AnyMatcher
     >>> AnyMatcher().matches(inst = 'FADD.FTZ.RN R0, R1, R2')
     InstructionMatch(opcode='FADD', modifiers=('FTZ', 'RN'), operands=('R0', 'R1', 'R2'), predicate=None, additional=None)
     >>> AnyMatcher().matches(inst = 'RET.REL.NODEC R4 0x0')

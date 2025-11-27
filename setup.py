@@ -1,8 +1,20 @@
+import logging
+import pprint
+
 from setuptools import setup
+from setuptools.dist import Distribution
+from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
-from mypyc.build import mypycify
+def enable_mypyc(dist : Distribution) -> None:
+    """
+    Enable `mypyc` as extension modules.
 
-setup(
+    References:
+
+    * https://mypyc.readthedocs.io/en/latest/getting_started.html#using-setup-py
+    """
+    from mypyc.build import mypycify
+
     ext_modules = mypycify(
         [
             'reprospect/test/matchers.py',
@@ -24,5 +36,22 @@ setup(
         ],
         verbose = True,
         strict_dunder_typing = True,
-    ),
+    )
+    logging.info(f'The following mypyc extension modules will be used:\n{pprint.pformat(ext_modules)}')
+    dist.ext_modules = ext_modules
+
+class bdist_wheel(_bdist_wheel):
+    """
+    Compile with `mypyc` when building wheels.
+    """
+    def finalize_options(self) -> None:
+        logging.info('Building a built distribution (bdist).')
+        enable_mypyc(self.distribution)
+        super().finalize_options()
+        assert self.root_is_pure is False
+
+setup(
+    cmdclass = {
+        "bdist_wheel" : bdist_wheel,
+    },
 )

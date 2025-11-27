@@ -119,13 +119,12 @@ def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDic
     # Environment of the job.
     partial['environment'] = {'REGISTRY' : args.registry}
 
-    # Specifics to the 'tests', 'examples' and 'install-as-package-and-test' jobs.
+    # Specifics to the 'tests' and 'examples' jobs.
     # Testing is opt-out.
     # We only test for 'linux/amd64'.
     if ('tests' not in partial or partial['tests']) and partial['platform'] == 'linux/amd64':
-        partial['tests'                      ] = {'container' : {'image' : partial['image']}}
-        partial['examples'                   ] = {'container' : {'image' : partial['kokkos']}}
-        partial['install-as-package-and-test'] = {'container' : {'image' : partial['kokkos']}}
+        partial['tests'   ] = {'container' : {'image' : partial['image']}}
+        partial['examples'] = {'container' : {'image' : partial['kokkos']}}
 
         if arch in AVAILABLE_RUNNER_ARCHES:
             # Enforce GPU compute capability. See also
@@ -142,21 +141,15 @@ def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDic
             partial['tests'   ]['container']['env'] = env
             partial['examples']['container']['env'] = env
 
-        # We don't run anything on GPU.
-        # See also https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-disable-require-environment-variable
-        partial['install-as-package-and-test']['container']['env'] = {
-            'NVIDIA_DISABLE_REQUIRE' : '1',
-        }
-
         # We do require the architecture as a label if the architecture is part of our
         # available runner fleet.
         runs_on = ['self-hosted', 'linux', 'docker', 'amd64']
         if arch in AVAILABLE_RUNNER_ARCHES:
             runs_on += [f'{arch}'.lower(), 'gpu:0']
-        for name in ['tests', 'examples', 'install-as-package-and-test']:
+        for name in ('tests', 'examples'):
             partial[name]['runs-on'] = runs_on
     else:
-        for name in ['tests', 'examples', 'install-as-package-and-test']:
+        for name in ('tests', 'examples'):
             partial[name] = None
 
     return partial

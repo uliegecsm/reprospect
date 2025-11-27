@@ -29,9 +29,6 @@ jobs:
             setup-job-matrix-image: ${{ steps.setup-job-matrix-image.outputs.setup-job-matrix-image }}
         steps:
             - uses: actions/checkout@v6
-              with:
-                  set-safe-directory: true
-
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             # Images generally need a rebuild either because of file changes or it was requested during the workflow dispatch.
@@ -99,6 +96,7 @@ jobs:
         if: ${{ needs.setup-skips.outputs.setup-job-matrix-image == 'true' }}
         steps:
             - uses: actions/checkout@v6
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - uses: docker/login-action@v3
               with:
@@ -132,6 +130,7 @@ jobs:
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v6
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - id  : strategy
               run : |
@@ -150,6 +149,7 @@ jobs:
         if: ${{ needs.setup-skips.outputs.build-images == 'true' }}
         steps:
             - uses: actions/checkout@v6
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - uses: docker/login-action@v3
               with:
@@ -191,6 +191,7 @@ jobs:
         if: ${{ ! failure() && ! cancelled() && needs.setup-skips.outputs.build-images == 'true' }}
         steps:
             - uses: actions/checkout@v6
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - uses: docker/login-action@v3
               with:
@@ -251,6 +252,7 @@ jobs:
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v6
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
@@ -269,8 +271,59 @@ jobs:
                   path: artifacts
                   retention-days: 1
 
-    examples:
+    build-package:
         needs: [setup-job-matrix, build-images]
+        runs-on: [self-hosted, linux, docker, amd64]
+        container:
+            image: ghcr.io/${{ github.repository }}/build-images:latest
+        services:
+            docker:
+                image: docker:dind
+        strategy:
+            fail-fast: false
+            matrix:
+                pyver: [cp310, cp311, cp312, cp313, cp314]
+        if: ${{ ! failure() && ! cancelled() }}
+        steps:
+            - uses: actions/checkout@v6
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+            - uses: actions/setup-python@v6
+              with:
+                  python-version: '3.11'
+            - run: python -m pip install -U cibuildwheel
+            - run: python -m cibuildwheel --config-file pyproject.toml --output-dir wheelhouse
+              env:
+                  CIBW_ARCHS: x86_64
+                  CIBW_BUILD: "${{ matrix.pyver }}-manylinux*"
+            - uses: actions/upload-artifact@v5
+              with:
+                  name: package-${{ matrix.pyver }}
+                  path: wheelhouse/
+                  retention-days: 1
+
+    build-package-sdist:
+        needs: []
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+            - uses: actions/setup-python@v6
+              with:
+                  python-version: '3.11'
+            - run: python -m pip install -U build
+            - run: python -m build --sdist --verbose --outdir wheelhouse .
+            - uses: actions/upload-artifact@v5
+              with:
+                  name: package-sdist
+                  path: wheelhouse/
+                  retention-days: 1
+
+    examples:
+        needs: [
+            setup-job-matrix,
+            build-images,
+            build-package,
+            build-package-sdist,
+        ]
         strategy:
             fail-fast: false
             matrix:
@@ -280,63 +333,48 @@ jobs:
         container: ${{ matrix.examples.container }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/download-artifact@v6
+              with:
+                  pattern: package-*
+                  path: wheelhouse
+                  merge-multiple: true
 
-            - run: |
+            - name: Install the package.
+              run : |
+                python -m pip install --no-deps --no-index --find-links=wheelhouse/ reprospect
+
+            - name: Print version and import.
+              run: |
+                python -m pip show reprospect
+                python -c "import reprospect; print(reprospect);"
+                python -c "from reprospect.utils.detect import GPUDetector as u; print(u.get())"
+
+            - name: Scripts.
+              run: |
+                reprospect-install-nsight-systems --help
+
+            - uses: actions/checkout@v6
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+            - run: test -d reprospect && rm -rf reprospect
+
+            - name: Extensibility.
+              run: |
+                  python3 -m pytest \
+                      --config-file=${GITHUB_WORKSPACE}/tests/python/.pytest.ini \
+                      ${GITHUB_WORKSPACE}/tests/python/test_extensibility.py
+
+            - name: Examples.
+              run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
                     -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.cmake_cuda_architectures }} \
                     -DReProspect_ENABLE_DOCS=OFF \
                     -DReProspect_ENABLE_EXAMPLES=ON \
+                    -DReProspect_EXAMPLES_WITH_SOURCES=OFF \
                     -DReProspect_ENABLE_TESTS=OFF
 
             - run: cmake --build --preset=${{ matrix.cmake_preset }}
 
             - run: ctest --preset=${{ matrix.cmake_preset }}
-
-    install-as-package-and-test:
-        needs: [setup-job-matrix, build-images]
-        strategy:
-            fail-fast: false
-            matrix:
-                include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
-        env: ${{ matrix.environment }}
-        runs-on: ${{ matrix.install-as-package-and-test.runs-on }}
-        container: ${{ matrix.install-as-package-and-test.container }}
-        if: ${{ ! failure() && ! cancelled() }}
-        steps:
-            # Since it is still a private repository, let's avoid authentication burden by
-            # installing from the files directly.
-            - uses: actions/checkout@v6
-
-            - name: Create a virtual environment.
-              run : python -m venv ${{ github.job }}
-
-            - name: Install the package.
-              run : |
-                . ${{ github.job }}/bin/activate
-                pip install ${GITHUB_WORKSPACE}
-
-            - name: Print version and import.
-              run: |
-                . ${{ github.job }}/bin/activate
-                cd $RUNNER_TEMP
-                python -m pip show reprospect
-                python -c "from reprospect.utils.detect import GPUDetector as u; print(u.get())"
-
-            - name: Scripts.
-              run: |
-                . ${{ github.job }}/bin/activate
-                cd $RUNNER_TEMP
-                reprospect-install-nsight-systems --help
-
-            - name: Extensibility.
-              run: |
-                  . ${{ github.job }}/bin/activate
-                  cd $RUNNER_TEMP
-                  pip install -U pytest
-                  python3 -m pytest \
-                      --config-file=${GITHUB_WORKSPACE}/tests/python/.pytest.ini \
-                      ${GITHUB_WORKSPACE}/tests/python/test_extensibility.py
 
     documentation:
         needs: [setup-job-matrix, tests]
@@ -346,6 +384,7 @@ jobs:
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v6
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - run: |
                 cmake -S . --preset=gnu-nvidia \
@@ -371,8 +410,7 @@ jobs:
             - run: apk add git
 
             - uses: actions/checkout@v6
-              with:
-                  set-safe-directory: true
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - id: changed-files
               uses: tj-actions/changed-files@v47
@@ -393,7 +431,7 @@ jobs:
                   retention-days: 1
 
     pylint:
-        runs-on: [self-hosted, linux, docker, amd64]
+        runs-on: ubuntu-latest
         needs: [setup-job-matrix, build-images]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
@@ -424,7 +462,7 @@ jobs:
                     --fail-under=10
 
     mypy:
-        runs-on: [self-hosted, linux, docker, amd64]
+        runs-on: ubuntu-latest
         needs: [setup-job-matrix, build-images]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
@@ -452,7 +490,7 @@ jobs:
                 mypy --config-file tests/python/.mypy.ini --explicit-package-bases examples
 
     ruff:
-        runs-on: [self-hosted, linux, docker, amd64]
+        runs-on: ubuntu-latest
         needs: [setup-job-matrix, build-images]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
@@ -462,22 +500,31 @@ jobs:
             - run: ruff check --config pyproject.toml
 
     deploy:
-        needs: [setup-job-matrix, build-images, tests, examples, install-as-package-and-test, documentation, pylint, ruff]
+        needs: [
+            setup-job-matrix,
+            build-images,
+            build-package,
+            build-package-sdist,
+            documentation,
+            examples,
+            mypy,
+            pylint,
+            ruff,
+            tests,
+        ]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v6
-            - run: |
-                python -m build --verbose .
-                tree dist/
-            - run: |
-                VERSION=$(python3 -c "import pathlib, tomllib; print(tomllib.load(pathlib.Path('pyproject.toml').open('rb'))['project']['version'])")
-                echo "Version of the project is ${VERSION}."
-                echo "VERSION=${VERSION}" >> $GITHUB_ENV
+            - uses: actions/download-artifact@v6
+              with:
+                  pattern: package-*
+                  path: wheelhouse
+                  merge-multiple: true
+            - run: tree wheelhouse
             - if: github.ref == 'refs/heads/main'
               run: |
                 mc alias set MC_HOST_COSTMO ${{ vars.MC_HOST_COSTMO_URL }} ${{ secrets.MC_HOST_COSTMO_USER }} ${{ secrets.MC_HOST_COSTMO_PASSWORD }}
                 mc mb --ignore-existing MC_HOST_COSTMO/reprospect
-                mc cp --recursive dist/ MC_HOST_COSTMO/reprospect/
+                mc cp --recursive wheelhouse/ MC_HOST_COSTMO/reprospect/

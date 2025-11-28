@@ -60,6 +60,7 @@ authors = [
 
 [project.urls]
 Homepage = "https://github.com/uliegecsm/reprospect"
+Documentation = "https://uliegecsm.github.io/reprospect/"
 
 [project.scripts]
 reprospect-install-cuda-bindings = "reprospect.installers.cuda_bindings:main"

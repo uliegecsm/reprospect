@@ -542,3 +542,42 @@ jobs:
         steps:
             - id  : deployment
               uses: actions/deploy-pages@v4
+
+    # Following instructions from
+    # https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/#publishing-the-distribution-to-pypi.
+    publish-to-pypi:
+        needs: [
+            setup-job-matrix,
+            build-images,
+            build-package,
+            build-package-sdist,
+            documentation,
+            examples,
+            mypy,
+            pylint,
+            ruff,
+            tests,
+        ]
+        runs-on: ubuntu-latest
+
+        if: github.event_name == 'release' && github.event.action == 'published'
+
+        environment:
+            name: pypi
+            url: https://pypi.org/p/reprospect
+
+        permissions:
+            id-token: write
+            packages: read
+
+        steps:
+            - uses: actions/download-artifact@v6
+              with:
+                  pattern: package-*
+                  path: wheelhouse
+                  merge-multiple: true
+
+            - uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages-dir: wheelhouse
+                  verbose: true

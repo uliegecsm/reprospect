@@ -1,10 +1,7 @@
 attrs
 backports.strenum
 blake3
-
-# Version 0.0.8.3.
-cmake_file_api @ git+https://github.com/madebr/python-cmake-file-api@fc02aa8522b7f793643412124ee938f8d0dc7ef9
-
+cmake-file-api==0.0.8.3
 ijson
 mypy_extensions
 pandas

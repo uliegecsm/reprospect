@@ -115,20 +115,6 @@ RUN --mount=target=/reprospect/installers/nsight_systems.py,type=bind,source=rep
     python3 /reprospect/installers/nsight_systems.py
 EOF
 
-# Install MinIO.
-FROM nsight-systems AS minio
-
-RUN <<EOF
-    set -ex
-
-    apt-helpers install-packages --update --clean --packages curl
-
-    curl --progress-bar -L https://dl.min.io/aistor/mc/release/linux-${TARGETARCH}/mc \
-        --create-dirs \
-        -o /opt/aistor-binaries/mc
-    chmod +x /opt/aistor-binaries/mc
-EOF
-
 ENV PATH=/opt/aistor-binaries/:${PATH}
 
 # Install Doxygen.
@@ -180,7 +166,7 @@ RUN <<EOF
     cmake --build build -j4 --target install
 EOF
 
-FROM minio
+FROM nsight-systems
 
 ARG DOXYGEN_VERSION
 ARG GOOGLEBENCHMARK_VERSION

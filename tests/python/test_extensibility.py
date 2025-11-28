@@ -3,7 +3,7 @@ Ensure that the distributed package supports user extensions.
 
 ``mypyc`` compilation can inadvertently seal classes, preventing inheritance.
 This module verifies that :py:mod:`reprospect` extension points (*e.g.*,
-:py:class:`reprospect.test.sass.InstructionMatcher`) remain
+:py:class:`reprospect.test.sass.instruction.InstructionMatcher`) remain
 subclassable after compilation, allowing users to extend :py:mod:`reprospect` capabilities.
 """
 
@@ -15,9 +15,9 @@ import typing
 import pytest
 import regex
 
-from reprospect.tools.sass    import Instruction, ControlCode
-from reprospect.test.sass     import InstructionMatch, InstructionMatcher, PatternMatcher, FloatAddMatcher
-from reprospect.test.matchers import instruction_is
+from reprospect.tools.sass            import Instruction, ControlCode
+from reprospect.test.sass.instruction import InstructionMatch, InstructionMatcher, PatternMatcher, FloatAddMatcher
+from reprospect.test.sass.composite   import instruction_is
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -43,7 +43,7 @@ class NewPatternMatcher(PatternMatcher):
 
 class CannotBeExtended(FloatAddMatcher):
     """
-    :py:class:`reprospect.test.sass.FloatAddMatcher` was not marked as extensible.
+    :py:class:`reprospect.test.sass.instruction.FloatAddMatcher` was not marked as extensible.
     """
 
 class TestInspect:

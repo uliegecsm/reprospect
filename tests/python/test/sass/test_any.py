@@ -3,11 +3,11 @@ import typing
 
 import pytest
 
-from reprospect.test.sass import AnyMatcher, InstructionMatch
+from reprospect.test.sass.instruction import AnyMatcher, InstructionMatch
 
 class TestAnyMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.AnyMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.AnyMatcher`.
     """
     INSTRUCTIONS : typing.Final[dict[str, InstructionMatch]] = {
         'IMAD.MOV.U32 R4, R4, R5, R6' : InstructionMatch(opcode = 'IMAD', modifiers = ('MOV', 'U32'), operands = ('R4', 'R4', 'R5', 'R6')),

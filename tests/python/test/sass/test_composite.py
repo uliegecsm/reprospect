@@ -1,10 +1,10 @@
-from reprospect.test.matchers      import any_of, Fluentizer, instructions_are, instructions_contain, instruction_is, unordered_instructions_are
-from reprospect.test.matchers_impl import AnyOfMatcher, InSequenceMatcher, InSequenceAtMatcher, OneOrMoreInSequenceMatcher, OrderedInSequenceMatcher, UnorderedInSequenceMatcher, ZeroOrMoreInSequenceMatcher
-from reprospect.test.sass          import FloatAddMatcher, InstructionMatch, OpcodeModsMatcher
+from reprospect.test.sass.composite      import any_of, Fluentizer, instructions_are, instructions_contain, instruction_is, unordered_instructions_are
+from reprospect.test.sass.composite_impl import AnyOfMatcher, InSequenceMatcher, InSequenceAtMatcher, OneOrMoreInSequenceMatcher, OrderedInSequenceMatcher, UnorderedInSequenceMatcher, ZeroOrMoreInSequenceMatcher
+from reprospect.test.sass.instruction    import FloatAddMatcher, InstructionMatch, OpcodeModsMatcher
 
 class TestInstructionIs:
     """
-    Tests for :py:func:`reprospect.test.matchers.instruction_is`.
+    Tests for :py:func:`reprospect.test.sass.composite.instruction_is`.
     """
     def test(self) -> None:
         matcher = instruction_is(FloatAddMatcher())
@@ -32,7 +32,7 @@ class TestInstructionIs:
 
 class TestInstructionsAre:
     """
-    Tests for :py:func:`reprospect.test.matchers.instructions_are`.
+    Tests for :py:func:`reprospect.test.sass.composite.instructions_are`.
     """
     def test(self) -> None:
         matcher = instructions_are(FloatAddMatcher(), FloatAddMatcher())
@@ -50,7 +50,7 @@ class TestInstructionsAre:
 
 class TestUnorderedInstructionsAre:
     """
-    Tests for :py:func:`reprospect.test.matchers.unordered_instructions_are`.
+    Tests for :py:func:`reprospect.test.sass.composite.unordered_instructions_are`.
     """
     def test(self) -> None:
         matcher = unordered_instructions_are(FloatAddMatcher(), FloatAddMatcher())
@@ -59,7 +59,7 @@ class TestUnorderedInstructionsAre:
 
 class TestInstructionsContain:
     """
-    Tests for :py:func:`reprospect.test.matchers.instructions_contain`.
+    Tests for :py:func:`reprospect.test.sass.composite.instructions_contain`.
     """
     def test(self) -> None:
         matcher = instructions_contain(FloatAddMatcher())
@@ -67,7 +67,7 @@ class TestInstructionsContain:
 
 class TestAnyOf:
     """
-    Tests for :py:func:`reprospect.test.matchers.any_of`.
+    Tests for :py:func:`reprospect.test.sass.composite.any_of`.
     """
     def test(self) -> None:
         matcher = any_of(FloatAddMatcher(), FloatAddMatcher())

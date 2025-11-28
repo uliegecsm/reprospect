@@ -2,11 +2,11 @@ import typing
 
 import pytest
 
-from reprospect.test.sass import BranchMatcher, InstructionMatch
+from reprospect.test.sass.instruction import BranchMatcher, InstructionMatch
 
 class TestBranchMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.BranchMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.BranchMatcher`.
     """
     INSTRUCTIONS : typing.Final[dict[str, InstructionMatch]] = {
         'BRA 0x240' : InstructionMatch(opcode = 'BRA', modifiers = (), operands = ('0x240',)),

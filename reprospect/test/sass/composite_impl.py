@@ -1,5 +1,5 @@
 """
-Combine matchers from :py:mod:`reprospect.test.sass` into sequence matchers.
+Combine matchers from :py:mod:`reprospect.test.sass.instruction` into sequence matchers.
 """
 
 import abc
@@ -7,8 +7,8 @@ import itertools
 import sys
 import typing
 
-from reprospect.test.sass  import InstructionMatcher, InstructionMatch
-from reprospect.tools.sass import Instruction
+from reprospect.test.sass.instruction import InstructionMatcher, InstructionMatch
+from reprospect.tools.sass            import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -24,7 +24,7 @@ class SequenceMatcher(abc.ABC):
         """
         ..note::
 
-            The `instructions` may be consumed more than once, *e.g.* in :py:class:`reprospect.test.matchers_impl.UnorderedInSequenceMatcher`.
+            The `instructions` may be consumed more than once, *e.g.* in :py:class:`reprospect.test.sass.composite_implUnorderedInSequenceMatcher`.
             Therefore, it must be a :py:type:`typing.Sequence`, not a :py:type:`typing.Iterable`.
         """
 

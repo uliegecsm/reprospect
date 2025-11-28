@@ -10,7 +10,7 @@ from reprospect.utils                  import cmake
 
 from tests.python.parameters  import Parameters, PARAMETERS
 
-from tests.python.test.sass.test_sass import get_decoder
+from tests.python.test.sass.test_instruction import get_decoder
 
 class TestGraph:
     """

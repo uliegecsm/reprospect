@@ -18,6 +18,10 @@ on:
         # At 06:00 on Sunday.
         - cron:  '0 6 * * 6'
 
+permissions:
+    contents: read
+    packages: read
+
 jobs:
 
     setup-skips:
@@ -303,7 +307,9 @@ jobs:
 
     build-package-sdist:
         needs: []
-        runs-on: ubuntu-latest
+        runs-on: [self-hosted, linux, docker, amd64]
+        container:
+            image: ubuntu:24.04
         steps:
             - uses: actions/checkout@v6
             - uses: actions/setup-python@v6
@@ -431,7 +437,7 @@ jobs:
                   retention-days: 1
 
     pylint:
-        runs-on: ubuntu-latest
+        runs-on: [self-hosted, linux, docker, amd64]
         needs: [setup-job-matrix, build-images]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
@@ -462,7 +468,7 @@ jobs:
                     --fail-under=10
 
     mypy:
-        runs-on: ubuntu-latest
+        runs-on: [self-hosted, linux, docker, amd64]
         needs: [setup-job-matrix, build-images]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
@@ -490,7 +496,7 @@ jobs:
                 mypy --config-file tests/python/.mypy.ini --explicit-package-bases examples
 
     ruff:
-        runs-on: ubuntu-latest
+        runs-on: [self-hosted, linux, docker, amd64]
         needs: [setup-job-matrix, build-images]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}

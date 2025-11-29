@@ -529,8 +529,3 @@ jobs:
                   path: wheelhouse
                   merge-multiple: true
             - run: tree wheelhouse
-            - if: github.ref == 'refs/heads/main'
-              run: |
-                mc alias set MC_HOST_COSTMO ${{ vars.MC_HOST_COSTMO_URL }} ${{ secrets.MC_HOST_COSTMO_USER }} ${{ secrets.MC_HOST_COSTMO_PASSWORD }}
-                mc mb --ignore-existing MC_HOST_COSTMO/reprospect
-                mc cp --recursive wheelhouse/ MC_HOST_COSTMO/reprospect/

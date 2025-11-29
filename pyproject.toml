@@ -1,7 +1,7 @@
 [build-system]
 requires = [
     "setuptools",
-    "mypy[mypyc]",
+    "mypy[mypyc]==1.18.2",
 
     # mypyc requires that runtime dependencies are also installed
     # during the build, since it parses the code base.

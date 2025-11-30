@@ -18,6 +18,8 @@ class TestFunction:
     """
     Tests related to :py:class:`reprospect.tools.binaries.Function`.
     """
+    SYMBOL : typing.Final[str] = '_Z9my_kernelfPKfPfj'
+
     CODE : typing.Final[str] = """\
         .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"
         /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */
@@ -41,12 +43,14 @@ class TestFunction:
         """
         Test :py:meth:`reprospect.tools.binaries.Function.__str__`.
         """
-        function = Function(code = self.CODE, ru = self.RU)
+        function = Function(symbol = self.SYMBOL, code = self.CODE, ru = self.RU)
 
         # Check that the conversion to a table with truncation of long lines works as expected.
         rt = function.to_table(max_code_length = 120)
         assert rich_helpers.to_string(rt) == """\
 ┌─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Symbol          │ _Z9my_kernelfPKfPfj                                                                                                      │
+├─────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ Code            │ .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"                                                       │
 │                 │ /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b… │
 │                 │                                                                                                     /* 0x000e2200000008… │
@@ -60,6 +64,8 @@ class TestFunction:
         # Check the rich representation with the default table size.
         assert str(function) == """\
 ┌─────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Symbol          │ _Z9my_kernelfPKfPfj                                                                                                                │
+├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ Code            │ .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"                                                                 │
 │                 │ /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */       │
 │                 │                                                                                                     /* 0x000e220000000800 */       │
@@ -129,6 +135,8 @@ class TestCuObjDump:
                 ResourceType.SURFACE: 0,
                 ResourceType.SAMPLER: 0,
             }), cuobjdump.functions[self.SIGNATURE].ru
+
+            assert cuobjdump.functions[self.SIGNATURE].symbol == self.SYMBOL
 
         def test_extract_cubin_from_file(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
@@ -209,7 +217,7 @@ class TestCuObjDump:
         CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cu'
         CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
 
-        SYMBOLS : typing.Final[dict[str, str]] = {
+        FUNCTIONS : typing.Final[dict[str, str]] = {
             '_Z6say_hiv' : 'say_hi()',
             '_Z20vector_atomic_add_42PKfS0_Pfj' : 'vector_atomic_add_42(const float *, const float *, float *, unsigned int)',
         }
@@ -233,7 +241,9 @@ class TestCuObjDump:
                 cuobjdump = cuobjdump,
             )
 
-            assert len(cuobjdump.functions) == len(self.SYMBOLS)
+            assert len(cuobjdump.functions) == len(self.FUNCTIONS)
+
+            assert all(cuobjdump.functions[signature].symbol == symbol for symbol, signature in self.FUNCTIONS.items())
 
         def test_extract_cubin_from_file(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
@@ -261,7 +271,7 @@ class TestCuObjDump:
 
             assert cubin.is_file()
 
-            assert set(cuobjdump.functions.keys()) == set(self.SYMBOLS.values())
+            assert set(cuobjdump.functions.keys()) == set(self.FUNCTIONS.values())
 
         def test_extract_symbol_table(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
             """
@@ -288,7 +298,7 @@ class TestCuObjDump:
                 sass = False,
             )
 
-            assert all(x in cuobjdump.symtab['name'].values for x in self.SYMBOLS)
+            assert all(symbol in cuobjdump.symtab['name'].values for symbol in self.FUNCTIONS)
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     class TestCuBLAS:
@@ -348,10 +358,12 @@ class TestCuObjDump:
         )
         cuobjdump.functions = {
             'my_kernel(float, const float *, float *, unsigned int)' : Function(
+                symbol = TestFunction.SYMBOL,
                 code = TestFunction.CODE,
                 ru = TestFunction.RU
             ),
             'my_other_kernel(float, const float *, float *, unsigned int)' : Function(
+                symbol = '_Z15my_other_kernelfPKfPfj',
                 code = TestFunction.CODE,
                 ru = TestFunction.RU
             )
@@ -361,6 +373,8 @@ class TestCuObjDump:
 CuObjDump of code_object.o for architecture BLACKWELL120:
 ┌─────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Function        │ my_kernel(float, const float *, float *, unsigned int)                                                                             │
+├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Symbol          │ _Z9my_kernelfPKfPfj                                                                                                                │
 ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ Code            │ .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"                                                                 │
 │                 │ /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */       │
@@ -372,6 +386,8 @@ CuObjDump of code_object.o for architecture BLACKWELL120:
 └─────────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌─────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Function        │ my_other_kernel(float, const float *, float *, unsigned int)                                                                       │
+├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Symbol          │ _Z15my_other_kernelfPKfPfj                                                                                                         │
 ├─────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ Code            │ .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"                                                                 │
 │                 │ /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */       │

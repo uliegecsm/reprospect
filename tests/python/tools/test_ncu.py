@@ -258,7 +258,7 @@ class TestSession:
         assert report.report.num_ranges() == 1
 
         # Extract results without NVTX filtering.
-        results = report.extract_results_in_range(0, metrics = METRICS)
+        results = report.extract_results_in_range(metrics = METRICS)
 
         logging.info(results)
 
@@ -268,9 +268,9 @@ class TestSession:
         assert all(x in metrics_saxpy_kernel_1 for x in EXPT_METRICS_AND_METADATA)
         # Extract results with NVTX filtering. Request only the 2 first metrics.
         with pytest.raises(RuntimeError, match = 'no action found'):
-            results_filtered = report.extract_results_in_range(0, metrics = METRICS[:2], includes = ('outer_useless_range',))
+            results_filtered = report.extract_results_in_range(metrics = METRICS[:2], includes = ('outer_useless_range',))
 
-        results_filtered = report.extract_results_in_range(0, metrics = METRICS[:2], includes = ('application_domain@outer_useless_range',))
+        results_filtered = report.extract_results_in_range(metrics = METRICS[:2], includes = ('application_domain@outer_useless_range',))
 
         logging.info(results_filtered)
 
@@ -321,7 +321,7 @@ class TestSession:
 
         assert report.report.num_ranges() == 1
 
-        results = report.extract_results_in_range(0, metrics = METRICS)
+        results = report.extract_results_in_range(metrics = METRICS)
 
         logging.info(results)
 
@@ -366,7 +366,7 @@ class TestSession:
         assert report.report.num_ranges() == 1
 
         # Extract results.
-        results = report.extract_results_in_range(0, metrics = METRICS, demangler = get_demangler_for_compiler(cmake_cuda_compiler['id']))
+        results = report.extract_results_in_range(metrics = METRICS, demangler = get_demangler_for_compiler(cmake_cuda_compiler['id']))
 
         logging.info(results)
 

@@ -882,7 +882,7 @@ class Report:
 
         logging.info(f"Report {self.path} loaded successfully ({self.report}).")
 
-    def extract_metrics_in_range(
+    def extract_results_in_range(
         self,
         range_idx : int,
         metrics : typing.Iterable[Metric | MetricCorrelation],

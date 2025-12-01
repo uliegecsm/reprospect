@@ -33,7 +33,7 @@ class AddInt128(SequenceMatcher):
         According to https://docs.nvidia.com/cuda/parallel-thread-execution/#extended-precision-arithmetic-instructions-add-cc, the carry-out
         value is written in the condition code register, usually ``P0``.
     """
-    def pattern_3IADD(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def pattern_3IADD(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
         """
         Typically::
 
@@ -92,7 +92,7 @@ class AddInt128(SequenceMatcher):
 
         return matched
 
-    def pattern_4IADD3(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def pattern_4IADD3(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
         """
         Typically::
 
@@ -199,7 +199,6 @@ class AddInt128(SequenceMatcher):
         instruction = instructions[0].instruction if isinstance(instructions[0], Instruction) else instructions[0]
         if instruction.startswith('IADD.64'):
             return self.pattern_3IADD(instructions = instructions)
-        elif instruction.startswith('IADD3'):
+        if instruction.startswith('IADD3'):
             return self.pattern_4IADD3(instructions = instructions)
-        else:
-            return None
+        return None

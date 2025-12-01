@@ -84,8 +84,9 @@ class Function:
     """
     Data structure holding the SASS code and resource usage of a kernel, as extracted from a binary file.
     """
+    symbol : str #: The symbol name.
     code : str #: The SASS code.
-    ru : ResourceUsage | None = None #: The resource usage.
+    ru : ResourceUsage #: The resource usage.
 
     def to_table(self, *, max_code_length : int = 130, descriptors : typing.Optional[dict[str, str]] = None) -> rich.table.Table:
         """
@@ -102,12 +103,14 @@ class Function:
             for k, v in descriptors.items():
                 table.add_row(k, v, end_section = True)
 
+        # Symbol.
+        table.add_row("Symbol", self.symbol, end_section = True)
+
         # Code.
         table.add_row("Code", rich.text.Text(textwrap.dedent(self.code.expandtabs()).rstrip()), end_section = True)
 
         # Resource usage.
-        if self.ru:
-            table.add_row("Resource usage", ", ".join(f"{key}: {value}" for key, value in self.ru.items()))
+        table.add_row("Resource usage", ", ".join(f"{key}: {value}" for key, value in self.ru.items()))
 
         return table
 
@@ -161,10 +164,11 @@ class CuObjDump:
         START = '\t\tFunction : ' # pylint: disable=invalid-name
         STOP = '\t\t.....' # pylint: disable=invalid-name
 
+        current_function_symbol_code : str | None = None
         current_function_code : str | None = None
         current_code : list[str] = []
 
-        current_function_ru: typing.Optional[str] = None
+        current_function_ru: str | None = None
         current_ru : dict[str, ResourceUsage] = {}
 
         # Read the stream as it comes.
@@ -174,9 +178,10 @@ class CuObjDump:
 
             # End of function block.
             if line.startswith(STOP):
-                assert len(current_code) > 0 and current_function_code is not None
+                assert len(current_code) > 0 and current_function_symbol_code is not None and current_function_code is not None
 
                 self.functions[current_function_code] = Function(
+                    symbol = current_function_symbol_code,
                     code = ''.join(current_code),
                     ru = current_ru.pop(current_function_code),
                 )
@@ -202,10 +207,8 @@ class CuObjDump:
             elif line.startswith(START):
                 assert len(current_code) == 0 and current_function_code is None
 
-                current_function_code = line[len(START):].rstrip('\n')
-
-                if demangler:
-                    current_function_code = demangler.demangle(current_function_code)
+                current_function_symbol_code = line[len(START):].rstrip('\n')
+                current_function_code = demangler.demangle(current_function_symbol_code) if demangler else current_function_symbol_code
 
             else:
                 pass

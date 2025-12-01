@@ -6,7 +6,7 @@ Indeed, modern HPC code bases rely on complex software stacks and compiler toolc
 While code correctness is often checked through regression testing,
 reaching and sustaining optimal performance as software and hardware evolve requires additional effort.
 This is usually achieved through verification of compile flags and *ad hoc* profiling and benchmarking.
-However, beyond runtime analysis, the SASS code already contains information about the code paths taken and could itself be incorporated into testing.
+However, beyond runtime analysis, the SASS code already contains information about the available code paths and could itself be incorporated into testing.
 Still, the barrier to entry for meaningful SASS analysis is high: results can vary dramatically with compiler versions, optimization flags, and target architectures.
 
 `ReProspect` provides a hierarchy of SASS instruction matchers that capture the components of an instruction (*opcodes*, *modifiers* and *operands*).

@@ -109,7 +109,6 @@ nitpick_ignore_regex = [
     ('py:class', r'numpy.int64'),
     ('py:class', r'_regex.Match'),
     ('py:class', r'_regex.Pattern'),
-    ('py:class', r'NestedProfilingResults'),
     ('py:class', r'elftools.*'),
 ]
 

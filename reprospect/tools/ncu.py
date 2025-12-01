@@ -2,6 +2,7 @@
 
 import copy
 import dataclasses
+import enum
 import functools
 import importlib
 import json
@@ -72,7 +73,10 @@ class Quantity(StrEnum):
     SECTOR      = 'sectors'
     WAVEFRONT   = 'wavefronts'
 
-@dataclasses.dataclass(frozen = False)
+#: A single metric value type.
+ValueType : typing.TypeAlias = int | float | None
+
+@dataclasses.dataclass(frozen = False, slots = True)
 class Metric:
     """
     Used to represent a ``ncu`` metric.
@@ -87,13 +91,13 @@ class Metric:
     #: Human readable name.
     human : str
 
-    #: A dictionary of sub-metrics and their value.
-    subs : dict[typing.Any, int | float | None]
+    #: A single metric value or a dictionary of sub-metric values.
+    data : ValueType | dict[str, ValueType] = dataclasses.field(init = False, default = None)
 
     def __init__(self,
         name : str,
         *,
-        subs : typing.Optional[typing.Iterable[typing.Any]] = None,
+        subs : typing.Iterable[typing.Any] | None = None,
         human : typing.Optional[str] = None,
     ) -> None:
         """
@@ -102,25 +106,32 @@ class Metric:
         """
         self.name  = name
         self.human = human if human else self.name
-        self.subs  = {x: None for x in subs} if subs else {'' : None}
+        if subs is not None:
+            self.data = {sub : None for sub in subs}
+        else:
+            self.data = None
 
     def __repr__(self) -> str:
-        return self.name + '(' + ','.join(f'{sub}={value}' for sub, value in self.subs.items()) + ')'
+        if isinstance(self.data, dict):
+            return self.name + '(' + ','.join(f'{sub}={value}' for sub, value in self.data.items()) + ')'
+        return f'{self.name}({self.data})'
 
     def gather(self) -> tuple[str, ...]:
         """
         Get the list of sub-metric names or the metric name itself if no sub-metrics are defined.
         """
-        return tuple(f'{self.name}{sub}' for sub in self.subs.keys())
+        if isinstance(self.data, dict):
+            return tuple(f'{self.name}.{sub}' for sub in self.data)
+        return (self.name,)
 
 class MetricCounterRollUp(StrEnum):
     """
     Available roll-ups for :py:class:`MetricCounter`.
     """
-    SUM = '.sum'
-    AVG = '.avg'
-    MIN = '.min'
-    MAX = '.max'
+    SUM = enum.auto()
+    AVG = enum.auto()
+    MIN = enum.auto()
+    MAX = enum.auto()
 
 class MetricCounter(Metric):
     """
@@ -136,9 +147,9 @@ class MetricRatioRollUp(StrEnum):
     """
     Available roll-ups for :py:class:`MetricRatio`.
     """
-    PCT      = '.pct'
-    RATIO    = '.ratio'
-    MAX_RATE = '.max_rate'
+    PCT = enum.auto()
+    RATIO = enum.auto()
+    MAX_RATE = enum.auto()
 
 class MetricRatio(Metric):
     """
@@ -612,14 +623,14 @@ class NvtxDomain:
         raise AttributeError(attr)
 
 #: A single metric value in profiling results.
-MetricValue : typing.TypeAlias = typing.Union[MetricCorrelation, int, float, str, None]
+MetricData : typing.TypeAlias = ValueType | dict[str, ValueType] | MetricCorrelation | str
 
 @typing.runtime_checkable
 class ProfilingMetrics(typing.Protocol):
     """
     Protocol representing a mapping of profiling metric keys to their values.
     """
-    def __getitem__(self, key : str, /) -> MetricValue:
+    def __getitem__(self, key : str, /) -> MetricData:
         ...
 
     def __contains__(self, key: str, /) -> bool:
@@ -631,10 +642,10 @@ class ProfilingMetrics(typing.Protocol):
     def keys(self) -> typing.Iterable[str]:
         ...
 
-    def values(self) -> typing.Iterable[MetricValue]:
+    def values(self) -> typing.Iterable[MetricData]:
         ...
 
-    def items(self) -> typing.Iterable[tuple[str, MetricValue]]:
+    def items(self) -> typing.Iterable[tuple[str, MetricData]]:
         ...
 
 @dataclasses.dataclass(slots = True, frozen = False)
@@ -658,12 +669,12 @@ class ProfilingResults(rich_helpers.TreeMixin):
         └── 'nvtx range'
             ├── 'nvtx region'
             │   └── 'kernel'
-            │       ├── 'metric i'  -> MetricValue
-            │       └── 'metric ii' -> MetricValue
+            │       ├── 'metric i'  -> MetricData
+            │       └── 'metric ii' -> MetricData
             └── 'other nvtx region'
                 └── 'other kernel'
-                    ├── 'metric i'  -> MetricValue
-                    └── 'metric ii' -> MetricValue
+                    ├── 'metric i'  -> MetricData
+                    └── 'metric ii' -> MetricData
     """
     data : dict[str, 'ProfilingResults | ProfilingMetrics'] = dataclasses.field(default_factory = dict)
 
@@ -928,7 +939,7 @@ class Report:
 
         return profiling_results
 
-    def collect_metrics_from_action(self, *, metrics : typing.Iterable[Metric | MetricCorrelation], action : Action) -> dict[str, MetricValue]:
+    def collect_metrics_from_action(self, *, metrics : typing.Iterable[Metric | MetricCorrelation], action : Action) -> dict[str, MetricData]:
         """
         Collect values of the `metrics` in the `action`.
 
@@ -937,7 +948,7 @@ class Report:
         * https://github.com/shunting314/gpumisc/blob/37bbb827ae2ed6f5777daff06956c7a10aafe34d/ncu-related/official-sections/FPInstructions.py#L51
         * https://github.com/NVIDIA/nsight-training/blob/2d680f7f8368b945bc00b22834808af24eff4c3d/cuda/nsight_compute/python_report_interface/Opcode_instanced_metrics.ipynb
         """
-        results : dict[str, MetricValue] = {}
+        results : dict[str, MetricData] = {}
 
         for metric in map(copy.deepcopy, metrics):
             if isinstance(metric, MetricCorrelation):
@@ -957,8 +968,12 @@ class Report:
                 results[metric.name] = metric
             elif isinstance(metric, Metric):
                 self.fill_metric(action = action, metric = metric)
-                for sub_name, sub_value in metric.subs.items():
-                    results[f'{metric.human}{sub_name}'] = sub_value
+                assert metric.human is not None
+                if isinstance(metric.data, dict):
+                    for sub, value in metric.data.items():
+                        results[f'{metric.human}.{sub}'] = value
+                else:
+                    results[metric.human] = metric.data
             else:
                 raise NotImplementedError(metric)
 
@@ -969,8 +984,11 @@ class Report:
         """
         Loop over submetrics of `metric`.
         """
-        for sub in metric.subs:
-            metric.subs[sub] = cls.get_metric_by_name(action = action, metric = metric.name + sub).value()
+        if isinstance(metric.data, dict):
+            for sub in metric.data:
+                metric.data[sub] = cls.get_metric_by_name(action = action, metric = f'{metric.name}.{sub}').value()
+        else:
+            metric.data = cls.get_metric_by_name(action = action, metric = metric.name).value()
         return metric
 
     @classmethod

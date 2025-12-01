@@ -160,7 +160,7 @@ class NVDisasm:
         """
         Extract register usage from liveness range information.
 
-        ..note:
+        .. note:
 
             The implementation runs ``nvdisasm`` separately for each function in `mangled`.
             Otherwise, the "life range mode" adds to *all* kernels as many columns as

@@ -102,7 +102,7 @@ def instructions_contain(matcher : instruction.InstructionMatcher | composite_im
     """
     Check that a sequence of instructions contains at least one instruction matching `matcher`.
 
-    ..note::
+    .. note::
 
         Stops on the first match.
 

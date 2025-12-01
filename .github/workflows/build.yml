@@ -383,7 +383,11 @@ jobs:
             - run: ctest --preset=${{ matrix.cmake_preset }}
 
     documentation:
-        needs: [setup-job-matrix, tests]
+        needs: [
+            setup-job-matrix,
+            build-images,
+            tests,
+        ]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ${{ needs.setup-job-matrix.outputs.doc_image }}
@@ -406,6 +410,10 @@ jobs:
 
             - run: cd docs && make -j4 doctest
             - run: cd docs && make -j4 html
+
+            - uses: actions/upload-pages-artifact@v4
+              with:
+                  path: docs/build/html
 
     papers:
         needs: []
@@ -520,12 +528,17 @@ jobs:
         ]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
-            image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
-        if: ${{ ! failure() && ! cancelled() }}
+            image: ubuntu:24.04
+        if: ${{ ! failure() && ! cancelled() && github.ref == 'refs/heads/main' }}
+
+        permissions:
+            pages   : write
+            id-token: write
+
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+
         steps:
-            - uses: actions/download-artifact@v6
-              with:
-                  pattern: package-*
-                  path: wheelhouse
-                  merge-multiple: true
-            - run: tree wheelhouse
+            - id  : deployment
+              uses: actions/deploy-pages@v4

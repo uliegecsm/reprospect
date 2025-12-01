@@ -22,10 +22,10 @@ class SequenceMatcher(abc.ABC):
     @abc.abstractmethod
     def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         """
-        ..note::
+        .. note::
 
             The `instructions` may be consumed more than once, *e.g.* in :py:class:`reprospect.test.sass.composite_impl.UnorderedInSequenceMatcher`.
-            Therefore, it must be a :py:type:`typing.Sequence`, not a :py:type:`typing.Iterable`.
+            Therefore, it must be a :py:class:`typing.Sequence`, not a :py:class:`typing.Iterable`.
         """
 
     @typing.final

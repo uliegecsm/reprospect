@@ -3,7 +3,8 @@ import json
 import pathlib
 import typing
 
-import cmake_file_api
+import cmake_file_api.kinds
+import cmake_file_api.reply.v1
 import ijson
 
 CacheDict : typing.TypeAlias = dict[str, dict[str, typing.Any]]

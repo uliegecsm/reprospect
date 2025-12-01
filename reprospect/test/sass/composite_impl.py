@@ -24,7 +24,7 @@ class SequenceMatcher(abc.ABC):
         """
         ..note::
 
-            The `instructions` may be consumed more than once, *e.g.* in :py:class:`reprospect.test.sass.composite_implUnorderedInSequenceMatcher`.
+            The `instructions` may be consumed more than once, *e.g.* in :py:class:`reprospect.test.sass.composite_impl.UnorderedInSequenceMatcher`.
             Therefore, it must be a :py:type:`typing.Sequence`, not a :py:type:`typing.Iterable`.
         """
 

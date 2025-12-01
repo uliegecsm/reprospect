@@ -1,7 +1,7 @@
 [build-system]
 requires = [
     "setuptools",
-    "mypy[mypyc]==1.18.2",
+    "mypy[mypyc]==1.19.0",
 
     # mypyc requires that runtime dependencies are also installed
     # during the build, since it parses the code base.
@@ -31,20 +31,13 @@ packages = [
     "reprospect",
     "reprospect.installers",
     "reprospect.test",
+    "reprospect.test.sass",
+    "reprospect.test.sass.matchers",
     "reprospect.tools",
     "reprospect.tools.binaries",
     "reprospect.tools.sass",
     "reprospect.utils",
 ]
-
-[tool.setuptools.package-dir]
-"reprospect" = "reprospect"
-"reprospect.installers" = "reprospect/installers"
-"reprospect.test" = "reprospect/test"
-"reprospect.tools" = "reprospect/tools"
-"reprospect.tools.binaries" = "reprospect/tools/binaries"
-"reprospect.tools.sass" = "reprospect/tools/sass"
-"reprospect.utils" = "reprospect/utils"
 
 [tool.setuptools.dynamic]
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#dynamic-metadata

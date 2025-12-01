@@ -77,7 +77,7 @@ class ComputeCapability:
             return (self.major, self.minor) < (other.major, other.minor)
         if isinstance(other, int):
             return self.as_int < other
-        return NotImplemented # type: ignore[unreachable]
+        return NotImplemented
 
     @staticmethod
     def from_int(value : int) -> 'ComputeCapability':

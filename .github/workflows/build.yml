@@ -17,6 +17,8 @@ on:
     schedule:
         # At 06:00 on Sunday.
         - cron:  '0 6 * * 6'
+    release:
+        types: [published]
 
 permissions:
     contents: read

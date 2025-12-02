@@ -178,13 +178,13 @@ class TestSession:
             # Metric with full name provided.
             ncu.Metric(name = 'launch__registers_per_thread_allocated'),
             # Metric with roll-up.
-            ncu.MetricCounter(name = 'smsp__inst_executed', subs = [ncu.MetricCounter.RollUp.SUM]),
+            ncu.MetricCounter(name = 'smsp__inst_executed', subs = (ncu.MetricCounterRollUp.SUM,)),
             # Launch grid and block.
-            *ncu.LaunchBlock.get(),
-            *ncu.LaunchGrid.get(),
+            *ncu.LaunchBlock.create(),
+            *ncu.LaunchGrid.create(),
             # A few L1TEX cache metrics.
-            ncu.L1TEXCache.GlobalLoad.Instructions(),
-            ncu.L1TEXCache.GlobalLoad.Sectors(),
+            ncu.L1TEXCache.GlobalLoad.Instructions.create(),
+            ncu.L1TEXCache.GlobalLoad.Sectors.create(),
         )
 
         EXPT_METRICS_AND_METADATA = (
@@ -300,8 +300,8 @@ class TestSession:
         """
         METRICS = (
             # A few L1TEX cache metrics.
-            ncu.L1TEXCache.GlobalLoad.Sectors(),
-            ncu.L1TEXCache.GlobalStore.Sectors(),
+            ncu.L1TEXCache.GlobalLoad.Sectors.create(),
+            ncu.L1TEXCache.GlobalStore.Sectors.create(),
         )
 
         session = ncu.Session(output = workdir / 'report-graph-basics')
@@ -419,8 +419,8 @@ class TestCacher:
         """
         METRICS = (
             # A few L1TEX cache metrics.
-            ncu.L1TEXCache.GlobalLoad.Sectors(),
-            ncu.L1TEXCache.GlobalStore.Sectors(),
+            ncu.L1TEXCache.GlobalLoad.Sectors.create(),
+            ncu.L1TEXCache.GlobalStore.Sectors.create(),
         )
 
         FILES = ('report-cached.log', 'report-cached.ncu-rep')

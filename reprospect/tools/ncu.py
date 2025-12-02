@@ -90,27 +90,22 @@ class Metric:
     name : str
 
     #: Human readable name.
-    human : str
+    pretty_name : str | None = None
 
     #: A single metric value or a dictionary of sub-metric values.
     data : ValueType | dict[str, ValueType | None] | None = dataclasses.field(init = False, default = None)
 
-    def __init__(self,
-        name : str,
-        *,
-        subs : typing.Iterable[typing.Any] | None = None,
-        human : typing.Optional[str] = None,
-    ) -> None:
+    #: Initialization variable for sub-metric names.
+    subs : dataclasses.InitVar[typing.Iterable[str] | None] = None
+
+    def __post_init__(self, subs : typing.Iterable[str] | None) -> None:
         """
         If `subs` is not given, it is assumed that `name` is a valid metric
         that can be directly evaluated by ``ncu``.
         """
-        self.name  = name
-        self.human = human if human else self.name
+        self.pretty_name = self.pretty_name or self.name
         if subs is not None:
             self.data = {sub : None for sub in subs}
-        else:
-            self.data = None
 
     def __repr__(self) -> str:
         if isinstance(self.data, dict):
@@ -134,15 +129,17 @@ class MetricCounterRollUp(StrEnum):
     MIN = enum.auto()
     MAX = enum.auto()
 
+@dataclasses.dataclass(slots = True, frozen = False)
 class MetricCounter(Metric):
     """
     A counter metric.
+
+    The sub-metric names are expected to be from :py:class:`MetricCounterRollUp`.
 
     References:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
-    RollUp : typing.Final[typing.Type[MetricCounterRollUp]] = MetricCounterRollUp # pylint: disable=invalid-name
 
 class MetricRatioRollUp(StrEnum):
     """
@@ -152,15 +149,17 @@ class MetricRatioRollUp(StrEnum):
     RATIO = enum.auto()
     MAX_RATE = enum.auto()
 
+@dataclasses.dataclass(slots = True, frozen = False)
 class MetricRatio(Metric):
     """
     A ratio metric.
+
+    The sub-metric names are expected to be from :py:class:`MetricRatioRollUp`.
 
     References:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
-    RollUp : typing.Final[typing.Type[MetricRatioRollUp]] = MetricRatioRollUp # pylint: disable=invalid-name
 
 class XYZBase:
     """
@@ -173,7 +172,7 @@ class XYZBase:
     prefix : typing.ClassVar[str]
 
     @classmethod
-    def get(cls, dims : typing.Optional[typing.Iterable[str]] = None) -> typing.Iterable[Metric]:
+    def create(cls, dims : typing.Iterable[str] | None = None) -> typing.Iterable[Metric]:
         if not dims:
             dims = ('x', 'y', 'z')
         return (Metric(name = cls.prefix + dim) for dim in dims)
@@ -240,84 +239,105 @@ def counter_name_from(
         name += f'_{qualifier}'
     return name
 
-class L1TEXCacheGlobalLoadInstructions(MetricCounter):
+class L1TEXCacheGlobalLoadInstructions:
     """
-    Counter metric ``(unit)__(sass?)_inst_executed_op_global_ld``.
+    Factory of counter metric ``(unit)__(sass?)_inst_executed_op_global_ld``.
     """
-    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
-        super().__init__(
-            name = counter_name_from(
-                unit = unit,
-                quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
-                qualifier = 'executed_op_global_ld',
-            ), subs = subs or (MetricCounterRollUp.SUM,),
-            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'instructions', mode or '')),
+    @staticmethod
+    def create(*,
+        unit : Unit = Unit.SMSP,
+        mode : typing.Literal['sass'] | None = 'sass',
+        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+    ) -> 'MetricCounter':
+        name = counter_name_from(
+            unit = unit,
+            quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
+            qualifier = 'executed_op_global_ld',
         )
 
-class L1TEXCacheGlobalLoadRequests(MetricCounter):
+        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'instructions', mode or ''))
+
+        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+
+class L1TEXCacheGlobalLoadRequests:
     """
-    Counter metric ``l1tex__t_requests_pipe_lsu_mem_global_op_ld``.
+    Factory of counter metric ``l1tex__t_requests_pipe_lsu_mem_global_op_ld``.
     """
-    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
-        super().__init__(
-            name = counter_name_from(
-                unit = Unit.L1TEX,
-                pipestage = PipeStage.TAG,
-                quantity = Quantity.REQUEST,
-                qualifier = 'pipe_lsu_mem_global_op_ld',
-            ), subs = subs or (MetricCounterRollUp.SUM),
-            human = ' '.join([L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'requests']),
+    @staticmethod
+    def create(*,
+        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+    ) -> 'MetricCounter':
+        name = counter_name_from(
+            unit = Unit.L1TEX,
+            pipestage = PipeStage.TAG,
+            quantity = Quantity.REQUEST,
+            qualifier = 'pipe_lsu_mem_global_op_ld',
         )
 
-class L1TEXCacheGlobalLoadSectors(MetricCounter):
+        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'requests'))
+
+        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+
+class L1TEXCacheGlobalLoadSectors:
     """
-    Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld``.
+    Factory of counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld``.
     """
-    def __init__(self,
-        subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None,
+    @staticmethod
+    def create(*,
+        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
         suffix : typing.Optional[typing.Literal['hit', 'miss']] = None,
-    ) -> None:
+    ) -> 'MetricCounter':
         qualifier = f'pipe_lsu_mem_global_op_ld_lookup_{suffix}' if suffix else 'pipe_lsu_mem_global_op_ld'
 
-        super().__init__(
-            name = counter_name_from(
-                unit = Unit.L1TEX,
-                pipestage = PipeStage.TAG,
-                quantity = Quantity.SECTOR,
-                qualifier = qualifier,
-            ),
-            subs = subs or (MetricCounterRollUp.SUM,),
-            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, f'sectors {suffix}' if suffix else 'sectors')),
+        name = counter_name_from(
+            unit = Unit.L1TEX,
+            pipestage = PipeStage.TAG,
+            quantity = Quantity.SECTOR,
+            qualifier = qualifier,
         )
 
-class L1TEXCacheGlobalLoadSectorHits(L1TEXCacheGlobalLoadSectors):
-    """
-    Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_hit``.
-    """
-    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
-        L1TEXCacheGlobalLoadSectors.__init__(self, subs = subs, suffix = 'hit')
+        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, f'sectors {suffix}' if suffix else 'sectors'))
 
-class L1TEXCacheGlobalLoadSectorMisses(L1TEXCacheGlobalLoadSectors):
-    """
-    Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_miss``.
-    """
-    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
-        super().__init__(subs = subs, suffix = 'miss')
+        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
 
-class L1TEXCacheGlobalLoadWavefronts(MetricCounter):
+class L1TEXCacheGlobalLoadSectorHits:
     """
-    Counter metric ``l1tex__t_wavefronts_pipe_lsu_mem_global_op_ld``.
+    Factory of counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_hit``.
     """
-    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
-        super().__init__(
-            name = counter_name_from(
-                unit = Unit.L1TEX,
-                pipestage = PipeStage.TAG_OUTPUT,
-                quantity = Quantity.WAVEFRONT,
-                qualifier = 'pipe_lsu_mem_global_op_ld',
-            ), subs = subs or (MetricCounterRollUp.SUM,),
-            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'wavefronts')),
+    @staticmethod
+    def create(*,
+        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+    ) -> 'MetricCounter':
+        return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'hit')
+
+class L1TEXCacheGlobalLoadSectorMisses:
+    """
+    Factory of counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_ld_lookup_miss``.
+    """
+    @staticmethod
+    def create(*,
+        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+    ) -> 'MetricCounter':
+        return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'miss')
+
+class L1TEXCacheGlobalLoadWavefronts:
+    """
+    Factory of counter metric ``l1tex__t_wavefronts_pipe_lsu_mem_global_op_ld``.
+    """
+    @staticmethod
+    def create(*,
+        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+    ) -> 'MetricCounter':
+        name = counter_name_from(
+            unit = Unit.L1TEX,
+            pipestage = PipeStage.TAG_OUTPUT,
+            quantity = Quantity.WAVEFRONT,
+            qualifier = 'pipe_lsu_mem_global_op_ld',
         )
+
+        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'wavefronts'))
+
+        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
 
 class L1TEXCacheGlobalLoad:
 
@@ -335,34 +355,44 @@ class L1TEXCacheGlobalLoad:
 
     Wavefronts : typing.Final[typing.Type[L1TEXCacheGlobalLoadWavefronts]] = L1TEXCacheGlobalLoadWavefronts # pylint: disable=invalid-name
 
-class L1TEXCacheGlobalStoreInstructions(MetricCounter):
+class L1TEXCacheGlobalStoreInstructions:
     """
-    Counter metric ``(unit)__(sass?)_inst_executed_op_global_st``.
+    Factory of counter metric ``(unit)__(sass?)_inst_executed_op_global_st``.
     """
-    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
-        super().__init__(
-            name = counter_name_from(
-                unit = unit,
-                quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
-                qualifier = 'executed_op_global_st',
-            ), subs = subs or (MetricCounterRollUp.SUM,),
-            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'instructions', mode or '')),
+    @staticmethod
+    def create(*,
+        unit : Unit = Unit.SMSP,
+        mode : typing.Literal['sass'] | None = 'sass',
+        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+    ) -> 'MetricCounter':
+        name = counter_name_from(
+            unit = unit,
+            quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
+            qualifier = 'executed_op_global_st',
         )
 
-class L1TEXCacheGlobalStoreSectors(MetricCounter):
+        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'instructions', mode or ''))
+
+        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+
+class L1TEXCacheGlobalStoreSectors:
     """
-    Counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_st``.
+    Factory of counter metric ``l1tex__t_sectors_pipe_lsu_mem_global_op_st``.
     """
-    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None) -> None:
-        super().__init__(
-            name = counter_name_from(
-                unit = Unit.L1TEX,
-                pipestage = PipeStage.TAG,
-                quantity = Quantity.SECTOR,
-                qualifier = 'pipe_lsu_mem_global_op_st',
-            ), subs = subs or (MetricCounterRollUp.SUM,),
-            human = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'sectors')),
+    @staticmethod
+    def create(*,
+        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+    ) -> 'MetricCounter':
+        name = counter_name_from(
+            unit = Unit.L1TEX,
+            pipestage = PipeStage.TAG,
+            quantity = Quantity.SECTOR,
+            qualifier = 'pipe_lsu_mem_global_op_st',
         )
+
+        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'sectors'))
+
+        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
 
 class L1TEXCacheGlobalStore:
 
@@ -372,19 +402,25 @@ class L1TEXCacheGlobalStore:
 
     Sectors : typing.Final[typing.Type[L1TEXCacheGlobalStoreSectors]] = L1TEXCacheGlobalStoreSectors # pylint: disable=invalid-name
 
-class L1TEXCacheLocalStoreInstructions(MetricCounter):
+class L1TEXCacheLocalStoreInstructions:
     """
-    Counter metric ``(unit)__(sass?)_inst_executed_op_local_st``.
+    Factory of counter metric ``(unit)__(sass?)_inst_executed_op_local_st``.
     """
-    def __init__(self, subs : typing.Optional[typing.Iterable[MetricCounterRollUp]] = None, unit : Unit = Unit.SMSP, mode : typing.Optional[typing.Literal['sass']] = 'sass') -> None:
-        super().__init__(
-            name = counter_name_from(
-                unit = unit,
-                quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
-                qualifier = 'executed_op_local_st',
-            ), subs = subs or (MetricCounterRollUp.SUM,),
-            human = ' '.join((L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, 'instructions', mode or '')),
+    @staticmethod
+    def create(*,
+        unit : Unit = Unit.SMSP,
+        mode : typing.Literal['sass'] | None = 'sass',
+        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+    ) -> 'MetricCounter':
+        name = counter_name_from(
+            unit = unit,
+            quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
+            qualifier = 'executed_op_local_st',
         )
+
+        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, 'instructions', mode or ''))
+
+        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
 
 class L1TEXCacheLocalStore:
 
@@ -980,13 +1016,13 @@ class Report:
                 )
             elif isinstance(metric, Metric):
                 self.fill_metric(action = action, metric = metric)
-                assert metric.human is not None
+                assert metric.pretty_name is not None
                 if isinstance(metric.data, dict):
                     for sub, value in metric.data.items():
                         assert value is not None
-                        results[f'{metric.human}.{sub}'] = value
+                        results[f'{metric.pretty_name}.{sub}'] = value
                 elif metric.data is not None:
-                    results[metric.human] = metric.data
+                    results[metric.pretty_name] = metric.data
                 else:
                     raise ValueError(metric.data)
             else:

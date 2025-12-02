@@ -27,19 +27,19 @@ class TestProfilingResults:
         results = ncu.ProfilingResults()
         results.assign_metrics(
             accessors = ('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
-            data = {
+            data = ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum' : 100.,
                 'sass__inst_executed_per_opcode': ncu.MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
                 'L1/TEX cache global load sectors.sum' : 0.
-            }
+            })
         )
         results.assign_metrics(
             accessors = ('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
-            data = {
+            data = ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum' : 96.,
                 'sass__inst_executed_per_opcode': ncu.MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
                 'L1/TEX cache global load sectors.sum' : 0.
-            }
+            })
         )
         return results
 
@@ -99,7 +99,7 @@ class TestProfilingResults:
 
         other_results.assign_metrics(
             accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel'),
-            data = {'my-value' : 42},
+            data = ncu.ProfilingMetrics({'my-value' : 42}),
         )
 
         assert other_results.query_metrics(accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel',))['my-value'] == 42
@@ -109,9 +109,18 @@ class TestProfilingResults:
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.aggregate_metrics`.
         """
         other_results = ncu.ProfilingResults()
-        other_results.assign_metrics(accessors = ('range-0', 'range-1', 'kernel-A'), data = {'my-counter-int' : 42, 'my-counter-float' : 666.})
-        other_results.assign_metrics(accessors = ('range-0', 'range-1', 'kernel-B'), data = {'my-counter-int' : 43, 'my-counter-float' : 667.})
-        other_results.assign_metrics(accessors = ('range-0', 'range-1', 'kernel-C'), data = {'my-counter-int' : 44, 'my-counter-float' : 668.})
+        other_results.assign_metrics(
+            accessors = ('range-0', 'range-1', 'kernel-A'),
+            data = ncu.ProfilingMetrics({'my-counter-int' : 42, 'my-counter-float' : 666.})
+        )
+        other_results.assign_metrics(
+            accessors = ('range-0', 'range-1', 'kernel-B'),
+            data = ncu.ProfilingMetrics({'my-counter-int' : 43, 'my-counter-float' : 667.})
+        )
+        other_results.assign_metrics(
+            accessors = ('range-0', 'range-1', 'kernel-C'),
+            data = ncu.ProfilingMetrics({'my-counter-int' : 44, 'my-counter-float' : 668.})
+        )
 
         aggregated = {'my-counter-int' : 42 + 43 + 44, 'my-counter-float' : 666. + 667. + 668.}
 

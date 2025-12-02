@@ -6,17 +6,10 @@ Environment
 
 .. automodule:: tests.python.test.test_environment
 
-SASS instruction matcher
-------------------------
+SASS
+----
 
-.. automodule:: tests.python.test.sass.test_any
+.. toctree::
+   :maxdepth: 1
 
-.. automodule:: tests.python.test.sass.test_atomic
-
-.. automodule:: tests.python.test.sass.test_load
-
-.. automodule:: tests.python.test.sass.test_composite
-
-.. automodule:: tests.python.test.sass.test_composite_impl
-
-.. automodule:: tests.python.test.sass.test_instruction
+   test/sass

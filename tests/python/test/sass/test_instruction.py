@@ -14,7 +14,6 @@ from reprospect.tools.sass            import Decoder
 from reprospect.tools.sass.decode     import RegisterType
 from reprospect.utils                 import cmake
 from reprospect.test.sass.instruction import AtomicMatcher, \
-                                             FloatAddMatcher, \
                                              OpcodeModsMatcher, \
                                              OpcodeModsWithOperandsMatcher, \
                                              LoadGlobalMatcher, \
@@ -392,65 +391,6 @@ class TestStoreGlobalMatcher:
         assert '128' in matched.modifiers
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
-
-class TestFloatAddMatcher:
-    """
-    Tests for :py:class:`reprospect.test.sass.instruction.FloatAddMatcher`.
-    """
-    def test(self) -> None:
-        """
-        Test with instructions taken from SASS codes.
-        """
-        matched = FloatAddMatcher().matches(inst = 'FADD R6, R4, R2')
-        assert matched is not None
-        assert matched.additional is not None
-        assert matched.additional['dst'][0] == 'R6'
-        assert matched.operands[-1] == 'R2'
-
-        matched = FloatAddMatcher().matches(inst = 'FADD R6, R4, c[0x0][0x178]')
-        assert matched is not None
-        assert matched.additional is not None
-        assert matched.additional['dst'][0] == 'R6'
-        assert matched.operands[-1] == 'c[0x0][0x178]'
-
-        matched = FloatAddMatcher().matches(inst = 'FADD R25, R4, UR12')
-        assert matched is not None
-        assert matched.additional is not None
-        assert matched.additional['dst'][0] == 'R25'
-        assert matched.operands[-1] == 'UR12'
-
-        matched = FloatAddMatcher().matches(inst = 'FADD.FTZ R9, -R7, 1.5707963705062866211')
-        assert matched is not None
-        assert matched.additional is not None
-        assert matched.additional['dst'][0] == 'R9'
-        assert matched.operands == ('R9', '-R7', '1.5707963705062866211')
-
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
-        """
-        Test with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.
-
-        There will be 4 ``FADD`` instructions because of the *float4*.
-        """
-        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT_WIDE)
-
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
-
-        matcher = FloatAddMatcher()
-        fadd = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
-        assert len(fadd) == 4
-
-        logging.info(matcher.pattern)
-
-        for (inst, matched) in fadd:
-            logging.info(inst.instruction)
-            logging.info(matched)
-            assert inst.instruction.startswith(matched.opcode)
-            assert len(matched.operands) == 3
-            assert all(operand in inst.instruction for operand in matched.operands)
-            assert matched.additional is not None
-            assert 'dst' in matched.additional
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestReductionMatcher:

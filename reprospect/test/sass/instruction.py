@@ -397,12 +397,15 @@ class PatternMatcher(InstructionMatcher):
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(pattern={self.pattern})'
 
-class FloatAddMatcher(PatternMatcher):
+def floating_point_add_pattern(*, ftype : typing.Literal['F', 'D']) -> regex.Pattern[str]:
     """
-    Matcher for floating-point add (``FADD``) instructions.
+    Helper for:
+
+    * :py:class:reprospect.test.sass.instruction.Fp32AddMatcher`.
+    * :py:class:reprospect.test.sass.instruction.Fp64AddMatcher`.
     """
-    PATTERN : typing.Final[regex.Pattern[str]] = regex.compile(
-        PatternBuilder.opcode_mods('FADD', modifiers = ('?FTZ',)) + r'\s+' +
+    return regex.compile(
+        PatternBuilder.opcode_mods(f'{ftype}ADD', modifiers = ('?FTZ',)) + r'\s+' +
         PatternBuilder.groups(PatternBuilder.REG, groups = ('dst', 'operands')) + r'\s*,\s*' +
         PatternBuilder.mathreg() + r'\s*,\s*' +
         PatternBuilder.any(
@@ -411,6 +414,21 @@ class FloatAddMatcher(PatternMatcher):
             PatternBuilder.immediate(),
         )
     )
+
+class Fp32AddMatcher(PatternMatcher):
+    """
+    Matcher for 32-bit floating-point add (``FADD``) instructions.
+    """
+    PATTERN : typing.Final[regex.Pattern[str]] = floating_point_add_pattern(ftype = 'F')
+
+    def __init__(self) -> None:
+        super().__init__(pattern = self.PATTERN)
+
+class Fp64AddMatcher(PatternMatcher):
+    """
+    Matcher for 64-bit floating-point add (``DADD``) instructions.
+    """
+    PATTERN : typing.Final[regex.Pattern[str]] = floating_point_add_pattern(ftype = 'D')
 
     def __init__(self) -> None:
         super().__init__(pattern = self.PATTERN)

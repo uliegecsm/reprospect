@@ -9,9 +9,7 @@ import numpy
 import pandas
 import pytest
 
-import reprospect
-
-from reprospect.test  import environment
+from reprospect.test  import CMakeAwareTestCase, environment
 from reprospect.tools import nsys
 from reprospect.utils import detect
 
@@ -29,7 +27,7 @@ class Memory(StrEnum):
     DEVICE = 'DEVICE'
     SHARED = 'MANAGED'
 
-class TestAllocation(reprospect.CMakeAwareTestCase):
+class TestAllocation(CMakeAwareTestCase):
     """
     Trace the CUDA API calls during :code:`Kokkos::View` allocation under different scenarios.
 

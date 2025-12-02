@@ -6,9 +6,7 @@ import typing
 import pandas
 import pytest
 
-import reprospect
-
-from reprospect.test  import environment
+from reprospect.test  import CMakeAwareTestCase, environment
 from reprospect.tools import nsys
 from reprospect.utils import detect
 
@@ -17,7 +15,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-class TestDispatch(reprospect.CMakeAwareTestCase):
+class TestDispatch(CMakeAwareTestCase):
     """
     Trace the CUDA API calls during :code:`Kokkos::Experimental::Graph` stages.
 

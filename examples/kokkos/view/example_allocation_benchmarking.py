@@ -47,8 +47,8 @@ import numpy
 import pandas
 import pytest
 
-from reprospect.test.case import CMakeAwareTestCase
-from reprospect.utils     import detect
+from reprospect.test  import CMakeAwareTestCase
+from reprospect.utils import detect
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum

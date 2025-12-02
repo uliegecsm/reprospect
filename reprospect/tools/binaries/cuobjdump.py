@@ -26,6 +26,7 @@ import rich.table
 from reprospect.tools.architecture       import NVIDIAArch
 from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
 from reprospect.tools.binaries.elf       import ELF
+from reprospect.tools.binaries.symtab    import get_symbol_table
 from reprospect.utils                    import rich_helpers
 from reprospect.utils.subprocess_helpers import popen_stream
 
@@ -323,27 +324,7 @@ class CuObjDump:
         if not self.file_is_cubin:
             if len(self.embedded_cubins) != 1:
                 raise RuntimeError('The host binary file contains more than one embedded CUDA binary file.')
-
-        with ELF(file = self.file) as elf:
-            assert elf.elf is not None
-            [section] = elf.elf.iter_sections(type = 'SHT_SYMTAB')
-
-            return pandas.DataFrame(
-                data = (
-                    (
-                        idx,
-                        symbol['st_value'],
-                        symbol['st_size'],
-                        symbol['st_info']['bind'],
-                        symbol['st_info']['type'],
-                        symbol['st_other']['visibility'],
-                        symbol['st_shndx'],
-                        symbol.name or '(null)',
-                    )
-                    for idx, symbol in enumerate(section.iter_symbols())
-                ),
-                columns = ('index', 'value', 'size', 'bind', 'type', 'visibility', 'shndx', 'name'),
-            )
+        return get_symbol_table(file = self.file)
 
     @functools.cached_property
     def file_is_cubin(self) -> bool:

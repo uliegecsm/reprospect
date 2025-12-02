@@ -276,9 +276,12 @@ class TestSession:
 
     def test_collect_correlated_metrics_saxpy(self, bindir, workdir) -> None:
         """
-        Collect a metric with correlations for the :py:attr:`SAXPY` executable.
+        Collect metrics with correlations for the :py:attr:`SAXPY` executable.
         """
-        METRICS = (ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode'),)
+        METRICS : typing.Final[tuple[ncu.MetricCorrelation, ...]] = (
+            ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode'),
+            ncu.MetricCorrelation(name = 'inst_executed'),
+        )
 
         session = ncu.Session(output = workdir / 'report-saxpy-correlated')
 
@@ -294,6 +297,7 @@ class TestSession:
 
         metrics_saxpy_kernel_0 = results.query_metrics(('saxpy_kernel-0',))
         assert isinstance(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'], ncu.MetricCorrelationData)
+        assert isinstance(metrics_saxpy_kernel_0[      'inst_executed'           ], ncu.MetricCorrelationData)
 
         # Check that the sum of correlated values matches the total value.
         assert sum(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated.values()) == metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].value
@@ -306,6 +310,9 @@ class TestSession:
         assert metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated is not None
         assert 'LD' not in metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated
         assert metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated['LDG'] > 0
+
+        # The metric 'inst_executed' correlates instruction addresses with how many times they were executed.
+        assert all(isinstance(key, int) and isinstance(value, int) for key, value in metrics_saxpy_kernel_0['inst_executed'].correlated.items())
 
     def test_collect_basic_metrics_graph(self, bindir, workdir, cmake_cuda_compiler : dict) -> None:
         """
@@ -430,7 +437,7 @@ class TestCacher:
         """
         The cacher should hit on the second call.
         """
-        METRICS = (
+        METRICS : typing.Final[tuple[ncu.Metric, ...]] = (
             # A few L1TEX cache metrics.
             ncu.L1TEXCache.GlobalLoad.Sectors.create(),
             ncu.L1TEXCache.GlobalStore.Sectors.create(),

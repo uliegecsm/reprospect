@@ -1,7 +1,6 @@
 # pylint: disable=too-many-lines
 
 import collections.abc
-import copy
 import dataclasses
 import enum
 import functools
@@ -77,10 +76,16 @@ class Quantity(StrEnum):
 #: A single metric value type.
 ValueType : typing.TypeAlias = int | float
 
+#: A single metric value type or a dictionary of submetric values of such type.
+MetricData : typing.TypeAlias = ValueType | dict[str, ValueType]
+
 @dataclasses.dataclass(frozen = False, slots = True)
 class Metric:
     """
     Used to represent a ``ncu`` metric.
+
+    If :py:attr:`subs` is not given, it is assumed that :py:attr:`name` is a valid metric
+    that can be directly evaluated by ``ncu``.
 
     References:
 
@@ -92,32 +97,18 @@ class Metric:
     #: Human readable name.
     pretty_name : str | None = None
 
-    #: A single metric value or a dictionary of sub-metric values.
-    data : ValueType | dict[str, ValueType | None] | None = dataclasses.field(init = False, default = None)
+    #: Optional sub-metric names.
+    subs : tuple[str, ...] | None = None
 
-    #: Initialization variable for sub-metric names.
-    subs : dataclasses.InitVar[typing.Iterable[str] | None] = None
-
-    def __post_init__(self, subs : typing.Iterable[str] | None) -> None:
-        """
-        If `subs` is not given, it is assumed that `name` is a valid metric
-        that can be directly evaluated by ``ncu``.
-        """
+    def __post_init__(self) -> None:
         self.pretty_name = self.pretty_name or self.name
-        if subs is not None:
-            self.data = {sub : None for sub in subs}
-
-    def __repr__(self) -> str:
-        if isinstance(self.data, dict):
-            return self.name + '(' + ','.join(f'{sub}={value}' for sub, value in self.data.items()) + ')'
-        return f'{self.name}({self.data})'
 
     def gather(self) -> tuple[str, ...]:
         """
         Get the list of sub-metric names or the metric name itself if no sub-metrics are defined.
         """
-        if isinstance(self.data, dict):
-            return tuple(f'{self.name}.{sub}' for sub in self.data)
+        if self.subs is not None:
+            return tuple(f'{self.name}.{sub}' for sub in self.subs)
         return (self.name,)
 
 class MetricCounterRollUp(StrEnum):
@@ -247,7 +238,7 @@ class L1TEXCacheGlobalLoadInstructions:
     def create(*,
         unit : Unit = Unit.SMSP,
         mode : typing.Literal['sass'] | None = 'sass',
-        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> 'MetricCounter':
         name = counter_name_from(
             unit = unit,
@@ -265,7 +256,7 @@ class L1TEXCacheGlobalLoadRequests:
     """
     @staticmethod
     def create(*,
-        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> 'MetricCounter':
         name = counter_name_from(
             unit = Unit.L1TEX,
@@ -284,7 +275,7 @@ class L1TEXCacheGlobalLoadSectors:
     """
     @staticmethod
     def create(*,
-        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
         suffix : typing.Optional[typing.Literal['hit', 'miss']] = None,
     ) -> 'MetricCounter':
         qualifier = f'pipe_lsu_mem_global_op_ld_lookup_{suffix}' if suffix else 'pipe_lsu_mem_global_op_ld'
@@ -306,7 +297,7 @@ class L1TEXCacheGlobalLoadSectorHits:
     """
     @staticmethod
     def create(*,
-        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> 'MetricCounter':
         return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'hit')
 
@@ -316,7 +307,7 @@ class L1TEXCacheGlobalLoadSectorMisses:
     """
     @staticmethod
     def create(*,
-        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> 'MetricCounter':
         return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'miss')
 
@@ -326,7 +317,7 @@ class L1TEXCacheGlobalLoadWavefronts:
     """
     @staticmethod
     def create(*,
-        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> 'MetricCounter':
         name = counter_name_from(
             unit = Unit.L1TEX,
@@ -363,7 +354,7 @@ class L1TEXCacheGlobalStoreInstructions:
     def create(*,
         unit : Unit = Unit.SMSP,
         mode : typing.Literal['sass'] | None = 'sass',
-        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> 'MetricCounter':
         name = counter_name_from(
             unit = unit,
@@ -381,7 +372,7 @@ class L1TEXCacheGlobalStoreSectors:
     """
     @staticmethod
     def create(*,
-        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> 'MetricCounter':
         name = counter_name_from(
             unit = Unit.L1TEX,
@@ -410,7 +401,7 @@ class L1TEXCacheLocalStoreInstructions:
     def create(*,
         unit : Unit = Unit.SMSP,
         mode : typing.Literal['sass'] | None = 'sass',
-        subs : typing.Iterable[MetricCounterRollUp] = (MetricCounterRollUp.SUM,),
+        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> 'MetricCounter':
         name = counter_name_from(
             unit = unit,
@@ -662,10 +653,10 @@ class NvtxDomain:
     def __repr__(self) -> str:
         return f"{self.nvtx_domain} (index {self.index}, name {self.nvtx_domain.name()} {self.nvtx_domain.start_end_ranges()} {self.nvtx_domain.push_pop_ranges()})"
 
-#: A single metric value in profiling results.
-MetricData : typing.TypeAlias = ValueType | dict[str, ValueType] | MetricCorrelationData | str
+#: Metric data in profiling results.
+ProfilingMetricData : typing.TypeAlias = MetricData | MetricCorrelationData | str
 
-class ProfilingMetrics(collections.abc.Mapping[str, MetricData]):
+class ProfilingMetrics(collections.abc.Mapping[str, ProfilingMetricData]):
     """
     Mapping of profiling metric keys to their values.
 
@@ -675,10 +666,10 @@ class ProfilingMetrics(collections.abc.Mapping[str, MetricData]):
     """
     __slots__ = ('data',)
 
-    def __init__(self, data : dict[str, MetricData]) -> None:
-        self.data : typing.Final[dict[str, MetricData]] = data
+    def __init__(self, data : dict[str, ProfilingMetricData]) -> None:
+        self.data : typing.Final[dict[str, ProfilingMetricData]] = data
 
-    def __getitem__(self, key : str, /) -> MetricData:
+    def __getitem__(self, key : str, /) -> ProfilingMetricData:
         return self.data[key]
 
     def __len__(self) -> int:
@@ -707,12 +698,12 @@ class ProfilingResults(rich_helpers.TreeMixin):
         └── 'nvtx range'
             ├── 'nvtx region'
             │   └── 'kernel'
-            │       ├── 'metric i'  -> MetricData
-            │       └── 'metric ii' -> MetricData
+            │       ├── 'metric i'  -> ProfilingMetricData
+            │       └── 'metric ii' -> ProfilingMetricData
             └── 'other nvtx region'
                 └── 'other kernel'
-                    ├── 'metric i'  -> MetricData
-                    └── 'metric ii' -> MetricData
+                    ├── 'metric i'  -> ProfilingMetricData
+                    └── 'metric ii' -> ProfilingMetricData
 
     .. note::
 
@@ -984,7 +975,7 @@ class Report:
 
         return profiling_results
 
-    def collect_metrics_from_action(self, *, metrics : typing.Iterable[Metric | MetricCorrelation], action : Action) -> dict[str, MetricData]:
+    def collect_metrics_from_action(self, *, metrics : typing.Iterable[Metric | MetricCorrelation], action : Action) -> dict[str, ProfilingMetricData]:
         """
         Collect values of the `metrics` in the `action`.
 
@@ -993,9 +984,9 @@ class Report:
         * https://github.com/shunting314/gpumisc/blob/37bbb827ae2ed6f5777daff06956c7a10aafe34d/ncu-related/official-sections/FPInstructions.py#L51
         * https://github.com/NVIDIA/nsight-training/blob/2d680f7f8368b945bc00b22834808af24eff4c3d/cuda/nsight_compute/python_report_interface/Opcode_instanced_metrics.ipynb
         """
-        results : dict[str, MetricData] = {}
+        results : dict[str, ProfilingMetricData] = {}
 
-        for metric in map(copy.deepcopy, metrics):
+        for metric in metrics:
             if isinstance(metric, MetricCorrelation):
                 metric_correlation = action.action.metric_by_name(metric.name)
 
@@ -1015,32 +1006,28 @@ class Report:
                     correlated = correlated,
                 )
             elif isinstance(metric, Metric):
-                self.fill_metric(action = action, metric = metric)
                 assert metric.pretty_name is not None
-                if isinstance(metric.data, dict):
-                    for sub, value in metric.data.items():
-                        assert value is not None
+                metric_data = self.fill_metric(action = action, metric = metric)
+                if metric.subs is not None:
+                    assert isinstance(metric_data, dict)
+                    for sub, value in metric_data.items():
                         results[f'{metric.pretty_name}.{sub}'] = value
-                elif metric.data is not None:
-                    results[metric.pretty_name] = metric.data
                 else:
-                    raise ValueError(metric.data)
+                    assert metric_data is not None
+                    results[metric.pretty_name] = metric_data
             else:
                 raise NotImplementedError(metric)
 
         return results
 
     @classmethod
-    def fill_metric(cls, action : Action, metric : Metric) -> Metric:
+    def fill_metric(cls, action : Action, metric : Metric) -> MetricData:
         """
         Loop over submetrics of `metric`.
         """
-        if isinstance(metric.data, dict):
-            for sub in metric.data:
-                metric.data[sub] = cls.get_metric_by_name(action = action, metric = f'{metric.name}.{sub}').value()
-        else:
-            metric.data = cls.get_metric_by_name(action = action, metric = metric.name).value()
-        return metric
+        if metric.subs is not None:
+            return {sub : cls.get_metric_by_name(action = action, metric = f'{metric.name}.{sub}').value() for sub in metric.subs}
+        return cls.get_metric_by_name(action = action, metric = metric.name).value()
 
     @classmethod
     def get_metric_by_name(cls, *, action : Action, metric : str):

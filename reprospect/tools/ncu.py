@@ -74,7 +74,7 @@ class Quantity(StrEnum):
     WAVEFRONT   = 'wavefronts'
 
 #: A single metric value type.
-ValueType : typing.TypeAlias = int | float | None
+ValueType : typing.TypeAlias = int | float
 
 @dataclasses.dataclass(frozen = False, slots = True)
 class Metric:
@@ -92,7 +92,7 @@ class Metric:
     human : str
 
     #: A single metric value or a dictionary of sub-metric values.
-    data : ValueType | dict[str, ValueType] = dataclasses.field(init = False, default = None)
+    data : ValueType | dict[str, ValueType | None] | None = dataclasses.field(init = False, default = None)
 
     def __init__(self,
         name : str,
@@ -189,7 +189,19 @@ class LaunchGrid(XYZBase):
     """
     prefix : typing.ClassVar[str] = 'launch__grid_dim_'
 
-@dataclasses.dataclass(frozen = False)
+@dataclasses.dataclass(frozen = True, slots = True)
+class MetricCorrelationData:
+    """
+    Data for :py:class:`MetricCorrelation`.
+
+    References:
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
+    """
+    correlated : dict[str, ValueType]
+    value : ValueType | None = None
+
+@dataclasses.dataclass(frozen = True, slots = True)
 class MetricCorrelation:
     """
     A metric with correlations, like ``sass__inst_executed_per_opcode``.
@@ -199,8 +211,6 @@ class MetricCorrelation:
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
     name : str
-    correlated : dict[str, int | float] | None = None
-    value : int | float | None = None
 
     def gather(self) -> tuple[str]:
         return (self.name,)
@@ -623,7 +633,7 @@ class NvtxDomain:
         raise AttributeError(attr)
 
 #: A single metric value in profiling results.
-MetricData : typing.TypeAlias = ValueType | dict[str, ValueType] | MetricCorrelation | str
+MetricData : typing.TypeAlias = ValueType | dict[str, ValueType] | MetricCorrelationData | str
 
 @typing.runtime_checkable
 class ProfilingMetrics(typing.Protocol):
@@ -956,24 +966,30 @@ class Report:
 
                 # Recent 'ncu' (>= 2025.3.0.0) provide a 'value' method.
                 if hasattr(self.ncu_report, 'IMetric_kind_to_value_func'):
-                    metric.value = self.ncu_report.IMetric_kind_to_value_func[metric_correlation.kind()](metric_correlation)
+                    value = self.ncu_report.IMetric_kind_to_value_func[metric_correlation.kind()](metric_correlation)
                 else:
-                    metric.value = metric_correlation.value()
+                    value = metric_correlation.value()
 
-                metric.correlated = {}
-                correlations      = metric_correlation.correlation_ids()
+                correlated = {}
+                correlations = metric_correlation.correlation_ids()
                 assert correlations.num_instances() == metric_correlation.num_instances()
                 for icor in range(metric_correlation.num_instances()):
-                    metric.correlated[correlations.as_string(icor)] = metric_correlation.value(icor)
-                results[metric.name] = metric
+                    correlated[correlations.as_string(icor)] = metric_correlation.value(icor)
+                results[metric.name] = MetricCorrelationData(
+                    value = value,
+                    correlated = correlated,
+                )
             elif isinstance(metric, Metric):
                 self.fill_metric(action = action, metric = metric)
                 assert metric.human is not None
                 if isinstance(metric.data, dict):
                     for sub, value in metric.data.items():
+                        assert value is not None
                         results[f'{metric.human}.{sub}'] = value
-                else:
+                elif metric.data is not None:
                     results[metric.human] = metric.data
+                else:
+                    raise ValueError(metric.data)
             else:
                 raise NotImplementedError(metric)
 

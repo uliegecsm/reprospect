@@ -29,7 +29,7 @@ class TestProfilingResults:
             accessors = ('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
             data = {
                 'smsp__inst_executed.sum' : 100.,
-                'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16., 'LDC': 16.,}),
+                'sass__inst_executed_per_opcode': ncu.MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
                 'L1/TEX cache global load sectors.sum' : 0.
             }
         )
@@ -37,7 +37,7 @@ class TestProfilingResults:
             accessors = ('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
             data = {
                 'smsp__inst_executed.sum' : 96.,
-                'sass__inst_executed_per_opcode': ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode', correlated = {'LDCU': 16., 'LDC': 16.,}),
+                'sass__inst_executed_per_opcode': ncu.MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
                 'L1/TEX cache global load sectors.sum' : 0.
             }
         )
@@ -132,13 +132,13 @@ Profiling results
     │   └── nvtx_push_region_kernel
     │       └── kernel
     │           ├── smsp__inst_executed.sum: 100.0
-    │           ├── sass__inst_executed_per_opcode: MetricCorrelation(name='sass__inst_executed_per_opcode', correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
+    │           ├── sass__inst_executed_per_opcode: MetricCorrelationData(correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
     │           └── L1/TEX cache global load sectors.sum: 0.0
     └── nvtx_push_region_B
         └── nvtx_push_region_other_kernel
             └── other_kernel
                 ├── smsp__inst_executed.sum: 96.0
-                ├── sass__inst_executed_per_opcode: MetricCorrelation(name='sass__inst_executed_per_opcode', correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
+                ├── sass__inst_executed_per_opcode: MetricCorrelationData(correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
                 └── L1/TEX cache global load sectors.sum: 0.0
 """
 
@@ -149,7 +149,7 @@ Profiling results
 └── nvtx_push_region_kernel
     └── kernel
         ├── smsp__inst_executed.sum: 100.0
-        ├── sass__inst_executed_per_opcode: MetricCorrelation(name='sass__inst_executed_per_opcode', correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
+        ├── sass__inst_executed_per_opcode: MetricCorrelationData(correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
         └── L1/TEX cache global load sectors.sum: 0.0
 """
 
@@ -271,7 +271,7 @@ class TestSession:
         logging.info(results)
 
         metrics_saxpy_kernel_0 = results.query_metrics(('saxpy_kernel-0',))
-        assert isinstance(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'], ncu.MetricCorrelation)
+        assert isinstance(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'], ncu.MetricCorrelationData)
 
         # Check that the sum of correlated values matches the total value.
         assert sum(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated.values()) == metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].value

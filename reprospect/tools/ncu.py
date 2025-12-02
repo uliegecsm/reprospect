@@ -1,5 +1,6 @@
 # pylint: disable=too-many-lines
 
+import collections.abc
 import copy
 import dataclasses
 import enum
@@ -561,104 +562,95 @@ class Session:
 
         return command
 
+@dataclasses.dataclass(slots = True, frozen = False)
 class Range:
     """
     Wrapper around :ncu_report:`IRange`.
 
     This class loads the actions that are in the range.
+
+    If both :py:attr:`includes` and :py:attr:`excludes` are empty, load all actions in :py:attr:`range`.
     """
-    def __init__(self, report, index : int, includes : typing.Optional[typing.Iterable[str]] = None, excludes : typing.Optional[typing.Iterable[str]] = None) -> None:
-        self.index = index
+    index : int
+    range : typing.Any = dataclasses.field(init = False)
+    actions : tuple['Action', ...] = dataclasses.field(init = False)
+
+    report : dataclasses.InitVar[typing.Any]
+    includes : dataclasses.InitVar[typing.Iterable[str] | None] = None
+    excludes : dataclasses.InitVar[typing.Iterable[str] | None] = None
+
+    def __post_init__(self, report, includes : typing.Iterable[str] | None = None, excludes : typing.Iterable[str] | None = None) -> None:
         self.range = report.range_by_idx(self.index)
 
-        self.actions : list[Action] = []
-
-        self._load_actions_by_nvtx(includes = includes, excludes = excludes)
-
-    def _load_actions_by_nvtx(self, includes : typing.Optional[typing.Iterable[str]] = None, excludes : typing.Optional[typing.Iterable[str]] = None) -> None:
-        """
-        If both `includes` and `excludes` are empty, load all actions.
-        """
         if not includes and not excludes:
-            for iaction in range(self.range.num_actions()):
-                self.actions.append(Action(nvtx_range = self.range, index = iaction))
+            self.actions = tuple(Action(nvtx_range = self.range, index = iaction) for iaction in range(self.range.num_actions()))
         else:
-            for iaction in self.range.actions_by_nvtx(includes if includes else [], excludes if excludes else []):
-                self.actions.append(Action(nvtx_range = self.range, index = iaction))
+            self.actions = tuple(Action(nvtx_range = self.range, index = iaction) for iaction in self.range.actions_by_nvtx(includes if includes else [], excludes if excludes else []))
 
     def __repr__(self) -> str:
         return f'{self.range} (index {self.index})'
 
+@dataclasses.dataclass(slots = True, frozen = False)
 class Action:
     """
     Wrapper around :ncu_report:`IAction`.
     """
-    def __init__(self, nvtx_range, index : int) -> None:
-        self.index  = index
-        self.action = nvtx_range.action_by_idx(index)
+    index : int
+    action : typing.Any = dataclasses.field(init = False)
+    domains : tuple['NvtxDomain', ...] = dataclasses.field(init = False, default = ())
 
-        self.nvtx_state = self.action.nvtx_state()
+    nvtx_range : dataclasses.InitVar[typing.Any]
 
-        self.domains : list[NvtxDomain] = []
+    def __post_init__(self, nvtx_range) -> None:
+        self.action = nvtx_range.action_by_idx(self.index)
 
-        self._load_domains()
-
-    def _load_domains(self):
-        if self.nvtx_state:
-            for idomain in self.nvtx_state.domains():
-                self.domains.append(NvtxDomain(nvtx_state = self.nvtx_state, index = idomain))
+        if (nvtx_state := self.action.nvtx_state()) is not None:
+            self.domains = tuple(NvtxDomain(nvtx_state = nvtx_state, index = idomain) for idomain in nvtx_state.domains())
 
     def __repr__(self) -> str:
         return f"{self.action} (index {self.index}, domains {self.domains}, mangled {self.action.name(self.action.NameBase_MANGLED)})"
 
-    def __getattr__(self, attr):
-        if attr not in self.__dict__:
-            return getattr(self.action, attr)
-        raise AttributeError(attr)
-
+@dataclasses.dataclass(slots = True, frozen = False)
 class NvtxDomain:
     """
     Wrapper around :ncu_report:`INvtxDomainInfo`.
     """
-    def __init__(self, nvtx_state, index : int) -> None:
-        self.index = index
+    index : int
+    nvtx_domain : typing.Any = dataclasses.field(init = False)
+
+    nvtx_state : dataclasses.InitVar[typing.Any]
+
+    def __post_init__(self, nvtx_state) -> None:
         self.nvtx_domain = nvtx_state.domain_by_id(self.index)
 
     def __repr__(self) -> str:
         return f"{self.nvtx_domain} (index {self.index}, name {self.nvtx_domain.name()} {self.nvtx_domain.start_end_ranges()} {self.nvtx_domain.push_pop_ranges()})"
 
-    def __getattr__(self, attr):
-        if attr not in self.__dict__:
-            return getattr(self.nvtx_domain, attr)
-        raise AttributeError(attr)
-
 #: A single metric value in profiling results.
 MetricData : typing.TypeAlias = ValueType | dict[str, ValueType] | MetricCorrelationData | str
 
-@typing.runtime_checkable
-class ProfilingMetrics(typing.Protocol):
+class ProfilingMetrics(collections.abc.Mapping[str, MetricData]):
     """
-    Protocol representing a mapping of profiling metric keys to their values.
-    """
-    def __getitem__(self, key : str, /) -> MetricData:
-        ...
+    Mapping of profiling metric keys to their values.
 
-    def __contains__(self, key: str, /) -> bool:
-        ...
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
+    """
+    __slots__ = ('data',)
+
+    def __init__(self, data : dict[str, MetricData]) -> None:
+        self.data : typing.Final[dict[str, MetricData]] = data
+
+    def __getitem__(self, key : str, /) -> MetricData:
+        return self.data[key]
 
     def __len__(self) -> int:
-        ...
+        return len(self.data)
 
-    def keys(self) -> typing.Iterable[str]:
-        ...
+    def __iter__(self) -> typing.Iterator[str]:
+        return iter(self.data)
 
-    def values(self) -> typing.Iterable[MetricData]:
-        ...
-
-    def items(self) -> typing.Iterable[tuple[str, MetricData]]:
-        ...
-
-@dataclasses.dataclass(slots = True, frozen = False)
 class ProfilingResults(rich_helpers.TreeMixin):
     """
     Nested tree data structure for storing profiling results.
@@ -685,8 +677,15 @@ class ProfilingResults(rich_helpers.TreeMixin):
                 └── 'other kernel'
                     ├── 'metric i'  -> MetricData
                     └── 'metric ii' -> MetricData
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    data : dict[str, 'ProfilingResults | ProfilingMetrics'] = dataclasses.field(default_factory = dict)
+    __slots__ = ('data',)
+
+    def __init__(self, data : dict[str, 'ProfilingResults | ProfilingMetrics'] | None = None) -> None:
+        self.data : typing.Final[dict[str, 'ProfilingResults | ProfilingMetrics']] = data if data is not None else {}
 
     def query(self, accessors : typing.Iterable[str]) -> typing.Union['ProfilingResults', ProfilingMetrics]:
         """
@@ -875,8 +874,8 @@ class Report:
     In particular, the NVIDIA Python tool (``ncu_report``) provides low-level access to
     the collected data by iterating over ranges and actions. This class uses these functionalities
     to extract all the collected data into a custom data structure of type :py:class:`ProfilingResults`.
-    This data structures is a nested dictionary that provides a more direct access to the data
-    of interest by NVTX range (if NVTX is used) and by demangled kernel name.
+    This data structures is a nested tree data structure that provides a higher level, direct access
+    to the data of interest by NVTX range (if NVTX is used) and by demangled kernel name.
 
     References:
 
@@ -929,23 +928,23 @@ class Report:
         # Loop over the actions.
         for action in current_range.actions:
 
-            logging.debug(f'Parsing action {action.name()} ({action}).')
+            logging.debug(f'Parsing action {action.action.name()} ({action}).')
 
             results = self.collect_metrics_from_action(action = action, metrics = metrics)
 
-            results['mangled']   = action.name(action.NameBase_MANGLED)
-            results['demangled'] = action.name(action.NameBase_DEMANGLED) if demangler is None else demangler.demangle(typing.cast(str, results['mangled']))
+            results['mangled']   = action.action.name(action.action.NameBase_MANGLED)
+            results['demangled'] = action.action.name(action.action.NameBase_DEMANGLED) if demangler is None else demangler.demangle(typing.cast(str, results['mangled']))
 
             # Loop over the domains of the action.
             # Note that domains are only available if NVTX was enabled during collection.
             if action.domains:
                 for domain in action.domains:
                     profiling_results.assign_metrics(
-                        accessors = domain.push_pop_ranges() + (f'{action.name()}-{action.index}',),
-                        data = results,
+                        accessors = domain.nvtx_domain.push_pop_ranges() + (f'{action.action.name()}-{action.index}',),
+                        data = ProfilingMetrics(results),
                     )
             else:
-                profiling_results.assign_metrics((f'{action.name()}-{action.index}',), results)
+                profiling_results.assign_metrics((f'{action.action.name()}-{action.index}',), ProfilingMetrics(results))
 
         return profiling_results
 
@@ -962,7 +961,7 @@ class Report:
 
         for metric in map(copy.deepcopy, metrics):
             if isinstance(metric, MetricCorrelation):
-                metric_correlation = action.metric_by_name(metric.name)
+                metric_correlation = action.action.metric_by_name(metric.name)
 
                 # Recent 'ncu' (>= 2025.3.0.0) provide a 'value' method.
                 if hasattr(self.ncu_report, 'IMetric_kind_to_value_func'):
@@ -1012,7 +1011,7 @@ class Report:
         """
         Read a `metric` in `action`.
         """
-        collected = action.metric_by_name(metric)
+        collected = action.action.metric_by_name(metric)
         if collected is None:
             raise RuntimeError(f"There was a problem retrieving metric '{metric}'. It probably does not exist.")
         return collected

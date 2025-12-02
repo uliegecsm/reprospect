@@ -22,4 +22,5 @@ find_package(
 )
 
 add_one_executable(graph)
+add_one_executable(half)
 add_one_executable(saxpy)

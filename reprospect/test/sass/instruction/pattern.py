@@ -43,7 +43,7 @@ class PatternBuilder:
     ``0x899``) or depends on a register.
     """
 
-    IMMEDIATE : typing.Final[str] = '[0-9.]+'
+    IMMEDIATE : typing.Final[str] = r'(-?\d+)(\.\d*)?((e|E)[-+]?\d+)?'
     """
     References:
 
@@ -53,6 +53,15 @@ class PatternBuilder:
     PREDICATE : typing.Final[str] = r'@!?U?P(?:T|\d+)'
     """
     Predicate for the whole instruction (comes before the opcode).
+    """
+
+    PRE_OPERAND_MOD : typing.Final[str] = r'[\-!\|~]'
+    """
+    Allowed pre-modifiers for operands.
+
+    References:
+
+    * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L67
     """
 
     @staticmethod
@@ -107,18 +116,11 @@ class PatternBuilder:
         return cls.group(cls.REG, group = 'operands')
 
     @classmethod
-    def mathreg(cls) -> str:
+    def premodregz(cls) -> str:
         """
-        :py:attr:`REG` with `operands` group and optional math modifiers.
-
-        References:
-
-        * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L67
+        :py:attr:`REGZ` with `operands` group and optional :py:attr:`PRE_OPERAND_MOD` modifier.
         """
-        return cls.group(
-            r'[\-]?' + cls.REG,
-            group = 'operands',
-        )
+        return cls.group(cls.zero_or_one(cls.PRE_OPERAND_MOD) + cls.REGZ, group = 'operands')
 
     @classmethod
     def regz(cls) -> str:

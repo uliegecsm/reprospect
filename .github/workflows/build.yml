@@ -377,7 +377,6 @@ jobs:
                     -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.cmake_cuda_architectures }} \
                     -DReProspect_ENABLE_DOCS=OFF \
                     -DReProspect_ENABLE_EXAMPLES=ON \
-                    -DReProspect_EXAMPLES_WITH_SOURCES=OFF \
                     -DReProspect_ENABLE_TESTS=OFF
 
             - run: cmake --build --preset=${{ matrix.cmake_preset }}

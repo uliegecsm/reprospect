@@ -16,7 +16,7 @@ import pytest
 import regex
 
 from reprospect.tools.sass            import Instruction, ControlCode
-from reprospect.test.sass.instruction import InstructionMatch, InstructionMatcher, PatternMatcher, FloatAddMatcher
+from reprospect.test.sass.instruction import InstructionMatch, InstructionMatcher, PatternMatcher, Fp32AddMatcher
 from reprospect.test.sass.composite   import instruction_is
 
 if sys.version_info >= (3, 12):
@@ -41,9 +41,9 @@ class NewPatternMatcher(PatternMatcher):
     def __init__(self):
         super().__init__(pattern = r'(?P<opcode>NOP|DADD|DMUL).*')
 
-class CannotBeExtended(FloatAddMatcher):
+class CannotBeExtended(Fp32AddMatcher):
     """
-    :py:class:`reprospect.test.sass.instruction.FloatAddMatcher` was not marked as extensible.
+    :py:class:`reprospect.test.sass.instruction.Fp32AddMatcher` was not marked as extensible.
     """
 
 class TestInspect:

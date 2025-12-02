@@ -6,4 +6,5 @@ add_pytest(composite)
 add_pytest(instruction)
 add_pytest(load)
 
+add_subdirectory(instruction)
 add_subdirectory(matchers)

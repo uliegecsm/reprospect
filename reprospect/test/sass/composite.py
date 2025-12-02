@@ -62,10 +62,10 @@ def instruction_is(matcher : instruction.InstructionMatcher) -> Fluentizer:
     Match the current instruction with `matcher`.
 
     >>> from reprospect.test.sass.composite   import instruction_is
-    >>> from reprospect.test.sass.instruction import FloatAddMatcher
-    >>> instruction_is(FloatAddMatcher()).matches(inst = 'FADD R2, R2, R3')
+    >>> from reprospect.test.sass.instruction import Fp32AddMatcher
+    >>> instruction_is(Fp32AddMatcher()).matches(inst = 'FADD R2, R2, R3')
     InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']})
-    >>> instruction_is(FloatAddMatcher()).one_or_more_times().matches(instructions = ('FADD R2, R2, R3', 'FADD R4, R4, R5'))
+    >>> instruction_is(Fp32AddMatcher()).one_or_more_times().matches(instructions = ('FADD R2, R2, R3', 'FADD R4, R4, R5'))
     [InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']}), InstructionMatch(opcode='FADD', modifiers=(), operands=('R4', 'R4', 'R5'), predicate=None, additional={'dst': ['R4']})]
     """
     return Fluentizer(matcher)

@@ -2,9 +2,7 @@ import pathlib
 import re
 import sys
 
-import reprospect
-
-from reprospect.test               import environment
+from reprospect.test               import CMakeAwareTestCase, environment
 from reprospect.tools              import binaries
 from reprospect.tools.binaries.elf import NvInfoEIATTR
 
@@ -13,7 +11,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-class TestThen(reprospect.CMakeAwareTestCase):
+class TestThen(CMakeAwareTestCase):
     """
     Analyze the :code:`then` node of :code:`Kokkos::Experimental::Graph`.
 

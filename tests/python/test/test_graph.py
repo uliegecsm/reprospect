@@ -4,8 +4,7 @@ import typing
 
 import pytest
 
-import reprospect
-
+from reprospect.test           import CMakeAwareTestCase
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools          import ncu
 from reprospect.tools.sass     import Decoder
@@ -16,7 +15,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-class TestGraph(reprospect.CMakeAwareTestCase):
+class TestGraph(CMakeAwareTestCase):
     """
     General test class.
     """

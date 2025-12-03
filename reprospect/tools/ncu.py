@@ -73,6 +73,28 @@ class Quantity(StrEnum):
     SECTOR      = 'sectors'
     WAVEFRONT   = 'wavefronts'
 
+@dataclasses.dataclass(frozen = True, slots = True)
+class DeviceAttributeMetric:
+    """
+    ``ncu`` device attribute metric, such as::
+
+        device__attribute_architecture
+
+    .. note::
+
+        Available device attribute metrics can be queryied with::
+
+            ncu --query-metrics-collection=device
+    """
+    name : str
+
+    @property
+    def full_name(self) -> str:
+        return f'device__attribute_{self.name}'
+
+    def gather(self) -> tuple[str]:
+        return (self.full_name,)
+
 #: A single metric value type.
 ValueType : typing.TypeAlias = int | float
 
@@ -433,7 +455,9 @@ class L1TEXCache:
 
     LocalStore : typing.Final[typing.Type[L1TEXCacheLocalStore]] = L1TEXCacheLocalStore # pylint: disable=invalid-name
 
-def gather(metrics : typing.Iterable[Metric | MetricCorrelation]) -> tuple[str, ...]:
+MetricKind : typing.TypeAlias = Metric | MetricCorrelation | DeviceAttributeMetric
+
+def gather(metrics : typing.Iterable[MetricKind]) -> tuple[str, ...]:
     """
     Retrieve all sub-metric names, e.g. to pass them to ``ncu``.
     """
@@ -444,12 +468,12 @@ class SessionCommand:
     """
     Used by :py:class:`reprospect.tools.ncu.Session`.
     """
-    opts: list[str]                                      #: ``ncu`` options that do not involve paths.
-    output: pathlib.Path                                 #: ``ncu`` report file.
-    log: pathlib.Path                                    #: ``ncu`` log file.
-    metrics: typing.Iterable[Metric | MetricCorrelation] | None #: ``ncu`` metrics.
-    executable: str | pathlib.Path                       #: Executable to run.
-    args: list[str | pathlib.Path] | None                #: Arguments to pass to the executable.
+    opts: list[str]                             #: ``ncu`` options that do not involve paths.
+    output: pathlib.Path                        #: ``ncu`` report file.
+    log: pathlib.Path                           #: ``ncu`` log file.
+    metrics: typing.Iterable[MetricKind] | None #: ``ncu`` metrics.
+    executable: str | pathlib.Path              #: Executable to run.
+    args: list[str | pathlib.Path] | None       #: Arguments to pass to the executable.
 
     @functools.cached_property
     def to_tuple(self) -> tuple[str | pathlib.Path, ...]:
@@ -485,7 +509,7 @@ class Session:
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
-        metrics : typing.Optional[typing.Iterable[Metric | MetricCorrelation]] = None,
+        metrics : typing.Optional[typing.Iterable[MetricKind]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
     ) -> SessionCommand:
         """
@@ -520,7 +544,7 @@ class Session:
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
-        metrics : typing.Optional[typing.Iterable[Metric | MetricCorrelation]] = None,
+        metrics : typing.Optional[typing.Iterable[MetricKind]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
         cwd : typing.Optional[pathlib.Path] = None,
         env : typing.Optional[typing.MutableMapping] = None,
@@ -932,7 +956,7 @@ class Report:
     def extract_results_in_range(
         self,
         range_idx : int,
-        metrics : typing.Iterable[Metric | MetricCorrelation],
+        metrics : typing.Iterable[MetricKind],
         includes : typing.Optional[typing.Iterable[str]] = None,
         excludes : typing.Optional[typing.Iterable[str]] = None,
         demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None,
@@ -975,7 +999,7 @@ class Report:
 
         return profiling_results
 
-    def collect_metrics_from_action(self, *, metrics : typing.Iterable[Metric | MetricCorrelation], action : Action) -> dict[str, ProfilingMetricData]:
+    def collect_metrics_from_action(self, *, metrics : typing.Iterable[MetricKind], action : Action) -> dict[str, ProfilingMetricData]:
         """
         Collect values of the `metrics` in the `action`.
 
@@ -1015,6 +1039,8 @@ class Report:
                 else:
                     assert metric_data is not None
                     results[metric.pretty_name] = metric_data
+            elif isinstance(metric, DeviceAttributeMetric):
+                results[metric.full_name] = self.get_metric_by_name(action = action, metric = metric.full_name).value()
             else:
                 raise NotImplementedError(metric)
 
@@ -1072,7 +1098,7 @@ class Cacher(cacher.Cacher):
         executable : pathlib.Path,
         opts : typing.Optional[list[str]] = None,
         nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
-        metrics : typing.Optional[typing.Iterable[Metric | MetricCorrelation]] = None,
+        metrics : typing.Optional[typing.Iterable[MetricKind]] = None,
         args : typing.Optional[list[str | pathlib.Path]] = None,
         env : typing.Optional[typing.MutableMapping] = None,
     ) -> blake3.blake3:

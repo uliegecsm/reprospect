@@ -4,6 +4,10 @@
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/reprospect)
 ![PyPI - Implementation](https://img.shields.io/pypi/implementation/reprospect)
 
+![PyPI - Downloads](https://img.shields.io/pypi/dd/reprospect)
+![PyPI - Downloads](https://img.shields.io/pypi/dw/reprospect)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/reprospect)
+
 # reprospect
 
 `ReProspect` provides a framework and tools for reproducible prospecting of CUDA applications.

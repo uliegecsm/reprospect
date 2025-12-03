@@ -7,9 +7,9 @@ import typing
 import rich.table
 
 from reprospect.tools.architecture       import NVIDIAArch
-from reprospect.tools.binaries.cuobjdump import CuObjDump
 from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
 from reprospect.tools.binaries.elf       import ELF
+from reprospect.tools.binaries.symtab    import get_symbol_table
 from reprospect.tools.sass.decode        import RegisterType
 from reprospect.utils                    import rich_helpers
 from reprospect.utils.subprocess_helpers import popen_stream
@@ -152,7 +152,7 @@ class NVDisasm:
         self.arch = arch or elf.arch
         self.demangler = demangler
 
-        self.cuobjdump = CuObjDump(file = self.file, arch = self.arch, sass = False)
+        self.symtab = get_symbol_table(file = self.file)
 
         self.functions : dict[str, Function] = {}
 
@@ -168,7 +168,7 @@ class NVDisasm:
         """
         for function_mangled in mangled:
             # Find the function in the symbol table to determine its index.
-            matches = self.cuobjdump.symtab[self.cuobjdump.symtab['name'] == function_mangled]
+            matches = self.symtab[self.symtab['name'] == function_mangled]
             if matches.shape[0] != 1:
                 raise RuntimeError(f'The function {function_mangled} does not appear or appears more than once in the symbol table.')
             function_idx = matches.iloc[0]['index']

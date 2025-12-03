@@ -25,7 +25,7 @@ References:
 * https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#object-kind-toolchains
 """
 
-CodemodelDict : typing.TypeAlias = dict[str, list]
+CodemodelDict : typing.TypeAlias = dict[str, list[typing.Any]]
 """
 The CMake code model is a dictionary.
 

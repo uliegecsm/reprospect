@@ -13,7 +13,7 @@ requires = [
     "ijson",
     "mypy_extensions",
     "pandas",
-    "pyelftools",
+    "pyelftools==0.32",
     "regex",
     "rich",
     "rich-tools",

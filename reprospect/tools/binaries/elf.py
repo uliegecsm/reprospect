@@ -215,7 +215,7 @@ class TkInfo:
     tool_options : str
 
     @staticmethod
-    def extract(arr : bytearray, offset : int) -> str:
+    def extract(arr : bytes, offset : int) -> str:
         """
         The strings section starts at offset 24.
         """

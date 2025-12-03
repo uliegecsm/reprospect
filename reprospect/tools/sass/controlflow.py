@@ -17,7 +17,7 @@ class BasicBlock:
     """
     instructions : tuple[Instruction, ...]
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         """
         A hash from the entry/exit instructions should be sufficiently unique (within a function).
         """

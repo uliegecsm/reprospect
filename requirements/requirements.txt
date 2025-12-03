@@ -5,7 +5,7 @@ cmake-file-api==0.0.8.3
 ijson
 mypy_extensions
 pandas
-pyelftools
+pyelftools==0.32
 regex
 rich
 rich-tools

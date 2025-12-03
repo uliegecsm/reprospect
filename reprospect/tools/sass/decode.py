@@ -12,15 +12,15 @@ import rich.table
 
 from reprospect.utils import rich_helpers
 
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum.strenum import StrEnum
+
 if sys.version_info >= (3, 12):
     from typing import override
 else:
     from typing_extensions import override
-
-if sys.version_info >= (3, 11):
-    from enum import StrEnum
-else:
-    from backports.strenum import StrEnum
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class ControlCode:

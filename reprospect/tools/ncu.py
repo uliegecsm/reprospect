@@ -3,7 +3,6 @@
 import collections.abc
 import dataclasses
 import enum
-import functools
 import importlib
 import json
 import logging
@@ -465,98 +464,94 @@ def gather(metrics : typing.Iterable[MetricKind]) -> tuple[str, ...]:
     """
     return tuple(name for metric in metrics for name in metric.gather())
 
-@attrs.define(frozen = True, slots = True)
-class SessionCommand:
+@attrs.define(frozen = True, slots = True, kw_only = True)
+class Command: # pylint: disable=too-many-instance-attributes
     """
-    Used by :py:class:`reprospect.tools.ncu.Session`.
+    Run a ``ncu`` command line.
     """
-    opts: list[str]                             #: ``ncu`` options that do not involve paths.
-    output: pathlib.Path                        #: ``ncu`` report file.
-    log: pathlib.Path                           #: ``ncu`` log file.
-    metrics: typing.Iterable[MetricKind] | None #: ``ncu`` metrics.
-    executable: str | pathlib.Path              #: Executable to run.
-    args: list[str | pathlib.Path] | None       #: Arguments to pass to the executable.
+    executable: str | pathlib.Path
+    """Executable to run."""
+    output: pathlib.Path
+    """Report file."""
+    opts : tuple[str, ...] = attrs.field(default = ())
+    """Options that do not involve paths."""
+    log: pathlib.Path = attrs.field(init = False)
+    """Log file."""
+    metrics : tuple[MetricKind, ...] | None = None
+    """Metrics."""
+    nvtx_includes : tuple[str, ...] | None = None
+    """
+    NVTX include.
+    Refer to https://docs.nvidia.com/nsight-compute/2023.3/NsightComputeCli/index.html#nvtx-filtering.
+    """
+    args: tuple[str | pathlib.Path, ...] | None = None
+    """Arguments to pass to the executable."""
+    env : typing.Mapping[str, str] | None = None
+    """Mapping used to update the environment before running, see :py:meth:`run`."""
 
-    @functools.cached_property
-    def to_tuple(self) -> tuple[str | pathlib.Path, ...]:
+    cmd : tuple[str | pathlib.Path, ...] = attrs.field(init = False)
+
+    def __attrs_post_init__(self) -> None:
         """
-        Build the full ``ncu`` command.
+        Enrich :py:attr:`opts` and build :py:attr:`cmd`.
         """
-        cmd : list[str | pathlib.Path] = ['ncu']
+        # The log file is always next to the output.
+        object.__setattr__(self, 'log', self.output.with_suffix('.log'))
 
-        if self.opts:
-            cmd += self.opts
-
-        cmd += ['--force-overwrite', '-o', self.output]
-        cmd += ['--log-file', self.log]
+        # Enrich the options.
+        opts : tuple[str, ...] = self.opts + (
+            '--print-summary=per-kernel',
+            '--warp-sampling-interval=0',
+        )
+        if self.nvtx_includes:
+            opts += (
+                '--nvtx',
+                '--print-nvtx-rename=kernel',
+                *(f'--nvtx-include={x}' for x in self.nvtx_includes),
+            )
 
         if self.metrics:
-            cmd.append(f'--metrics={",".join(gather(metrics = self.metrics))}')
+            opts += (f'--metrics={",".join(gather(metrics = self.metrics))}',)
 
-        cmd.append(self.executable)
+        object.__setattr__(self, 'opts', opts)
 
-        if self.args:
-            cmd += self.args
+        # Build the final full command.
+        object.__setattr__(self, 'cmd', (
+            'ncu',
+            *self.opts,
+            '--force-overwrite', '-o', self.output,
+            '--log-file', self.log,
+            self.executable,
+            *(self.args if self.args else ()),
+        ))
 
-        return tuple(cmd)
+    def run(self, *,
+        cwd : pathlib.Path | None = None,
+        env : typing.MutableMapping[str, str] | None = None,
+    ) -> int:
+        if self.env is not None:
+            if env is None:
+                env = os.environ.copy()
+            env.update(self.env)
+        return subprocess.check_call(args = self.cmd, env = env, cwd = cwd)
 
+@dataclasses.dataclass(frozen = True, slots = True)
 class Session:
     """
     `Nsight Compute` session interface.
     """
-    def __init__(self, *, output : pathlib.Path):
-        self.output = output
-
-    def get_command(self, *,
-        executable : pathlib.Path,
-        opts : typing.Optional[list[str]] = None,
-        nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
-        metrics : typing.Optional[typing.Iterable[MetricKind]] = None,
-        args : typing.Optional[list[str | pathlib.Path]] = None,
-    ) -> SessionCommand:
-        """
-        Create a :py:class:`SessionCommand`.
-        """
-        if not opts:
-            opts = []
-
-        opts += [
-            '--print-summary=per-kernel',
-            '--warp-sampling-interval=0',
-        ]
-
-        if nvtx_includes:
-            opts += [
-                '--nvtx',
-                '--print-nvtx-rename=kernel',
-                *[f'--nvtx-include={x}' for x in nvtx_includes],
-            ]
-
-        return SessionCommand(
-            opts = opts,
-            output = self.output,
-            log = self.output.with_suffix('.log'),
-            metrics = metrics,
-            executable = executable,
-            args = args,
-        )
+    command : Command
 
     def run(
         self,
-        executable : pathlib.Path,
-        opts : typing.Optional[list[str]] = None,
-        nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
-        metrics : typing.Optional[typing.Iterable[MetricKind]] = None,
-        args : typing.Optional[list[str | pathlib.Path]] = None,
         cwd : typing.Optional[pathlib.Path] = None,
         env : typing.Optional[typing.MutableMapping] = None,
-        retries : typing.Optional[int] = None,
+        retries : int = 1,
         sleep : typing.Callable[[int, int], float] = lambda retry, retries: 3. * (1. - retry / retries),
-    ) -> SessionCommand:
+    ) -> None:
         """
-        Run ``ncu``.
+        Run ``ncu`` using :py:attr:`command`.
 
-        :param nvtx_includes: Refer to https://docs.nvidia.com/nsight-compute/2023.3/NsightComputeCli/index.html#nvtx-filtering.
         :param retries: ``ncu`` might fail acquiring some resources because other instances are running. Retry a few times.
                         See https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#faq (Profiling failed because a driver resource was unavailable).
 
@@ -576,26 +571,15 @@ class Session:
 
         * https://docs.nvidia.com/nsight-compute/NsightComputeCli/index.html#nvtx-filtering
         """
-        command = self.get_command(
-            opts = opts,
-            nvtx_includes = nvtx_includes,
-            metrics = metrics,
-            executable = executable,
-            args = args,
-        )
-
-        if retries is None:
-            retries = 1
-
         for retry in reversed(range(retries)):
             try:
-                logging.info(f"Launching 'ncu' with {command.to_tuple} (log file at {command.log}).")
-                subprocess.check_call(command.to_tuple, cwd = cwd, env = env)
+                logging.info(f"Launching 'ncu' with {self.command.cmd} (log file at {self.command.log}).")
+                self.command.run(cwd = cwd, env = env)
                 break
             except subprocess.CalledProcessError:
                 retry_allowed = False
-                if retry > 0 and command.log.is_file():
-                    with open(self.output.with_suffix('.log'), mode = 'r', encoding = 'utf-8') as fin:
+                if retry > 0 and self.command.log.is_file():
+                    with open(self.command.output.with_suffix('.log'), mode = 'r', encoding = 'utf-8') as fin:
                         for line in fin:
                             if line.startswith('==ERROR== Profiling failed because a driver resource was unavailable.'):
                                 logging.warning('Retrying because a driver resource was unavailable.')
@@ -604,16 +588,14 @@ class Session:
 
                 if not retry_allowed:
                     logging.exception(
-                        f"Failed launching 'ncu' with {command}."
+                        f"Failed launching 'ncu' with {self.command.cmd}."
                         "\n"
-                        f"{command.log.read_text(encoding = 'utf-8') if command.log.is_file() else ''}"
+                        f"{self.command.log.read_text(encoding = 'utf-8') if self.command.log.is_file() else ''}"
                     )
                     raise
                 sleep_for = sleep(retry, retries)
                 logging.info(f'Sleeping {sleep_for} seconds before retrying.')
                 time.sleep(sleep_for)
-
-        return command
 
 @dataclasses.dataclass(slots = True, frozen = False)
 class Range:
@@ -935,19 +917,19 @@ class Report:
     * https://docs.nvidia.com/nsight-compute/CustomizationGuide/index.html#python-report-interface
     * https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
     """
-    def __init__(self, *, path : typing.Optional[pathlib.Path] = None, name : typing.Optional[str] = None, session : typing.Optional[Session] = None) -> None:
+    def __init__(self, *, path : typing.Optional[pathlib.Path] = None, name : typing.Optional[str] = None, command : typing.Optional[Command] = None) -> None:
         """
-        Load the report ``<path>/<name>.ncu-rep`` or the report generated by :py:class:`Session`.
+        Load the report ``<path>/<name>.ncu-rep`` or the report generated by :py:class:`Command`.
         """
         self.ncu_report = load_ncu_report()
 
         # Load the report.
-        if path is not None and name is not None and session is None:
+        if path is not None and name is not None and command is None:
             self.path = path / (name + '.ncu-rep')
             if not self.path.is_file():
                 raise FileNotFoundError(f"The report path {self.path} is not a file.")
-        elif path is None and name is None and session is not None:
-            self.path = session.output.with_suffix('.ncu-rep')
+        elif path is None and name is None and command is not None:
+            self.path = command.output.with_suffix('.ncu-rep')
         else:
             raise RuntimeError()
 
@@ -1101,24 +1083,15 @@ class Cacher(cacher.Cacher):
     """
     TABLE : typing.ClassVar[str] = 'ncu'
 
-    def __init__(self, *, session : Session, directory : typing.Optional[str | pathlib.Path] = None):
-        super().__init__(directory = pathlib.Path(directory or os.environ['HOME']) / '.ncu-cache')
-        self.session = session
+    def __init__(self, *, directory : typing.Optional[str | pathlib.Path] = None):
+        super().__init__(directory = directory or (pathlib.Path(os.environ['HOME']) / '.ncu-cache'))
 
-    def hash_impl(self, *,
-        executable : pathlib.Path,
-        opts : typing.Optional[list[str]] = None,
-        nvtx_includes : typing.Optional[typing.Iterable[str]] = None,
-        metrics : typing.Optional[typing.Iterable[MetricKind]] = None,
-        args : typing.Optional[list[str | pathlib.Path]] = None,
-        env : typing.Optional[typing.MutableMapping] = None,
-    ) -> blake3.blake3:
+    def hash_impl(self, *, command : Command) -> blake3.blake3:
         """
         Hash based on:
 
         * ``ncu`` version
         * ``ncu`` options (but not the output and log files)
-        * ``ncu`` metrics
         * executable content
         * executable arguments
         * linked libraries
@@ -1128,64 +1101,49 @@ class Cacher(cacher.Cacher):
 
         hasher.update(subprocess.check_output(('ncu', '--version')))
 
-        command = self.session.get_command(
-            opts = opts,
-            nvtx_includes = nvtx_includes,
-            metrics = metrics,
-            executable = executable,
-            args = args,
-        )
-
         if command.opts:
             hasher.update(shlex.join(command.opts).encode())
-
-        if command.metrics:
-            hasher.update(''.join(gather(metrics = command.metrics)).encode())
 
         hasher.update_mmap(command.executable)
 
         if command.args:
             hasher.update(shlex.join(map(str, command.args)).encode())
 
+        if command.env:
+            hasher.update(json.dumps(command.env).encode())
+
         for lib in sorted(ldd.get_shared_dependencies(file = command.executable)):
             hasher.update_mmap(lib)
-
-        if env:
-            hasher.update(json.dumps(env).encode())
 
         return hasher
 
     @override
     def hash(self, **kwargs) -> blake3.blake3:
-        return self.hash_impl(
-            executable = kwargs['executable'],
-            opts = kwargs.get('opts'),
-            nvtx_includes = kwargs.get('nvtx_includes'),
-            metrics = kwargs.get('metrics'),
-            args = kwargs.get('args'),
-            env = kwargs.get('env'),
-        )
+        return self.hash_impl(command = kwargs['command'])
 
     @override
-    def populate(self, directory : pathlib.Path, **kwargs) -> SessionCommand:
+    def populate(self, directory : pathlib.Path, **kwargs) -> None:
         """
         When there is a cache miss, call :py:meth:`reprospect.tools.ncu.Session.run`.
         Fill the `directory` with the artifacts.
         """
-        command = self.session.run(**kwargs)
+        command = kwargs.pop('command')
+
+        Session(command = command).run(**kwargs)
 
         shutil.copy(dst = directory, src = command.output.with_suffix('.ncu-rep'))
         shutil.copy(dst = directory, src = command.log)
 
-        return command
-
-    def run(self, **kwargs) -> cacher.Cacher.Entry:
+    def run(self,
+        command : Command,
+        **kwargs,
+    ) -> cacher.Cacher.Entry:
         """
         On a cache hit, copy files from the cache entry.
         """
-        entry = self.get(**kwargs)
+        entry = self.get(command = command, **kwargs)
 
         if entry.cached:
-            shutil.copytree(entry.directory, self.session.output.parent, dirs_exist_ok = True)
+            shutil.copytree(entry.directory, command.output.parent, dirs_exist_ok = True)
 
         return entry

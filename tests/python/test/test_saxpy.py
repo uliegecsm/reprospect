@@ -65,16 +65,16 @@ class TestNCU(TestSaxpy):
     )
 
     @pytest.fixture(scope = 'class')
-    def report(self) -> ncu.Report:
-        session = ncu.Session(output = self.cwd / 'ncu')
-        session.run(
-            executable = self.executable,
-            nvtx_includes = self.NVTX_INCLUDES,
-            cwd = self.cwd,
-            metrics = self.METRICS,
-            retries = 5,
-        )
-        return ncu.Report(session = session)
+    def report(self, workdir : pathlib.Path) -> ncu.Report:
+        with ncu.Cacher(directory = workdir) as cacher:
+            command = ncu.Command(
+                output = self.cwd / 'ncu',
+                executable = self.executable,
+                nvtx_includes = self.NVTX_INCLUDES,
+                metrics = self.METRICS,
+            )
+            cacher.run(command = command, cwd = self.cwd, retries = 5)
+            return ncu.Report(command = command)
 
     @pytest.fixture(scope = 'class')
     def results(self, report : ncu.Report) -> ncu.ProfilingResults:

@@ -279,6 +279,7 @@ jobs:
                   name: tests-${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                   path: artifacts
                   retention-days: 1
+                  if-no-files-found: error
 
     build-package:
         needs: [setup-job-matrix, build-images]
@@ -309,6 +310,7 @@ jobs:
                   name: package-${{ matrix.pyver }}
                   path: wheelhouse/
                   retention-days: 1
+                  if-no-files-found: error
 
     build-package-sdist:
         needs: []
@@ -327,6 +329,7 @@ jobs:
                   name: package-sdist
                   path: wheelhouse/
                   retention-days: 1
+                  if-no-files-found: error
 
     examples:
         needs: [
@@ -447,6 +450,7 @@ jobs:
                   name: papers
                   path: papers/**/*.pdf
                   retention-days: 1
+                  if-no-files-found: error
 
     pylint:
         runs-on: [self-hosted, linux, docker, amd64]

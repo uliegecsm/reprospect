@@ -202,6 +202,8 @@ class LaunchGrid(XYZBase):
     """
     prefix : typing.ClassVar[str] = 'launch__grid_dim_'
 
+MetricCorrelationDataType : typing.TypeAlias = dict[str | int, ValueType]
+
 @dataclasses.dataclass(frozen = True, slots = True)
 class MetricCorrelationData:
     """
@@ -211,7 +213,7 @@ class MetricCorrelationData:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
-    correlated : dict[str, ValueType]
+    correlated : MetricCorrelationDataType
     value : ValueType | None = None
 
 @dataclasses.dataclass(frozen = True, slots = True)
@@ -956,7 +958,7 @@ class Report:
     def extract_results_in_range(
         self,
         range_idx : int,
-        metrics : typing.Iterable[MetricKind],
+        metrics : typing.Collection[MetricKind],
         includes : typing.Optional[typing.Iterable[str]] = None,
         excludes : typing.Optional[typing.Iterable[str]] = None,
         demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None,
@@ -964,6 +966,8 @@ class Report:
         """
         Extract the `metrics` of the actions in the range with ID `range_idx`.
         Possibly filter by NVTX with `includes` and `excludes`.
+
+        :param metrics: Must be iterable from start to end many times.
         """
         logging.info(f'Collecting metrics {metrics} in report {self.path} for range {range_idx} with include filters {includes} and exclude filters {excludes}.')
 
@@ -1014,17 +1018,15 @@ class Report:
             if isinstance(metric, MetricCorrelation):
                 metric_correlation = action.action.metric_by_name(metric.name)
 
-                # Recent 'ncu' (>= 2025.3.0.0) provide a 'value' method.
-                if hasattr(self.ncu_report, 'IMetric_kind_to_value_func'):
-                    value = self.ncu_report.IMetric_kind_to_value_func[metric_correlation.kind()](metric_correlation)
-                else:
-                    value = metric_correlation.value()
-
-                correlated = {}
+                correlated : MetricCorrelationDataType = {}
                 correlations = metric_correlation.correlation_ids()
                 assert correlations.num_instances() == metric_correlation.num_instances()
                 for icor in range(metric_correlation.num_instances()):
-                    correlated[correlations.as_string(icor)] = metric_correlation.value(icor)
+                    key = self.get_metric_value(metric = correlations, index = icor)
+                    assert isinstance(key, int | str)
+                    correlated[key] = metric_correlation.value(icor)
+                value = self.get_metric_value(metric = metric_correlation)
+                assert isinstance(value, ValueType)
                 results[metric.name] = MetricCorrelationData(
                     value = value,
                     correlated = correlated,
@@ -1045,6 +1047,15 @@ class Report:
                 raise NotImplementedError(metric)
 
         return results
+
+    def get_metric_value(self, metric : typing.Any, index : int | None = None) -> ValueType | str:
+        """
+        Recent ``ncu`` (>= 2025.3.0.0) provide a `value` method.
+        """
+        if hasattr(self.ncu_report, 'IMetric_kind_to_value_func'):
+            converter = self.ncu_report.IMetric_kind_to_value_func[metric.kind()]
+            return converter(metric, index) if index is not None else converter(metric)
+        return metric.value(idx = index)
 
     @classmethod
     def fill_metric(cls, action : Action, metric : Metric) -> MetricData:
@@ -1091,7 +1102,7 @@ class Cacher(cacher.Cacher):
     TABLE : typing.ClassVar[str] = 'ncu'
 
     def __init__(self, *, session : Session, directory : typing.Optional[str | pathlib.Path] = None):
-        super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.ncu-cache')
+        super().__init__(directory = pathlib.Path(directory or os.environ['HOME']) / '.ncu-cache')
         self.session = session
 
     def hash_impl(self, *,

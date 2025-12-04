@@ -37,6 +37,7 @@ class TestAnyMatcher:
         '@UP0 LDCU.64 UR12, c[0x0][0x388]' : InstructionMatch(predicate = '@UP0', opcode = 'LDCU', modifiers = ('64',), operands = ('UR12', 'c[0x0][0x388]')),
         'RET.REL.NODEC R4 0x0' : InstructionMatch(opcode = 'RET', modifiers = ('REL', 'NODEC'), operands = ('R4', '0x0')),
         '@!PT LDS RZ, [RZ]' : InstructionMatch(predicate = '@!PT', opcode = 'LDS', modifiers = (), operands = ('RZ', '[RZ]')),
+        'HMUL2 R0, R2.H0_H0, R3.H0_H0' : InstructionMatch(opcode = 'HMUL2', modifiers = (), operands = ('R0', 'R2.H0_H0', 'R3.H0_H0')),
     }
     """
     Zoo of real SASS instructions.

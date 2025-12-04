@@ -1,4 +1,3 @@
-import copy
 import dataclasses
 import functools
 import json
@@ -13,6 +12,7 @@ import subprocess
 import sys
 import typing
 
+import attrs
 import blake3
 import pandas
 import rich.tree
@@ -31,171 +31,212 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
-class Session:
+@attrs.define(frozen = True, slots = True, kw_only = True)
+class Command: # pylint: disable=too-many-instance-attributes, duplicate-code
     """
-    `Nsight Systems` session interface.
+    Run a ``nsys`` command line.
     """
-    def __init__(self, output_dir : pathlib.Path, output_file_prefix : str) -> None:
-        self.output_dir = output_dir
-        self.output_file_prefix = output_file_prefix
+    executable: str | pathlib.Path
+    """Executable to run."""
+    output: pathlib.Path
+    """Report file."""
+    opts : tuple[str, ...] = ()
+    """Options that do not involve paths."""
+    nvtx_capture : str | None = None
+    """NVTX capture string."""
+    capture_range_end : str = 'stop'
+    """NVTX capture range end."""
+    args: tuple[str | pathlib.Path, ...] | None = None
+    """Arguments to pass to the executable."""
+    env : typing.Mapping[str, str] | None = None
+    """Mapping used to update the environment before running, see :py:meth:`run`."""
 
-        self.output_file_nsys_rep = (self.output_dir / self.output_file_prefix).with_suffix('.nsys-rep')
-        self.output_file_sqlite   = (self.output_dir / self.output_file_prefix).with_suffix('.sqlite')
+    cmd : tuple[str | pathlib.Path, ...] = attrs.field(init = False)
 
-    @dataclasses.dataclass(frozen = True)
-    class Command:
+    def __attrs_post_init__(self) -> None:
         """
-        ``nsys`` command.
+        Enrich :py:attr:`opts` and build :py:attr:`cmd`.
         """
-        opts: list[str]          #: ``nsys`` options that do not involve paths.
-        output: pathlib.Path     #: ``nsys`` report file.
-        executable: pathlib.Path #: Executable to run.
-        args: list[str | pathlib.Path] | None #: Arguments to pass to the executable.
-
-        @functools.cached_property
-        def to_tuple(self) -> tuple[str | pathlib.Path, ...]:
-            """
-            Build the full ``nsys`` profile command.
-            """
-            cmd : list[str | pathlib.Path] = ['nsys', 'profile']
-
-            cmd += self.opts
-
-            cmd += [
-                '--force-overwrite=true',
-                f'--output={self.output}',
-            ]
-
-            cmd += [self.executable]
-
-            if self.args:
-                cmd += self.args
-
-            return tuple(cmd)
-
-    def get_command(self, *,
-        executable : pathlib.Path,
-        opts : typing.Optional[list[str]] = None,
-        nvtx_capture : typing.Optional[str] = None,
-        capture_range_end : str = 'stop',
-        args : typing.Optional[list[str | pathlib.Path]] = None,
-    ) -> 'Session.Command':
-        """
-        Create a :py:class:`Session.Command`.
-        """
-        opts = [] if opts is None else copy.deepcopy(opts)
-
-        # We want to start data collection when the first NVTX range is met.
-        # This reduces the amount of data collected (and makes things faster).
-        if nvtx_capture is not None:
-            match nvtx_capture:
-                case '*':
-                    pass
-                case _:
-                    opts += [
-                        '--capture-range=nvtx',
-                        f'--capture-range-end={capture_range_end}',
-                        f'--nvtx-capture={nvtx_capture}',
-                    ]
-            opts += ['--trace=nvtx,cuda']
-        else:
-            opts += ['--trace=cuda']
+        if self.output.suffix != '.nsys-rep':
+            object.__setattr__(self, 'output', self.output.parent / f'{self.output.name}.nsys-rep')
 
         # Disable collecting CPU samples.
-        opts += [
+        opts : tuple[str, ...] = self.opts + (
             '--sample=none',
             '--backtrace=none',
             '--cpuctxsw=none',
-        ]
-
-        return Session.Command(
-            opts = opts,
-            output = self.output_file_nsys_rep,
-            executable = executable,
-            args = args,
         )
 
-    def run(
-        self,
-        executable : pathlib.Path,
-        opts : typing.Optional[list[str]] = None,
-        nvtx_capture : typing.Optional[str] = None,
-        args : typing.Optional[list[str | pathlib.Path]] = None,
-        cwd : typing.Optional[pathlib.Path] = None,
-        env : typing.Optional[typing.MutableMapping] = None,
-    ) -> 'Session.Command':
-        """
-        Run ``nsys``.
-        """
-        command = self.get_command(
-            opts = opts,
-            nvtx_capture = nvtx_capture,
-            executable = executable,
-            args = args,
-        )
+        # We want to start data collection when the first NVTX range is met.
+        # This reduces the amount of data collected (and makes things faster).
+        if self.nvtx_capture is not None:
+            match self.nvtx_capture:
+                case '*':
+                    pass
+                case _:
+                    opts += (
+                        '--capture-range=nvtx',
+                        f'--capture-range-end={self.capture_range_end}',
+                        f'--nvtx-capture={self.nvtx_capture}',
+                    )
+            opts += ('--trace=nvtx,cuda',)
+        else:
+            opts += ('--trace=cuda',)
+
+        object.__setattr__(self, 'opts', opts)
+
+        # Build the final full command.
+        object.__setattr__(self, 'cmd', (
+            'nsys', 'profile',
+            *self.opts,
+            '--force-overwrite=true', '-o', self.output,
+            self.executable,
+            *(self.args or ()),
+        ))
+
+    def run(self, *,
+        cwd : pathlib.Path | None = None,
+        env : typing.MutableMapping[str, str] | None = None,
+    ) -> int:
+        if (self.nvtx_capture is not None or self.env is not None) and env is None:
+            env = os.environ.copy()
 
         # For '--capture-range=nvtx' to accept our custom strings, we need to allow unregistered
         # strings to be considered.
         # See https://docs.nvidia.com/nsight-systems/UserGuide/index.html#example-interactive-cli-command-sequences.
-        if nvtx_capture:
-            if env is None:
-                env = os.environ.copy()
+        if self.nvtx_capture:
+            assert env is not None
             env['NSYS_NVTX_PROFILER_REGISTER_ONLY'] = '0'
 
-        logging.info(f"Launching 'nsys' with {command.to_tuple}.")
-        self.output_file_nsys_rep.unlink(missing_ok = True)
-        subprocess.check_call(command.to_tuple, cwd = cwd, env = env)
+        if self.env:
+            assert env is not None
+            env.update(self.env)
 
-        return command
+        self.output.unlink(missing_ok = True)
+        return subprocess.check_call(args = self.cmd, env = env, cwd = cwd)
+
+@dataclasses.dataclass(frozen = True, slots = True)
+class Session:
+    """
+    `Nsight Systems` session interface.
+    """
+    command : Command
+
+    def run(
+        self,
+        cwd : pathlib.Path | None = None,
+        env : typing.MutableMapping[str, str] | None = None,
+    ) -> None:
+        """
+        Run ``nsys`` using :py:attr:`command`.
+        """
+        logging.info(f"Launching 'nsys' with {self.command.cmd}.")
+        self.command.run(cwd = cwd, env = env)
 
     def export_to_sqlite(
         self,
-        cwd : pathlib.Path = pathlib.Path.cwd(),
-    ) -> None:
+        cwd : pathlib.Path | None = None,
+    ) -> pathlib.Path:
         """
         Export report to ``.sqlite``.
         """
+        output_file_sqlite = self.command.output.with_suffix('.sqlite')
+
         cmd : tuple[str | pathlib.Path, ...] = (
             'nsys', 'export',
             '--type', 'sqlite',
-            f'--output={self.output_file_sqlite}',
-            self.output_file_nsys_rep,
+            f'--output={output_file_sqlite}',
+            self.command.output,
         )
 
         logging.info(f"Exporting to 'sqlite' with {cmd}.")
-        self.output_file_sqlite.unlink(missing_ok = True)
+        output_file_sqlite.unlink(missing_ok = True)
         subprocess.check_call(cmd, cwd = cwd)
+
+        return output_file_sqlite
 
     def extract_statistical_report(
         self,
         report : str = 'cuda_api_sum',
-        filter_nvtx : typing.Optional[str] = None,
-        cwd : pathlib.Path = pathlib.Path.cwd(),
+        filter_nvtx : str | None = None,
+        cwd : pathlib.Path | None = None,
     ) -> pandas.DataFrame:
         """
         Extract `report`, filtering the database with `filter_nvtx`.
         """
-        cmd : list[str | pathlib.Path] = [
+        output_file_sqlite = self.command.output.with_suffix('.sqlite')
+
+        cmd : tuple[str | pathlib.Path, ...] = (
             'nsys', 'stats',
-            f'--output={self.output_dir / self.output_file_prefix}',
+            f'--output={self.command.output.parent / self.command.output.stem}',
             f'--report={report}',
             '--format=csv',
             '--timeunit=usec',
-        ]
-        if filter_nvtx:
-            cmd += ['--filter-nvtx=' + filter_nvtx]
-        cmd += [self.output_file_sqlite]
+            *(('--filter-nvtx=' + filter_nvtx,) if filter_nvtx else ()),
+            output_file_sqlite,
+        )
 
         # 'nsys stats' will output to a file whose name follows the convention
         #    <basename>_<analysis&args>.<output_format>
         suffix = '_nvtx=' + filter_nvtx.replace('/', '-') if filter_nvtx else ''
-        output = self.output_dir / f'{self.output_file_prefix}_{report}{suffix}.csv'
+        output_file_csv = self.command.output.parent / f'{self.command.output.stem}_{report}{suffix}.csv'
 
-        logging.info(f'Removing {output} and extracting statistical report \'{report}\' from {self.output_file_sqlite} with {cmd}.')
-        output.unlink(missing_ok = True)
+        logging.info(f'Extracting statistical report \'{report}\' from {output_file_sqlite} with {cmd}.')
+        output_file_csv.unlink(missing_ok = True)
         subprocess.check_call(cmd, cwd = cwd)
+        assert output_file_csv.is_file()
 
-        return pandas.read_csv(output)
+        return pandas.read_csv(output_file_csv)
+
+@dataclasses.dataclass(frozen = True, slots = True)
+class ReportPatternSelector:
+    """
+    A :py:class:`pandas.DataFrame` selector that returns which rows match a regex pattern
+    in a specific column.
+    """
+    pattern : str | re.Pattern[str]
+    column : str = 'Name'
+
+    def __call__(self, table : pandas.DataFrame) -> pandas.Series:
+        return table[self.column].astype(str).str.contains(self.pattern, regex = True)
+
+class ReportNvtxEvents(rich_helpers.TreeMixin):
+    def __init__(self, events : pandas.DataFrame) -> None:
+        self.events = events
+
+    def get(self, accessors : typing.Sequence[str]) -> pandas.DataFrame:
+        """
+        Find all nested NVTX events matching `accessors`.
+        """
+        if not accessors:
+            return self.events
+
+        # Find events matching the first accessor.
+        previous = self.events[self.events['text'] == accessors[0]].index
+
+        # For each subsequent accessor, find matching children.
+        for accessor in accessors[1:]:
+            current = set()
+            for idx in previous:
+                for child_idx in self.events.loc[idx, 'children']:
+                    if self.events.loc[child_idx, 'text'] == accessor:
+                        current.add(child_idx)
+            previous = current
+
+        return self.events.iloc[sorted(previous)]
+
+    @override
+    def to_tree(self) -> rich.tree.Tree:
+        def add_branch(*, tree : rich.tree.Tree, nodes : pandas.DataFrame) -> None:
+            for _, node in nodes.iterrows():
+                branch = tree.add(f"{node['text']} ({node['eventTypeName']})")
+                if node['children'].any():
+                    add_branch(tree = branch, nodes = self.events.loc[node['children']])
+
+        tree = rich.tree.Tree('NVTX events')
+        add_branch(tree = tree, nodes = self.events[self.events['level'] == 0])
+
+        return tree
 
 class Report:
     """
@@ -242,18 +283,6 @@ class Report:
             raise RuntimeError(data)
         return data.squeeze()
 
-    @dataclasses.dataclass(frozen = True, slots = True)
-    class PatternSelector:
-        """
-        A :py:class:`pandas.DataFrame` selector that returns which rows match a regex pattern
-        in a specific column.
-        """
-        pattern : str | re.Pattern[str]
-        column : str = 'Name'
-
-        def __call__(self, table : pandas.DataFrame) -> pandas.Series:
-            return table[self.column].astype(str).str.contains(self.pattern, regex = True)
-
     @classmethod
     def get_correlated_row(cls, *,
         src : pandas.DataFrame | pandas.Series,
@@ -288,46 +317,8 @@ class Report:
             return dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]]
         raise RuntimeError()
 
-    class NvtxEvents(rich_helpers.TreeMixin):
-        def __init__(self, events : pandas.DataFrame) -> None:
-            self.events = events
-
-        def get(self, accessors : typing.Sequence[str]) -> pandas.DataFrame:
-            """
-            Find all nested NVTX events matching `accessors`.
-            """
-            if not accessors:
-                return self.events
-
-            # Find events matching the first accessor.
-            previous = self.events[self.events['text'] == accessors[0]].index
-
-            # For each subsequent accessor, find matching children.
-            for accessor in accessors[1:]:
-                current = set()
-                for idx in previous:
-                    for child_idx in self.events.loc[idx, 'children']:
-                        if self.events.loc[child_idx, 'text'] == accessor:
-                            current.add(child_idx)
-                previous = current
-
-            return self.events.iloc[sorted(previous)]
-
-        @override
-        def to_tree(self) -> rich.tree.Tree:
-            def add_branch(*, tree : rich.tree.Tree, nodes : pandas.DataFrame) -> None:
-                for _, node in nodes.iterrows():
-                    branch = tree.add(f"{node['text']} ({node['eventTypeName']})")
-                    if node['children'].any():
-                        add_branch(tree = branch, nodes = self.events.loc[node['children']])
-
-            tree = rich.tree.Tree('NVTX events')
-            add_branch(tree = tree, nodes = self.events[self.events['level'] == 0])
-
-            return tree
-
     @functools.cached_property
-    def nvtx_events(self) -> 'Report.NvtxEvents':
+    def nvtx_events(self) -> ReportNvtxEvents:
         """
         Get all NVTX events from the `NVTX_EVENTS` table.
 
@@ -395,7 +386,7 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
 
         events['children'] = [pandas.Series(children, dtype = int) for children in child_map.values()]
 
-        return Report.NvtxEvents(events = events)
+        return ReportNvtxEvents(events = events)
 
     def get_events(self, table : str, accessors : typing.Sequence[str], stringids : typing.Optional[str] = 'nameId') -> pandas.DataFrame:
         """
@@ -465,17 +456,10 @@ class Cacher(cacher.Cacher):
     """
     TABLE : typing.ClassVar[str] = 'nsys'
 
-    def __init__(self, session : Session, directory : typing.Optional[str | pathlib.Path] = None):
-        super().__init__(directory = directory if directory is not None else pathlib.Path(os.environ['HOME']) / '.nsys-cache')
-        self.session = session
+    def __init__(self, *, directory : str | pathlib.Path | None = None):
+        super().__init__(directory = directory or (pathlib.Path(os.environ['HOME']) / '.nsys-cache'))
 
-    def hash_impl(self, *,
-        executable : pathlib.Path,
-        opts : typing.Optional[list[str]] = None,
-        nvtx_capture : typing.Optional[str] = None,
-        args : typing.Optional[list[str | pathlib.Path]] = None,
-        env : typing.Optional[typing.MutableMapping] = None,
-    ) -> blake3.blake3:
+    def hash_impl(self, *, command : Command) -> blake3.blake3:
         """
         Hash based on:
 
@@ -490,13 +474,6 @@ class Cacher(cacher.Cacher):
 
         hasher.update(subprocess.check_output(('nsys', '--version')))
 
-        command = self.session.get_command(
-            opts = opts,
-            nvtx_capture = nvtx_capture,
-            executable = executable,
-            args = args,
-        )
-
         if command.opts:
             hasher.update(shlex.join(command.opts).encode())
 
@@ -505,61 +482,60 @@ class Cacher(cacher.Cacher):
         if command.args:
             hasher.update(shlex.join(map(str, command.args)).encode())
 
+        if command.env:
+            hasher.update(json.dumps(command.env).encode())
+
         for lib in sorted(ldd.get_shared_dependencies(file = command.executable)):
             hasher.update_mmap(lib)
-
-        if env:
-            hasher.update(json.dumps(env).encode())
 
         return hasher
 
     @override
     def hash(self, **kwargs) -> blake3.blake3:
-        return self.hash_impl(
-            executable = kwargs['executable'],
-            opts = kwargs.get('opts'),
-            nvtx_capture = kwargs.get('nvtx_capture'),
-            args = kwargs.get('args'),
-            env = kwargs.get('env'),
-        )
+        return self.hash_impl(command = kwargs['command'])
 
     @override
-    def populate(self, directory : pathlib.Path, **kwargs) -> Session.Command:
+    def populate(self, directory : pathlib.Path, **kwargs) -> None:
         """
         When there is a cache miss, call :py:meth:`reprospect.tools.nsys.Session.run`.
         Fill the `directory` with the artifacts.
         """
-        command = self.session.run(**kwargs)
+        command = kwargs.pop('command')
+
+        Session(command = command).run(**kwargs)
 
         shutil.copy(dst = directory, src = command.output)
 
-        return command
-
-    def run(self, **kwargs) -> cacher.Cacher.Entry:
+    def run(self, command : Command, **kwargs) -> cacher.Cacher.Entry:
         """
         On a cache hit, copy files from the cache entry.
         """
-        entry = self.get(**kwargs)
+        entry = self.get(command = command, **kwargs)
 
         if entry.cached:
-            shutil.copytree(entry.directory, self.session.output_dir, dirs_exist_ok = True)
+            shutil.copytree(entry.directory, command.output.parent, dirs_exist_ok = True)
 
         return entry
 
+    @staticmethod
     def export_to_sqlite(
-        self,
+        command : Command,
         entry : cacher.Cacher.Entry,
         **kwargs,
-    ) -> None:
+    ) -> pathlib.Path:
         """
         Export report to ``.sqlite``.
         """
-        cached = entry.directory / self.session.output_file_sqlite.name
+        output_file_sqlite = command.output.with_suffix('.sqlite')
+
+        cached = entry.directory / output_file_sqlite.name
 
         if cached.is_file():
-            logging.info(f'Serving {self.session.output_file_sqlite} from the cache entry {entry}.')
-            shutil.copyfile(src = cached, dst = self.session.output_file_sqlite)
+            logging.info(f'Serving {output_file_sqlite} from the cache entry {entry}.')
+            shutil.copyfile(src = cached, dst = output_file_sqlite)
         else:
-            logging.info(f'Populating the cache entry {entry} with {self.session.output_file_sqlite} from the cache entry {entry}.')
-            self.session.export_to_sqlite(**kwargs)
-            shutil.copyfile(src = self.session.output_file_sqlite, dst = cached)
+            logging.info(f'Populating the cache entry {entry} with {output_file_sqlite} from the cache entry {entry}.')
+            Session(command = command).export_to_sqlite(**kwargs)
+            shutil.copyfile(src = output_file_sqlite, dst = cached)
+
+        return output_file_sqlite

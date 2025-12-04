@@ -4,12 +4,13 @@ import pathlib
 import sys
 import tempfile
 import typing
+import unittest.mock
 
 import pandas
 import pytest
 import semantic_version
 
-from reprospect.tools.nsys import Report, Session, strip_cuda_api_suffix, Cacher
+from reprospect.tools.nsys import Report, Session, Command, strip_cuda_api_suffix, Cacher
 from reprospect.utils      import detect
 from reprospect.utils      import rich_helpers
 
@@ -54,6 +55,32 @@ class TestTracingResults:
 └────────────┴───────────────┴────────────────────────┴────────┴────────┴───────┴───────┴───────┴─────────────────┘
 """
 
+class TestCommand:
+    """
+    Tests for :py:class:`reprospect.tools.nsys.Command`.
+    """
+    def test_env(self, bindir : pathlib.Path) -> None:
+        """
+        Check that the environment is handled properly.
+        """
+        with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
+            Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever')).run()
+            check_call.assert_called_with(args = (
+                'nsys', 'profile',
+                '--sample=none', '--backtrace=none', '--cpuctxsw=none',
+                '--trace=cuda', '--force-overwrite=true', '-o', pathlib.Path('my-output-path.whatever.nsys-rep'),
+                'my-executable',
+            ), env = None, cwd = None)
+
+        with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
+            Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever'), env = {'IT_MATTERS' : 'ON'}).run(env = {'MY_BASE_ENV' : '666'}, cwd = bindir)
+            check_call.assert_called_with(args = (
+                'nsys', 'profile',
+                '--sample=none', '--backtrace=none', '--cpuctxsw=none',
+                '--trace=cuda', '--force-overwrite=true', '-o', pathlib.Path('my-output-path.whatever.nsys-rep'),
+                'my-executable',
+            ), env = {'MY_BASE_ENV': '666', 'IT_MATTERS': 'ON'}, cwd = bindir)
+
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:
     """
@@ -61,19 +88,16 @@ class TestSession:
     """
     EXECUTABLE : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy'
 
-    def run(self, bindir : pathlib.Path, cwd : pathlib.Path, nvtx_capture : typing.Optional[str] = None) -> Session:
+    def run(self, bindir : pathlib.Path, cwd : pathlib.Path, nvtx_capture : str | None = None) -> Session:
         ns = Session(
-            output_dir = cwd,
-            output_file_prefix = self.EXECUTABLE.name,
+            command = Command(
+                executable = bindir / self.EXECUTABLE,
+                output = cwd / self.EXECUTABLE.name,
+                nvtx_capture = nvtx_capture,
+            )
         )
-
-        ns.run(
-            executable = bindir / self.EXECUTABLE,
-            nvtx_capture = nvtx_capture,
-            cwd = cwd,
-        )
-
-        ns.export_to_sqlite()
+        ns.run(cwd = cwd)
+        ns.export_to_sqlite(cwd = cwd)
 
         return ns
 
@@ -133,7 +157,7 @@ class TestSession:
 
         cuda_api_trace = ns.extract_statistical_report(report = 'cuda_api_trace')
 
-        with Report(db = ns.output_file_sqlite) as report:
+        with Report(db = ns.command.output.with_suffix('.sqlite')) as report:
 
             logging.info(f'Tables are {report.tables}.')
 
@@ -199,9 +223,15 @@ class TestCacher:
         Test :py:meth:`reprospect.tools.nsys.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir, session = Session(output_dir = pathlib.Path('I-dont-care'), output_file_prefix = 'osef')) as cacher:
-                hash_a = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
-                hash_b = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
+            with Cacher(directory = tmpdir) as cacher:
+                command = Command(
+                    executable = bindir / self.GRAPH,
+                    output = pathlib.Path('I-dont-care') / 'osef',
+                    opts = ('--nvtx',),
+                    args = ('--bla=42',),
+                )
+                hash_a = cacher.hash(command = command)
+                hash_b = cacher.hash(command = command)
 
                 assert hash_a.digest() == hash_b.digest()
 
@@ -210,40 +240,48 @@ class TestCacher:
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir, session = Session(output_dir = pathlib.Path('I-dont-care'), output_file_prefix = 'osef')) as cacher:
-                hash_a = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
-                hash_b = cacher.hash(opts = ['--nvtx'], executable = bindir / self.SAXPY, args = ['--bla=42'])
+            with Cacher(directory = tmpdir) as cacher:
+                hash_a = cacher.hash(command = Command(executable = bindir / self.GRAPH, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',)))
+                hash_b = cacher.hash(command = Command(executable = bindir / self.SAXPY, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',)))
+                hash_c = cacher.hash(command = Command(executable = bindir / self.SAXPY, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',), env = {'HELLO' : 'WORLD'}))
 
                 assert hash_a.digest() != hash_b.digest()
+                assert hash_b.digest() != hash_c.digest()
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_cache_hit(self, bindir, workdir) -> None:
         """
         The cacher should hit on the second call.
         """
-        FILES = ['report-cached.nsys-rep']
+        FILES : typing.Final[tuple[str]] = ('report-cached.nsys-rep',)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir, session = Session(output_dir = workdir, output_file_prefix = 'report-cached')) as cacher:
+            with Cacher(directory = tmpdir) as cacher:
+                command = Command(
+                    executable = bindir / self.GRAPH,
+                    output = workdir / FILES[0],
+                    opts = ('--env-var=HELLO=WORLD',),
+                )
+
                 assert os.listdir(cacher.directory) == ['cache.db']
 
-                results_first = cacher.run(executable = bindir / self.GRAPH)
+                results_first = cacher.run(command = command)
 
                 assert results_first.cached is False
 
-                assert all(x in os.listdir(cacher.session.output_dir) for x in FILES)
+                assert all(x in os.listdir(workdir) for x in FILES)
 
                 for file in FILES:
-                    (cacher.session.output_dir / file).unlink()
+                    (workdir / file).unlink()
 
                 assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
                 assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
 
-                results_second = cacher.run(executable = bindir / self.GRAPH)
+                results_second = cacher.run(command = command)
 
                 assert results_second.cached is True
 
-                assert all(x in os.listdir(cacher.session.output_dir) for x in FILES)
+                assert all(x in os.listdir(workdir) for x in FILES)
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestReport:
@@ -252,16 +290,16 @@ class TestReport:
     """
     @pytest.fixture(scope = 'class')
     def report(self, bindir, workdir : pathlib.Path) -> Report:
-        with Cacher(session = Session(output_dir = workdir, output_file_prefix = 'test-report')) as cacher:
-            entry = cacher.run(
+        with Cacher(directory = workdir) as cacher:
+            command = Command(
                 executable = bindir / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy',
-                cwd = workdir,
+                output = workdir / 'test-report.nsys-rep',
                 nvtx_capture = '*',
             )
 
-            cacher.export_to_sqlite(entry = entry)
+            entry = cacher.run(command = command, cwd = workdir)
 
-            return Report(db = cacher.session.output_file_sqlite)
+            return Report(db = cacher.export_to_sqlite(command = command, entry = entry))
 
     def test_get_events_within_nested_nvtx_ranges(self, report) -> None:
         """
@@ -300,13 +338,13 @@ class TestReport:
             api = report.get_events(table = 'CUPTI_ACTIVITY_KIND_SYNCHRONIZATION', accessors = ('outer_useless_range', 'initialize_data'), stringids = None)
             assert len(api) == 1
 
-    class TestNvtxEvents:
+    class TestReportNvtxEvents:
         """
-        Tests for :py:class:`reprospect.tools.nsys.Report.NvtxEvents`.
+        Tests for :py:class:`reprospect.tools.nsys.ReportNvtxEvents`.
         """
         def test_get(self, report) -> None:
             """
-            Test :py:meth:`reprospect.tools.nsys.Report.NvtxEvents.get`.
+            Test :py:meth:`reprospect.tools.nsys.ReportNvtxEvents.get`.
             """
             with report:
                 events = report.nvtx_events
@@ -323,7 +361,7 @@ class TestReport:
 
         def test_string_representation(self, report) -> None:
             """
-            Test the string representation of :py:meth:`reprospect.tools.nsys.Report.NvtxEvents`.
+            Test the string representation of :py:meth:`reprospect.tools.nsys.ReportNvtxEvents`.
             """
             with report:
                 assert str(report.nvtx_events) == """\
@@ -342,17 +380,16 @@ NVTX events
             Use :py:class:`tests.nvtx.test_nvtx.TestNVTX.intricated` to check that we can
             build the hierarchy of NVTX events for arbitrarily complicated situations.
             """
-            with Cacher(session = Session(output_dir = workdir, output_file_prefix = 'test-report-nvtx')) as cacher:
-                entry = cacher.run(
+            with Cacher(directory = workdir) as cacher:
+                command = Command(
                     executable = pathlib.Path(sys.executable),
-                    args = [pathlib.Path(__file__).parent.parent.parent / 'nvtx' / 'test_nvtx.py'],
-                    cwd = workdir,
+                    output = workdir / 'test-report-nvtx',
                     nvtx_capture = '*',
+                    args = (pathlib.Path(__file__).parent.parent.parent / 'nvtx' / 'test_nvtx.py',),
                 )
+                entry = cacher.run(command = command, cwd = workdir)
 
-                cacher.export_to_sqlite(entry = entry)
-
-                with Report(db = cacher.session.output_file_sqlite) as report:
+                with Report(db = cacher.export_to_sqlite(command = command, entry = entry)) as report:
                     assert len(report.nvtx_events.events) == 7
 
                     assert report.nvtx_events.get(

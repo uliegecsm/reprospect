@@ -36,29 +36,23 @@ class TestNSYS(TestDispatch):
     NODE_COUNT : typing.Final[int] = 5
 
     @pytest.fixture(scope = 'class')
-    def session(self) -> nsys.Session:
+    def report(self) -> nsys.Report:
         """
         Analyse with `nsys`, use :py:class:`reprospect.tools.nsys.Cacher`.
         """
-        with nsys.Cacher(
-            session = nsys.Session(
-                output_dir = self.cwd,
-                output_file_prefix = self.executable.name,
-            )
-        ) as cacher:
-            entry = cacher.run(
-                nvtx_capture = 'dispatch',
-                opts = ['--cuda-graph-trace=node'],
+        with nsys.Cacher() as cacher:
+            command = nsys.Command(
                 executable = self.executable,
+                output = self.cwd / self.executable.name,
+                opts = ('--cuda-graph-trace=node',),
+                nvtx_capture = 'dispatch',
                 args = (
-                    f"--kokkos-tools-libs={self.KOKKOS_TOOLS_NVTX_CONNECTOR_LIB}",
+                    f'--kokkos-tools-libs={self.KOKKOS_TOOLS_NVTX_CONNECTOR_LIB}',
                 ),
-                cwd = self.cwd,
             )
+            entry = cacher.run(command = command, cwd = self.cwd)
 
-            cacher.export_to_sqlite(entry)
-
-            return cacher.session
+            return nsys.Report(db = cacher.export_to_sqlite(command = command, entry = entry))
 
     @staticmethod
     def get(*, report : nsys.Report, kernels : pandas.DataFrame, label : str) -> pandas.DataFrame:
@@ -71,7 +65,7 @@ class TestNSYS(TestDispatch):
 
         return report.get_correlated_rows(src = launch, dst = kernels)
 
-    def test_streams(self, session : nsys.Session) -> None:
+    def test_streams(self, report : nsys.Report) -> None:
         """
         Each kernel gets a unique stream ID.
 
@@ -81,7 +75,7 @@ class TestNSYS(TestDispatch):
         It must be noted that CUDA does not provide a way to create a graph node and enforce the stream on which it will eventually run.
         This has motivated a refactoring of the :code:`Kokkos::Experimental::Graph` API, see https://github.com/kokkos/kokkos/pull/8191.
         """
-        with nsys.Report(db = session.output_file_sqlite) as report:
+        with report:
             # A bit of debug log.
             logging.info(report.nvtx_events)
 

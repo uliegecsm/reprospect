@@ -102,7 +102,7 @@ class Cacher(abc.ABC):
         return hasher
 
     @abc.abstractmethod
-    def populate(self, directory : pathlib.Path, **kwargs) -> typing.Any:
+    def populate(self, directory : pathlib.Path, **kwargs) -> None:
         pass
 
     def get(self, **kwargs) -> 'Cacher.Entry':

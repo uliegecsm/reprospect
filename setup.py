@@ -28,6 +28,7 @@ def enable_mypyc(dist : Distribution) -> None:
             'reprospect/tools/binaries/nvdisasm.py',
             'reprospect/tools/binaries/symtab.py',
             'reprospect/tools/ncu.py',
+            'reprospect/tools/nsys.py',
             'reprospect/tools/sass/controlflow.py',
             'reprospect/tools/sass/decode.py',
             'reprospect/utils/cmake.py',

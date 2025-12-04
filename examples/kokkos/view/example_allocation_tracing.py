@@ -49,33 +49,24 @@ class TestNSYS(TestAllocation):
     """Size of the `Kokkos::Impl::SharedAllocationHeader` type, see https://github.com/kokkos/kokkos/blob/c1a715cab26da9407867c6a8c04b2a1d6b2fc7ba/core/src/impl/Kokkos_SharedAlloc.hpp#L23."""
 
     @pytest.fixture(scope = 'class')
-    def session(self) -> nsys.Session:
+    def report(self) -> nsys.Report:
         """
         Analyse with `nsys`, use :py:class:`reprospect.tools.nsys.Cacher`.
         """
-        with nsys.Cacher(
-            session = nsys.Session(
-                output_dir = self.cwd,
-                output_file_prefix = self.executable.name,
-            )
-        ) as cacher:
-            entry = cacher.run(
-                nvtx_capture = 'AllocationProfiling',
-                opts = ['--cuda-memory-usage=true'],
+        with nsys.Cacher() as cacher:
+            command = nsys.Command(
                 executable = self.executable,
+                output = self.cwd / self.executable.name,
+                opts = ('--cuda-memory-usage=true',),
+                nvtx_capture = 'AllocationProfiling',
                 args = (
-                    f"--kokkos-tools-libs={self.KOKKOS_TOOLS_NVTX_CONNECTOR_LIB}",
+                    f'--kokkos-tools-libs={self.KOKKOS_TOOLS_NVTX_CONNECTOR_LIB}',
                 ),
-                cwd = self.cwd,
             )
 
-            cacher.export_to_sqlite(entry)
+            entry = cacher.run(command = command, cwd = self.cwd)
 
-            return cacher.session
-
-    @pytest.fixture(scope = 'class')
-    def report(self, session : nsys.Session) -> nsys.Report:
-        return nsys.Report(db = session.output_file_sqlite)
+            return nsys.Report(db = cacher.export_to_sqlite(command = command, entry = entry))
 
     @staticmethod
     def get_memory_id(report : nsys.Report, memory : Memory) -> numpy.int64:
@@ -92,7 +83,7 @@ class TestNSYS(TestAllocation):
         report : nsys.Report,
         expt_cuda_api_calls_allocation : typing.Sequence[str],
         expt_cuda_api_calls_deallocation : typing.Sequence[str],
-        selectors : dict[str, nsys.Report.PatternSelector | None],
+        selectors : dict[str, nsys.ReportPatternSelector | None],
         memory : Memory,
         size : int,
     ) -> None:
@@ -172,9 +163,9 @@ class TestNSYS(TestAllocation):
                 'cudaFree',
             ),
             selectors = {
-                'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMalloc'),
-                'memcpy' : report.PatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
-                'free'   : report.PatternSelector(column = 'name', pattern = r'^cudaFree'),
+                'malloc' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMalloc'),
+                'memcpy' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
+                'free'   : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
             },
         )
 
@@ -197,9 +188,9 @@ class TestNSYS(TestAllocation):
                 'cudaDeviceSynchronize',
             ),
             selectors = {
-                'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMallocManaged'),
+                'malloc' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMallocManaged'),
                 'memcpy' : None,
-                'free'   : report.PatternSelector(column = 'name', pattern = r'^cudaFree'),
+                'free'   : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
             },
         )
 
@@ -222,9 +213,9 @@ class TestNSYS(TestAllocation):
                 'cudaDeviceSynchronize',
             ),
             selectors = {
-                'malloc' : report.PatternSelector(column = 'name', pattern = r'^cudaMallocAsync'),
-                'memcpy' : report.PatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
-                'free'   : report.PatternSelector(column = 'name', pattern = r'^cudaFreeAsync'),
+                'malloc' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMallocAsync'),
+                'memcpy' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
+                'free'   : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFreeAsync'),
             },
         )
 
@@ -247,8 +238,8 @@ class TestNSYS(TestAllocation):
                 'cudaDeviceSynchronize',
             ),
             selectors = {
-                'malloc' : report.PatternSelector(column = 'name', pattern = re.compile(r'^cudaMallocManaged')),
+                'malloc' : nsys.ReportPatternSelector(column = 'name', pattern = re.compile(r'^cudaMallocManaged')),
                 'memcpy' : None,
-                'free'   : report.PatternSelector(column = 'name', pattern = re.compile(r'^cudaFree')),
+                'free'   : nsys.ReportPatternSelector(column = 'name', pattern = re.compile(r'^cudaFree')),
             },
         )

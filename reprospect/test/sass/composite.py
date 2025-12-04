@@ -5,8 +5,9 @@ Thin user-facing factories for the matchers in :py:mod:`reprospect.test.sass.com
 import sys
 import typing
 
-from reprospect.test.sass  import composite_impl, instruction
-from reprospect.tools.sass import Instruction
+from reprospect.test.sass                import composite_impl, instruction
+from reprospect.test.sass.composite_impl import OperandMatcher
+from reprospect.tools.sass               import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -52,11 +53,12 @@ class Fluentizer(instruction.InstructionMatcher):
         """
         return composite_impl.ZeroOrMoreInSequenceMatcher(matcher = self.matcher)
 
-    def with_operand(self, index : int, operand : str) -> 'Fluentizer':
+    def with_operand(self, index : int, operand : OperandMatcher) -> 'Fluentizer':
         """
         >>> from reprospect.test.sass.composite   import instruction_is
-        >>> from reprospect.test.sass.instruction import Fp32AddMatcher
-        >>> matcher = instruction_is(Fp32AddMatcher()).with_operand(index = 1, operand = 'R8')
+        >>> from reprospect.test.sass.instruction import Fp32AddMatcher, RegisterMatcher
+        >>> from reprospect.tools.sass.decode     import RegisterType
+        >>> matcher = instruction_is(Fp32AddMatcher()).with_operand(index = 1, operand = RegisterMatcher(rtype = RegisterType.GPR, index = 8))
         >>> matcher.match(inst = 'FADD R5, R9, R10')
         >>> matcher.match(inst = 'FADD R5, R8, R9')
         InstructionMatch(opcode='FADD', modifiers=(), operands=('R5', 'R8', 'R9'), predicate=None, additional={'dst': ['R5']})
@@ -66,7 +68,7 @@ class Fluentizer(instruction.InstructionMatcher):
             index = index, operand = operand,
         ))
 
-    def with_operands(self, operands : typing.Collection[tuple[int, str]]) -> instruction.InstructionMatcher:
+    def with_operands(self, operands : typing.Collection[tuple[int, OperandMatcher]]) -> instruction.InstructionMatcher:
         """
         Similar to :py:meth:`with_operand` for many operands.
 

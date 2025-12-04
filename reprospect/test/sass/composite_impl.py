@@ -9,7 +9,7 @@ import typing
 
 import mypy_extensions
 
-from reprospect.test.sass.instruction import InstructionMatcher, InstructionMatch
+from reprospect.test.sass.instruction import InstructionMatcher, InstructionMatch, RegisterMatcher
 from reprospect.tools.sass            import Instruction
 
 if sys.version_info >= (3, 12):
@@ -225,6 +225,8 @@ class AnyOfMatcher(SequenceMatcher):
     def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
         return f'None of {self.matchers!r} did match {instructions}.'
 
+OperandMatcher : typing.TypeAlias = str | RegisterMatcher
+
 class OperandValidator(InstructionMatcher):
     """
     Validate that the operand at :py:attr:`index` matches the instruction matched
@@ -236,10 +238,10 @@ class OperandValidator(InstructionMatcher):
     """
     __slots__ = ('matcher', 'index', 'operand')
 
-    def __init__(self, matcher : InstructionMatcher, index : int, operand : str) -> None:
+    def __init__(self, matcher : InstructionMatcher, index : int, operand : OperandMatcher) -> None:
         self.matcher : typing.Final[InstructionMatcher] = matcher
         self.index : typing.Final[int] = index
-        self.operand : typing.Final[str] = operand
+        self.operand : typing.Final[OperandMatcher] = operand
 
     @override
     def match(self, inst : Instruction | str) -> InstructionMatch | None:
@@ -248,7 +250,9 @@ class OperandValidator(InstructionMatcher):
                 operand = matched.operands[self.index]
             except IndexError:
                 return None
-            if operand == self.operand:
+            if isinstance(self.operand, str) and operand == self.operand:
+                return matched
+            if isinstance(self.operand, RegisterMatcher) and self.operand.match(operand) is not None:
                 return matched
         return None
 
@@ -263,9 +267,9 @@ class OperandsValidator(InstructionMatcher):
     """
     __slots__ = ('matcher', 'operands')
 
-    def __init__(self, matcher : InstructionMatcher, operands : typing.Collection[tuple[int, str]]) -> None:
+    def __init__(self, matcher : InstructionMatcher, operands : typing.Collection[tuple[int, OperandMatcher]]) -> None:
         self.matcher : typing.Final[InstructionMatcher] = matcher
-        self.operands : typing.Final[tuple[tuple[int, str], ...]] = tuple(operands)
+        self.operands : typing.Final[tuple[tuple[int, OperandMatcher], ...]] = tuple(operands)
 
     @override
     def match(self, inst : Instruction | str) -> InstructionMatch | None:
@@ -275,7 +279,9 @@ class OperandsValidator(InstructionMatcher):
                     operand = matched.operands[mindex]
                 except IndexError:
                     return None
-                if operand != moperand:
+                if isinstance(moperand, str) and operand != moperand:
+                    return None
+                if isinstance(moperand, RegisterMatcher) and moperand.match(operand) is None:
                     return None
             return matched
         return None

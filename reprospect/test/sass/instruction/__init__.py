@@ -18,7 +18,7 @@ from .pattern import AnyMatcher, \
                      StoreMatcher, \
                      StoreGlobalMatcher
 
-from .register import RegisterMatch
+from .register import RegisterMatch, RegisterMatcher
 
 __all__ = (
     'AnyMatcher',
@@ -39,6 +39,7 @@ __all__ = (
     'PatternMatcher',
     'ReductionMatcher',
     'RegisterMatch',
+    'RegisterMatcher',
     'StoreMatcher',
     'StoreGlobalMatcher',
 )

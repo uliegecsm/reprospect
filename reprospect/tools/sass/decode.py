@@ -168,6 +168,20 @@ class RegisterType(StrEnum):
     UGPR = 'UR'
     UPRED = 'UP'
 
+    @property
+    def is_predicate(self) -> bool:
+        return self in (RegisterType.PRED, RegisterType.UPRED)
+
+    @property
+    def special(self) -> str:
+        match self:
+            case RegisterType.GPR | RegisterType.UGPR:
+                return 'Z'
+            case RegisterType.PRED | RegisterType.UPRED:
+                return 'T'
+            case _:
+                raise ValueError(self)
+
 @mypy_extensions.mypyc_attr(native_class = True)
 @dataclasses.dataclass(frozen = True, slots = True)
 class Instruction:

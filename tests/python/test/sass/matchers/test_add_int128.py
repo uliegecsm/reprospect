@@ -7,7 +7,7 @@ import typing
 import pytest
 
 from reprospect.test.sass.composite   import instructions_contain, instruction_is
-from reprospect.test.sass.instruction import LoadGlobalMatcher, RegisterMatch
+from reprospect.test.sass.instruction import LoadGlobalMatcher, RegisterMatcher
 from reprospect.test.sass.matchers    import add_int128
 from reprospect.utils                 import cmake
 
@@ -66,8 +66,10 @@ st\.global\.v2\.(u|b)64 \[%rd\d+\], {%rd\d+, %rd\d+};
         assert matched[0].additional is not None
         assert 'start' in matched[0].additional
 
-        reg_load  = RegisterMatch.parse(matched_load_src.operands[0])
-        reg_start = RegisterMatch.parse(matched[0].additional['start'][0])
+        reg_load  = RegisterMatcher(special = False).match(matched_load_src.operands[0])
+        assert reg_load is not None
+        reg_start = RegisterMatcher(special = False).match(matched[0].additional['start'][0])
+        assert reg_start is not None
 
         assert reg_load.rtype == reg_start.rtype
         assert reg_load.index == reg_start.index

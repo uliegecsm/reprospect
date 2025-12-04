@@ -162,6 +162,32 @@ Profiling results
         └── L1/TEX cache global load sectors.sum: 0.0
 """
 
+class TestCommand:
+    """
+    Tests for :py:class:`reprospect.tools.ncu.Command`.
+    """
+    def test_env(self, bindir : pathlib.Path) -> None:
+        """
+        Check that the environment is handled properly.
+        """
+        with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
+            ncu.Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever')).run()
+            check_call.assert_called_with(args = (
+                'ncu', '--print-summary=per-kernel', '--warp-sampling-interval=0',
+                '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever'),
+                '--log-file', pathlib.Path('my-output-path.log'),
+                'my-executable'
+            ), env = None, cwd = None)
+
+        with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
+            ncu.Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever'), env = {'IT_MATTERS' : 'ON'}).run(env = {'MY_BASE_ENV' : '666'}, cwd = bindir)
+            check_call.assert_called_with(args = (
+                'ncu', '--print-summary=per-kernel', '--warp-sampling-interval=0',
+                '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever'),
+                '--log-file', pathlib.Path('my-output-path.log'),
+                'my-executable'
+            ), env = {'MY_BASE_ENV': '666', 'IT_MATTERS': 'ON'}, cwd = bindir)
+
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestSession:
     """
@@ -215,15 +241,15 @@ class TestSession:
             'device__attribute_gpu_overlap',
         )
 
-        session = ncu.Session(output = workdir / 'report-saxpy-basics')
-
-        session.run(
+        ncu.Session(command = ncu.Command(
+            output = workdir / 'report-saxpy-basics',
             executable = bindir / self.SAXPY,
             metrics = METRICS,
-            nvtx_includes = map(
+            nvtx_includes = tuple(map(
                 lambda x: f'application_domain@{x}/',
                 ('launch_saxpy_kernel_first_time', 'launch_saxpy_kernel_second_time'),
-            ),
+            )),
+        )).run(
             retries = 5,
         )
 
@@ -283,11 +309,15 @@ class TestSession:
             ncu.MetricCorrelation(name = 'inst_executed'),
         )
 
-        session = ncu.Session(output = workdir / 'report-saxpy-correlated')
+        session = ncu.Session(command = ncu.Command(
+            opts = ('--launch-skip-before-match', '1'),
+            output = workdir / 'report-saxpy-correlated',
+            executable = bindir / self.SAXPY,
+            metrics = METRICS,
+        ))
+        session.run(retries = 5)
 
-        session.run(executable = bindir / self.SAXPY, metrics = METRICS, retries = 5)
-
-        report = ncu.Report(session = session)
+        report = ncu.Report(command = session.command)
 
         assert report.report.num_ranges() == 1
 
@@ -324,11 +354,14 @@ class TestSession:
             ncu.L1TEXCache.GlobalStore.Sectors.create(),
         )
 
-        session = ncu.Session(output = workdir / 'report-graph-basics')
+        session = ncu.Session(command = ncu.Command(
+            output = workdir / 'report-graph-basics',
+            executable = bindir / self.GRAPH,
+            metrics = METRICS,
+        ))
+        session.run(retries = 5)
 
-        session.run(executable = bindir / self.GRAPH, metrics = METRICS, retries = 5)
-
-        report = ncu.Report(session = session)
+        report = ncu.Report(command = session.command)
 
         assert report.report.num_ranges() == 1
 
@@ -396,11 +429,15 @@ class TestSession:
         """
         When `retries` is given, but `ncu` fails for a good reason, it should not retry, *i.e.* it should not sleep.
         """
-        session = ncu.Session(output = workdir / 'report-failure')
+        session = ncu.Session(command = ncu.Command(
+            output = workdir / 'report-failure',
+            executable = bindir / self.GRAPH,
+            opts = ('--something-ncu-does-not-know',),
+        ))
 
         with unittest.mock.patch('time.sleep') as mock_sleep:
             with pytest.raises(subprocess.CalledProcessError):
-                session.run(executable = bindir / self.GRAPH, opts = ['--something-ncu-does-not-know'], retries = 5)
+                session.run(retries = 5)
             mock_sleep.assert_not_called()
 
 class TestCacher:
@@ -415,9 +452,10 @@ class TestCacher:
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = pathlib.Path('I-dont-care'))) as cacher:
-                hash_a = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
-                hash_b = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
+            with ncu.Cacher(directory = tmpdir) as cacher:
+                command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.GRAPH, args = ('--bla=42',), output = pathlib.Path('I-dont-care'))
+                hash_a = cacher.hash(command = command)
+                hash_b = cacher.hash(command = command)
 
                 assert hash_a.digest() == hash_b.digest()
 
@@ -426,11 +464,13 @@ class TestCacher:
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = pathlib.Path('I-dont-care'))) as cacher:
-                hash_a = cacher.hash(opts = ['--nvtx'], executable = bindir / self.GRAPH, args = ['--bla=42'])
-                hash_b = cacher.hash(opts = ['--nvtx'], executable = bindir / self.SAXPY, args = ['--bla=42'])
+            with ncu.Cacher(directory = tmpdir) as cacher:
+                hash_a = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.GRAPH, args = ('--bla=42',), output = pathlib.Path('i-dont-care')))
+                hash_b = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.SAXPY, args = ('--bla=42',), output = pathlib.Path('i-dont-care')))
+                hash_c = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.SAXPY, args = ('--bla=42',), output = pathlib.Path('i-dont-care'), env = {'ONE' : '2'}))
 
                 assert hash_a.digest() != hash_b.digest()
+                assert hash_b.digest() != hash_c.digest()
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_cache_hit(self, bindir, workdir) -> None:
@@ -446,23 +486,31 @@ class TestCacher:
         FILES = ('report-cached.log', 'report-cached.ncu-rep')
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory = tmpdir, session = ncu.Session(output = workdir / 'report-cached')) as cacher:
+            with ncu.Cacher(directory = tmpdir) as cacher:
                 assert os.listdir(cacher.directory) == ['cache.db']
 
-                results_first = cacher.run(executable = bindir / self.GRAPH, metrics = METRICS, retries = 5)
+                command = ncu.Command(
+                    opts = ('--launch-skip-before-match', '3'),
+                    executable = bindir / self.GRAPH,
+                    args = ('--who-cares',),
+                    metrics = METRICS,
+                    output = workdir / 'report-cached',
+                )
+
+                results_first = cacher.run(command = command, retries = 5)
 
                 assert results_first.cached is False
 
-                assert all(x in os.listdir(cacher.session.output.parent) for x in FILES)
+                assert all(x in os.listdir(command.output.parent) for x in FILES)
 
                 for file in FILES:
-                    (cacher.session.output.parent / file).unlink()
+                    (command.output.parent / file).unlink()
 
                 assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
                 assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
 
-                results_second = cacher.run(executable = bindir / self.GRAPH, metrics = METRICS, retries = 5)
+                results_second = cacher.run(command = command, retries = 5)
 
                 assert results_second.cached is True
 
-                assert all(x in os.listdir(cacher.session.output.parent) for x in FILES)
+                assert all(x in os.listdir(command.output.parent) for x in FILES)

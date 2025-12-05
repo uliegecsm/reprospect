@@ -13,25 +13,25 @@ class TestFp32AddMatcher:
     Tests for :py:class:`reprospect.test.sass.instruction.Fp32AddMatcher`.
     """
     def test(self) -> None:
-        matched = Fp32AddMatcher().matches(inst = 'FADD R6, R4, R2')
+        matched = Fp32AddMatcher().match(inst = 'FADD R6, R4, R2')
         assert matched is not None
         assert matched.additional is not None
         assert matched.additional['dst'][0] == 'R6'
         assert matched.operands[-1] == 'R2'
 
-        matched = Fp32AddMatcher().matches(inst = 'FADD R6, R4, c[0x0][0x178]')
+        matched = Fp32AddMatcher().match(inst = 'FADD R6, R4, c[0x0][0x178]')
         assert matched is not None
         assert matched.additional is not None
         assert matched.additional['dst'][0] == 'R6'
         assert matched.operands[-1] == 'c[0x0][0x178]'
 
-        matched = Fp32AddMatcher().matches(inst = 'FADD R25, R4, UR12')
+        matched = Fp32AddMatcher().match(inst = 'FADD R25, R4, UR12')
         assert matched is not None
         assert matched.additional is not None
         assert matched.additional['dst'][0] == 'R25'
         assert matched.operands[-1] == 'UR12'
 
-        matched = Fp32AddMatcher().matches(inst = 'FADD.FTZ R9, -R7, 1.5707963705062866211')
+        matched = Fp32AddMatcher().match(inst = 'FADD.FTZ R9, -R7, 1.5707963705062866211')
         assert matched is not None
         assert matched.additional is not None
         assert matched.additional['dst'][0] == 'R9'
@@ -50,7 +50,7 @@ class TestFp32AddMatcher:
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         matcher = Fp32AddMatcher()
-        fadd = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        fadd = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(fadd) == 4
 
         logging.info(matcher.pattern)

@@ -75,8 +75,8 @@ class RegisterValidator(InstructionMatcher):
         self.expected : typing.Final[str] = expected
 
     @override
-    def matches(self, inst : Instruction | str) -> InstructionMatch | None:
-        if (matched := self.matcher.matches(inst = inst)) is not None:
+    def match(self, inst : Instruction | str) -> InstructionMatch | None:
+        if (matched := self.matcher.match(inst = inst)) is not None:
             if matched.operands[-1] == self.expected:
                 return matched
         return None
@@ -145,12 +145,12 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         return 1
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=too-many-branches,too-many-return-statements
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=too-many-branches,too-many-return-statements
         matched : list[InstructionMatch] = []
 
         # First, try to atomically acquire a lock.
         matcher_start = instructions_contain(matcher = AtomicAcquireMatcher.build(arch = self.arch, compiler_id = self.compiler_id))
-        matched_atomic_acquire = matcher_start.matches(instructions = instructions)
+        matched_atomic_acquire = matcher_start.match(instructions = instructions)
 
         if matched_atomic_acquire is None or matcher_start.index is None:
             return None
@@ -160,7 +160,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         # Then, one or two PLOP3.LUT instructions.
         matched_plop3_lut = instruction_is(
             OpcodeModsMatcher(opcode = 'PLOP3', modifiers = ('LUT',)),
-        ).one_or_more_times().matches(instructions[offset::])
+        ).one_or_more_times().match(instructions[offset::])
 
         if matched_plop3_lut is None:
             return None
@@ -187,7 +187,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
             )
         )
 
-        matched_isetp_enter = matcher_isetp_enter.matches(instructions[offset])
+        matched_isetp_enter = matcher_isetp_enter.match(instructions[offset])
 
         if matched_isetp_enter is None:
             return None
@@ -198,7 +198,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         #   @P[0-9]+ BRA offset
         outer_branch_p = matched_isetp_enter.operands[0]
         matcher_outer_branch = BranchMatcher(predicate = rf'@{outer_branch_p}')
-        matched_outer_branch = matcher_outer_branch.matches(instructions[offset])
+        matched_outer_branch = matcher_outer_branch.match(instructions[offset])
 
         if matched_outer_branch is None:
             return None
@@ -206,7 +206,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         offset += self.collect(matched = matched, new = matched_outer_branch)
 
         # The device atomic thread fence block.
-        matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch = self.arch).matches(instructions = instructions[offset::])
+        matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch = self.arch).match(instructions = instructions[offset::])
 
         if matched_thread_fence is None:
             return None
@@ -216,7 +216,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         # The load corresponds to the dereferencing line at
         # https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L41.
         matcher_load = LoadGlobalMatcher(arch = self.arch, size = self.size, readonly = False)
-        matched_load = matcher_load.matches(instructions[offset])
+        matched_load = matcher_load.match(instructions[offset])
 
         if matched_load is None:
             return None
@@ -225,7 +225,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
 
         # Operation.
         matcher_operation = self.operation.build(load = matched_load)
-        matched_operation = matcher_operation.matches(instructions = instructions[offset::])
+        matched_operation = matcher_operation.match(instructions = instructions[offset::])
 
         if matched_operation is None:
             return None
@@ -234,7 +234,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
 
         # Store the value.
         matcher_store = StoreGlobalMatcher(arch = self.arch, size = self.size)
-        matched_store = matcher_store.matches(instructions[offset])
+        matched_store = matcher_store.match(instructions[offset])
 
         if matched_store is None:
             return None
@@ -244,7 +244,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         offset += self.collect(matched = matched, new = matched_store)
 
         # The device atomic thread fence block (again).
-        matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch = self.arch).matches(instructions = instructions[offset::])
+        matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch = self.arch).match(instructions = instructions[offset::])
 
         if matched_thread_fence is None:
             return None
@@ -252,7 +252,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         offset += self.collect(matched = matched, new = matched_thread_fence)
 
         # Atomic release.
-        matched_atomic_release = AtomicReleaseMatcher.build(arch = self.arch, compiler_id = self.compiler_id).matches(inst = instructions[offset])
+        matched_atomic_release = AtomicReleaseMatcher.build(arch = self.arch, compiler_id = self.compiler_id).match(inst = instructions[offset])
 
         if matched_atomic_release is None:
             return None

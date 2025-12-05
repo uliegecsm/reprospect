@@ -52,7 +52,7 @@ class AddInt128(SequenceMatcher):
                 PatternBuilder.anygpreg(reuse = None),
             ),
         )
-        if (matched_iadd_step_0 := matcher_iadd_step_0.matches(instructions[0])) is None:
+        if (matched_iadd_step_0 := matcher_iadd_step_0.match(instructions[0])) is None:
             return None
 
         matched.append(matched_iadd_step_0)
@@ -68,7 +68,7 @@ class AddInt128(SequenceMatcher):
                 f'{iadd_step_0_reg_1.rtype}{iadd_step_0_reg_1.index}',
             )
         )
-        if (matched_iadd_step_1 := matcher_iadd_step_1.matches(instructions[1])) is None:
+        if (matched_iadd_step_1 := matcher_iadd_step_1.match(instructions[1])) is None:
             return None
 
         matched.append(matched_iadd_step_1)
@@ -85,7 +85,7 @@ class AddInt128(SequenceMatcher):
                 matched_iadd_step_0.operands[1],
             )
         )
-        if (matched_iadd_step_2 := matcher_iadd_step_2.matches(instructions[2])) is None:
+        if (matched_iadd_step_2 := matcher_iadd_step_2.match(instructions[2])) is None:
             return None
 
         matched.append(matched_iadd_step_2)
@@ -123,7 +123,7 @@ class AddInt128(SequenceMatcher):
                 'RZ',
             ),
         )
-        if (matched_iadd3_step_0 := matcher_iadd3_step_0.matches(instructions[0])) is None:
+        if (matched_iadd3_step_0 := matcher_iadd3_step_0.match(instructions[0])) is None:
             return None
 
         if matched_iadd3_step_0.operands.count(matched_iadd3_step_0.operands[0]) != 2:
@@ -147,7 +147,7 @@ class AddInt128(SequenceMatcher):
                 '!PT',
             )
         )
-        if (matched_iadd3_step_1 := matcher_iadd3_step_1.matches(instructions[1])) is None:
+        if (matched_iadd3_step_1 := matcher_iadd3_step_1.match(instructions[1])) is None:
             return None
 
         matched.append(matched_iadd3_step_1)
@@ -167,7 +167,7 @@ class AddInt128(SequenceMatcher):
                 '!PT',
             )
         )
-        if (matched_iadd3_step_2 := matcher_iadd3_step_2.matches(instructions[2])) is None:
+        if (matched_iadd3_step_2 := matcher_iadd3_step_2.match(instructions[2])) is None:
             return None
 
         matched.append(matched_iadd3_step_2)
@@ -187,7 +187,7 @@ class AddInt128(SequenceMatcher):
                 '!PT',
             )
         )
-        if (matched_iadd3_step_3 := matcher_iadd3_step_3.matches(instructions[3])) is None:
+        if (matched_iadd3_step_3 := matcher_iadd3_step_3.match(instructions[3])) is None:
             return None
 
         matched.append(matched_iadd3_step_3)
@@ -195,7 +195,7 @@ class AddInt128(SequenceMatcher):
         return matched
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         instruction = instructions[0].instruction if isinstance(instructions[0], Instruction) else instructions[0]
         if instruction.startswith('IADD.64'):
             return self.pattern_3IADD(instructions = instructions)

@@ -47,7 +47,7 @@ class TestAnyMatcher:
 
     @pytest.mark.parametrize('instruction,expected', INSTRUCTIONS.items())
     def test(self, instruction : str, expected : InstructionMatch) -> None:
-        matched = self.MATCHER.matches(inst = instruction)
+        matched = self.MATCHER.match(inst = instruction)
 
         logging.info(f'{self.MATCHER} matched {instruction} as {matched}.')
 
@@ -55,4 +55,4 @@ class TestAnyMatcher:
         assert matched == expected
 
     def test_no_match(self) -> None:
-        assert self.MATCHER.matches(inst = 'this-is-really-not-a-good-looking-instruction') is None
+        assert self.MATCHER.match(inst = 'this-is-really-not-a-good-looking-instruction') is None

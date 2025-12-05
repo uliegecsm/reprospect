@@ -259,7 +259,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 """
     def test(self) -> None:
         matcher = LoadMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
-        assert matcher.matches(inst = 'LD.E.64 R2, desc[UR10][R4.64]') is not None
+        assert matcher.match(inst = 'LD.E.64 R2, desc[UR10][R4.64]') is not None
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
@@ -273,7 +273,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 
         # Find the read-only load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, readonly = True)
-        load_ro = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        load_ro = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(load_ro) == 1
 
         inst_ro, matched_ro = load_ro[0]
@@ -286,7 +286,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 
         # Find the load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, readonly = False)
-        load = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        load = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(load) == 1
 
         inst, matched = load[0]
@@ -301,7 +301,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 
         # Find both loads by letting the 'CONSTANT' be optional.
         matcher = LoadGlobalMatcher(arch = parameters.arch, readonly = None)
-        load = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        load = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(load) == 2
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
@@ -359,7 +359,7 @@ class TestStoreMatcher:
     """
     def test(self) -> None:
         matcher = StoreMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
-        assert matcher.matches(inst = 'ST.E.64 desc[UR10][R4.64], R2') is not None
+        assert matcher.match(inst = 'ST.E.64 desc[UR10][R4.64], R2') is not None
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
@@ -373,7 +373,7 @@ class TestStoreMatcher:
 
         # Find the store.
         matcher = StoreGlobalMatcher(arch = parameters.arch)
-        store = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        store = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(store) == 1
 
         inst, matched = store[0]
@@ -395,7 +395,7 @@ class TestStoreMatcher:
 
         # Find the wide store.
         matcher = StoreGlobalMatcher(arch = parameters.arch, size = 128)
-        store = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        store = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(store) == 1
 
         inst, matched = store[0]
@@ -446,7 +446,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'STRONG', dtype = ('S', 32))
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1
 
         inst, matched = red[0]
@@ -459,7 +459,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Another consistency would fail.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'WEAK', dtype = ('S', 32))
-        assert not any(matcher.matches(inst) for inst in decoder.instructions)
+        assert not any(matcher.match(inst) for inst in decoder.instructions)
 
     def test_add_strong_device_unsigned_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -472,7 +472,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'STRONG', dtype = ('U', 32))
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1
 
         inst, matched = red[0]
@@ -500,7 +500,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
             consistency = 'STRONG',
             dtype = ('U', 64),
         )
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1
 
         inst, matched = red[0]
@@ -522,7 +522,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', dtype = ('F', 32), scope = 'DEVICE', consistency = 'STRONG')
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1, matcher
 
         inst, matched = red[0]
@@ -544,7 +544,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', dtype = ('F', 64), scope = 'DEVICE', consistency = 'STRONG')
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1, matcher
 
         inst, matched = red[0]
@@ -587,7 +587,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         else:
             matcher_type = ReductionMatcher
         matcher = matcher_type(arch = parameters.arch, operation = 'MAX', dtype = ('S', 64), scope = 'DEVICE', consistency = 'STRONG')
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1
 
         inst, matched = red[0]
@@ -612,7 +612,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         else:
             matcher_type = ReductionMatcher
         matcher = matcher_type(arch = parameters.arch, operation = 'MAX', dtype = ('U', 64), scope = 'DEVICE', consistency = 'STRONG')
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1
 
         inst, matched = red[0]
@@ -632,7 +632,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('S', 32), scope = 'DEVICE', consistency = 'STRONG')
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1
 
         inst, matched = red[0]
@@ -652,7 +652,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('U', 32), scope = 'DEVICE', consistency = 'STRONG')
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1
 
         inst, matched = red[0]
@@ -668,7 +668,7 @@ class TestOpcodeModsMatcher:
     def test_with_square_brackets(self):
         instruction = 'IMAD R4, R4, c[0x0][0x0], R3'
 
-        matched = OpcodeModsMatcher(opcode = 'IMAD').matches(instruction)
+        matched = OpcodeModsMatcher(opcode = 'IMAD').match(instruction)
 
         assert matched is not None
         assert matched.operands == ('R4', 'R4', 'c[0x0][0x0]', 'R3')
@@ -676,7 +676,7 @@ class TestOpcodeModsMatcher:
     def test_with_minus_sign(self):
         instruction = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ'
 
-        matched = OpcodeModsMatcher(opcode = 'UIADD3').matches(instruction)
+        matched = OpcodeModsMatcher(opcode = 'UIADD3').match(instruction)
 
         assert matched is not None
         assert matched.operands == ('UR5', 'UPT', 'UPT', '-UR4', 'UR9', 'URZ')
@@ -684,7 +684,7 @@ class TestOpcodeModsMatcher:
     def test_with_reuse(self):
         instruction = 'ISETP.GE.U32.AND P0, PT, R0.reuse, UR5, PT'
 
-        matched = OpcodeModsMatcher(opcode = 'ISETP', modifiers = ('GE', 'U32', 'AND')).matches(instruction)
+        matched = OpcodeModsMatcher(opcode = 'ISETP', modifiers = ('GE', 'U32', 'AND')).match(instruction)
 
         assert matched is not None
         assert matched.operands == ('P0', 'PT', 'R0.reuse', 'UR5', 'PT')
@@ -692,7 +692,7 @@ class TestOpcodeModsMatcher:
     def test_with_descr(self):
         instruction = 'LDG.E R2, desc[UR6][R2.64]'
 
-        matched = OpcodeModsMatcher(opcode = 'LDG', modifiers = ('E',)).matches(instruction)
+        matched = OpcodeModsMatcher(opcode = 'LDG', modifiers = ('E',)).match(instruction)
 
         assert matched is not None
         assert matched.operands == ('R2', 'desc[UR6][R2.64]')
@@ -712,7 +712,7 @@ class TestOpcodeModsWithOperandsMatcher:
             PatternBuilder.PREDT,
         ))
 
-        matched = matcher.matches(instruction)
+        matched = matcher.match(instruction)
 
         logging.info(f'{matcher} matched instruction {instruction} as {matched}.')
 

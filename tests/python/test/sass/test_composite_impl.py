@@ -40,7 +40,7 @@ class TestInSequenceAtMatcher:
         """
         Matches the first element.
         """
-        [matched] = InSequenceAtMatcher(matcher = MATCHER_DADD).matches(instructions = DADD_NOP_DMUL[0:1])
+        [matched] = InSequenceAtMatcher(matcher = MATCHER_DADD).match(instructions = DADD_NOP_DMUL[0:1])
 
         assert matched.opcode == 'DADD'
 
@@ -48,7 +48,7 @@ class TestInSequenceAtMatcher:
         """
         Matches the element pointed to by `start`.
         """
-        [matched] = InSequenceAtMatcher(matcher = MATCHER_DADD).matches(instructions = NOP_DMUL_NOP_DADD[4::])
+        [matched] = InSequenceAtMatcher(matcher = MATCHER_DADD).match(instructions = NOP_DMUL_NOP_DADD[4::])
 
         assert matched.opcode == 'DADD'
 
@@ -70,7 +70,7 @@ class TestZeroOrMoreInSequenceMatcher:
         """
         Matches zero time with sequence :py:const:`DADD_NOP_DMUL`.
         """
-        matched = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).matches(instructions = DADD_NOP_DMUL)
+        matched = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).match(instructions = DADD_NOP_DMUL)
 
         assert not matched
 
@@ -86,7 +86,7 @@ class TestZeroOrMoreInSequenceMatcher:
         """
         Matches many times, with a `start` and sequence :py:const:`DADD_NOP_DMUL`.
         """
-        matched = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).matches(instructions = DADD_NOP_DMUL[1::])
+        matched = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).match(instructions = DADD_NOP_DMUL[1::])
 
         assert len(matched) == 3 and all(x.opcode == 'NOP' for x in matched)
 
@@ -104,7 +104,7 @@ class TestOneOrMoreInSequenceMatcher:
         """
         matcher = OneOrMoreInSequenceMatcher(matcher = MATCHER_NOP)
 
-        assert not matcher.matches(instructions = DADD_NOP_DMUL)
+        assert not matcher.match(instructions = DADD_NOP_DMUL)
 
         with pytest.raises(RuntimeError, match = 'did not match'):
             matcher.assert_matches(instructions = DADD_NOP_DMUL)
@@ -115,7 +115,7 @@ class TestOneOrMoreInSequenceMatcher:
         """
         matcher = OneOrMoreInSequenceMatcher(matcher = MATCHER_DADD)
 
-        assert len(matcher.matches(instructions = DADD_NOP_DMUL)) == 1
+        assert len(matcher.match(instructions = DADD_NOP_DMUL)) == 1
         assert len(matcher.assert_matches(instructions = DADD_NOP_DMUL)) == 1
 
     def test_matches_more(self):
@@ -124,7 +124,7 @@ class TestOneOrMoreInSequenceMatcher:
         """
         matcher = OneOrMoreInSequenceMatcher(matcher = MATCHER_NOP)
 
-        assert len(matcher.matches(instructions = DADD_NOP_DMUL[1::])) == 3
+        assert len(matcher.match(instructions = DADD_NOP_DMUL[1::])) == 3
         assert len(matcher.assert_matches(instructions = DADD_NOP_DMUL[1::])) == 3
 
     def test_explain(self) -> None:
@@ -144,7 +144,7 @@ class TestOrderedInSequenceMatcher:
         """
         Matches the sequence :py:const:`DADD_NOP_DMUL`.
         """
-        matched = self.MATCHER.matches(instructions = DADD_NOP_DMUL)
+        matched = self.MATCHER.match(instructions = DADD_NOP_DMUL)
 
         assert len(matched) == 5
         assert matched[0].opcode == 'DADD'
@@ -155,7 +155,7 @@ class TestOrderedInSequenceMatcher:
         """
         Matches the sequence :py:const:`DADD_DMUL`.
         """
-        matched = self.MATCHER.matches(instructions = DADD_DMUL)
+        matched = self.MATCHER.match(instructions = DADD_DMUL)
 
         assert len(matched) == 2
         assert matched[0].opcode == 'DADD'
@@ -187,7 +187,7 @@ class TestUnorderedInSequenceMatcher:
 
         random.shuffle(inners)
 
-        matched = UnorderedInSequenceMatcher(matchers = inners).matches(instructions = DADD_NOP_DMUL)
+        matched = UnorderedInSequenceMatcher(matchers = inners).match(instructions = DADD_NOP_DMUL)
 
         assert len(matched) == 5
 
@@ -203,7 +203,7 @@ class TestUnorderedInSequenceMatcher:
 
         random.shuffle(inners)
 
-        matched = UnorderedInSequenceMatcher(matchers = inners).matches(instructions = DADD_DMUL)
+        matched = UnorderedInSequenceMatcher(matchers = inners).match(instructions = DADD_DMUL)
 
         assert len(matched) == 2
 
@@ -220,7 +220,7 @@ class TestUnorderedInSequenceMatcher:
 
         random.shuffle(inners)
 
-        matched = UnorderedInSequenceMatcher(matchers = inners).matches(instructions = NOP_DMUL_NOP_DADD)
+        matched = UnorderedInSequenceMatcher(matchers = inners).match(instructions = NOP_DMUL_NOP_DADD)
 
         assert len(matched) == 5
 
@@ -249,14 +249,14 @@ class TestInSequenceMatcher:
     def test_matches(self) -> None:
         matcher = InSequenceMatcher(matcher = MATCHER_DADD)
 
-        assert matcher.matches(instructions = NOP_DMUL_NOP_DADD) is not None
+        assert matcher.match(instructions = NOP_DMUL_NOP_DADD) is not None
 
         assert matcher.index == 4
 
     def test_no_match(self) -> None:
         matcher = InSequenceMatcher(matcher = MATCHER_NOP)
 
-        assert matcher.matches(instructions = DADD_DMUL) is None
+        assert matcher.match(instructions = DADD_DMUL) is None
 
         assert matcher.index is None
 
@@ -273,11 +273,11 @@ class TestAnyOfMatcher:
             MATCHER_DADD,
         )
 
-        assert matcher.matches(instructions = NOP_DMUL_NOP_DADD) is not None
+        assert matcher.match(instructions = NOP_DMUL_NOP_DADD) is not None
 
         assert matcher.index == 0
 
-        assert matcher.matches(instructions = (DADD,)) is not None
+        assert matcher.match(instructions = (DADD,)) is not None
 
         assert matcher.index == 1
 
@@ -287,7 +287,7 @@ class TestAnyOfMatcher:
             MATCHER_DMUL,
         )
 
-        assert matcher.matches(instructions = (NOP, DADD, DMUL)) is None
+        assert matcher.match(instructions = (NOP, DADD, DMUL)) is None
 
         assert matcher.index is None
 

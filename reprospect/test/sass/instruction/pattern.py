@@ -20,9 +20,9 @@ while reducing the need to track low-level details of the evolving CUDA instruct
 
     >>> from reprospect.tools.architecture    import NVIDIAArch
     >>> from reprospect.test.sass.instruction import LoadGlobalMatcher
-    >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('VOLTA70')).matches(inst = 'LDG.E.SYS R15, [R8+0x10]')
+    >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('VOLTA70')).match(inst = 'LDG.E.SYS R15, [R8+0x10]')
     InstructionMatch(opcode='LDG', modifiers=('E', 'SYS'), operands=('R15', 'R8+0x10'), predicate=None, additional={'address': ['R8+0x10']})
-    >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('BLACKWELL120'), size = 128, readonly = True).matches(inst = 'LDG.E.128.CONSTANT R2, desc[UR15][R6.64+0x12]')
+    >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('BLACKWELL120'), size = 128, readonly = True).match(inst = 'LDG.E.128.CONSTANT R2, desc[UR15][R6.64+0x12]')
     InstructionMatch(opcode='LDG', modifiers=('E', '128', 'CONSTANT'), operands=('R2', 'desc[UR15][R6.64+0x12]'), predicate=None, additional={'address': ['desc[UR15][R6.64+0x12]']})
 
 References:
@@ -377,7 +377,7 @@ class InstructionMatcher(abc.ABC):
     Abstract base class for instruction matchers.
     """
     @abc.abstractmethod
-    def matches(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
+    def match(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
         """
         Check if the instruction matches.
         """
@@ -386,7 +386,7 @@ class InstructionMatcher(abc.ABC):
         """
         Allow the matcher to be called as a function.
         """
-        return self.matches(inst)
+        return self.match(inst)
 
 @mypy_extensions.mypyc_attr(allow_interpreted_subclasses = True)
 class PatternMatcher(InstructionMatcher):
@@ -404,7 +404,7 @@ class PatternMatcher(InstructionMatcher):
 
     @override
     @typing.final
-    def matches(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
+    def match(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
         if (matched := self.pattern.match(inst.instruction if isinstance(inst, Instruction) else inst)) is not None:
             return InstructionMatch.parse(bits = matched)
         return None
@@ -836,7 +836,7 @@ class OpcodeModsMatcher(PatternMatcher):
     Useful when the opcode and modifiers are known and the operands may need to be retrieved.
 
     >>> from reprospect.test.sass.instruction import OpcodeModsMatcher
-    >>> OpcodeModsMatcher(opcode = 'ISETP', modifiers = ('NE', 'AND')).matches(
+    >>> OpcodeModsMatcher(opcode = 'ISETP', modifiers = ('NE', 'AND')).match(
     ...     'ISETP.NE.AND P2, PT, R4, RZ, PT'
     ... )
     InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), predicate=None, additional=None)
@@ -868,7 +868,7 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
     ...         PatternBuilder.REGZ,
     ...         PatternBuilder.PREDT,
     ...     )
-    ... ).matches('ISETP.NE.AND P2, PT, R4, RZ, PT')
+    ... ).match('ISETP.NE.AND P2, PT, R4, RZ, PT')
     InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), predicate=None, additional=None)
 
     .. note::
@@ -880,11 +880,11 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
         ...     PatternBuilder.zero_or_one('R0'),
         ...     PatternBuilder.zero_or_one('R9'),
         ... ))
-        >>> matcher.matches('WHATEVER')
+        >>> matcher.match('WHATEVER')
         InstructionMatch(opcode='WHATEVER', modifiers=(), operands=('',), predicate=None, additional=None)
-        >>> matcher.matches('WHATEVER R0')
+        >>> matcher.match('WHATEVER R0')
         InstructionMatch(opcode='WHATEVER', modifiers=(), operands=('R0',), predicate=None, additional=None)
-        >>> matcher.matches('WHATEVER R0, R9')
+        >>> matcher.match('WHATEVER R0, R9')
         InstructionMatch(opcode='WHATEVER', modifiers=(), operands=('R0', 'R9'), predicate=None, additional=None)
     """
     SEPARATOR : typing.Final[str] = r',\s+'
@@ -923,9 +923,9 @@ class AnyMatcher(PatternMatcher):
             RET.REL.NODEC R10 0x0
 
     >>> from reprospect.test.sass.instruction import AnyMatcher
-    >>> AnyMatcher().matches(inst = 'FADD.FTZ.RN R0, R1, R2')
+    >>> AnyMatcher().match(inst = 'FADD.FTZ.RN R0, R1, R2')
     InstructionMatch(opcode='FADD', modifiers=('FTZ', 'RN'), operands=('R0', 'R1', 'R2'), predicate=None, additional=None)
-    >>> AnyMatcher().matches(inst = 'RET.REL.NODEC R4 0x0')
+    >>> AnyMatcher().match(inst = 'RET.REL.NODEC R4 0x0')
     InstructionMatch(opcode='RET', modifiers=('REL', 'NODEC'), operands=('R4', '0x0'), predicate=None, additional=None)
     """
     TEMPLATE : typing.Final[str] = r'{predicate}{opcode}{modifiers}\s*{operands}{operand}'

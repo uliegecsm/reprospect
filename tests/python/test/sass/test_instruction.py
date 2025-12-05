@@ -237,7 +237,6 @@ class TestRegisterMatch:
         with pytest.raises(ValueError, match = "Invalid register format 'YOLO666'."):
             RegisterMatch.parse('YOLO666')
 
-@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestLoadGlobalMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.LoadGlobalMatcher`.
@@ -255,7 +254,11 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
     dst[index] += __ldg(&src[index]);
 }
 """
+    def test(self) -> None:
+        matcher = LoadGlobalMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
+        assert matcher.matches(inst = 'LD.E.64 R2, desc[UR10][R4.64]') is not None
 
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test loads with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT`.
@@ -298,6 +301,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
         load = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
         assert len(load) == 2
 
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test wide loads with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.
@@ -323,6 +327,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 
         assert load_ro != load
 
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_constant(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         If `src` is declared ``const __restrict__``, the compiler is able to use the ``.CONSTANT`` modifier.
@@ -344,11 +349,15 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['no_restrict'].instructions))) == 0
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['ldg'        ].instructions))) == 1
 
-@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestStoreGlobalMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.StoreGlobalMatcher`.
     """
+    def test(self) -> None:
+        matcher = StoreGlobalMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
+        assert matcher.matches(inst = 'ST.E.64 desc[UR10][R4.64], R2') is not None
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test store with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT`.
@@ -370,6 +379,7 @@ class TestStoreGlobalMatcher:
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
 
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
         Test wide store with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.

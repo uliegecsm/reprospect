@@ -16,10 +16,12 @@ from reprospect.utils                 import cmake
 from reprospect.test.sass.instruction import AtomicMatcher, \
                                              OpcodeModsMatcher, \
                                              OpcodeModsWithOperandsMatcher, \
+                                             LoadMatcher, \
                                              LoadGlobalMatcher, \
                                              PatternBuilder, \
                                              ReductionMatcher, \
                                              RegisterMatch, \
+                                             StoreMatcher, \
                                              StoreGlobalMatcher
 
 from tests.python.compilation import get_compilation_output
@@ -237,9 +239,10 @@ class TestRegisterMatch:
         with pytest.raises(ValueError, match = "Invalid register format 'YOLO666'."):
             RegisterMatch.parse('YOLO666')
 
-class TestLoadGlobalMatcher:
+class TestLoadMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.instruction.LoadGlobalMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.LoadMatcher`
+    and :py:class:`reprospect.test.sass.instruction.LoadGlobalMatcher`.
     """
     CODE_ELEMENTWISE_ADD = """\
 __global__ void elementwise_add(int* const dst, const int* const src) {
@@ -255,7 +258,7 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
 }
 """
     def test(self) -> None:
-        matcher = LoadGlobalMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
+        matcher = LoadMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
         assert matcher.matches(inst = 'LD.E.64 R2, desc[UR10][R4.64]') is not None
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
@@ -349,12 +352,13 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['no_restrict'].instructions))) == 0
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['ldg'        ].instructions))) == 1
 
-class TestStoreGlobalMatcher:
+class TestStoreMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.instruction.StoreGlobalMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.StoreMatcher`
+    and :py:class:`reprospect.test.sass.instruction.StoreGlobalMatcher`.
     """
     def test(self) -> None:
-        matcher = StoreGlobalMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
+        matcher = StoreMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
         assert matcher.matches(inst = 'ST.E.64 desc[UR10][R4.64], R2') is not None
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)

@@ -484,12 +484,12 @@ class ArchitectureAndVersionAwarePatternMatcher(ArchitectureAwarePatternMatcher)
         self.version = version if version is not None else semantic_version.Version(os.environ['CUDA_VERSION'])
         super().__init__(arch = arch)
 
-class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
+class LoadMatcher(ArchitectureAwarePatternMatcher):
     """
-    Architecture-dependent matcher for global load (``LD``, ``LDG``) instructions, such as::
+    Architecture-dependent matcher for load instructions, such as::
 
         LDG.E R2, desc[UR6][R2.64]
-        LD.E.64 R2, desc[UR10][R4.64]
+        LD.E.64 R2, R4.64
 
     References:
 
@@ -536,6 +536,13 @@ class LoadGlobalMatcher(ArchitectureAwarePatternMatcher):
             address = address,
         )
 
+class LoadGlobalMatcher(LoadMatcher):
+    """
+    Specialization of :py:class:`LoadMatcher` for global memory (``LDG``).
+    """
+    def __init__(self, arch : NVIDIAArch, size : int | None = None, readonly : bool | None = None) -> None:
+        super().__init__(arch = arch, size = size, readonly = readonly, memory = 'G')
+
 class LoadConstantMatcher(PatternMatcher):
     """
     Matcher for constant load (``LDC``) instructions, like:
@@ -571,12 +578,12 @@ class LoadConstantMatcher(PatternMatcher):
             dest = PatternBuilder.group(dest, group = 'operands'),
         ))
 
-class StoreGlobalMatcher(ArchitectureAwarePatternMatcher):
+class StoreMatcher(ArchitectureAwarePatternMatcher):
     """
-    Architecture-dependent matcher for global store (``ST``, ``STG``) instructions, such as::
+    Architecture-dependent matcher for global store instructions, such as::
 
         STG.E desc[UR6][R6.64], R15
-        ST.E.64 desc[UR10][R4.64], R2
+        ST.E.64 R4.64, R2
     """
     TEMPLATE : typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}'
 
@@ -613,6 +620,13 @@ class StoreGlobalMatcher(ArchitectureAwarePatternMatcher):
             opcode  = PatternBuilder.opcode_mods(f'ST{self.memory}' if self.memory else 'ST', ('E', self.size, modifier)),
             address = address,
         )
+
+class StoreGlobalMatcher(StoreMatcher):
+    """
+    Specialization of :py:class:`StoreMatcher` for global memory (``STG``).
+    """
+    def __init__(self, arch : NVIDIAArch, size : int | None = None) -> None:
+        super().__init__(arch = arch, size = size, memory = 'G')
 
 ThreadScope = typing.Literal['BLOCK', 'DEVICE', 'THREADS']
 """
@@ -935,7 +949,7 @@ class BranchMatcher(PatternMatcher):
 
         @!UP5 BRA 0x456
     """
-    BRA : typing.Final[str] = f"{PatternBuilder.opcode_mods('BRA')}\s*{PatternBuilder.hex()}"
+    BRA : typing.Final[str] = rf"{PatternBuilder.opcode_mods('BRA')}\s*{PatternBuilder.hex()}"
 
     PREDICATE : typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.predicate())
 

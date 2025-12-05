@@ -8,6 +8,7 @@ from .pattern import AnyMatcher, \
                      InstructionMatch, \
                      InstructionMatcher, \
                      LoadConstantMatcher, \
+                     LoadMatcher, \
                      LoadGlobalMatcher, \
                      OpcodeModsMatcher, \
                      OpcodeModsWithOperandsMatcher, \
@@ -15,6 +16,7 @@ from .pattern import AnyMatcher, \
                      PatternMatcher, \
                      ReductionMatcher, \
                      RegisterMatch, \
+                     StoreMatcher, \
                      StoreGlobalMatcher
 
 __all__ = (
@@ -28,6 +30,7 @@ __all__ = (
     'InstructionMatch',
     'InstructionMatcher',
     'LoadConstantMatcher',
+    'LoadMatcher',
     'LoadGlobalMatcher',
     'OpcodeModsMatcher',
     'OpcodeModsWithOperandsMatcher',
@@ -35,5 +38,6 @@ __all__ = (
     'PatternMatcher',
     'ReductionMatcher',
     'RegisterMatch',
+    'StoreMatcher',
     'StoreGlobalMatcher',
 )

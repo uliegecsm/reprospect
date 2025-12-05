@@ -32,6 +32,7 @@ packages = [
     "reprospect.installers",
     "reprospect.test",
     "reprospect.test.sass",
+    "reprospect.test.sass.instruction",
     "reprospect.test.sass.matchers",
     "reprospect.tools",
     "reprospect.tools.binaries",

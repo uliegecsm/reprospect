@@ -6,7 +6,7 @@ import pytest
 
 from reprospect.tools.architecture      import NVIDIAArch
 from reprospect.tools.binaries          import CuObjDump, CuppFilt, LlvmCppFilt, ResourceType, NVDisasm
-from reprospect.tools.binaries.nvdisasm import Function
+from reprospect.tools.binaries.nvdisasm import Function, DetailedRegisterUsage
 from reprospect.tools.sass.decode       import RegisterType
 from reprospect.utils                   import cmake
 
@@ -17,7 +17,7 @@ class TestFunction:
     """
     Tests related to :py:class:`reprospect.tools.binaries.nvdisasm.Function`.
     """
-    REGISTERS : typing.Final[dict[RegisterType, tuple[int, int]]] = {
+    REGISTERS : typing.Final[DetailedRegisterUsage] = {
         RegisterType.GPR  : (8, 7),
         RegisterType.PRED : (1, 1),
         RegisterType.UGPR : (7, 3),

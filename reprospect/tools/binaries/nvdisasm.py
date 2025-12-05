@@ -24,6 +24,8 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
+DetailedRegisterUsage : typing.TypeAlias = dict[RegisterType, tuple[int, int]]
+
 class Function(rich_helpers.TableMixin):
     """
     Data structure holding resource usage information of a kernel, as extracted from a binary.
@@ -44,8 +46,8 @@ class Function(rich_helpers.TableMixin):
     """
     __slots__ = ('registers',)
 
-    def __init__(self, registers : typing.Optional[dict[RegisterType, tuple[int, int]]] = None) -> None:
-        self.registers : dict[RegisterType, tuple[int, int]] | None = registers
+    def __init__(self, registers : typing.Optional[DetailedRegisterUsage] = None) -> None:
+        self.registers : DetailedRegisterUsage | None = registers
 
     @override
     def to_table(self) -> rich.table.Table:
@@ -282,7 +284,7 @@ class NVDisasm:
                             raise RuntimeError('unexpected format')
 
         # Extract how many registers are used.
-        registers : dict[RegisterType, tuple[int, int]] = {
+        registers : DetailedRegisterUsage = {
             reg_type : (len(vals), sum(vals)) for reg_type, vals in used.items()
         }
 

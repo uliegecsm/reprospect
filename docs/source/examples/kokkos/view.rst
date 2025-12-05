@@ -1,5 +1,5 @@
-`Kokkos::View`
-==============
+:code:`Kokkos::View`
+====================
 
 .. toctree::
    :maxdepth: 1

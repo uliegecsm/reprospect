@@ -473,7 +473,7 @@ class Command: # pylint: disable=too-many-instance-attributes
     """Executable to run."""
     output: pathlib.Path
     """Report file."""
-    opts : tuple[str, ...] = attrs.field(default = ())
+    opts : tuple[str, ...] = ()
     """Options that do not involve paths."""
     log: pathlib.Path = attrs.field(init = False)
     """Log file."""
@@ -939,8 +939,8 @@ class Report:
 
     def extract_results_in_range(
         self,
-        range_idx : int,
         metrics : typing.Collection[MetricKind],
+        range_idx : int = 0,
         includes : typing.Optional[typing.Iterable[str]] = None,
         excludes : typing.Optional[typing.Iterable[str]] = None,
         demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None,

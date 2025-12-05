@@ -78,7 +78,7 @@ class TestNCU(TestSaxpy):
 
     @pytest.fixture(scope = 'class')
     def results(self, report : ncu.Report) -> ncu.ProfilingResults:
-        return report.extract_results_in_range(0, metrics = self.METRICS)
+        return report.extract_results_in_range(metrics = self.METRICS)
 
     def test_result_count(self, report : ncu.Report, results : ncu.ProfilingResults) -> None:
         """

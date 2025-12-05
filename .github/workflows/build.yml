@@ -266,6 +266,7 @@ jobs:
             - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
                     -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.cmake_cuda_architectures }} \
+                    -DReProspect_ENABLE_COVERAGE=ON \
                     -DReProspect_ENABLE_DOCS=OFF \
                     -DReProspect_ENABLE_EXAMPLES=OFF \
                     -DReProspect_ENABLE_TESTS=ON
@@ -274,10 +275,24 @@ jobs:
 
             - run: ctest --preset=${{ matrix.cmake_preset }}
 
+            - run: |
+                test ! -f .coverage
+                coverage combine --keep $(find coverage/ -type f -name "*.cov")
+                coverage report
+                test -f .coverage
+                mv .coverage coverage.${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
+
             - uses: actions/upload-artifact@v5
               with:
                   name: tests-${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                   path: artifacts
+                  retention-days: 1
+                  if-no-files-found: error
+
+            - uses: actions/upload-artifact@v5
+              with:
+                  name: tests-coverage-${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
+                  path: coverage.${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                   retention-days: 1
                   if-no-files-found: error
 
@@ -388,6 +403,37 @@ jobs:
             - run: cmake --build --preset=${{ matrix.cmake_preset }}
 
             - run: ctest --preset=${{ matrix.cmake_preset }}
+
+    coverage:
+        needs: [
+            setup-job-matrix,
+            build-images,
+            tests,
+        ]
+        runs-on: [self-hosted, linux, docker, amd64]
+        container:
+            image: ${{ needs.setup-job-matrix.outputs.doc_image }}
+        if: ${{ ! failure() && ! cancelled() }}
+        steps:
+            - uses: actions/checkout@v6
+
+            - uses: actions/download-artifact@v6
+              with:
+                  pattern: tests-coverage-*
+                  path: coverage-data
+                  merge-multiple: true
+
+            - run: |
+                coverage combine --keep $(find coverage-data -type f)
+                coverage report --data-file=.coverage --fail-under=95
+                coverage html   --data-file=.coverage --directory=htmlcoverage
+
+            - uses: actions/upload-artifact@v5
+              with:
+                  name: tests-coverage
+                  path: htmlcoverage/
+                  retention-days: 1
+                  if-no-files-found: error
 
     documentation:
         needs: [

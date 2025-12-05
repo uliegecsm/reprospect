@@ -12,6 +12,7 @@ project(
 )
 
 option(ReProspect_ENABLE_TESTS "Enable tests." OFF)
+option(ReProspect_ENABLE_COVERAGE "Enable tests coverage." OFF)
 option(ReProspect_ENABLE_EXAMPLES "Enable examples." OFF)
 
 set(CMAKE_CXX_STANDARD 20)

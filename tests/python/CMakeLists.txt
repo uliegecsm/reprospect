@@ -1,29 +1,35 @@
 function(add_pytest FILE)
 
-    set(FILEPATH ${CMAKE_CURRENT_SOURCE_DIR}/test_${FILE}.py)
+    set(FILE_NAME test_${FILE}.py)
+    set(FILE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${FILE_NAME})
 
-    get_parent_relpath_repr(DIRECTORY ${CMAKE_SOURCE_DIR} FILENAME ${FILEPATH})
+    get_parent_relpath_repr(DIRECTORY ${CMAKE_SOURCE_DIR} FILENAME ${FILE_PATH})
 
-    set(FILENAME ${gprr_PARENT_RELPATH_REPR}_${FILE})
+    set(EXECUTABLE ${gprr_PARENT_RELPATH_REPR}_${FILE})
+
+    if(ReProspect_ENABLE_COVERAGE)
+        set(LAUNCHER coverage run --source=${CMAKE_SOURCE_DIR} --data-file=${CMAKE_SOURCE_DIR}/coverage/${gprr_PARENT_RELPATH}/${FILE_NAME}.cov)
+    else()
+        set(LAUNCHER ${Python_EXECUTABLE})
+    endif()
 
     add_test(
-        NAME ${FILENAME}
-        COMMAND ${Python_EXECUTABLE} -m pytest
+        NAME ${EXECUTABLE}
+        COMMAND ${LAUNCHER} -m pytest
                     --typeguard-packages=reprospect
                     --config-file=${CMAKE_SOURCE_DIR}/tests/python/.pytest.ini
-                    ${FILEPATH}
+                    ${FILE_PATH}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
-    test_environment(${FILENAME} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
-    test_environment(${FILENAME} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
-    test_environment(${FILENAME} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
+    test_environment(${EXECUTABLE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
+    test_environment(${EXECUTABLE} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
+    test_environment(${EXECUTABLE} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
 
-    pytest_skip_mark(${FILENAME})
+    pytest_skip_mark(${EXECUTABLE})
 
     # Directory for artifacts.
-    file(RELATIVE_PATH relative_path ${CMAKE_SOURCE_DIR} ${FILEPATH})
-    test_environment(${FILENAME} ARTIFACT_DIR set ${CMAKE_SOURCE_DIR}/artifacts/${relative_path})
+    test_environment(${EXECUTABLE} ARTIFACT_DIR set ${CMAKE_SOURCE_DIR}/artifacts/${gprr_PARENT_RELPATH}/${FILE_NAME})
 
 endfunction()
 

@@ -10,6 +10,7 @@ function(get_parent_relpath_repr)
 
     string(REPLACE "\/" "_" PARENT_RELPATH_REPR "${PARENT_RELPATH}")
 
+    set(gprr_PARENT_RELPATH      "${PARENT_RELPATH}"      PARENT_SCOPE)
     set(gprr_PARENT_RELPATH_REPR "${PARENT_RELPATH_REPR}" PARENT_SCOPE)
 
 endfunction(get_parent_relpath_repr)

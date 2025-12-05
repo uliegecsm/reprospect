@@ -10,7 +10,7 @@ class TestInstructionIs:
         matcher = instruction_is(Fp32AddMatcher())
         assert isinstance(matcher, Fluentizer)
 
-        assert (matched := matcher.matches(inst = 'FADD R2, R2, R3')) is not None
+        assert (matched := matcher.match(inst = 'FADD R2, R2, R3')) is not None
         assert isinstance(matched, InstructionMatch)
 
     def test_times_1(self) -> None:

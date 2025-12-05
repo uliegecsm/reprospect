@@ -29,7 +29,7 @@ class NewInstructionMatcher(InstructionMatcher):
     Faking a matcher for some unforeseen use case.
     """
     @override
-    def matches(self, inst : str | Instruction) -> InstructionMatch | None:
+    def match(self, inst : str | Instruction) -> InstructionMatch | None:
         if (matched := regex.match(r'(?P<opcode>[A-Z]+).*', inst.instruction if isinstance(inst, Instruction) else inst)) is not None:
             return InstructionMatch.parse(bits = matched)
         return None
@@ -72,14 +72,14 @@ class TestInstructionMatching:
     NOP  : typing.Final[Instruction] = Instruction(offset = 0, instruction = 'NOP',                        hex = '0x2', control = CONTROLCODE)
 
     def test_NewInstructionMatcher(self) -> None:
-        result = instruction_is(matcher = NewInstructionMatcher()).times(3).matches(instructions = (self.DADD, self.DMUL, self.NOP))
+        result = instruction_is(matcher = NewInstructionMatcher()).times(3).match(instructions = (self.DADD, self.DMUL, self.NOP))
 
         assert result is not None
 
         assert len(result) == 3
 
     def test_NewPatternMatcher(self) -> None:
-        result = instruction_is(matcher = NewPatternMatcher()).times(3).matches(instructions = (self.DADD, self.DMUL, self.NOP))
+        result = instruction_is(matcher = NewPatternMatcher()).times(3).match(instructions = (self.DADD, self.DMUL, self.NOP))
 
         assert result is not None
 

@@ -54,8 +54,8 @@ class Fluentizer(instruction.InstructionMatcher):
 
     @override
     @typing.final
-    def matches(self, inst : Instruction | str) -> typing.Optional[instruction.InstructionMatch]:
-        return self.matcher.matches(inst = inst)
+    def match(self, inst : Instruction | str) -> typing.Optional[instruction.InstructionMatch]:
+        return self.matcher.match(inst = inst)
 
 def instruction_is(matcher : instruction.InstructionMatcher) -> Fluentizer:
     """
@@ -63,9 +63,9 @@ def instruction_is(matcher : instruction.InstructionMatcher) -> Fluentizer:
 
     >>> from reprospect.test.sass.composite   import instruction_is
     >>> from reprospect.test.sass.instruction import Fp32AddMatcher
-    >>> instruction_is(Fp32AddMatcher()).matches(inst = 'FADD R2, R2, R3')
+    >>> instruction_is(Fp32AddMatcher()).match(inst = 'FADD R2, R2, R3')
     InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']})
-    >>> instruction_is(Fp32AddMatcher()).one_or_more_times().matches(instructions = ('FADD R2, R2, R3', 'FADD R4, R4, R5'))
+    >>> instruction_is(Fp32AddMatcher()).one_or_more_times().match(instructions = ('FADD R2, R2, R3', 'FADD R4, R4, R5'))
     [InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']}), InstructionMatch(opcode='FADD', modifiers=(), operands=('R4', 'R4', 'R5'), predicate=None, additional={'dst': ['R4']})]
     """
     return Fluentizer(matcher)
@@ -79,7 +79,7 @@ def instructions_are(*matchers : instruction.InstructionMatcher | composite_impl
     >>> instructions_are(
     ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
     ...     instruction_is(OpcodeModsMatcher(opcode = 'NOP', operands = False)).zero_or_more_times(),
-    ... ).matches(instructions = ('YIELD', 'NOP', 'NOP'))
+    ... ).match(instructions = ('YIELD', 'NOP', 'NOP'))
     [InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None)]
     """
     return composite_impl.OrderedInSequenceMatcher(matchers = matchers)
@@ -93,7 +93,7 @@ def unordered_instructions_are(*matchers : instruction.InstructionMatcher | comp
     >>> unordered_instructions_are(
     ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
     ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
-    ... ).matches(instructions = ('NOP', 'YIELD'))
+    ... ).match(instructions = ('NOP', 'YIELD'))
     [InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None)]
     """
     return composite_impl.UnorderedInSequenceMatcher(matchers = matchers)
@@ -112,7 +112,7 @@ def instructions_contain(matcher : instruction.InstructionMatcher | composite_im
     ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
     ...     OpcodeModsMatcher(opcode = 'FADD', operands = True),
     ... ))
-    >>> matcher.matches(instructions = ('NOP', 'NOP', 'YIELD', 'FADD R1, R1, R2'))
+    >>> matcher.match(instructions = ('NOP', 'NOP', 'YIELD', 'FADD R1, R1, R2'))
     [InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='FADD', modifiers=(), operands=('R1', 'R1', 'R2'), predicate=None, additional=None)]
     >>> matcher.index
     2
@@ -133,7 +133,7 @@ def any_of(*matchers : instruction.InstructionMatcher | composite_impl.SequenceM
     ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
     ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
     ... )
-    >>> matcher.matches(instructions = ('FADD R1, R1, R2',)) is None
+    >>> matcher.match(instructions = ('FADD R1, R1, R2',)) is None
     True
     >>> matcher.index is None
     True

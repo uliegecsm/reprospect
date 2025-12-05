@@ -130,7 +130,7 @@ __global__ void atomic_exch_kernel() {
         Match exactly one instruction.
         """
         matcher = AtomicMatcher(**kwargs)
-        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst))]
+        red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1, matcher
 
         inst, matched = red[0]

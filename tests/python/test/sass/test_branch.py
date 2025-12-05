@@ -22,7 +22,7 @@ class TestBranchMatcher:
     def test(self, instruction : str, expected : InstructionMatch) -> None:
         matcher = BranchMatcher()
 
-        matched = matcher.matches(inst = instruction)
+        matched = matcher.match(inst = instruction)
 
         assert matched is not None
         assert matched == expected
@@ -34,9 +34,9 @@ class TestBranchMatcher:
         """
         matcher = BranchMatcher(predicate = '@!UP0')
 
-        assert matcher.matches('@!UP0 BRA 0xc') == self.INSTRUCTIONS['@!UP0 BRA 0xc']
-        assert matcher.matches('@!UP2 BRA 0xc') is None
-        assert matcher.matches(      'BRA 0xc') is None
+        assert matcher.match('@!UP0 BRA 0xc') == self.INSTRUCTIONS['@!UP0 BRA 0xc']
+        assert matcher.match('@!UP2 BRA 0xc') is None
+        assert matcher.match(      'BRA 0xc') is None
 
     def test_no_match(self) -> None:
-        assert BranchMatcher().matches(inst = 'STG.E [R2], R4') is None
+        assert BranchMatcher().match(inst = 'STG.E [R2], R4') is None

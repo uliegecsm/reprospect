@@ -29,8 +29,8 @@ class RegisterMatchValidator(SequenceMatcher):
         """The register that must be used by :py:attr:`matcher`."""
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        if (matched := self.matcher.matches(instructions)) is not None:
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        if (matched := self.matcher.match(instructions)) is not None:
             start_register = RegisterMatch.parse(matched[0].additional['start'][0])
             if self.load_register.rtype == start_register.rtype and self.load_register.index == start_register.index:
                 return matched
@@ -67,8 +67,8 @@ class TestAtomicAddInt128(add.TestCase):
         matcher_atom = AtomicMatcher   (operation = 'ADD', dtype = ('S', 128), scope = 'DEVICE', consistency = 'STRONG', arch = self.arch)
         matcher_red  = ReductionMatcher(operation = 'ADD', dtype = ('S', 128), scope = 'DEVICE', consistency = 'STRONG', arch = self.arch)
 
-        assert not any(matcher_atom.matches(inst) for inst in decoder.instructions)
-        assert not any(matcher_red .matches(inst) for inst in decoder.instructions)
+        assert not any(matcher_atom.match(inst) for inst in decoder.instructions)
+        assert not any(matcher_red .match(inst) for inst in decoder.instructions)
 
     def test_lock_based_atomic(self, decoder : Decoder) -> None:
         """

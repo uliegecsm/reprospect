@@ -23,7 +23,7 @@ class SequenceMatcher(abc.ABC):
     Base class for matchers of a sequence of instructions.
     """
     @abc.abstractmethod
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         """
         .. note::
 
@@ -36,7 +36,7 @@ class SequenceMatcher(abc.ABC):
         """
         Derived matchers are allowed to provide a nice message by implementing :py:meth:`explain`.
         """
-        if (matched := self.matches(instructions = instructions)) is None:
+        if (matched := self.match(instructions = instructions)) is None:
             raise RuntimeError(self.explain(instructions = instructions))
         return matched
 
@@ -57,8 +57,8 @@ class InSequenceAtMatcher(SequenceMatcher):
         self.matcher : typing.Final[InstructionMatcher] = matcher
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        matched = self.matcher.matches(instructions[0])
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        matched = self.matcher.match(instructions[0])
         return [matched] if matched is not None else None
 
     @override
@@ -79,11 +79,11 @@ class OneOrMoreInSequenceMatcher(SequenceMatcher):
         self.matcher : typing.Final[InstructionMatcher] = matcher
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         matches : list[InstructionMatch] = []
 
         for instruction in instructions:
-            if (matched := self.matcher.matches(instruction)) is not None:
+            if (matched := self.matcher.match(instruction)) is not None:
                 matches.append(matched)
             else:
                 break
@@ -99,8 +99,8 @@ class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
     Match zero or more times.
     """
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        return super().matches(instructions = instructions) or []
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        return super().match(instructions = instructions) or []
 
     @override
     def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
@@ -120,13 +120,13 @@ class OrderedInSequenceMatcher(SequenceMatcher):
         self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         matches : list[InstructionMatch] = []
 
         for matcher in self.matchers:
-            if isinstance(matcher, InstructionMatcher) and (single := matcher.matches(inst = instructions[len(matches)])) is not None:
+            if isinstance(matcher, InstructionMatcher) and (single := matcher.match(inst = instructions[len(matches)])) is not None:
                 matches.append(single)
-            elif isinstance(matcher, SequenceMatcher) and (many := matcher.matches(instructions[len(matches)::])) is not None:
+            elif isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions[len(matches)::])) is not None:
                 matches.extend(many)
             else:
                 return None
@@ -150,7 +150,7 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
         self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         """
         Cycle through all permutations of :py:attr:`matchers` (breaks on match).
 
@@ -159,7 +159,7 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
             The implementation can be further optimized because it currently re-matches for each new permutation.
         """
         for permutation in itertools.permutations(self.matchers):
-            if (matched := OrderedInSequenceMatcher(matchers = permutation).matches(instructions = instructions)) is not None:
+            if (matched := OrderedInSequenceMatcher(matchers = permutation).match(instructions = instructions)) is not None:
                 return matched
         return None
 
@@ -182,9 +182,9 @@ class InSequenceMatcher(SequenceMatcher):
         self.index : int | None = None
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         for index in range(len(instructions)):
-            if (matched := self.matcher.matches(instructions = instructions[index::])) is not None:
+            if (matched := self.matcher.match(instructions = instructions[index::])) is not None:
                 self.index = index
                 return matched
         return None
@@ -208,15 +208,15 @@ class AnyOfMatcher(SequenceMatcher):
         self.index : int | None = None
 
     @override
-    def matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         """
         Loop over the :py:attr:`matchers` and return the first match.
         """
         for index, matcher in enumerate(self.matchers):
-            if isinstance(matcher, InstructionMatcher) and (single := matcher.matches(inst = instructions[0])) is not None:
+            if isinstance(matcher, InstructionMatcher) and (single := matcher.match(inst = instructions[0])) is not None:
                 self.index = index
                 return [single]
-            if isinstance(matcher, SequenceMatcher) and (many := matcher.matches(instructions = instructions)) is not None:
+            if isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions = instructions)) is not None:
                 self.index = index
                 return many
         return None

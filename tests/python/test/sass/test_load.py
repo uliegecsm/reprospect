@@ -52,7 +52,7 @@ __global__ __launch_bounds__(128, 1) void ldc({type}* __restrict__ const out)
 
     @pytest.mark.parametrize('instruction,matcher,expected', ((instr, *vals) for instr, vals in INSTRUCTIONS.items()))
     def test(self, instruction : str, matcher : LoadConstantMatcher, expected : InstructionMatch) -> None:
-        assert (matched := matcher.matches(inst = instruction)) is not None
+        assert (matched := matcher.match(inst = instruction)) is not None
         assert matched == expected
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
@@ -67,7 +67,7 @@ __global__ __launch_bounds__(128, 1) void ldc({type}* __restrict__ const out)
 
         # Find the constant load.
         matcher = LoadConstantMatcher(size = 64, uniform = False)
-        load_cst = tuple((inst, matched) for inst in decoder.instructions if (matched := matcher.matches(inst)))
+        load_cst = tuple((inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst)))
         assert len(load_cst) == 1, matcher
 
         inst, matched = load_cst[0]

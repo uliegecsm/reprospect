@@ -6,7 +6,7 @@ from reprospect.test.sass.instruction import Fp32AddMatcher
 from reprospect.utils                 import cmake
 
 from tests.python.parameters                 import Parameters, PARAMETERS
-from tests.python.test.sass.test_instruction import get_decoder, CODE_ELEMENTWISE_ADD_RESTRICT_WIDE
+from tests.python.test.sass.test_instruction import get_decoder, CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE
 
 class TestFp32AddMatcher:
     """
@@ -40,12 +40,12 @@ class TestFp32AddMatcher:
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
-        Test with :py:const:`tests.python.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.
+        Test with :py:const:`tests.python.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE`.
 
-        There will be 4 ``FADD`` instructions because of the *float4*.
+        There will be 4 ``FADD`` instructions because of the :code:`float4`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT_WIDE)
+        FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE)
 
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 

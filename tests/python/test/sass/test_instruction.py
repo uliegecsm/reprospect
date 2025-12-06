@@ -16,13 +16,9 @@ from reprospect.utils                 import cmake
 from reprospect.test.sass.instruction import AtomicMatcher, \
                                              OpcodeModsMatcher, \
                                              OpcodeModsWithOperandsMatcher, \
-                                             LoadMatcher, \
-                                             LoadGlobalMatcher, \
                                              PatternBuilder, \
                                              ReductionMatcher, \
-                                             RegisterMatch, \
-                                             StoreMatcher, \
-                                             StoreGlobalMatcher
+                                             RegisterMatch
 
 from tests.python.compilation import get_compilation_output
 from tests.python.parameters  import Parameters, PARAMETERS
@@ -33,17 +29,34 @@ __global__ void elementwise_add_restrict(int* __restrict__ const dst, const int*
     dst[index] += src[index];
 }
 """
-"""Element-wise add with 32-bit ``int``."""
+"""Element-wise add with 32-bit :code:`int`."""
 
-CODE_ELEMENTWISE_ADD_RESTRICT_WIDE = """\
-__global__ void elementwise_add_restrict_wide(float4* __restrict__ const dst, const float4* __restrict__ const src) {
+CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE = """\
+__global__ void elementwise_add_restrict_128_wide(float4* __restrict__ const dst, const float4* __restrict__ const src) {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
     const float4& a = src[index];
     const float4& b = dst[index];
     dst[index] = make_float4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
 }
 """
-"""Element-wise add with 128-bit ``float4``."""
+"""Element-wise add with 128-bit :code:`float4`."""
+
+CODE_ELEMENTWISE_ADD_RESTRICT_256_WIDE = """\
+#if CUDART_VERSION < 13000
+    using scalar_t = double4;
+#else
+    using scalar_t = double4_32a;
+#endif
+
+__global__ void elementwise_add_restrict_256_wide(scalar_t* __restrict__ const dst, const scalar_t* __restrict__ const src)
+{
+    const auto index = blockIdx.x * blockDim.x + threadIdx.x;
+    const scalar_t& a = src[index];
+    const scalar_t& b = dst[index];
+    dst[index] = scalar_t{.x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z, .w = a.w + b.w};
+}
+"""
+"""Element-wise add with 256-bit :code:`double4_32a`."""
 
 @functools.lru_cache(maxsize = 128)
 def get_decoder(*, cwd : pathlib.Path, arch : NVIDIAArch, file : pathlib.Path, cmake_file_api : cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:
@@ -238,173 +251,6 @@ class TestRegisterMatch:
     def test_not_a_reg(self) -> None:
         with pytest.raises(ValueError, match = "Invalid register format 'YOLO666'."):
             RegisterMatch.parse('YOLO666')
-
-class TestLoadMatcher:
-    """
-    Tests for :py:class:`reprospect.test.sass.instruction.LoadMatcher`
-    and :py:class:`reprospect.test.sass.instruction.LoadGlobalMatcher`.
-    """
-    CODE_ELEMENTWISE_ADD = """\
-__global__ void elementwise_add(int* const dst, const int* const src) {
-    const auto index = blockIdx.x * blockDim.x + threadIdx.x;
-    dst[index] += src[index];
-}
-"""
-
-    CODE_ELEMENTWISE_ADD_LDG = """\
-__global__ void elementwise_add_ldg(int* const dst, const int* const src) {
-    const auto index = blockIdx.x * blockDim.x + threadIdx.x;
-    dst[index] += __ldg(&src[index]);
-}
-"""
-    def test(self) -> None:
-        matcher = LoadMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
-        assert matcher.match(inst = 'LD.E.64 R2, desc[UR10][R4.64]') is not None
-
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
-        """
-        Test loads with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT`.
-        """
-        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT)
-
-        decoder, _ = get_decoder(cwd = workdir,arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
-
-        # Find the read-only load.
-        matcher = LoadGlobalMatcher(arch = parameters.arch, readonly = True)
-        load_ro = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
-        assert len(load_ro) == 1
-
-        inst_ro, matched_ro = load_ro[0]
-
-        logging.info(f'{matcher} matched instruction {inst_ro.instruction} as {matched_ro}.')
-
-        assert 'CONSTANT' in matched_ro.modifiers
-        assert len(matched_ro.additional['address']) == 1
-        assert len(matched_ro.operands) == 2
-
-        # Find the load.
-        matcher = LoadGlobalMatcher(arch = parameters.arch, readonly = False)
-        load = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
-        assert len(load) == 1
-
-        inst, matched = load[0]
-
-        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
-
-        assert 'CONSTANT' not in matched.modifiers
-        assert len(matched.additional['address']) == 1
-        assert len(matched.operands) == 2
-
-        assert inst_ro != inst
-
-        # Find both loads by letting the 'CONSTANT' be optional.
-        matcher = LoadGlobalMatcher(arch = parameters.arch, readonly = None)
-        load = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
-        assert len(load) == 2
-
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
-        """
-        Test wide loads with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.
-        """
-        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT_WIDE)
-
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
-
-        # Find the read-only wide load.
-        matcher = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = True)
-        load_ro = list(filter(matcher, decoder.instructions))
-        assert len(load_ro) == 1, matcher
-
-        logging.info(load_ro[0])
-
-        # Find the wide load.
-        matcher = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = False)
-        load = list(filter(matcher, decoder.instructions))
-        assert len(load) == 1
-
-        logging.info(load[0])
-
-        assert load_ro != load
-
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_constant(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
-        """
-        If `src` is declared ``const __restrict__``, the compiler is able to use the ``.CONSTANT`` modifier.
-        Otherwise, we need to explicitly use ``__ldg`` to end up using ``.CONSTANT``.
-        """
-        ITEMS = {
-            'restrict'    : CODE_ELEMENTWISE_ADD_RESTRICT,
-            'no_restrict' : self.CODE_ELEMENTWISE_ADD,
-            'ldg'         : self.CODE_ELEMENTWISE_ADD_LDG,
-        }
-        decoders = {}
-        for name, code in ITEMS.items():
-            FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.{name}.cu'
-            FILE.write_text(code)
-
-            decoders[name], _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
-
-        assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['restrict'   ].instructions))) == 1
-        assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['no_restrict'].instructions))) == 0
-        assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['ldg'        ].instructions))) == 1
-
-class TestStoreMatcher:
-    """
-    Tests for :py:class:`reprospect.test.sass.instruction.StoreMatcher`
-    and :py:class:`reprospect.test.sass.instruction.StoreGlobalMatcher`.
-    """
-    def test(self) -> None:
-        matcher = StoreMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 64, memory = None)
-        assert matcher.match(inst = 'ST.E.64 desc[UR10][R4.64], R2') is not None
-
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
-        """
-        Test store with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT`.
-        """
-        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT)
-
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
-
-        # Find the store.
-        matcher = StoreGlobalMatcher(arch = parameters.arch)
-        store = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
-        assert len(store) == 1
-
-        inst, matched = store[0]
-
-        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
-
-        assert len(matched.additional['address']) == 1
-        assert len(matched.operands) == 2
-
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
-        """
-        Test wide store with :py:const:`CODE_ELEMENTWISE_ADD_RESTRICT_WIDE`.
-        """
-        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT_WIDE)
-
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
-
-        # Find the wide store.
-        matcher = StoreGlobalMatcher(arch = parameters.arch, size = 128)
-        store = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
-        assert len(store) == 1
-
-        inst, matched = store[0]
-
-        logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
-
-        assert '128' in matched.modifiers
-        assert len(matched.additional['address']) == 1
-        assert len(matched.operands) == 2
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestReductionMatcher:

@@ -12,6 +12,7 @@ import pytest
 from reprospect.test.cmake import get_demangler_for_compiler
 
 from reprospect.tools import ncu
+from reprospect.tools.ncu.metrics import MetricCorrelationData
 from reprospect.utils import detect
 
 @pytest.fixture(scope = 'session')
@@ -29,7 +30,7 @@ class TestProfilingResults:
             accessors = ('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
             data = ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum' : 100.,
-                'sass__inst_executed_per_opcode': ncu.MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
+                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
                 'L1/TEX cache global load sectors.sum' : 0.
             })
         )
@@ -37,7 +38,7 @@ class TestProfilingResults:
             accessors = ('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
             data = ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum' : 96.,
-                'sass__inst_executed_per_opcode': ncu.MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
+                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
                 'L1/TEX cache global load sectors.sum' : 0.
             })
         )
@@ -326,8 +327,8 @@ class TestSession:
         logging.info(results)
 
         metrics_saxpy_kernel_0 = results.query_metrics(('saxpy_kernel-0',))
-        assert isinstance(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'], ncu.MetricCorrelationData)
-        assert isinstance(metrics_saxpy_kernel_0[      'inst_executed'           ], ncu.MetricCorrelationData)
+        assert isinstance(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'], MetricCorrelationData)
+        assert isinstance(metrics_saxpy_kernel_0[      'inst_executed'           ], MetricCorrelationData)
 
         # Check that the sum of correlated values matches the total value.
         assert sum(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated.values()) == metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].value

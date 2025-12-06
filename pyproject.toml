@@ -36,6 +36,7 @@ packages = [
     "reprospect.test.sass.matchers",
     "reprospect.tools",
     "reprospect.tools.binaries",
+    "reprospect.tools.ncu",
     "reprospect.tools.sass",
     "reprospect.utils",
 ]

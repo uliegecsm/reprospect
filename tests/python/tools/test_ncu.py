@@ -12,6 +12,7 @@ import pytest
 from reprospect.test.cmake import get_demangler_for_compiler
 
 from reprospect.tools import ncu
+from reprospect.tools.ncu.metrics import MetricCorrelationData
 from reprospect.utils import detect
 
 @pytest.fixture(scope = 'session')
@@ -29,7 +30,7 @@ class TestProfilingResults:
             accessors = ('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
             data = ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum' : 100.,
-                'sass__inst_executed_per_opcode': ncu.MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
+                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
                 'L1/TEX cache global load sectors.sum' : 0.
             })
         )
@@ -37,7 +38,7 @@ class TestProfilingResults:
             accessors = ('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
             data = ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum' : 96.,
-                'sass__inst_executed_per_opcode': ncu.MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
+                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
                 'L1/TEX cache global load sectors.sum' : 0.
             })
         )
@@ -200,7 +201,7 @@ class TestSession:
         """
         Collect a few basic metrics for the :py:attr:`SAXPY` executable and filter by NVTX.
         """
-        METRICS : tuple[ncu.Metric | ncu.DeviceAttributeMetric, ...] = (
+        METRICS : tuple[ncu.Metric | ncu.MetricDeviceAttribute, ...] = (
             # Metric with full name provided.
             ncu.Metric(name = 'launch__registers_per_thread_allocated'),
             # Metric with roll-up.
@@ -212,13 +213,13 @@ class TestSession:
             ncu.L1TEXCache.GlobalLoad.Instructions.create(),
             ncu.L1TEXCache.GlobalLoad.Sectors.create(),
             # A few device attributes.
-            ncu.DeviceAttributeMetric(name = 'display_name'),
-            ncu.DeviceAttributeMetric(name = 'architecture'),
-            ncu.DeviceAttributeMetric(name = 'can_map_host_memory'),
-            ncu.DeviceAttributeMetric(name = 'clock_rate'),
-            ncu.DeviceAttributeMetric(name = 'gpu_overlap'),
-            ncu.DeviceAttributeMetric(name = 'sass_level'),
-            ncu.DeviceAttributeMetric(name = 'numa_config'),
+            ncu.MetricDeviceAttribute(name = 'display_name'),
+            ncu.MetricDeviceAttribute(name = 'architecture'),
+            ncu.MetricDeviceAttribute(name = 'can_map_host_memory'),
+            ncu.MetricDeviceAttribute(name = 'clock_rate'),
+            ncu.MetricDeviceAttribute(name = 'gpu_overlap'),
+            ncu.MetricDeviceAttribute(name = 'sass_level'),
+            ncu.MetricDeviceAttribute(name = 'numa_config'),
         )
 
         EXPT_METRICS_AND_METADATA = (
@@ -326,8 +327,8 @@ class TestSession:
         logging.info(results)
 
         metrics_saxpy_kernel_0 = results.query_metrics(('saxpy_kernel-0',))
-        assert isinstance(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'], ncu.MetricCorrelationData)
-        assert isinstance(metrics_saxpy_kernel_0[      'inst_executed'           ], ncu.MetricCorrelationData)
+        assert isinstance(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'], MetricCorrelationData)
+        assert isinstance(metrics_saxpy_kernel_0[      'inst_executed'           ], MetricCorrelationData)
 
         # Check that the sum of correlated values matches the total value.
         assert sum(metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].correlated.values()) == metrics_saxpy_kernel_0['sass__inst_executed_per_opcode'].value

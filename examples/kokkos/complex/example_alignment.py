@@ -60,7 +60,7 @@ from reprospect.test.case             import CMakeAwareTestCase
 from reprospect.test.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
 from reprospect.tools.binaries        import CuObjDump
 from reprospect.tools.sass            import Decoder
-from reprospect.tools                 import ncu
+from reprospect.tools.ncu             import Metric, MetricCounter, MetricCounterRollUp, MetricCorrelation, L1TEXCache, Command, Report, ProfilingMetrics, Cacher
 from reprospect.utils                 import detect
 
 if sys.version_info >= (3, 11):
@@ -155,26 +155,26 @@ class TestNCU(TestAlignment):
     """
     Kernel profiling.
     """
-    METRICS : tuple[ncu.Metric | ncu.MetricCorrelation, ...] = (
+    METRICS : tuple[Metric | MetricCorrelation, ...] = (
         # Overall instruction count.
-        ncu.MetricCounter(name = 'smsp__inst_executed', subs = (ncu.MetricCounterRollUp.SUM,)),
+        MetricCounter(name = 'smsp__inst_executed', subs = (MetricCounterRollUp.SUM,)),
         # Specific instruction counts (LDG and STG and others).
-        ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode'),
+        MetricCorrelation(name = 'sass__inst_executed_per_opcode'),
         # Memory traffic.
-        ncu.L1TEXCache.GlobalLoad.Instructions.create(),
-        ncu.L1TEXCache.GlobalLoad.Sectors.create(),
-        ncu.L1TEXCache.GlobalLoad.SectorMisses.create(),
-        ncu.L1TEXCache.GlobalStore.Instructions.create(),
-        ncu.L1TEXCache.LocalStore.Instructions.create(),
-        ncu.MetricCounter(name = 'lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs = (ncu.MetricCounterRollUp.SUM,)),
+        L1TEXCache.GlobalLoad.Instructions.create(),
+        L1TEXCache.GlobalLoad.Sectors.create(),
+        L1TEXCache.GlobalLoad.SectorMisses.create(),
+        L1TEXCache.GlobalStore.Instructions.create(),
+        L1TEXCache.LocalStore.Instructions.create(),
+        MetricCounter(name = 'lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs = (MetricCounterRollUp.SUM,)),
     )
 
     NVTX_INCLUDES : typing.Final[tuple[str, ...]] = ('AlignmentProfiling',)
 
     @pytest.fixture(scope = 'class')
-    def report(self) -> ncu.Report:
-        with ncu.Cacher() as cacher:
-            command = ncu.Command(
+    def report(self) -> Report:
+        with Cacher() as cacher:
+            command = Command(
                 output = self.cwd / 'ncu',
                 executable = self.executable,
                 metrics = self.METRICS,
@@ -188,16 +188,16 @@ class TestNCU(TestAlignment):
                 cwd = self.cwd,
                 retries = 5,
             )
-        return ncu.Report(command = command)
+        return Report(command = command)
 
     @pytest.fixture(scope = 'class')
-    def metrics(self, report : ncu.Report) -> dict[Alignment, ncu.ProfilingMetrics]:
+    def metrics(self, report : Report) -> dict[Alignment, ProfilingMetrics]:
         results_in_range = report.extract_results_in_range(
             metrics = self.METRICS,
             includes = self.NVTX_INCLUDES,
         )
 
-        def get_metrics(alignment : Alignment) -> ncu.ProfilingMetrics:
+        def get_metrics(alignment : Alignment) -> ProfilingMetrics:
             results = results_in_range.query(accessors = (alignment.value, 'multiply and add view elements'))
             _, metrics = results.query_single_next_metrics(accessors = ())
             logging.info(f'Kernel profiling results for {alignment} alignment:\n{results}')
@@ -205,7 +205,7 @@ class TestNCU(TestAlignment):
 
         return {alignment : get_metrics(alignment) for alignment in Alignment}
 
-    def test_instruction_count(self, metrics : dict[Alignment, ncu.ProfilingMetrics]) -> None:
+    def test_instruction_count(self, metrics : dict[Alignment, ProfilingMetrics]) -> None:
         """
         With specified alignment, half the load/store instructions are executed.
         Other instruction counts remain unchanged.
@@ -224,7 +224,7 @@ class TestNCU(TestAlignment):
                 assert metrics[Alignment.DEFAULT  ]['sass__inst_executed_per_opcode'].correlated[opcode] \
                     == metrics[Alignment.SPECIFIED]['sass__inst_executed_per_opcode'].correlated[opcode]
 
-    def test_l1tex_memory_traffic_instruction_count(self, metrics : dict[Alignment, ncu.ProfilingMetrics]) -> None:
+    def test_l1tex_memory_traffic_instruction_count(self, metrics : dict[Alignment, ProfilingMetrics]) -> None:
         """
         Runtime behavior corresponding to :py:meth:`TestSASS.test_global_memory_instructions`.
         """
@@ -243,7 +243,7 @@ class TestNCU(TestAlignment):
         assert metrics[Alignment.DEFAULT  ]['L1/TEX cache local store instructions sass.sum'] == 0
         assert metrics[Alignment.SPECIFIED]['L1/TEX cache local store instructions sass.sum'] == 0
 
-    def test_l1tex_memory_traffic_sector_count(self, metrics : dict[Alignment, ncu.ProfilingMetrics]) -> None:
+    def test_l1tex_memory_traffic_sector_count(self, metrics : dict[Alignment, ProfilingMetrics]) -> None:
         """
         +-----------+-------------------------------------------------------------------------------------------+
         | default   | The real parts are read first, and then the imaginary parts,                              |
@@ -259,7 +259,7 @@ class TestNCU(TestAlignment):
         assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global load sectors.sum'] == sector_count * 2
         assert metrics[Alignment.SPECIFIED]['L1/TEX cache global load sectors.sum'] == sector_count
 
-    def test_l2_memory_traffic_sector_count(self, metrics : dict[Alignment, ncu.ProfilingMetrics]) -> None:
+    def test_l2_memory_traffic_sector_count(self, metrics : dict[Alignment, ProfilingMetrics]) -> None:
         """
         The traffic out to L2 and out to DRAM is the same with both default and specialized alignments.
 

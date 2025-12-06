@@ -201,7 +201,7 @@ class TestSession:
         """
         Collect a few basic metrics for the :py:attr:`SAXPY` executable and filter by NVTX.
         """
-        METRICS : tuple[ncu.Metric | ncu.DeviceAttributeMetric, ...] = (
+        METRICS : tuple[ncu.Metric | ncu.MetricDeviceAttribute, ...] = (
             # Metric with full name provided.
             ncu.Metric(name = 'launch__registers_per_thread_allocated'),
             # Metric with roll-up.
@@ -213,13 +213,13 @@ class TestSession:
             ncu.L1TEXCache.GlobalLoad.Instructions.create(),
             ncu.L1TEXCache.GlobalLoad.Sectors.create(),
             # A few device attributes.
-            ncu.DeviceAttributeMetric(name = 'display_name'),
-            ncu.DeviceAttributeMetric(name = 'architecture'),
-            ncu.DeviceAttributeMetric(name = 'can_map_host_memory'),
-            ncu.DeviceAttributeMetric(name = 'clock_rate'),
-            ncu.DeviceAttributeMetric(name = 'gpu_overlap'),
-            ncu.DeviceAttributeMetric(name = 'sass_level'),
-            ncu.DeviceAttributeMetric(name = 'numa_config'),
+            ncu.MetricDeviceAttribute(name = 'display_name'),
+            ncu.MetricDeviceAttribute(name = 'architecture'),
+            ncu.MetricDeviceAttribute(name = 'can_map_host_memory'),
+            ncu.MetricDeviceAttribute(name = 'clock_rate'),
+            ncu.MetricDeviceAttribute(name = 'gpu_overlap'),
+            ncu.MetricDeviceAttribute(name = 'sass_level'),
+            ncu.MetricDeviceAttribute(name = 'numa_config'),
         )
 
         EXPT_METRICS_AND_METADATA = (

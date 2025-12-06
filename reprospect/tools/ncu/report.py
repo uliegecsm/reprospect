@@ -13,7 +13,7 @@ import typing
 import rich.tree
 
 from reprospect.tools.binaries import CuppFilt, LlvmCppFilt
-from reprospect.tools.ncu.metrics import ValueType, Metric, MetricData, DeviceAttributeMetric,  MetricCorrelation, MetricCorrelationData, MetricCorrelationDataType, MetricKind
+from reprospect.tools.ncu.metrics import ValueType, Metric, MetricData, MetricDeviceAttribute,  MetricCorrelation, MetricCorrelationData, MetricCorrelationDataType, MetricKind
 from reprospect.tools.ncu.session import Command
 from reprospect.utils import rich_helpers
 
@@ -448,7 +448,7 @@ class Report:
                 else:
                     assert metric_data is not None
                     results[metric.pretty_name] = metric_data
-            elif isinstance(metric, DeviceAttributeMetric):
+            elif isinstance(metric, MetricDeviceAttribute):
                 results[metric.full_name] = self.get_metric_by_name(action = action, metric = metric.full_name).value()
             else:
                 raise NotImplementedError(metric)

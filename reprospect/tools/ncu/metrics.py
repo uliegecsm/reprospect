@@ -88,7 +88,7 @@ class MetricRatio(Metric):
     """
 
 @dataclasses.dataclass(frozen = True, slots = True)
-class DeviceAttributeMetric:
+class MetricDeviceAttribute:
     """
     ``ncu`` device attribute metric, such as::
 
@@ -428,7 +428,7 @@ class L1TEXCache:
 
     LocalStore : typing.Final[typing.Type[L1TEXCacheLocalStore]] = L1TEXCacheLocalStore # pylint: disable=invalid-name
 
-MetricKind : typing.TypeAlias = Metric | MetricCorrelation | DeviceAttributeMetric
+MetricKind : typing.TypeAlias = Metric | MetricCorrelation | MetricDeviceAttribute
 
 def gather(metrics : typing.Iterable[MetricKind]) -> tuple[str, ...]:
     """

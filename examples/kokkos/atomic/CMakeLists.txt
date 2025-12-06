@@ -1,2 +1,3 @@
 add_one_example(add_complex128)
+add_one_example(add_double256)
 add_one_example(add_int128)

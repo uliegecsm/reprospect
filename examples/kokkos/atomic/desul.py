@@ -2,22 +2,29 @@ import logging
 import sys
 import typing
 
-from reprospect.test.sass.composite      import any_of, \
-                                                instructions_are, \
-                                                instruction_is, \
-                                                instructions_contain
-from reprospect.test.sass.composite_impl import OrderedInSequenceMatcher, SequenceMatcher
-from reprospect.test.sass.instruction    import AtomicMatcher, \
-                                                BranchMatcher, \
-                                                InstructionMatch,\
-                                                InstructionMatcher,\
-                                                LoadGlobalMatcher, \
-                                                OpcodeModsMatcher, \
-                                                OpcodeModsWithOperandsMatcher, \
-                                                PatternBuilder, \
-                                                StoreGlobalMatcher
-from reprospect.tools.architecture       import NVIDIAArch
-from reprospect.tools.sass               import Instruction
+from reprospect.test.sass.composite import (
+    any_of,
+    instructions_are, instruction_is,
+    instructions_contain,
+)
+from reprospect.test.sass.composite_impl import (
+    InSequenceAtMatcher,
+    OrderedInSequenceMatcher,
+    SequenceMatcher,
+)
+from reprospect.test.sass.instruction import (
+    AtomicMatcher,
+    BranchMatcher,
+    InstructionMatch,
+    InstructionMatcher,
+    LoadGlobalMatcher,
+    OpcodeModsMatcher,
+    OpcodeModsWithOperandsMatcher,
+    PatternBuilder,
+    StoreGlobalMatcher,
+)
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.sass import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -109,7 +116,7 @@ class DeviceAtomicThreadFenceMatcher:
         return instructions_are(*matchers)
 
 class Operation(typing.Protocol):
-    def build(self, load : InstructionMatch) -> SequenceMatcher:
+    def build(self, loads : typing.Collection[InstructionMatch]) -> SequenceMatcher:
         ...
 
 class LockBasedAtomicMatcher(SequenceMatcher):
@@ -126,12 +133,15 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         compiler_id : str,
         size : int = 128,
         level : int = logging.INFO,
+        load : SequenceMatcher | None = None,
+        store : SequenceMatcher | None = None,
     ) -> None:
         self.arch : typing.Final[NVIDIAArch] = arch
         self.operation : typing.Final[Operation] = operation
         self.compiler_id : typing.Final[str] = compiler_id
-        self.size = size
         self.level : typing.Final[int] = level
+        self.load : typing.Final[SequenceMatcher] = load or InSequenceAtMatcher(matcher = LoadGlobalMatcher(arch = self.arch, size = size, readonly = False))
+        self.store : typing.Final[SequenceMatcher] = store or InSequenceAtMatcher(matcher = StoreGlobalMatcher(arch = self.arch, size = size))
 
     def collect(self, matched : list[InstructionMatch], new : InstructionMatch | list[InstructionMatch]) -> int:
         if isinstance(new, list):
@@ -145,7 +155,13 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         return 1
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=too-many-branches,too-many-return-statements
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=too-many-branches,too-many-return-statements,too-many-statements
+        """
+        .. note::
+
+            For data types that require many loads or stores, the operation instructions might be interleaved, such that the
+            sequence within the memory thread fences is not strictly load/operation/store.
+        """
         matched : list[InstructionMatch] = []
 
         # First, try to atomically acquire a lock.
@@ -160,7 +176,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         # Then, one or two PLOP3.LUT instructions.
         matched_plop3_lut = instruction_is(
             OpcodeModsMatcher(opcode = 'PLOP3', modifiers = ('LUT',)),
-        ).one_or_more_times().match(instructions[offset::])
+        ).one_or_more_times().match(instructions[offset:])
 
         if matched_plop3_lut is None:
             return None
@@ -206,50 +222,66 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         offset += self.collect(matched = matched, new = matched_outer_branch)
 
         # The device atomic thread fence block.
-        matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch = self.arch).match(instructions = instructions[offset::])
+        matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch = self.arch).match(instructions = instructions[offset:])
 
         if matched_thread_fence is None:
             return None
 
         offset += self.collect(matched = matched, new = matched_thread_fence)
 
+        offset_fence_enter = offset
+
+        # The device atomic thread fence block (again).
+        matcher_thread_fence = instructions_contain(DeviceAtomicThreadFenceMatcher.build(arch = self.arch))
+        matched_thread_fence = matcher_thread_fence.match(instructions = instructions[offset:])
+
+        if matched_thread_fence is None:
+            return None
+        assert matcher_thread_fence.index is not None
+
+        offset_fence_exit = offset + matcher_thread_fence.index
+        offset = offset_fence_exit + self.collect(matched = matched, new = matched_thread_fence)
+
         # The load corresponds to the dereferencing line at
         # https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L41.
-        matcher_load = LoadGlobalMatcher(arch = self.arch, size = self.size, readonly = False)
-        matched_load = matcher_load.match(instructions[offset])
+        matched_load = instructions_contain(self.load).match(instructions = instructions[offset_fence_enter:offset_fence_exit])
 
         if matched_load is None:
             return None
 
-        offset += self.collect(matched = matched, new = matched_load)
+        self.collect(matched = matched, new = matched_load)
 
         # Operation.
-        matcher_operation = self.operation.build(load = matched_load)
-        matched_operation = matcher_operation.match(instructions = instructions[offset::])
+        matcher_operation = instructions_contain(matcher = self.operation.build(loads = matched_load))
+        matched_operation = matcher_operation.match(instructions = instructions[offset_fence_enter:offset_fence_exit])
 
         if matched_operation is None:
             return None
 
-        offset += self.collect(matched = matched, new = matched_operation)
+        self.collect(matched = matched, new = matched_operation)
 
         # Store the value.
-        matcher_store = instructions_contain(StoreGlobalMatcher(arch = self.arch, size = self.size))
-        matched_store = matcher_store.match(instructions = instructions[offset:])
+        matched_store = instructions_contain(self.store).match(instructions = instructions[offset_fence_enter:offset_fence_exit])
 
-        if matched_store is None or matcher_store.index is None:
+        if matched_store is None:
             return None
 
-        assert matched_store[0].operands[1] == matched_load.operands[0]
+        self.collect(matched = matched, new = matched_store)
 
-        offset += matcher_store.index + self.collect(matched = matched, new = matched_store)
-
-        # The device atomic thread fence block (again).
-        matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch = self.arch).match(instructions = instructions[offset::])
-
-        if matched_thread_fence is None:
-            return None
-
-        offset += self.collect(matched = matched, new = matched_thread_fence)
+        # Loads and stores use the same registers.
+        assert len(matched_store) == len(matched_load)
+        assert all(len(x.operands) == len(y.operands) for x, y in zip(matched_store, matched_load, strict = True))
+        match len(matched_store[0].operands):
+            case 2:
+                if matched_store[0].operands[1] != matched_load[0].operands[0]:
+                    return None
+            case 3:
+                if matched_store[0].operands[1] != matched_load[0].operands[1]:
+                    return None
+                if matched_store[0].operands[2] != matched_load[0].operands[0]:
+                    return None
+            case _:
+                raise ValueError
 
         # Atomic release.
         matched_atomic_release = AtomicReleaseMatcher.build(arch = self.arch, compiler_id = self.compiler_id).match(inst = instructions[offset])

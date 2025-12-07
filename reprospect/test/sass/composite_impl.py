@@ -251,3 +251,31 @@ class OperandValidator(InstructionMatcher):
             if operand == self.operand:
                 return matched
         return None
+
+class OperandsValidator(InstructionMatcher):
+    """
+    Validate that the :py:attr:`operands` match the instruction matched
+    with :py:attr:`matcher`.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
+    """
+    __slots__ = ('matcher', 'operands')
+
+    def __init__(self, matcher : InstructionMatcher, operands : typing.Collection[tuple[int, str]]) -> None:
+        self.matcher : typing.Final[InstructionMatcher] = matcher
+        self.operands : typing.Final[tuple[tuple[int, str], ...]] = tuple(operands)
+
+    @override
+    def match(self, inst : Instruction | str) -> InstructionMatch | None:
+        if (matched := self.matcher.match(inst)) is not None:
+            for mindex, moperand in self.operands:
+                try:
+                    operand = matched.operands[mindex]
+                except IndexError:
+                    return None
+                if operand != moperand:
+                    return None
+            return matched
+        return None

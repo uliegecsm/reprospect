@@ -61,9 +61,27 @@ class Fluentizer(instruction.InstructionMatcher):
         >>> matcher.match(inst = 'FADD R5, R8, R9')
         InstructionMatch(opcode='FADD', modifiers=(), operands=('R5', 'R8', 'R9'), predicate=None, additional={'dst': ['R5']})
         """
-        return Fluentizer(composite_impl.OperandValidator(
+        return Fluentizer(matcher = composite_impl.OperandValidator(
             matcher = self.matcher,
             index = index, operand = operand,
+        ))
+
+    def with_operands(self, operands : typing.Collection[tuple[int, str]]) -> instruction.InstructionMatcher:
+        """
+        Similar to :py:meth:`with_operand` for many operands.
+
+        >>> from reprospect.test.sass.composite   import instruction_is
+        >>> from reprospect.test.sass.instruction import Fp32AddMatcher
+        >>> matcher = instruction_is(Fp32AddMatcher()).with_operands(
+        ...     operands = ((1, 'R8'), (2, 'R9')),
+        ... )
+        >>> matcher.match(inst = 'FADD R5, R9, R10')
+        >>> matcher.match(inst = 'FADD R5, R8, R9')
+        InstructionMatch(opcode='FADD', modifiers=(), operands=('R5', 'R8', 'R9'), predicate=None, additional={'dst': ['R5']})
+        """
+        return Fluentizer(matcher = composite_impl.OperandsValidator(
+            matcher = self,
+            operands = operands
         ))
 
     @override

@@ -1,6 +1,6 @@
 from reprospect.test.sass.composite      import any_of, Fluentizer, instructions_are, instructions_contain, instruction_is, unordered_instructions_are
 from reprospect.test.sass.composite_impl import AnyOfMatcher, InSequenceMatcher, InSequenceAtMatcher, OneOrMoreInSequenceMatcher, OrderedInSequenceMatcher, UnorderedInSequenceMatcher, ZeroOrMoreInSequenceMatcher
-from reprospect.test.sass.instruction    import Fp32AddMatcher, InstructionMatch, OpcodeModsMatcher
+from reprospect.test.sass.instruction    import AnyMatcher, Fp32AddMatcher, InstructionMatch, OpcodeModsMatcher
 
 class TestInstructionIs:
     """
@@ -41,6 +41,33 @@ class TestInstructionIs:
         assert isinstance(matcher, Fluentizer)
         assert matcher.match(inst = 'FADD R2, R2, R3') is not None
         assert matcher.match(inst = 'FADD R4, R4, RZ') is None
+
+    def test_with_operand_composed(self) -> None:
+        """
+        Similar to :py:meth:`test_with_operands` but calls
+        :py:meth:`reprospect.test.sass.composite.Fluentizer.with_operand`
+        many times.
+        """
+        matcher = instruction_is(Fp32AddMatcher()).with_operand(
+            index = 2, operand = 'R3',
+        ).with_operand(
+            index = 1, operand = 'R2',
+        )
+        assert isinstance(matcher, Fluentizer)
+        assert matcher.match(inst = 'FADD R2, R2, R3') is not None
+        assert matcher.match(inst = 'FADD R3, R2, R3') is not None
+        assert matcher.match(inst = 'FADD R2, R2, RZ') is None
+
+    def test_with_operands(self) -> None:
+        """
+        Test :py:meth:`reprospect.test.sass.composite.Fluentizer.with_operands`.
+        """
+        matcher = instruction_is(AnyMatcher()).with_operands(operands = (
+            (-1, 'URZ'),
+            ( 1, 'UPT'),
+        ))
+        assert isinstance(matcher, Fluentizer)
+        assert matcher.match(inst = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
 
 class TestInstructionsAre:
     """

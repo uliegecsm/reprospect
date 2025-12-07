@@ -5,8 +5,7 @@ import typing
 from reprospect.test.sass.composite      import any_of, \
                                                 instructions_are, \
                                                 instruction_is, \
-                                                instructions_contain, \
-                                                Fluentizer
+                                                instructions_contain
 from reprospect.test.sass.composite_impl import OrderedInSequenceMatcher, SequenceMatcher
 from reprospect.test.sass.instruction    import AtomicMatcher, \
                                                 BranchMatcher, \
@@ -39,8 +38,12 @@ def get_atomic_memory_suffix(compiler_id : str) -> typing.Literal['G', '']:
 
 class AtomicAcquireMatcher:
     """
-    Try to acquire a lock through an atomic exchange, such as at
-    https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L39.
+    Matcher for the trial to acquire a lock through an atomic exchange.
+
+    See:
+
+    * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L39
+    * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Array_CUDA.hpp#L83
     """
     @classmethod
     def build(cls, arch : NVIDIAArch, compiler_id : str) -> OrderedInSequenceMatcher:
@@ -83,11 +86,15 @@ class RegisterValidator(InstructionMatcher):
 
 class AtomicReleaseMatcher:
     """
-    Release a lock through an atomic exchange, such as at
-    https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L44.
+    Matcher for the release of a lock through an atomic exchange.
+
+    See:
+
+    * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L44
+    * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Array_CUDA.hpp#L102
     """
     @classmethod
-    def build(cls, arch : NVIDIAArch, compiler_id : str) -> Fluentizer:
+    def build(cls, arch : NVIDIAArch, compiler_id : str) -> InstructionMatcher:
         return instruction_is(RegisterValidator(AtomicMatcher(
             memory = get_atomic_memory_suffix(compiler_id = compiler_id),
             arch = arch,
@@ -98,8 +105,13 @@ class AtomicReleaseMatcher:
 
 class DeviceAtomicThreadFenceMatcher:
     """
-    The device atomic thread fence block, typically found when using
-    https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L40.
+    Matcher for the device atomic thread fence block.
+
+    See:
+
+    * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L40
+    * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Thread_Fence_CUDA.hpp#L19
+
     """
     @classmethod
     def build(cls, arch : NVIDIAArch) -> OrderedInSequenceMatcher:
@@ -118,7 +130,11 @@ class Operation(typing.Protocol):
 
 class LockBasedAtomicMatcher(SequenceMatcher):
     """"
-    Ensure that `desul` lock-based atomic code path is available.
+    Matcher for the `desul` lock-based atomic code path.
+
+    See:
+
+    * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L39-L44
     """
     def __init__(self, *,
         arch : NVIDIAArch,

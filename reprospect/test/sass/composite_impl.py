@@ -224,3 +224,30 @@ class AnyOfMatcher(SequenceMatcher):
     @override
     def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
         return f'None of {self.matchers!r} did match {instructions}.'
+
+class OperandValidator(InstructionMatcher):
+    """
+    Validate that the operand at :py:attr:`index` matches the instruction matched
+    with :py:attr:`matcher`.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
+    """
+    __slots__ = ('matcher', 'index', 'operand')
+
+    def __init__(self, matcher : InstructionMatcher, index : int, operand : str) -> None:
+        self.matcher : typing.Final[InstructionMatcher] = matcher
+        self.index : typing.Final[int] = index
+        self.operand : typing.Final[str] = operand
+
+    @override
+    def match(self, inst : Instruction | str) -> InstructionMatch | None:
+        if (matched := self.matcher.match(inst)) is not None:
+            try:
+                operand = matched.operands[self.index]
+            except IndexError:
+                return None
+            if operand == self.operand:
+                return matched
+        return None

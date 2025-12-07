@@ -15,9 +15,10 @@ from .pattern import AnyMatcher, \
                      PatternBuilder, \
                      PatternMatcher, \
                      ReductionMatcher, \
-                     RegisterMatch, \
                      StoreMatcher, \
                      StoreGlobalMatcher
+
+from .register import RegisterMatch
 
 __all__ = (
     'AnyMatcher',

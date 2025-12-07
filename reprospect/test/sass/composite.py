@@ -52,6 +52,20 @@ class Fluentizer(instruction.InstructionMatcher):
         """
         return composite_impl.ZeroOrMoreInSequenceMatcher(matcher = self.matcher)
 
+    def with_operand(self, index : int, operand : str) -> 'Fluentizer':
+        """
+        >>> from reprospect.test.sass.composite   import instruction_is
+        >>> from reprospect.test.sass.instruction import Fp32AddMatcher
+        >>> matcher = instruction_is(Fp32AddMatcher()).with_operand(index = 1, operand = 'R8')
+        >>> matcher.match(inst = 'FADD R5, R9, R10')
+        >>> matcher.match(inst = 'FADD R5, R8, R9')
+        InstructionMatch(opcode='FADD', modifiers=(), operands=('R5', 'R8', 'R9'), predicate=None, additional={'dst': ['R5']})
+        """
+        return Fluentizer(composite_impl.OperandValidator(
+            matcher = self.matcher,
+            index = index, operand = operand,
+        ))
+
     @override
     @typing.final
     def match(self, inst : Instruction | str) -> typing.Optional[instruction.InstructionMatch]:

@@ -30,6 +30,18 @@ class TestInstructionIs:
         matcher = instruction_is(Fp32AddMatcher()).zero_or_more_times()
         assert isinstance(matcher, ZeroOrMoreInSequenceMatcher)
 
+    def test_with_operand(self) -> None:
+        """
+        Test :py:meth:`reprospect.test.sass.composite.Fluentizer.with_operand`.
+        """
+        matcher = instruction_is(Fp32AddMatcher()).with_operand(
+            index = 1,
+            operand = 'R2',
+        )
+        assert isinstance(matcher, Fluentizer)
+        assert matcher.match(inst = 'FADD R2, R2, R3') is not None
+        assert matcher.match(inst = 'FADD R4, R4, RZ') is None
+
 class TestInstructionsAre:
     """
     Tests for :py:func:`reprospect.test.sass.composite.instructions_are`.

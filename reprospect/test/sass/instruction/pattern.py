@@ -303,7 +303,7 @@ def check_memory_instruction_word_size(*, size : int) -> None:
 
         Global memory instructions support reading or writing words of size equal to 1, 2, 4, 8, or 16 bytes.
     """
-    ALLOWABLE_SIZES : tuple[int, ...] = (1, 2, 4, 8, 16) # pylint: disable=invalid-name
+    ALLOWABLE_SIZES : typing.Final[tuple[int, ...]] = (1, 2, 4, 8, 16, 32) # pylint: disable=invalid-name
     if size not in ALLOWABLE_SIZES:
         raise RuntimeError(f'{size} is not an allowable memory instruction word size ({ALLOWABLE_SIZES} (in bytes)).')
 
@@ -484,6 +484,20 @@ class ArchitectureAndVersionAwarePatternMatcher(ArchitectureAwarePatternMatcher)
         self.version = version if version is not None else semantic_version.Version(os.environ['CUDA_VERSION'])
         super().__init__(arch = arch)
 
+def get_address(arch : NVIDIAArch) -> str:
+    """
+    Typical address operand pattern for `arch`.
+    """
+    match arch.compute_capability.as_int:
+        case 70 | 75:
+            return PatternBuilder.address(PatternBuilder.REG)
+        case 80 | 86 | 89:
+            return PatternBuilder.address(PatternBuilder.REG64)
+        case 90 | 100 | 120:
+            return PatternBuilder.desc_reg64_addr()
+        case _:
+            raise ValueError(f'unsupported {arch}')
+
 class LoadMatcher(ArchitectureAwarePatternMatcher):
     """
     Architecture-dependent matcher for load instructions, such as::
@@ -491,13 +505,21 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         LDG.E R2, desc[UR6][R2.64]
         LD.E.64 R2, R4.64
 
+    Starting from `BLACKWELL`, 256-bits load instructions are available, such as::
+
+        LDG.E.ENL2.256.CONSTANT R12, R8, desc[UR4][R2.64]
+
     References:
 
     * https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html?highlight=__ldg#global-memory-5-x
     * https://github.com/AdaptiveCpp/AdaptiveCpp/issues/848
     * https://docs.nvidia.com/gameworks/content/developertools/desktop/analysis/report/cudaexperiments/kernellevel/memorystatisticsglobal.htm
+    * https://developer.nvidia.com/blog/whats-new-and-important-in-cuda-toolkit-13-0/#updated_vector_types
     """
+    __slots__ = ('size', 'cache', 'memory')
+
     TEMPLATE : typing.Final[str] = f'{{opcode}} {PatternBuilder.reg()}, {{address}}'
+    TEMPLATE_256 : typing.Final[str] = f'{{opcode}} {PatternBuilder.reg()}, {PatternBuilder.reg()}, {{address}}'
 
     def __init__(self,
         arch : NVIDIAArch,
@@ -506,7 +528,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         memory : str | None = 'G',
     ):
         """
-        :param size: Optional bit size (e.g., 32, 64, 128).
+        :param size: Optional bit size (*e.g.*, 32, 64, 128).
         :param readonly: Whether to append ``.CONSTANT`` modifier. If `None`, the modifier is matched optionally.
         """
         if size is not None:
@@ -518,22 +540,23 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
 
         super().__init__(arch = arch)
 
+    def _get_modifiers(self) -> tuple[str, ...]:
+        return (
+            'E',
+            *(('ENL2',) if self.size is not None and self.size == 256 else ()),
+            self.size,
+            self.cache,
+            *(('SYS',) if self.arch.compute_capability in (70, 75) else ()),
+        )
+
     @override
     def _build_pattern(self) -> str:
-        modifier : str | None = None
-        match self.arch.compute_capability.as_int:
-            case 70 | 75:
-                modifier = 'SYS'
-                address = PatternBuilder.address(PatternBuilder.REG)
-            case 80 | 86 | 89:
-                address = PatternBuilder.address(PatternBuilder.REG64)
-            case 90 | 100 | 120:
-                address = PatternBuilder.desc_reg64_addr()
-            case _:
-                raise ValueError(f'unsupported {self.arch}')
-        return self.TEMPLATE.format(
-            opcode = PatternBuilder.opcode_mods(f'LD{self.memory}' if self.memory else 'LD', ('E', self.size, self.cache, modifier)),
-            address = address,
+        return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
+            opcode = PatternBuilder.opcode_mods(
+                opcode = f'LD{self.memory}' if self.memory else 'LD',
+                modifiers = self._get_modifiers(),
+            ),
+            address = get_address(arch = self.arch),
         )
 
 class LoadGlobalMatcher(LoadMatcher):
@@ -557,7 +580,7 @@ class LoadConstantMatcher(PatternMatcher):
 
     def __init__(self, uniform : typing.Optional[bool] = None, size : typing.Optional[int] = None) -> None:
         """
-        :param size: Optional bit size (e.g., 32, 64, 128).
+        :param size: Optional bit size (*e.g.*, 32, 64, 128).
         :param uniform: Optionally require uniformness.
         """
         if size is not None:
@@ -584,8 +607,15 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
 
         STG.E desc[UR6][R6.64], R15
         ST.E.64 R4.64, R2
+
+    Starting from `BLACKWELL`, 256-bits store instructions are available, such as::
+
+        STG.E.ENL2.256 desc[UR4][R4.64], R8, R12
     """
+    __slots__ = ('size', 'memory')
+
     TEMPLATE : typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}'
+    TEMPLATE_256 : typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
 
     def __init__(self,
         arch : NVIDIAArch,
@@ -593,7 +623,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
         memory : str | None = 'G',
     ):
         """
-        :param size: Optional bit size (e.g., 32, 64, 128).
+        :param size: Optional bit size (*e.g.*, 32, 64, 128).
         """
         if size is not None:
             check_memory_instruction_word_size(size = size // 8)
@@ -602,23 +632,19 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
         self.memory = memory
         super().__init__(arch = arch)
 
+    def _get_modifiers(self) -> tuple[str, ...]:
+        return (
+            'E',
+            *(('ENL2',) if self.size is not None and self.size == 256 else ()),
+            self.size,
+            *(('SYS',) if self.arch.compute_capability in (70, 75) else ()),
+        )
+
     @override
     def _build_pattern(self) -> str:
-        address : str
-        modifier : str | None = None
-        match self.arch.compute_capability.as_int:
-            case 70 | 75:
-                modifier = 'SYS'
-                address = PatternBuilder.address(PatternBuilder.REG)
-            case 80 | 86 | 89:
-                address = PatternBuilder.address(PatternBuilder.REG64)
-            case 90 | 100 | 120:
-                address = PatternBuilder.desc_reg64_addr()
-            case _:
-                raise ValueError(f'unsupported {self.arch}')
-        return self.TEMPLATE.format(
-            opcode  = PatternBuilder.opcode_mods(f'ST{self.memory}' if self.memory else 'ST', ('E', self.size, modifier)),
-            address = address,
+        return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
+            opcode  = PatternBuilder.opcode_mods(f'ST{self.memory}' if self.memory else 'ST', self._get_modifiers()),
+            address = get_address(arch = self.arch),
         )
 
 class StoreGlobalMatcher(StoreMatcher):

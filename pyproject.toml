@@ -48,7 +48,7 @@ dependencies = {file = ["requirements/requirements.txt"]}
 [project]
 name = "reprospect"
 description = "A framework for reproducible prospecting of CUDA applications."
-version = "0.0.9"
+version = "0.0.10"
 license = "MIT"
 license-files = ["LICENSE"]
 readme = {file = "README.md", content-type = "text/markdown"}

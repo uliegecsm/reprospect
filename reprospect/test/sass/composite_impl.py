@@ -9,7 +9,10 @@ import typing
 
 import mypy_extensions
 
-from reprospect.test.sass.instruction import InstructionMatcher, InstructionMatch, AddressMatcher, RegisterMatcher
+from reprospect.test.sass.instruction import (
+    InstructionMatcher, InstructionMatch,
+    AddressMatcher, ConstantMatcher, RegisterMatcher,
+)
 from reprospect.tools.sass import Instruction
 
 if sys.version_info >= (3, 12):
@@ -225,7 +228,7 @@ class AnyOfMatcher(SequenceMatcher):
     def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
         return f'None of {self.matchers!r} did match {instructions}.'
 
-OperandMatcher : typing.TypeAlias = str | AddressMatcher | RegisterMatcher
+OperandMatcher : typing.TypeAlias = str | AddressMatcher | ConstantMatcher | RegisterMatcher
 
 class OperandValidator(InstructionMatcher):
     """
@@ -252,7 +255,7 @@ class OperandValidator(InstructionMatcher):
                 return None
             if isinstance(self.operand, str) and operand == self.operand:
                 return matched
-            if isinstance(self.operand, AddressMatcher | RegisterMatcher) and self.operand.match(operand) is not None:
+            if isinstance(self.operand, AddressMatcher | ConstantMatcher | RegisterMatcher) and self.operand.match(operand) is not None:
                 return matched
         return None
 
@@ -281,7 +284,7 @@ class OperandsValidator(InstructionMatcher):
                     return None
                 if isinstance(moperand, str) and operand != moperand:
                     return None
-                if isinstance(moperand, AddressMatcher | RegisterMatcher) and moperand.match(operand) is None:
+                if isinstance(moperand, AddressMatcher | ConstantMatcher | RegisterMatcher) and moperand.match(operand) is None:
                     return None
             return matched
         return None

@@ -65,5 +65,4 @@ class TestAddressMatcher:
     def test_build_pattern(self):
         ARCH : typing.Final[NVIDIAArch] = NVIDIAArch.from_str('BLACKWELL120')
 
-        pattern_address = AddressMatcher.build_pattern(arch = ARCH)
-        assert pattern_address == r'desc\[UR[0-9]+\]\[(?:R[0-9]+|UR[0-9]+)\.64(?:\+0x[0-9A-Fa-f]+)?\]'
+        assert AddressMatcher.build_pattern(arch = ARCH) == r'desc\[UR[0-9]+\]\[(?:R[0-9]+|UR[0-9]+)\.64(?:\+0x[0-9A-Fa-f]+)?\]'

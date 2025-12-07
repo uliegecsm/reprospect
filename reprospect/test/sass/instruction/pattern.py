@@ -6,7 +6,7 @@ class PatternBuilder:
     Helper class to build patterns for instruction components.
     """
     HEX : typing.Final[str] = r'0x[0-9A-Fa-f]+'
-    OFFSET : typing.Final[str] = r'\+' + HEX
+    OFFSET : typing.Final[str] = r'\+0x[0-9A-Fa-f]+'
     PRED : typing.Final[str] = r'P[0-9]+'
     REG : typing.Final[str] = r'R[0-9]+'
     REG64 : typing.Final[str] = r'R[0-9]+\.64'
@@ -31,14 +31,14 @@ class PatternBuilder:
     Constant memory bank.
     """
 
-    CONSTANT_OFFSET : typing.Final[str] = r'(0x[0-9c]+|' + REG + '|' + UREG + ')'
+    CONSTANT_OFFSET : typing.Final[str] = r'(?:0x[0-9c]+|' + REG + '|' + UREG + ')'
     """
     Constant memory offset.
     """
 
     CONSTANT : typing.Final[str] = r'c\[' + CONSTANT_BANK + r'\]\[' + CONSTANT_OFFSET + r'\]'
     """
-    Match constant memory location.
+    Constant memory location.
     The bank looks like ``0x3`` while the address is either compile-time (*e.g.*
     ``0x899``) or depends on a register.
     """
@@ -154,21 +154,6 @@ class PatternBuilder:
         :py:attr:`PREDT` with `operands` group.
         """
         return cls.group(cls.PREDT, group = 'operands')
-
-    @classmethod
-    def constant(cls, *, additional : bool = False) -> str:
-        """
-        :py:attr:`CONSTANT` with `operands` group.
-
-        :param additional: Enrich with bank and offset.
-        """
-        if not additional:
-            return cls.group(cls.CONSTANT, group = 'operands')
-        return PatternBuilder.group(
-            rf"c\[{cls.group(cls.CONSTANT_BANK, group = 'bank')}\]"
-            rf"\[{cls.group(cls.CONSTANT_OFFSET, group = 'offset')}\]",
-            group = 'operands',
-        )
 
     @classmethod
     def immediate(cls) -> str:

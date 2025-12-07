@@ -498,6 +498,13 @@ def get_address(arch : NVIDIAArch) -> str:
         case _:
             raise ValueError(f'unsupported {arch}')
 
+ExtendBitsMethod : typing.TypeAlias = typing.Literal['U', 'S']
+"""
+How bits must be extended, see https://www.cs.fsu.edu/~hawkes/cda3101lects/chap4/extension.htm.
+
+`U` and `S` stand for *zero extension* and *sign extension*, respectively.
+"""
+
 class LoadMatcher(ArchitectureAwarePatternMatcher):
     """
     Architecture-dependent matcher for load instructions, such as::
@@ -516,7 +523,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
     * https://docs.nvidia.com/gameworks/content/developertools/desktop/analysis/report/cudaexperiments/kernellevel/memorystatisticsglobal.htm
     * https://developer.nvidia.com/blog/whats-new-and-important-in-cuda-toolkit-13-0/#updated_vector_types
     """
-    __slots__ = ('size', 'cache', 'memory')
+    __slots__ = ('size', 'cache', 'memory', 'extend')
 
     TEMPLATE : typing.Final[str] = f'{{opcode}} {PatternBuilder.reg()}, {{address}}'
     TEMPLATE_256 : typing.Final[str] = f'{{opcode}} {PatternBuilder.reg()}, {PatternBuilder.reg()}, {{address}}'
@@ -526,6 +533,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         size : typing.Optional[int] = None,
         readonly : typing.Optional[bool] = None,
         memory : str | None = 'G',
+        extend : ExtendBitsMethod | None = None,
     ):
         """
         :param size: Optional bit size (*e.g.*, 32, 64, 128).
@@ -537,6 +545,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         self.size : int | None = size
         self.cache : str | None = None if readonly is False else ('CONSTANT' if readonly is True else '?CONSTANT')
         self.memory = memory
+        self.extend : typing.Final[ExtendBitsMethod | None] = extend
 
         super().__init__(arch = arch)
 
@@ -544,7 +553,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         return (
             'E',
             *(('ENL2',) if self.size is not None and self.size == 256 else ()),
-            self.size,
+            f'{self.extend}{self.size}' if self.size is not None and self.size < 32 else self.size,
             self.cache,
             *(('SYS',) if self.arch.compute_capability in (70, 75) else ()),
         )
@@ -563,8 +572,8 @@ class LoadGlobalMatcher(LoadMatcher):
     """
     Specialization of :py:class:`LoadMatcher` for global memory (``LDG``).
     """
-    def __init__(self, arch : NVIDIAArch, size : int | None = None, readonly : bool | None = None) -> None:
-        super().__init__(arch = arch, size = size, readonly = readonly, memory = 'G')
+    def __init__(self, arch : NVIDIAArch, size : int | None = None, readonly : bool | None = None, extend : ExtendBitsMethod | None = None) -> None:
+        super().__init__(arch = arch, size = size, readonly = readonly, memory = 'G', extend = extend)
 
 class LoadConstantMatcher(PatternMatcher):
     """

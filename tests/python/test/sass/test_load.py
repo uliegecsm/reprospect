@@ -7,9 +7,11 @@ import typing
 import pytest
 import semantic_version
 
+from reprospect.test.sass.composite   import instructions_contain, instruction_is
 from reprospect.test.sass.instruction import (
     InstructionMatch,
     LoadConstantMatcher, LoadGlobalMatcher, LoadMatcher,
+    OpcodeModsWithOperandsMatcher,
     PatternBuilder,
 )
 from reprospect.tools.architecture    import NVIDIAArch
@@ -112,12 +114,29 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
     dst[index] += __ldg(&src[index]);
 }
 """
+
+    CODE_EXTEND = """\
+#include <cstdint>
+
+__global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src, const unsigned int size)
+{{
+    const auto index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index < size) dst[index] = src[index];
+}}
+"""
+
     def test(self) -> None:
         matcher = LoadMatcher(arch = NVIDIAArch.from_compute_capability(100), size = 64, memory = None)
         assert matcher.match(inst = 'LD.E.64 R2, desc[UR10][R4.64]') is not None
 
         matcher = LoadMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 256, readonly = True, memory = 'G')
         assert matcher.match(inst = 'LDG.E.ENL2.256.CONSTANT R12, R8, desc[UR4][R2.64]') is not None
+
+        matcher = LoadGlobalMatcher(arch = NVIDIAArch.from_compute_capability(86), size = 16, readonly = True, extend = 'U')
+        assert matcher.match(inst = 'LDG.E.U16.CONSTANT R3, [R2.64]') is not None
+
+        matcher = LoadGlobalMatcher(arch = NVIDIAArch.from_compute_capability(86), size = 16, readonly = True, extend = 'S')
+        assert matcher.match(inst = 'LDG.E.S16.CONSTANT R3, [R2.64]') is not None
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
@@ -246,3 +265,67 @@ __global__ void elementwise_add_ldg(int* const dst, const int* const src) {
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['restrict'   ].instructions))) == 1
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['no_restrict'].instructions))) == 0
         assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['ldg'        ].instructions))) == 1
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    def test_zero_extend_u16(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        """
+        Use :py:attr:`CODE_EXTEND` to enforce zero extension.
+        """
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_EXTEND.format(
+            restrict = '__restrict__',
+            dst = 'uint32_t',
+            src = 'uint16_t',
+        ))
+
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+
+        instructions_contain(LoadGlobalMatcher(
+            arch = parameters.arch, size = 16, readonly = True, extend = 'U')
+        ).assert_matches(decoder.instructions)
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    def test_sign_extend_s16(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        """
+        :py:attr:`CODE_EXTEND` leads to sign extension only if both pointers are not decorated with
+        :code:`__restrict__` when using ``nvcc``.
+
+        With ``clang``, it always leads to sign extension.
+        """
+        FILE_S16 = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.s16.cu'
+        FILE_U16 = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.u16.cu'
+
+        FILE_S16.write_text(self.CODE_EXTEND.format(restrict = '',             dst = 'int32_t', src = 'int16_t'))
+        FILE_U16.write_text(self.CODE_EXTEND.format(restrict = '__restrict__', dst = 'int32_t', src = 'int16_t'))
+
+        decoder_s16, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE_S16, cmake_file_api = cmake_file_api)
+        decoder_u16, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE_U16, cmake_file_api = cmake_file_api)
+
+        # Check that it leads to sign extension.
+        matcher_s16 = LoadGlobalMatcher(arch = parameters.arch, size = 16, readonly = False, extend = 'S')
+        instructions_contain(matcher_s16).assert_matches(decoder_s16.instructions)
+
+        # Check that it does not lead to sign extension for nvcc.
+        matcher_s16_ro = LoadGlobalMatcher(arch = parameters.arch, size = 16, readonly = True, extend = 'S')
+
+        match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+            case 'NVIDIA':
+                assert instructions_contain(matcher_s16)   .match(decoder_u16.instructions) is None
+                assert instructions_contain(matcher_s16_ro).match(decoder_u16.instructions) is None
+
+                # But it rather lead to zero extension with permutation.
+                matcher_u16_ro = instructions_contain(matcher = LoadGlobalMatcher(
+                    arch = parameters.arch, size = 16, readonly = True, extend = 'U',
+                ))
+                [matched_u16_ro] = matcher_u16_ro.assert_matches(decoder_u16.instructions)
+                assert matcher_u16_ro.index is not None
+
+                matcher_prmt = instructions_contain(matcher = instruction_is(OpcodeModsWithOperandsMatcher(
+                    opcode = 'PRMT',
+                    operands = (PatternBuilder.REG, PatternBuilder.REG, PatternBuilder.HEX, PatternBuilder.REGZ),
+                )).with_operand(index = 1, operand = matched_u16_ro.operands[0]))
+                matcher_prmt.assert_matches(decoder_u16.instructions[matcher_u16_ro.index::])
+            case 'Clang':
+                assert instructions_contain(matcher_s16_ro).match(decoder_u16.instructions) is not None
+            case _:
+                raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")

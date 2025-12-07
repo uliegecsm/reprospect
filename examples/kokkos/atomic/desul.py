@@ -68,22 +68,6 @@ class AtomicAcquireMatcher:
             ),
         )
 
-class RegisterValidator(InstructionMatcher):
-    """
-    Matches if the underlying :py:attr:`matcher` matches **and** the last operand
-    of the matched instruction is equal to :py:attr:`expected`.
-    """
-    def __init__(self, matcher : InstructionMatcher, expected : str) -> None:
-        self.matcher : typing.Final[InstructionMatcher] = matcher
-        self.expected : typing.Final[str] = expected
-
-    @override
-    def match(self, inst : Instruction | str) -> InstructionMatch | None:
-        if (matched := self.matcher.match(inst = inst)) is not None:
-            if matched.operands[-1] == self.expected:
-                return matched
-        return None
-
 class AtomicReleaseMatcher:
     """
     Matcher for the release of a lock through an atomic exchange.
@@ -95,13 +79,13 @@ class AtomicReleaseMatcher:
     """
     @classmethod
     def build(cls, arch : NVIDIAArch, compiler_id : str) -> InstructionMatcher:
-        return instruction_is(RegisterValidator(AtomicMatcher(
+        return instruction_is(AtomicMatcher(
             memory = get_atomic_memory_suffix(compiler_id = compiler_id),
             arch = arch,
             operation = 'EXCH',
             scope = 'DEVICE',
             consistency = 'STRONG',
-        ), 'RZ'))
+        )).with_operand(index = -1, operand = 'RZ')
 
 class DeviceAtomicThreadFenceMatcher:
     """

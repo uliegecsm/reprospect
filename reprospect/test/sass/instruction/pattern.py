@@ -47,7 +47,6 @@ import semantic_version
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass         import Instruction
-from reprospect.tools.sass.decode  import RegisterType
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -306,36 +305,6 @@ def check_memory_instruction_word_size(*, size : int) -> None:
     ALLOWABLE_SIZES : typing.Final[tuple[int, ...]] = (1, 2, 4, 8, 16, 32) # pylint: disable=invalid-name
     if size not in ALLOWABLE_SIZES:
         raise RuntimeError(f'{size} is not an allowable memory instruction word size ({ALLOWABLE_SIZES} (in bytes)).')
-
-REGISTER_MATCH : typing.Final[regex.Pattern[str]] = regex.compile(
-    r'^(?P<rtype>(R|UR|P|UP))'
-    r'((?P<special>(T|Z))|(?P<index>\d+))?'
-    r'(?P<reuse>\.reuse)?$'
-)
-
-@dataclasses.dataclass(frozen = True, slots = True)
-class RegisterMatch:
-    rtype : RegisterType
-    index : int
-    reuse : bool = False
-
-    @classmethod
-    def parse(cls, value : str) -> 'RegisterMatch':
-        """
-        Parse an operand, assuming it is a register.
-
-        >>> from reprospect.test.sass.instruction import RegisterMatch
-        >>> RegisterMatch.parse('UR12')
-        RegisterMatch(rtype=<RegisterType.UGPR: 'UR'>, index=12, reuse=False)
-        """
-        if (matched := REGISTER_MATCH.match(value)) is not None:
-            if matched['index'] or matched['special']:
-                return cls(
-                    rtype = RegisterType(matched['rtype']),
-                    index = int(matched['index']) if matched['index'] else -1,
-                    reuse = bool(matched.group('reuse')),
-                )
-        raise ValueError(f'Invalid register format {value!r}.')
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class InstructionMatch:

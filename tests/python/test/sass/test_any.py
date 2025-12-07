@@ -38,6 +38,7 @@ class TestAnyMatcher:
         'RET.REL.NODEC R4 0x0' : InstructionMatch(opcode = 'RET', modifiers = ('REL', 'NODEC'), operands = ('R4', '0x0')),
         '@!PT LDS RZ, [RZ]' : InstructionMatch(predicate = '@!PT', opcode = 'LDS', modifiers = (), operands = ('RZ', '[RZ]')),
         'HMUL2 R0, R2.H0_H0, R3.H0_H0' : InstructionMatch(opcode = 'HMUL2', modifiers = (), operands = ('R0', 'R2.H0_H0', 'R3.H0_H0')),
+        'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ' : InstructionMatch(opcode = 'UIADD3', modifiers = (), operands = ('UR5', 'UPT', 'UPT', '-UR4', 'UR9', 'URZ')),
     }
     """
     Zoo of real SASS instructions.

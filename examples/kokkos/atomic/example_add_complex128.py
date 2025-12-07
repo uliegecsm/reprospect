@@ -8,7 +8,7 @@ from reprospect.test.sass.instruction    import InstructionMatch, \
                                                 OpcodeModsMatcher, \
                                                 OpcodeModsWithOperandsMatcher, \
                                                 PatternBuilder, \
-                                                RegisterMatch
+                                                RegisterMatcher
 from reprospect.tools.sass               import Decoder
 
 from examples.kokkos.atomic import add, desul
@@ -29,7 +29,9 @@ class AddKokkosComplexDouble:
     def build(self, load : InstructionMatch) -> UnorderedInSequenceMatcher:
         load_register = load.operands[0]
 
-        parsed = RegisterMatch.parse(load_register)
+        parsed = RegisterMatcher(special = False).match(load_register)
+        assert parsed is not None
+        assert parsed.index is not None
 
         dadd_real_reg = load_register
         dadd_imag_reg = f'{parsed.rtype}{parsed.index + 2}'

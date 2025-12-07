@@ -2,7 +2,7 @@ import sys
 import typing
 
 from reprospect.test.sass.composite_impl import SequenceMatcher
-from reprospect.test.sass.instruction    import InstructionMatch, OpcodeModsWithOperandsMatcher, PatternBuilder, RegisterMatch
+from reprospect.test.sass.instruction    import InstructionMatch, OpcodeModsWithOperandsMatcher, PatternBuilder, RegisterMatcher
 from reprospect.tools.sass.decode        import Instruction
 
 if sys.version_info >= (3, 12):
@@ -57,8 +57,10 @@ class AddInt128(SequenceMatcher):
 
         matched.append(matched_iadd_step_0)
 
-        iadd_step_0_reg_0 = RegisterMatch.parse(matched_iadd_step_0.operands[-2])
-        iadd_step_0_reg_1 = RegisterMatch.parse(matched_iadd_step_0.operands[-1])
+        iadd_step_0_reg_0 = RegisterMatcher(special = False).match(matched_iadd_step_0.operands[-2])
+        assert iadd_step_0_reg_0 is not None and iadd_step_0_reg_0.index is not None
+        iadd_step_0_reg_1 = RegisterMatcher(special = False).match(matched_iadd_step_0.operands[-1])
+        assert iadd_step_0_reg_1 is not None and iadd_step_0_reg_1.index is not None
 
         matcher_iadd_step_1 = OpcodeModsWithOperandsMatcher(
             opcode = 'IADD', modifiers = ('64',),
@@ -131,7 +133,8 @@ class AddInt128(SequenceMatcher):
 
         matched.append(matched_iadd3_step_0)
 
-        iadd3_step_0_reg = RegisterMatch.parse(matched_iadd3_step_0.operands[0])
+        iadd3_step_0_reg = RegisterMatcher(special = False).match(matched_iadd3_step_0.operands[0])
+        assert iadd3_step_0_reg is not None and iadd3_step_0_reg.index is not None
         iadd3_step_1_reg = f'{iadd3_step_0_reg.rtype}{iadd3_step_0_reg.index + 1}'
 
         matcher_iadd3_step_1 = OpcodeModsWithOperandsMatcher(

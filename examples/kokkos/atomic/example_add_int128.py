@@ -7,7 +7,8 @@ from reprospect.test.sass.composite_impl import OrderedInSequenceMatcher, Sequen
 from reprospect.test.sass.instruction    import AtomicMatcher, \
                                                 InstructionMatch, \
                                                 ReductionMatcher, \
-                                                RegisterMatch
+                                                RegisterMatch, \
+                                                RegisterMatcher
 from reprospect.test.sass.matchers       import add_int128
 from reprospect.tools.sass               import Decoder, Instruction
 
@@ -25,14 +26,16 @@ class RegisterMatchValidator(SequenceMatcher):
     def __init__(self, matcher : add_int128.AddInt128, load : InstructionMatch) -> None:
         self.matcher : typing.Final[add_int128.AddInt128] = matcher
         """Inner matcher."""
-        self.load_register : typing.Final[RegisterMatch] = RegisterMatch.parse(load.operands[0])
+        matched = RegisterMatcher().match(load.operands[0])
+        assert matched is not None
+        self.load_register : typing.Final[RegisterMatch] = matched
         """The register that must be used by :py:attr:`matcher`."""
+        self.start_register_matcher : typing.Final[RegisterMatcher] = RegisterMatcher(rtype = self.load_register.rtype, index = self.load_register.index)
 
     @override
     def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         if (matched := self.matcher.match(instructions)) is not None:
-            start_register = RegisterMatch.parse(matched[0].additional['start'][0])
-            if self.load_register.rtype == start_register.rtype and self.load_register.index == start_register.index:
+            if self.start_register_matcher.match(matched[0].additional['start'][0]) is not None:
                 return matched
         return None
 

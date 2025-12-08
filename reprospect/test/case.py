@@ -1,6 +1,5 @@
 import abc
 import pathlib
-import typing
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries     import CuppFilt, LlvmCppFilt
@@ -33,7 +32,7 @@ class TestCase(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def demangler(self) -> typing.Type[CuppFilt | LlvmCppFilt]:
+    def demangler(self) -> type[CuppFilt | LlvmCppFilt]:
         """
         Demangler.
         """

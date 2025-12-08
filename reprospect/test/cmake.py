@@ -10,7 +10,7 @@ from reprospect.tools.binaries        import CuppFilt, LlvmCppFilt
 from reprospect.utils                 import cmake
 from reprospect.utils.compile_command import get_arch_from_compile_command
 
-def get_demangler_for_compiler(compiler_id : str) -> typing.Type[CuppFilt | LlvmCppFilt]:
+def get_demangler_for_compiler(compiler_id : str) -> type[CuppFilt | LlvmCppFilt]:
     """
     Get demangler for compiler with given id.
     """
@@ -52,12 +52,12 @@ class CMakeMixin(abc.ABC):
 
         See also https://cmake.org/cmake/help/latest/variable/CMAKE_EXPORT_COMPILE_COMMANDS.html.
         """
-        with open(self.CMAKE_BINARY_DIR / 'compile_commands.json', 'r', encoding = 'utf-8') as fin:
+        with open(self.CMAKE_BINARY_DIR / 'compile_commands.json', encoding = 'utf-8') as fin:
             commands = json.load(fin)
         target_source = next(self.target_sources)
         archs = get_arch_from_compile_command(cmd = next(filter(
             lambda x: str(target_source) in x['file'],
-            commands))['command']
+            commands))['command'],
         )
         assert len(archs) == 1
         return archs.pop()
@@ -74,11 +74,11 @@ class CMakeMixin(abc.ABC):
         return self.cmake_file_api.target(self.get_target_name())
 
     @functools.cached_property
-    def target_sources(self) -> typing.Iterator[pathlib.Path]:
+    def target_sources(self) -> typing.Generator[pathlib.Path, None, None]:
         """
         Retrieve the target source from the CMake codemodel database.
         """
-        return map(lambda source: pathlib.Path(source['path']), self.target['sources'])
+        return (pathlib.Path(source['path']) for source in self.target['sources'])
 
     @functools.cached_property
     def executable(self) -> pathlib.Path:
@@ -95,5 +95,5 @@ class CMakeMixin(abc.ABC):
         return self.cmake_file_api.toolchains
 
     @functools.cached_property
-    def demangler(self) -> typing.Type[CuppFilt | LlvmCppFilt]:
+    def demangler(self) -> type[CuppFilt | LlvmCppFilt]:
         return get_demangler_for_compiler(self.toolchains['CUDA']['compiler']['id'])

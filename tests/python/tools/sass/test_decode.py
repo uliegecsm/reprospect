@@ -117,7 +117,7 @@ class TestDecoder:
             sass.Instruction(
                 offset = int('00c0', base = 16), instruction = 'FFMA R7, R2, c[0x0][0x160], R7',
                 hex = '0x0000580002077a23',
-                control = sass.ControlCode(stall_count = 8, yield_flag = False, read = 7, write = 7, wait = [False, False, True, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False}))
+                control = sass.ControlCode(stall_count = 8, yield_flag = False, read = 7, write = 7, wait = [False, False, True, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False})),
         ], decoder.instructions
 
     def test_ISETP(self) -> None:
@@ -129,8 +129,8 @@ class TestDecoder:
             sass.Instruction(
                 offset = int('00c0', base = 16), instruction = 'ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT',
                 hex = '0x000000ff0000720c',
-                control = sass.ControlCode(stall_count = 2, yield_flag = True, read = 7, write = 7, wait = [False] * 6, reuse = {'A' : True, 'B' : False, 'C' : False, 'D' : False})
-            )
+                control = sass.ControlCode(stall_count = 2, yield_flag = True, read = 7, write = 7, wait = [False] * 6, reuse = {'A' : True, 'B' : False, 'C' : False, 'D' : False}),
+            ),
         ], decoder.instructions
 
     def test_from_source(self) -> None:
@@ -251,7 +251,7 @@ class TestDecoder:
 
         current = True
 
-        for d1281i, d1300i in zip(d1281.instructions, d1300.instructions):
+        for d1281i, d1300i in zip(d1281.instructions, d1300.instructions, strict = True):
             assert d1281i.instruction == d1300i.instruction
             assert d1281i.control.stall_count == d1300i.control.stall_count
             assert d1281i.control.yield_flag == d1300i.control.yield_flag

@@ -68,7 +68,7 @@ class Command: # pylint: disable=too-many-instance-attributes
             '--force-overwrite', '-o', self.output,
             '--log-file', self.log,
             self.executable,
-            *(self.args if self.args else ()),
+            *(self.args or ()),
         ))
 
     def run(self, *,
@@ -125,7 +125,7 @@ class Session:
             except subprocess.CalledProcessError:
                 retry_allowed = False
                 if retry > 0 and self.command.log.is_file():
-                    with open(self.command.output.with_suffix('.log'), mode = 'r', encoding = 'utf-8') as fin:
+                    with open(self.command.output.with_suffix('.log'), encoding = 'utf-8') as fin:
                         for line in fin:
                             if line.startswith('==ERROR== Profiling failed because a driver resource was unavailable.'):
                                 logging.warning('Retrying because a driver resource was unavailable.')
@@ -136,7 +136,7 @@ class Session:
                     logging.exception(
                         f"Failed launching 'ncu' with {self.command.cmd}."
                         "\n"
-                        f"{self.command.log.read_text(encoding = 'utf-8') if self.command.log.is_file() else ''}"
+                        f"{self.command.log.read_text(encoding = 'utf-8') if self.command.log.is_file() else ''}",
                     )
                     raise
                 sleep_for = sleep(retry, retries)

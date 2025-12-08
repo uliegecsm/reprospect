@@ -90,7 +90,7 @@ class Cuda:
             assert cls.libcuda is not None
             error_name, error_msg = status.get(libcuda = cls.libcuda)
             raise RuntimeError(
-                f"{info} failed with error code {status} ({error_name}): {error_msg}"
+                f"{info} failed with error code {status} ({error_name}): {error_msg}",
             )
 
     @classmethod
@@ -102,7 +102,7 @@ class Cuda:
             assert cls.libcudart is not None
             error_name, error_msg = status.get(libcudart = cls.libcudart)
             raise RuntimeError(
-                f"{info} failed with error code {status} ({error_name}): {error_msg}"
+                f"{info} failed with error code {status} ({error_name}): {error_msg}",
             )
 
     @classmethod
@@ -146,7 +146,7 @@ class Cuda:
         self.check_runtime_api_call(func = 'cudaGetDeviceCount')(ctypes.byref(count))
         return count.value
 
-    def get_device_attribute(self, *, value_type : typing.Type, attribute : cuda.bindings.driver.CUdevice_attribute, device : int) -> typing.Any:
+    def get_device_attribute(self, *, value_type : type, attribute : cuda.bindings.driver.CUdevice_attribute, device : int) -> typing.Any:
         """
         Retrieve an attribute of `device`.
         """

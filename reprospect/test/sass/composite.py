@@ -34,9 +34,9 @@ class Fluentizer(instruction.InstructionMatcher):
             If `num` is 0, it tests for the absence of a match.
         """
         if num < 0:
-            raise RuntimeError()
+            raise RuntimeError
         if num == 0:
-            raise NotImplementedError()
+            raise NotImplementedError
         if num == 1:
             return composite_impl.InSequenceAtMatcher(matcher = self.matcher)
         return composite_impl.OrderedInSequenceMatcher(matchers = (self.matcher,) * num)
@@ -83,7 +83,7 @@ class Fluentizer(instruction.InstructionMatcher):
         """
         return Fluentizer(matcher = composite_impl.OperandsValidator(
             matcher = self,
-            operands = operands
+            operands = operands,
         ))
 
     @override

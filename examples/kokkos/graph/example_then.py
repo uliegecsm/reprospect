@@ -46,7 +46,7 @@ class TestELF(TestThen):
             r'reprospect::examples::kokkos::graph::Functor<'
             r'Kokkos::View<int, Kokkos::CudaUVMSpace>>>, '
             rf'Kokkos::RangePolicy<Kokkos::Cuda, Kokkos::Impl::IsGraphKernelTag, Kokkos::LaunchBounds<{one}, {zero}>>, '
-            rf'Kokkos::Cuda>, {one}, {zero}>\({arg}\)'
+            rf'Kokkos::Cuda>, {one}, {zero}>\({arg}\)',
         )
 
     def test_max_threads_1_1_1(self) -> None:

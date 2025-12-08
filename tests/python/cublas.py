@@ -31,7 +31,7 @@ class CuBLAS:
         :raises IndexError: If `randomly` is :py:obj:`True` but there is no embedded cubin for `arch`.
         """
         name : typing.Final[str | None] = random.choice(
-            tuple(CuObjDump.list_elf(arch = arch, file = self.libcublas))
+            tuple(CuObjDump.list_elf(arch = arch, file = self.libcublas)),
         ) if randomly else None
 
         return tuple(

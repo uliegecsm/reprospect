@@ -151,7 +151,7 @@ class NVIDIAArch:
         """
         if NVIDIAFamily.from_compute_capability(self.compute_capability) != self.family:
             raise ValueError(
-                f"Compute capability {self.compute_capability} does not match family {self.family.name}."
+                f"Compute capability {self.compute_capability} does not match family {self.family.name}.",
             )
 
     @property

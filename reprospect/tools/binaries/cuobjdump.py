@@ -136,8 +136,9 @@ class CuObjDump:
         self,
         file : pathlib.Path,
         arch : NVIDIAArch,
+        *,
         sass : bool = True,
-        demangler : typing.Type[CuppFilt | LlvmCppFilt] | None = CuppFilt,
+        demangler : type[CuppFilt | LlvmCppFilt] | None = CuppFilt,
         keep : typing.Iterable[str] | None = None,
     ) -> None:
         """
@@ -150,7 +151,7 @@ class CuObjDump:
         if sass:
             self.parse_sass(demangler = demangler, keep = keep)
 
-    def parse_sass(self, demangler : typing.Type[CuppFilt | LlvmCppFilt] | None = None, keep : typing.Iterable[str] | None = None) -> None:
+    def parse_sass(self, demangler : type[CuppFilt | LlvmCppFilt] | None = None, keep : typing.Iterable[str] | None = None) -> None:
         """
         Parse SASS from :py:attr:`file`.
         """
@@ -267,7 +268,7 @@ class CuObjDump:
             cmd.append(name)
 
         if arch is not None:
-            cmd.extend(('--gpu-architecture', arch.as_sm,))
+            cmd.extend(('--gpu-architecture', arch.as_sm))
 
         cmd.append(file)
 
@@ -306,7 +307,7 @@ class CuObjDump:
         ]
 
         if arch is not None:
-            cmd.extend(('--gpu-architecture', arch.as_sm,))
+            cmd.extend(('--gpu-architecture', arch.as_sm))
 
         cmd.append(file)
 

@@ -98,7 +98,7 @@ class TestInstructionsAre:
         matcher = instructions_are(
             Fp32AddMatcher(),
             instruction_is(OpcodeModsMatcher(opcode = 'NOP', operands = False)).zero_or_more_times(),
-            Fp32AddMatcher()
+            Fp32AddMatcher(),
         )
         assert isinstance(matcher, OrderedInSequenceMatcher)
         assert len(matcher.matchers) == 3

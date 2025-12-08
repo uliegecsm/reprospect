@@ -9,9 +9,10 @@ import rich_tools
 
 def to_string(
     ro : rich.table.Table | rich.tree.Tree,
+    *,
     width : int = 200,
     no_wrap : bool = True,
-    **kwargs
+    **kwargs,
 ) -> str:
     """
     Use :py:class:`rich.console.Console` in capture mode to render a :py:mod:`rich`
@@ -33,9 +34,10 @@ def ds_to_table(ds : pandas.Series) -> rich.table.Table:
 
 def df_to_table(
     df : pandas.DataFrame,
+    *,
     rich_table : rich.table.Table | None = None,
     show_index : bool = False,
-    **kwargs
+    **kwargs,
 ) -> rich.table.Table:
     """
     Convert a :py:class:`pandas.DataFrame` to a :py:class:`rich.table.Table`.

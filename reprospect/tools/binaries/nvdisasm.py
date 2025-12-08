@@ -66,7 +66,7 @@ class Function(rich_helpers.TableMixin):
             rt.add_row(
                 reg.name,
                 f'{reg}0-{reg}{info[0] - 1}' if info[0] > 1 else f'{reg}0',
-                str(info[1])
+                str(info[1]),
             )
 
         return rt
@@ -139,7 +139,7 @@ class NVDisasm:
     def __init__(self,
         file : pathlib.Path,
         arch : NVIDIAArch | None = None,
-        demangler : typing.Type[CuppFilt | LlvmCppFilt] = CuppFilt,
+        demangler : type[CuppFilt | LlvmCppFilt] = CuppFilt,
     ) -> None:
         """
         :param arch: Optionally check that `file` is a CUDA binary file for that `arch`.
@@ -247,7 +247,7 @@ class NVDisasm:
                         ):
                             sections = tuple(x.strip() for x in line[start + matched.span()[1]-1::].strip().rstrip('|').split('|'))
                             positions = {}
-                            for reg_type, section in zip(reg_types, sections):
+                            for reg_type, section in zip(reg_types, sections, strict = True):
                                 matches = re.finditer(r'\d+', section)
                                 if matches is None:
                                     raise RuntimeError(f'No register positions found for {reg_type} in section "{section}"')
@@ -262,7 +262,7 @@ class NVDisasm:
                             and (matched := re.match(pattern = r'^\/\/ \| (?:[0-9]+)?', string = line[start:])) is not None
                         ):
                             sections = tuple(x.strip() for x in line[start + matched.span()[1]-1::].strip().rstrip('|').split('|'))
-                            for reg_type, section in zip(reg_types, sections):
+                            for reg_type, section in zip(reg_types, sections, strict = True):
                                 offset = len(section) - len(section.lstrip('0123456789')) - 1
                                 statuses_as_str = tuple(
                                     section[pos[0] + offset:pos[1] + offset].strip()
@@ -271,7 +271,7 @@ class NVDisasm:
                                 statuses = tuple(RegisterState(s) if s else RegisterState.NOT_IN_USE for s in statuses_as_str)
                                 used[reg_type] = tuple(
                                     already_used or status.used
-                                    for already_used, status in zip(used[reg_type], statuses)
+                                    for already_used, status in zip(used[reg_type], statuses, strict = True)
                                 )
                         elif re.match(cls.TABLE_CUT, line) is not None:
                             continue

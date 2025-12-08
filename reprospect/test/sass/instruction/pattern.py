@@ -187,7 +187,7 @@ class PatternBuilder:
         return cls.group(cls.UREG, group = 'operands')
 
     @classmethod
-    def anygpreg(cls, reuse : bool | None = None, group : str | None = None) -> str:
+    def anygpreg(cls, *, reuse : bool | None = None, group : str | None = None) -> str:
         """
         Match any general purpose register.
         """
@@ -208,7 +208,7 @@ class PatternBuilder:
         return cls.group(cls.PREDT, group = 'operands')
 
     @classmethod
-    def constant(cls, additional : bool = False) -> str:
+    def constant(cls, *, additional : bool = False) -> str:
         """
         :py:attr:`CONSTANT` with `operands` group.
 
@@ -263,7 +263,7 @@ class PatternBuilder:
         return rf'{op}(?:\s*,\s*{op})*'
 
     @classmethod
-    def address(cls, store : str, offset : bool | None = None) -> str:
+    def address(cls, store : str, *, offset : bool | None = None) -> str:
         """
         Address operand. A few examples:
 
@@ -281,7 +281,7 @@ class PatternBuilder:
         return rf"\[{cls.groups(store, groups = ('operands', 'address'))}\]"
 
     @classmethod
-    def desc_reg64_addr(cls, offset : bool | None = None) -> str:
+    def desc_reg64_addr(cls, *, offset : bool | None = None) -> str:
         """
         Address operand with cache policy descriptor, like ``desc[UR0][R0.64+0x10]``.
 
@@ -396,7 +396,7 @@ def floating_point_add_pattern(*, ftype : typing.Literal['F', 'D']) -> regex.Pat
             PatternBuilder.mathreg(), PatternBuilder.ureg(),
             PatternBuilder.constant(),
             PatternBuilder.immediate(),
-        )
+        ),
     )
 
 class Fp32AddMatcher(PatternMatcher):
@@ -499,6 +499,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
 
     def __init__(self,
         arch : NVIDIAArch,
+        *,
         size : int | None = None,
         readonly : bool | None = None,
         memory : str | None = 'G',
@@ -541,7 +542,7 @@ class LoadGlobalMatcher(LoadMatcher):
     """
     Specialization of :py:class:`LoadMatcher` for global memory (``LDG``).
     """
-    def __init__(self, arch : NVIDIAArch, size : int | None = None, readonly : bool | None = None, extend : ExtendBitsMethod | None = None) -> None:
+    def __init__(self, arch : NVIDIAArch, *, size : int | None = None, readonly : bool | None = None, extend : ExtendBitsMethod | None = None) -> None:
         super().__init__(arch = arch, size = size, readonly = readonly, memory = 'G', extend = extend)
 
 class LoadConstantMatcher(PatternMatcher):
@@ -556,7 +557,7 @@ class LoadConstantMatcher(PatternMatcher):
 
     TEMPLATE : typing.Final[str] = f'{{opcode}} {{dest}}, {CONSTANT}'
 
-    def __init__(self, uniform : bool | None = None, size : int | None = None) -> None:
+    def __init__(self, *, uniform : bool | None = None, size : int | None = None) -> None:
         """
         :param size: Optional bit size (*e.g.*, 32, 64, 128).
         :param uniform: Optionally require uniformness.

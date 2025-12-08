@@ -34,7 +34,7 @@ class TestGetArchFromCompileCommand:
             assert get_arch_from_compile_command(cmd = command) == arch
 
     def test_from_compile_commands_json(self, cmake_file_api) -> None:
-        with open(pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'compile_commands.json', 'r', encoding = 'utf-8') as fin:
+        with open(pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'compile_commands.json', encoding = 'utf-8') as fin:
             compile_commands = json.load(fin)
 
         command = [x for x in compile_commands if x['file'].endswith('tests/cpp/cuda/test_saxpy.cpp')]

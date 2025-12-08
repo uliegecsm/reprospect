@@ -40,13 +40,13 @@ class AddKokkosComplexDouble:
             operands = (
                 dadd_real_reg, dadd_real_reg,
                 PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
-            )
+            ),
         )
         matcher_dadd_imag = OpcodeModsWithOperandsMatcher(opcode = 'DADD',
             operands = (
                 dadd_imag_reg, dadd_imag_reg,
                 PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
-            )
+            ),
         )
 
         return unordered_instructions_are(
@@ -69,7 +69,7 @@ class TestAtomicAddComplex128(add.TestCase):
         return 'examples_kokkos_atomic_add_complex128'
 
     SIGNATURE_MATCHER : typing.ClassVar[re.Pattern[str]] = re.compile(
-        r'AtomicAddFunctor<Kokkos::View<Kokkos::complex<double>\s*\*\s*, Kokkos::CudaSpace>>'
+        r'AtomicAddFunctor<Kokkos::View<Kokkos::complex<double>\s*\*\s*, Kokkos::CudaSpace>>',
     )
 
     def test_lock_based_atomic(self, decoder : Decoder) -> None:

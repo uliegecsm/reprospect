@@ -184,7 +184,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
                 matched_atomic_acquire[-1].operands[1],
                 PatternBuilder.REGZ,
                 PatternBuilder.PREDT,
-            )
+            ),
         )
 
         matched_isetp_enter = matcher_isetp_enter.match(instructions[offset])

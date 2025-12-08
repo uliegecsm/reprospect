@@ -12,11 +12,11 @@ class TestGPUDetector:
     """
     Tests for :py:class:`reprospect.utils.detect.GPUDetector`.
     """
-    OUTPUT = """\
+    OUTPUT = b"""\
 index, uuid, name, compute_cap
 0, GPU-12345678-1234-1234-1234-123456789012, NVIDIA GeForce RTX 3090, 8.6
 1, GPU-87654321-4321-4321-4321-210987654321, NVIDIA A100-SXM4-40GB, 8.0
-""".encode()
+"""
 
     def test_detect_gpus(self) -> None:
         """

@@ -298,7 +298,7 @@ class Report:
             return cls.single_row(data = dst[dst[correlation_dst] == src[correlation_src]])
         if isinstance(src, pandas.DataFrame) and selector is not None:
             return cls.single_row(data = dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
-        raise RuntimeError()
+        raise RuntimeError
 
     @classmethod
     def get_correlated_rows(cls, *,
@@ -315,7 +315,7 @@ class Report:
             return dst[dst[correlation_dst] == src[correlation_src]]
         if isinstance(src, pandas.DataFrame) and selector is not None:
             return dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]]
-        raise RuntimeError()
+        raise RuntimeError
 
     @functools.cached_property
     def nvtx_events(self) -> ReportNvtxEvents:
@@ -341,12 +341,13 @@ class Report:
         # Get NVTX_EVENTS columns schema metadata, and remove the 'text'.
         # It is the only way to query all columns, while avoiding that the 'COALESCE'
         # duplicates the 'text' row (which would happen if selecting 'NVTX_EVENTS.*').
-        columns_but_text = ", ".join(map(
-            lambda x: f'NVTX_EVENTS.{x}',
+        columns_but_text = ", ".join(
+            f'NVTX_EVENTS.{x}'
+            for x in
             filter(
                 lambda x: x != 'text',
-                pandas.read_sql_query("PRAGMA table_info(NVTX_EVENTS);", self.conn)['name']
-        )))
+                pandas.read_sql_query("PRAGMA table_info(NVTX_EVENTS);", self.conn)['name'],
+        ))
 
         query = f"""
 SELECT {columns_but_text},
@@ -430,7 +431,7 @@ def strip_cuda_api_suffix(call : str) -> str:
     """
     Strip suffix like `_v10000` or `_ptsz` from a CUDA API `call`.
     """
-    return call.split('_')[0]
+    return call.split('_', maxsplit = 1)[0]
 
 class Cacher(cacher.Cacher):
     """

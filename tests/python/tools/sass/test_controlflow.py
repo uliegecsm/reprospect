@@ -25,7 +25,7 @@ class TestGraph:
         Instruction(offset = 0, instruction = 'NOP',                        hex = '0x2', control = CONTROLCODE),
     )
 
-    @pytest.fixture(scope = 'function')
+    @pytest.fixture
     def cfg(self) -> Graph:
         return Graph()
 

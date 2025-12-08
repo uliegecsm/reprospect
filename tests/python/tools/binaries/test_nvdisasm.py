@@ -123,9 +123,9 @@ class TestNVDisasm:
             with self.SASS_ANNOTATED_FILE.open('r', encoding = 'utf-8') as fin:
                 function = NVDisasm.parse_sass_with_liveness_range_info(
                     function_mangled = self.SYMBOL,
-                    sass = iter(fin)
+                    sass = iter(fin),
                 )
-            assert function.registers == {RegisterType.GPR : (8, 7), RegisterType.PRED : (1, 1), RegisterType.UGPR : (7, 3),}
+            assert function.registers == {RegisterType.GPR : (8, 7), RegisterType.PRED : (1, 1), RegisterType.UGPR : (7, 3)}
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     class TestMany:
@@ -169,23 +169,23 @@ class TestNVDisasm:
             match parameters.arch.compute_capability.as_int:
                 case 70 | 75:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (2, 2),},
-                        self.SYMBOLS[1] : {RegisterType.GPR : (12,  9), RegisterType.PRED : (1, 1),},
+                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (2, 2)},
+                        self.SYMBOLS[1] : {RegisterType.GPR : (12,  9), RegisterType.PRED : (1, 1)},
                     }
                 case 80 | 86 | 89:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (2, 2),},
-                        self.SYMBOLS[1] : {RegisterType.GPR : (12,  9), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2),},
+                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (2, 2)},
+                        self.SYMBOLS[1] : {RegisterType.GPR : (12,  9), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2)},
                     }
                 case 90 | 100:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (1, 1), RegisterType.UGPR : (8, 4),},
-                        self.SYMBOLS[1] : {RegisterType.GPR : (12, 10), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2),},
+                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (1, 1), RegisterType.UGPR : (8, 4)},
+                        self.SYMBOLS[1] : {RegisterType.GPR : (12, 10), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2)},
                     }
                 case 120:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18),                             RegisterType.UGPR : (8, 4),},
-                        self.SYMBOLS[1] : {RegisterType.GPR : (12, 10), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2),},
+                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18),                             RegisterType.UGPR : (8, 4)},
+                        self.SYMBOLS[1] : {RegisterType.GPR : (12, 10), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2)},
                     }
                 case _:
                     raise ValueError(f'unsupported {parameters.arch.compute_capability}')
@@ -202,18 +202,18 @@ class TestNVDisasm:
             self,
             file : pathlib.Path,
             arch : NVIDIAArch | None = None,
-            demangler : typing.Type[CuppFilt | LlvmCppFilt] = CuppFilt
+            demangler : type[CuppFilt | LlvmCppFilt] = CuppFilt,
         ) -> None:
             self.file = file
             self.arch = arch
             self.demangler = demangler
             self.functions = {
                 'my_kernel(float, const float *, float *, unsigned int)' : Function(
-                    registers = TestFunction.REGISTERS
+                    registers = TestFunction.REGISTERS,
                 ),
                 'my_other_kernel(float, const float *, float *, unsigned int)' : Function(
-                    registers = TestFunction.REGISTERS
-                )
+                    registers = TestFunction.REGISTERS,
+                ),
             }
 
         with unittest.mock.patch.object(NVDisasm, '__init__', mock_init):

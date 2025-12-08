@@ -175,7 +175,7 @@ class InSequenceMatcher(SequenceMatcher):
 
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    __slots__ = ('matcher', 'index',)
+    __slots__ = ('matcher', 'index')
 
     def __init__(self, matcher : SequenceMatcher | InstructionMatcher) -> None:
         self.matcher : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = [matcher])
@@ -201,7 +201,7 @@ class AnyOfMatcher(SequenceMatcher):
 
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    __slots__ = ('matchers', 'index',)
+    __slots__ = ('matchers', 'index')
 
     def __init__(self, *matchers : SequenceMatcher | InstructionMatcher) -> None:
         self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)

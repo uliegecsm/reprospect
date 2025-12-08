@@ -61,7 +61,7 @@ class Cacher(abc.ABC):
 
         self.file = self.directory / 'cache.db'
 
-        self.database : typing.Optional[sqlite3.Connection] = None
+        self.database : sqlite3.Connection | None = None
 
     def __enter__(self) -> Self:
         """

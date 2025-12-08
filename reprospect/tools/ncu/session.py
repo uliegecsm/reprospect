@@ -90,8 +90,8 @@ class Session:
 
     def run(
         self,
-        cwd : typing.Optional[pathlib.Path] = None,
-        env : typing.Optional[typing.MutableMapping] = None,
+        cwd : pathlib.Path | None = None,
+        env : typing.MutableMapping | None = None,
         retries : int = 1,
         sleep : typing.Callable[[int, int], float] = lambda retry, retries: 3. * (1. - retry / retries),
     ) -> None:

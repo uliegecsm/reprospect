@@ -231,7 +231,7 @@ class Decoder(rich_helpers.TableMixin):
     These strings are ignored.
     """
 
-    def __init__(self, source : typing.Optional[pathlib.Path] = None, code : typing.Optional[str] = None, skip_until_headerflags : bool = True) -> None:
+    def __init__(self, source : pathlib.Path | None = None, code : str | None = None, skip_until_headerflags : bool = True) -> None:
         """
         Initialize the decoder with the SASS contained in `source` or `code`.
         """

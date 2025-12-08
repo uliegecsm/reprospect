@@ -43,7 +43,7 @@ class Cacher(cacher.Cacher):
     """
     TABLE : typing.ClassVar[str] = 'ncu'
 
-    def __init__(self, *, directory : typing.Optional[str | pathlib.Path] = None):
+    def __init__(self, *, directory : str | pathlib.Path | None = None):
         super().__init__(directory = directory or (pathlib.Path(os.environ['HOME']) / '.ncu-cache'))
 
     def hash_impl(self, *, command : Command) -> blake3.blake3:

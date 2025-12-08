@@ -15,17 +15,17 @@ class EnvironmentField(typing.Generic[T]):
     * https://docs.python.org/3/howto/descriptor.html
     * https://mypy.readthedocs.io/en/stable/generics.html#defining-generic-classes
     """
-    env : typing.Optional[str] = None
+    env : str | None = None
     """
     Name of the environment variable.
     """
 
-    converter : typing.Optional[typing.Callable[[str], T]] = None
+    converter : typing.Callable[[str], T] | None = None
     """
     Callable to convert the value of the environment variable to the target type.
     """
 
-    default : typing.Optional[T] = None
+    default : T | None = None
     """
     Default value if the environment variable does not exist.
     """

@@ -72,7 +72,7 @@ class ComputeCapability:
             return self.as_int == other
         return NotImplemented
 
-    def __lt__(self, other : typing.Union[int, 'ComputeCapability']) -> bool:
+    def __lt__(self, other : int | 'ComputeCapability') -> bool:
         if isinstance(other, ComputeCapability):
             return (self.major, self.minor) < (other.major, other.minor)
         if isinstance(other, int):

@@ -187,7 +187,7 @@ class PatternBuilder:
         return cls.group(cls.UREG, group = 'operands')
 
     @classmethod
-    def anygpreg(cls, reuse : typing.Optional[bool] = None, group : typing.Optional[str] = None) -> str:
+    def anygpreg(cls, reuse : bool | None = None, group : str | None = None) -> str:
         """
         Match any general purpose register.
         """
@@ -237,7 +237,7 @@ class PatternBuilder:
         return cls.group(s = cls.PREDICATE, group = 'predicate')
 
     @staticmethod
-    def opcode_mods(opcode : str, modifiers : typing.Optional[typing.Iterable[int | str | None]] = None) -> str:
+    def opcode_mods(opcode : str, modifiers : typing.Iterable[int | str | None] | None = None) -> str:
         """
         Append each modifier with a `.`, within a proper named capture group.
 
@@ -263,7 +263,7 @@ class PatternBuilder:
         return rf'{op}(?:\s*,\s*{op})*'
 
     @classmethod
-    def address(cls, store : str, offset : typing.Optional[bool] = None) -> str:
+    def address(cls, store : str, offset : bool | None = None) -> str:
         """
         Address operand. A few examples:
 
@@ -281,7 +281,7 @@ class PatternBuilder:
         return rf"\[{cls.groups(store, groups = ('operands', 'address'))}\]"
 
     @classmethod
-    def desc_reg64_addr(cls, offset : typing.Optional[bool] = None) -> str:
+    def desc_reg64_addr(cls, offset : bool | None = None) -> str:
         """
         Address operand with cache policy descriptor, like ``desc[UR0][R0.64+0x10]``.
 
@@ -346,12 +346,12 @@ class InstructionMatcher(abc.ABC):
     Abstract base class for instruction matchers.
     """
     @abc.abstractmethod
-    def match(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
+    def match(self, inst : Instruction | str) -> InstructionMatch | None:
         """
         Check if the instruction matches.
         """
 
-    def __call__(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
+    def __call__(self, inst : Instruction | str) -> InstructionMatch | None:
         """
         Allow the matcher to be called as a function.
         """
@@ -373,7 +373,7 @@ class PatternMatcher(InstructionMatcher):
 
     @override
     @typing.final
-    def match(self, inst : Instruction | str) -> typing.Optional[InstructionMatch]:
+    def match(self, inst : Instruction | str) -> InstructionMatch | None:
         if (matched := self.pattern.match(inst.instruction if isinstance(inst, Instruction) else inst)) is not None:
             return InstructionMatch.parse(bits = matched)
         return None
@@ -449,7 +449,7 @@ class ArchitectureAndVersionAwarePatternMatcher(ArchitectureAwarePatternMatcher)
 
             ATOM.E.ADD.S32.STRONG.CTA PT, RZ, [R2], R5
     """
-    def __init__(self, arch : NVIDIAArch, version : typing.Optional[semantic_version.Version] = None) -> None:
+    def __init__(self, arch : NVIDIAArch, version : semantic_version.Version | None = None) -> None:
         self.version = version if version is not None else semantic_version.Version(os.environ['CUDA_VERSION'])
         super().__init__(arch = arch)
 
@@ -499,8 +499,8 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
 
     def __init__(self,
         arch : NVIDIAArch,
-        size : typing.Optional[int] = None,
-        readonly : typing.Optional[bool] = None,
+        size : int | None = None,
+        readonly : bool | None = None,
         memory : str | None = 'G',
         extend : ExtendBitsMethod | None = None,
     ):
@@ -556,7 +556,7 @@ class LoadConstantMatcher(PatternMatcher):
 
     TEMPLATE : typing.Final[str] = f'{{opcode}} {{dest}}, {CONSTANT}'
 
-    def __init__(self, uniform : typing.Optional[bool] = None, size : typing.Optional[int] = None) -> None:
+    def __init__(self, uniform : bool | None = None, size : int | None = None) -> None:
         """
         :param size: Optional bit size (*e.g.*, 32, 64, 128).
         :param uniform: Optionally require uniformness.
@@ -597,7 +597,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
 
     def __init__(self,
         arch : NVIDIAArch,
-        size : typing.Optional[int] = None,
+        size : int | None = None,
         memory : str | None = 'G',
     ):
         """
@@ -683,9 +683,9 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
     def __init__(self,
         arch : NVIDIAArch,
         operation : str = 'ADD',
-        scope : typing.Optional[ThreadScope] = None,
+        scope : ThreadScope | None = None,
         consistency : str = 'STRONG',
-        dtype : typing.Optional[tuple[str, int]] = None,
+        dtype : tuple[str, int] | None = None,
     ):
         """
         :param dtype: For instance, `('F', 64')` for a floating-point type 64-bits in size or `(S, 32)` for a signed integer type 32-bits in size.
@@ -757,11 +757,11 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
     def __init__(self,
         arch : NVIDIAArch,
         operation : str = 'ADD',
-        scope : typing.Optional[ThreadScope] = None,
+        scope : ThreadScope | None = None,
         consistency : str = 'STRONG',
-        dtype : typing.Optional[tuple[typing.Optional[str], int]] = None,
+        dtype : tuple[str | None, int] | None = None,
         memory : str = 'G',
-        version : typing.Optional[semantic_version.Version] = None,
+        version : semantic_version.Version | None = None,
     ):
         """
         :param dtype: For instance, `('F', 64')` for a floating-point type 64-bits in size or `(S, 32)` for a signed integer type 32-bits in size.
@@ -847,7 +847,7 @@ class OpcodeModsMatcher(PatternMatcher):
     """
     def __init__(self, *,
         opcode : str,
-        modifiers : typing.Optional[typing.Iterable[str]] = None,
+        modifiers : typing.Iterable[str] | None = None,
         operands : bool = True,
     ) -> None:
         pattern = PatternBuilder.opcode_mods(opcode, modifiers)
@@ -903,7 +903,7 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
     def __init__(self, *,
         opcode : str,
         operands : typing.Iterable[str],
-        modifiers : typing.Optional[typing.Iterable[str]] = None,
+        modifiers : typing.Iterable[str] | None = None,
     ) -> None:
         ops_iter = iter(operands)
         ops : str = PatternBuilder.group(next(ops_iter), group = 'operands')
@@ -961,5 +961,5 @@ class BranchMatcher(PatternMatcher):
 
     PATTERN : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(predicate = PREDICATE))
 
-    def __init__(self, predicate : typing.Optional[str] = None):
+    def __init__(self, predicate : str | None = None):
         super().__init__(pattern = self.PATTERN if predicate is None else self.TEMPLATE.format(predicate = PatternBuilder.group(predicate, group = 'predicate')))

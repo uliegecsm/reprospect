@@ -43,8 +43,8 @@ def get_base_name_tag_digest(cuda_version : str, ubuntu_version : str) -> tuple[
 @dataclasses.dataclass(frozen = False, slots = True)
 class Compiler:
     ID : str
-    version : typing.Optional[str] = None
-    path : typing.Optional[str] = None
+    version : str | None = None
+    path : str | None = None
 
 def full_image(*, name : str, tag : str, platform : str, args : argparse.Namespace) -> str:
     """

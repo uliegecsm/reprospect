@@ -58,7 +58,7 @@ class ResourceType(StrEnum):
     SURFACE = 'SURFACE'
     TEXTURE = 'TEXTURE'
 
-class ResourceUsage(dict[ResourceType, typing.Union[int, dict[int, int]]]):
+class ResourceUsage(dict[ResourceType, int | dict[int, int]]):
     """
     Dictionary of resource usage.
     """
@@ -89,7 +89,7 @@ class Function:
     code : str #: The SASS code.
     ru : ResourceUsage #: The resource usage.
 
-    def to_table(self, *, max_code_length : int = 130, descriptors : typing.Optional[dict[str, str]] = None) -> rich.table.Table:
+    def to_table(self, *, max_code_length : int = 130, descriptors : dict[str, str] = None) -> rich.table.Table:
         """
         Convert to a :py:class:`rich.table.Table`.
 
@@ -135,7 +135,7 @@ class CuObjDump:
         file : pathlib.Path,
         arch : NVIDIAArch,
         sass : bool = True,
-        demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = CuppFilt,
+        demangler : typing.Type[CuppFilt | LlvmCppFilt] | None = CuppFilt,
         keep : typing.Iterable[str] | None = None,
     ) -> None:
         """
@@ -148,7 +148,7 @@ class CuObjDump:
         if sass:
             self.parse_sass(demangler = demangler, keep = keep)
 
-    def parse_sass(self, demangler : typing.Optional[typing.Type[CuppFilt | LlvmCppFilt]] = None, keep : typing.Iterable[str] | None = None) -> None:
+    def parse_sass(self, demangler : typing.Type[CuppFilt | LlvmCppFilt] | None = None, keep : typing.Iterable[str] | None = None) -> None:
         """
         Parse SASS from :py:attr:`file`.
         """
@@ -246,9 +246,9 @@ class CuObjDump:
     @staticmethod
     def extract_elf(*,
         file : pathlib.Path,
-        cwd : typing.Optional[pathlib.Path] = None,
-        arch : typing.Optional[NVIDIAArch] = None,
-        name : typing.Optional[str] = None,
+        cwd : pathlib.Path | None = None,
+        arch : NVIDIAArch | None = None,
+        name : str | None = None,
     ) -> typing.Generator[str, None, None]:
         """
         Extract ELF files from `file`.
@@ -292,7 +292,7 @@ class CuObjDump:
         return tuple(self.list_elf(arch = self.arch, file = self.file))
 
     @staticmethod
-    def list_elf(*, file : pathlib.Path, arch : typing.Optional[NVIDIAArch] = None) -> typing.Generator[str, None, None]:
+    def list_elf(*, file : pathlib.Path, arch : NVIDIAArch | None = None) -> typing.Generator[str, None, None]:
         """
         List ELF files in `file`.
 

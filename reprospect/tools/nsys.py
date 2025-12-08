@@ -287,7 +287,7 @@ class Report:
     def get_correlated_row(cls, *,
         src : pandas.DataFrame | pandas.Series,
         dst : pandas.DataFrame,
-        selector : typing.Optional[typing.Callable[[pandas.DataFrame], pandas.Series]] = None,
+        selector : typing.Callable[[pandas.DataFrame], pandas.Series] | None = None,
         correlation_src : str = 'correlationId',
         correlation_dst : str = 'correlationId',
     ) -> pandas.Series:
@@ -304,7 +304,7 @@ class Report:
     def get_correlated_rows(cls, *,
         src : pandas.DataFrame | pandas.Series,
         dst : pandas.DataFrame,
-        selector : typing.Optional[typing.Callable[[pandas.DataFrame], pandas.Series]] = None,
+        selector : typing.Callable[[pandas.DataFrame], pandas.Series] | None = None,
         correlation_src : str = 'correlationId',
         correlation_dst : str = 'correlationId',
     ) -> pandas.DataFrame:
@@ -388,7 +388,7 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
 
         return ReportNvtxEvents(events = events)
 
-    def get_events(self, table : str, accessors : typing.Sequence[str], stringids : typing.Optional[str] = 'nameId') -> pandas.DataFrame:
+    def get_events(self, table : str, accessors : typing.Sequence[str], stringids : str | None = 'nameId') -> pandas.DataFrame:
         """
         Query all rows in `table` that happen between the `start`/`end` time points
         of the nested NVTX range matching `accessors`.

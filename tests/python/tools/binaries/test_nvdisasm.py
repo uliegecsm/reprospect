@@ -201,7 +201,7 @@ class TestNVDisasm:
         def mock_init(
             self,
             file : pathlib.Path,
-            arch : typing.Optional[NVIDIAArch] = None,
+            arch : NVIDIAArch | None = None,
             demangler : typing.Type[CuppFilt | LlvmCppFilt] = CuppFilt
         ) -> None:
             self.file = file

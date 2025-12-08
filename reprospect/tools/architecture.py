@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import functools
 import re
@@ -72,7 +74,7 @@ class ComputeCapability:
             return self.as_int == other
         return NotImplemented
 
-    def __lt__(self, other : int | 'ComputeCapability') -> bool:
+    def __lt__(self, other : int | ComputeCapability) -> bool:
         if isinstance(other, ComputeCapability):
             return (self.major, self.minor) < (other.major, other.minor)
         if isinstance(other, int):
@@ -80,7 +82,7 @@ class ComputeCapability:
         return NotImplemented
 
     @staticmethod
-    def from_int(value : int) -> 'ComputeCapability':
+    def from_int(value : int) -> ComputeCapability:
         """
         >>> from reprospect.tools.architecture import ComputeCapability
         >>> ComputeCapability.from_int(86)
@@ -112,7 +114,7 @@ class NVIDIAFamily(StrEnum):
     BLACKWELL = 'BLACKWELL'
 
     @staticmethod
-    def from_compute_capability(cc : ComputeCapability | int) -> "NVIDIAFamily":
+    def from_compute_capability(cc : ComputeCapability | int) -> NVIDIAFamily:
         """
         Get the NVIDIA architecture family from a compute capability.
 
@@ -174,11 +176,11 @@ class NVIDIAArch:
         return f"{self.family.name}{self.compute_capability.as_int}"
 
     @staticmethod
-    def from_compute_capability(cc : str | int) -> 'NVIDIAArch':
+    def from_compute_capability(cc : str | int) -> NVIDIAArch:
         return NVIDIAArch(family = NVIDIAFamily.from_compute_capability(cc = int(cc)), compute_capability = ComputeCapability.from_int(int(cc)))
 
     @staticmethod
-    def from_str(arch : str) -> 'NVIDIAArch':
+    def from_str(arch : str) -> NVIDIAArch:
         """
         >>> from reprospect.tools.architecture import NVIDIAArch
         >>> NVIDIAArch.from_str('AMPERE86')

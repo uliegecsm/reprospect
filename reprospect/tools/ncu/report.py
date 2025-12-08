@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections.abc
 import dataclasses
 import importlib
@@ -80,10 +82,10 @@ class ProfilingResults(rich_helpers.TreeMixin):
     """
     __slots__ = ('data',)
 
-    def __init__(self, data : dict[str, 'ProfilingResults | ProfilingMetrics'] | None = None) -> None:
-        self.data : typing.Final[dict[str, 'ProfilingResults | ProfilingMetrics']] = data if data is not None else {}
+    def __init__(self, data : dict[str, ProfilingResults | ProfilingMetrics] | None = None) -> None:
+        self.data : typing.Final[dict[str, ProfilingResults | ProfilingMetrics]] = data if data is not None else {}
 
-    def query(self, accessors : typing.Iterable[str]) -> 'ProfilingResults' | ProfilingMetrics:
+    def query(self, accessors : typing.Iterable[str]) -> ProfilingResults | ProfilingMetrics:
         """
         Get the internal node in the hierarchy or the leaf node with profiling metrics
         at accessor path `accessors`.
@@ -105,7 +107,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
             raise TypeError(f'Expecting leaf node with profiling metrics at {accessors}, got {type(current).__name__!r} instead.')
         return current
 
-    def query_single_next(self, accessors : typing.Iterable[str]) -> tuple[str, 'ProfilingResults' | ProfilingMetrics]:
+    def query_single_next(self, accessors : typing.Iterable[str]) -> tuple[str, ProfilingResults | ProfilingMetrics]:
         """
         Query the accessor path `accessors`, check that it leads to an internal node with exactly
         one entry, and return this single entry.
@@ -221,7 +223,7 @@ class Range:
     """
     index : int
     range : typing.Any = dataclasses.field(init = False)
-    actions : tuple['Action', ...] = dataclasses.field(init = False)
+    actions : tuple[Action, ...] = dataclasses.field(init = False)
 
     report : dataclasses.InitVar[typing.Any]
     includes : dataclasses.InitVar[typing.Iterable[str] | None] = None
@@ -245,7 +247,7 @@ class Action:
     """
     index : int
     action : typing.Any = dataclasses.field(init = False)
-    domains : tuple['NvtxDomain', ...] = dataclasses.field(init = False, default = ())
+    domains : tuple[NvtxDomain, ...] = dataclasses.field(init = False, default = ())
 
     nvtx_range : dataclasses.InitVar[typing.Any]
 

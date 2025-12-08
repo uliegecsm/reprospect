@@ -83,8 +83,9 @@ packages = ["reprospect"]
 
 [tool.ruff.lint]
 select = [
-    "UP007", # Use X | Y instead of typing.Union[X, Y]
-    "UP045", # Use X | None instead of typing.Optional[X]
+    "UP007",
+    "UP037",
+    "UP045",
 ]
 
 [tool.pylint.main]

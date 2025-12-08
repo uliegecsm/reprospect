@@ -8,6 +8,8 @@ Tools that can be used to extract SASS code and kernel attributes from executabl
     the SASS code of each kernel to be extracted for more extensive analysis, *e.g.* with :py:mod:`reprospect.tools.sass`.
 """
 
+from __future__ import annotations
+
 import dataclasses
 import functools
 import logging
@@ -63,7 +65,7 @@ class ResourceUsage(dict[ResourceType, int | dict[int, int]]):
     Dictionary of resource usage.
     """
     @classmethod
-    def parse(cls, line : str) -> 'ResourceUsage':
+    def parse(cls, line : str) -> ResourceUsage:
         """
         Parse a resource usage line, such as produced by ``cuobjdump`` with ``--dump-resource-usage``.
         """
@@ -89,7 +91,7 @@ class Function:
     code : str #: The SASS code.
     ru : ResourceUsage #: The resource usage.
 
-    def to_table(self, *, max_code_length : int = 130, descriptors : dict[str, str] = None) -> rich.table.Table:
+    def to_table(self, *, max_code_length : int = 130, descriptors : dict[str, str] | None = None) -> rich.table.Table:
         """
         Convert to a :py:class:`rich.table.Table`.
 
@@ -221,7 +223,7 @@ class CuObjDump:
         cwd : pathlib.Path,
         cubin : str,
         **kwargs,
-    ) -> tuple['CuObjDump', pathlib.Path]:
+    ) -> tuple[CuObjDump, pathlib.Path]:
         """
         Extract the embedded CUDA binary file whose name contains `cubin`,
         from `file`, for the given `arch`.

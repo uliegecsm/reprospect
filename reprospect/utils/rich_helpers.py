@@ -33,7 +33,7 @@ def ds_to_table(ds : pandas.Series) -> rich.table.Table:
 
 def df_to_table(
     df : pandas.DataFrame,
-    rich_table : typing.Optional[rich.table.Table] = None,
+    rich_table : rich.table.Table | None = None,
     show_index : bool = False,
     **kwargs
 ) -> rich.table.Table:

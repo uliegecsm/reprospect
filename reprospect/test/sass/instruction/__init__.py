@@ -1,26 +1,30 @@
-from .pattern import AnyMatcher, \
-                     ArchitectureAndVersionAwarePatternMatcher, \
-                     ArchitectureAwarePatternMatcher, \
-                     AtomicMatcher, \
-                     BranchMatcher, \
-                     Fp32AddMatcher, \
-                     Fp64AddMatcher, \
-                     InstructionMatch, \
-                     InstructionMatcher, \
-                     LoadConstantMatcher, \
-                     LoadMatcher, \
-                     LoadGlobalMatcher, \
-                     OpcodeModsMatcher, \
-                     OpcodeModsWithOperandsMatcher, \
-                     PatternBuilder, \
-                     PatternMatcher, \
-                     ReductionMatcher, \
-                     StoreMatcher, \
-                     StoreGlobalMatcher
-
+from .instruction import (
+    AnyMatcher,
+    ArchitectureAndVersionAwarePatternMatcher,
+    ArchitectureAwarePatternMatcher,
+    AtomicMatcher,
+    BranchMatcher,
+    Fp32AddMatcher,
+    Fp64AddMatcher,
+    InstructionMatch,
+    InstructionMatcher,
+    LoadConstantMatcher,
+    LoadMatcher,
+    LoadGlobalMatcher,
+    OpcodeModsMatcher,
+    OpcodeModsWithOperandsMatcher,
+    PatternMatcher,
+    ReductionMatcher,
+    StoreMatcher,
+    StoreGlobalMatcher,
+)
+from .pattern import PatternBuilder
+from .address import AddressMatch, AddressMatcher
 from .register import RegisterMatch, RegisterMatcher
 
 __all__ = (
+    'AddressMatch',
+    'AddressMatcher',
     'AnyMatcher',
     'ArchitectureAndVersionAwarePatternMatcher',
     'ArchitectureAwarePatternMatcher',

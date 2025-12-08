@@ -88,7 +88,7 @@ class Fluentizer(instruction.InstructionMatcher):
 
     @override
     @typing.final
-    def match(self, inst : Instruction | str) -> typing.Optional[instruction.InstructionMatch]:
+    def match(self, inst : Instruction | str) -> instruction.InstructionMatch | None:
         return self.matcher.match(inst = inst)
 
 def instruction_is(matcher : instruction.InstructionMatcher) -> Fluentizer:

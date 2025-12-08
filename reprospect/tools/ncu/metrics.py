@@ -204,9 +204,9 @@ class Quantity(StrEnum):
 def counter_name_from(
     *,
     unit : Unit,
-    pipestage : typing.Optional[PipeStage] = None,
+    pipestage : PipeStage | None = None,
     quantity : Quantity | str,
-    qualifier : typing.Optional[str] = None
+    qualifier : str | None = None
 ) -> str:
     """
     Based on ``ncu`` metrics naming convention:
@@ -271,7 +271,7 @@ class L1TEXCacheGlobalLoadSectors:
     @staticmethod
     def create(*,
         subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-        suffix : typing.Optional[typing.Literal['hit', 'miss']] = None,
+        suffix : typing.Literal['hit', 'miss'] | None = None,
     ) -> 'MetricCounter':
         qualifier = f'pipe_lsu_mem_global_op_ld_lookup_{suffix}' if suffix else 'pipe_lsu_mem_global_op_ld'
 

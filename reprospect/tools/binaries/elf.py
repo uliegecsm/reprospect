@@ -71,7 +71,7 @@ class NvInfoEntry:
     """
     eifmt : NvInfoEIFMT
     eiattr : NvInfoEIATTR
-    value : typing.Union[bytes, int, tuple[int, ...]] | None = None
+    value : bytes | int | tuple[int, ...] | None = None
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class NvInfo:

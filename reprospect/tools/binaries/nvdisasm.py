@@ -46,7 +46,7 @@ class Function(rich_helpers.TableMixin):
     """
     __slots__ = ('registers',)
 
-    def __init__(self, registers : typing.Optional[DetailedRegisterUsage] = None) -> None:
+    def __init__(self, registers : DetailedRegisterUsage | None = None) -> None:
         self.registers : DetailedRegisterUsage | None = registers
 
     @override
@@ -138,7 +138,7 @@ class NVDisasm:
 
     def __init__(self,
         file : pathlib.Path,
-        arch : typing.Optional[NVIDIAArch] = None,
+        arch : NVIDIAArch | None = None,
         demangler : typing.Type[CuppFilt | LlvmCppFilt] = CuppFilt,
     ) -> None:
         """
@@ -207,8 +207,8 @@ class NVDisasm:
             // +--------------------+--------+----------------+
         """
         found_function = False
-        reg_types : typing.Optional[tuple[RegisterType, ...]] = None
-        positions : typing.Optional[dict[RegisterType, tuple[tuple[int, int], ...]]] = None
+        reg_types : tuple[RegisterType, ...] | None = None
+        positions : dict[RegisterType, tuple[tuple[int, int], ...]] | None = None
         used : dict[RegisterType, tuple[bool, ...]] = {}
 
         for line in sass: # pylint: disable=too-many-nested-blocks

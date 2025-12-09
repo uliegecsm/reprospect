@@ -46,8 +46,9 @@ import mypy_extensions
 import regex
 import semantic_version
 
-from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.test.sass.instruction.address import AddressMatcher
+from reprospect.test.sass.instruction.constant import ConstantMatcher
+from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import Instruction
 
@@ -144,7 +145,7 @@ def floating_point_add_pattern(*, ftype : typing.Literal['F', 'D']) -> regex.Pat
         PatternBuilder.mathreg() + r'\s*,\s*' +
         PatternBuilder.any(
             PatternBuilder.mathreg(), PatternBuilder.ureg(),
-            PatternBuilder.constant(),
+            ConstantMatcher.build_pattern(),
             PatternBuilder.immediate(),
         ),
     )
@@ -306,7 +307,7 @@ class LoadConstantMatcher(PatternMatcher):
     * ``LDC R4, c[0x3][R0]``
     * ``LDCU UR4, c[0x3][UR0]``
     """
-    CONSTANT : typing.Final[str] = PatternBuilder.constant(additional = True)
+    CONSTANT : typing.Final[str] = ConstantMatcher.build_pattern(captured = True, capture_bank = True, capture_offset = True)
 
     TEMPLATE : typing.Final[str] = f'{{opcode}} {{dest}}, {CONSTANT}'
 

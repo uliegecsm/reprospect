@@ -18,8 +18,9 @@ from .instruction import (
     StoreMatcher,
     StoreGlobalMatcher,
 )
-from .pattern import PatternBuilder
 from .address import AddressMatch, AddressMatcher
+from .constant import ConstantMatch, ConstantMatcher
+from .pattern import PatternBuilder
 from .register import RegisterMatch, RegisterMatcher
 
 __all__ = (
@@ -30,6 +31,8 @@ __all__ = (
     'ArchitectureAwarePatternMatcher',
     'AtomicMatcher',
     'BranchMatcher',
+    'ConstantMatch',
+    'ConstantMatcher',
     'Fp32AddMatcher',
     'Fp64AddMatcher',
     'InstructionMatch',

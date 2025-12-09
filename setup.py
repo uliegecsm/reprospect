@@ -19,6 +19,8 @@ def enable_mypyc(dist : Distribution) -> None:
         [
             'reprospect/test/sass/composite.py',
             'reprospect/test/sass/composite_impl.py',
+            'reprospect/test/sass/instruction/address.py',
+            'reprospect/test/sass/instruction/instruction.py',
             'reprospect/test/sass/instruction/pattern.py',
             'reprospect/test/sass/instruction/register.py',
             'reprospect/test/sass/matchers/add_int128.py',

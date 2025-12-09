@@ -41,4 +41,5 @@ find_package(
 add_subdirectory(atomic)
 add_subdirectory(complex)
 add_subdirectory(graph)
+add_subdirectory(half)
 add_subdirectory(view)

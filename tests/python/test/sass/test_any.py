@@ -39,6 +39,7 @@ class TestAnyMatcher:
         '@!PT LDS RZ, [RZ]' : InstructionMatch(predicate = '@!PT', opcode = 'LDS', modifiers = (), operands = ('RZ', '[RZ]')),
         'HMUL2 R0, R2.H0_H0, R3.H0_H0' : InstructionMatch(opcode = 'HMUL2', modifiers = (), operands = ('R0', 'R2.H0_H0', 'R3.H0_H0')),
         'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ' : InstructionMatch(opcode = 'UIADD3', modifiers = (), operands = ('UR5', 'UPT', 'UPT', '-UR4', 'UR9', 'URZ')),
+        'BAR.SYNC.DEFER_BLOCKING 0x0' : InstructionMatch(opcode = 'BAR', modifiers = ('SYNC', 'DEFER_BLOCKING'), operands = ('0x0',)),
     }
     """
     Zoo of real SASS instructions.

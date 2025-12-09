@@ -36,7 +36,7 @@ class TestFunction:
         ResourceType.CONSTANT : {0: 924},
         ResourceType.TEXTURE  : 0,
         ResourceType.SURFACE  : 0,
-        ResourceType.SAMPLER  : 0
+        ResourceType.SAMPLER  : 0,
     })
 
     def test_string_representation(self) -> None:
@@ -360,13 +360,13 @@ class TestCuObjDump:
             'my_kernel(float, const float *, float *, unsigned int)' : Function(
                 symbol = TestFunction.SYMBOL,
                 code = TestFunction.CODE,
-                ru = TestFunction.RU
+                ru = TestFunction.RU,
             ),
             'my_other_kernel(float, const float *, float *, unsigned int)' : Function(
                 symbol = '_Z15my_other_kernelfPKfPfj',
                 code = TestFunction.CODE,
-                ru = TestFunction.RU
-            )
+                ru = TestFunction.RU,
+            ),
         }
 
         assert str(cuobjdump) == """\

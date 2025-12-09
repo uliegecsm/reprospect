@@ -64,7 +64,7 @@ __global__ __launch_bounds__(128, 1) void ldc({type}* __restrict__ const out)
 }}
 """
 
-    @pytest.mark.parametrize('instruction,matcher,expected', ((instr, *vals) for instr, vals in INSTRUCTIONS.items()))
+    @pytest.mark.parametrize(('instruction', 'matcher', 'expected'), ((instr, *vals) for instr, vals in INSTRUCTIONS.items()))
     def test(self, instruction : str, matcher : LoadConstantMatcher, expected : InstructionMatch) -> None:
         assert (matched := matcher.match(inst = instruction)) is not None
         assert matched == expected
@@ -281,7 +281,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         instructions_contain(LoadGlobalMatcher(
-            arch = parameters.arch, size = 16, readonly = True, extend = 'U')
+            arch = parameters.arch, size = 16, readonly = True, extend = 'U'),
         ).assert_matches(decoder.instructions)
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)

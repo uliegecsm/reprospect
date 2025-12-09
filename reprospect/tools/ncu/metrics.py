@@ -206,7 +206,7 @@ def counter_name_from(
     unit : Unit,
     pipestage : PipeStage | None = None,
     quantity : Quantity | str,
-    qualifier : str | None = None
+    qualifier : str | None = None,
 ) -> str:
     """
     Based on ``ncu`` metrics naming convention:
@@ -329,17 +329,17 @@ class L1TEXCacheGlobalLoad:
 
     NAME : typing.Final[str] = 'global load'
 
-    Instructions : typing.Final[typing.Type[L1TEXCacheGlobalLoadInstructions]] = L1TEXCacheGlobalLoadInstructions # pylint: disable=invalid-name
+    Instructions : typing.Final[type[L1TEXCacheGlobalLoadInstructions]] = L1TEXCacheGlobalLoadInstructions # pylint: disable=invalid-name
 
-    Requests : typing.Final[typing.Type[L1TEXCacheGlobalLoadRequests]] = L1TEXCacheGlobalLoadRequests # pylint: disable=invalid-name
+    Requests : typing.Final[type[L1TEXCacheGlobalLoadRequests]] = L1TEXCacheGlobalLoadRequests # pylint: disable=invalid-name
 
-    Sectors : typing.Final[typing.Type[L1TEXCacheGlobalLoadSectors]] = L1TEXCacheGlobalLoadSectors # pylint: disable=invalid-name
+    Sectors : typing.Final[type[L1TEXCacheGlobalLoadSectors]] = L1TEXCacheGlobalLoadSectors # pylint: disable=invalid-name
 
-    SectorHits : typing.Final[typing.Type[L1TEXCacheGlobalLoadSectorHits]] = L1TEXCacheGlobalLoadSectorHits # pylint: disable=invalid-name
+    SectorHits : typing.Final[type[L1TEXCacheGlobalLoadSectorHits]] = L1TEXCacheGlobalLoadSectorHits # pylint: disable=invalid-name
 
-    SectorMisses : typing.Final[typing.Type[L1TEXCacheGlobalLoadSectorMisses]] = L1TEXCacheGlobalLoadSectorMisses # pylint: disable=invalid-name
+    SectorMisses : typing.Final[type[L1TEXCacheGlobalLoadSectorMisses]] = L1TEXCacheGlobalLoadSectorMisses # pylint: disable=invalid-name
 
-    Wavefronts : typing.Final[typing.Type[L1TEXCacheGlobalLoadWavefronts]] = L1TEXCacheGlobalLoadWavefronts # pylint: disable=invalid-name
+    Wavefronts : typing.Final[type[L1TEXCacheGlobalLoadWavefronts]] = L1TEXCacheGlobalLoadWavefronts # pylint: disable=invalid-name
 
 class L1TEXCacheGlobalStoreInstructions:
     """
@@ -384,9 +384,9 @@ class L1TEXCacheGlobalStore:
 
     NAME : typing.Final[str] = 'global store'
 
-    Instructions : typing.Final[typing.Type[L1TEXCacheGlobalStoreInstructions]] = L1TEXCacheGlobalStoreInstructions # pylint: disable=invalid-name
+    Instructions : typing.Final[type[L1TEXCacheGlobalStoreInstructions]] = L1TEXCacheGlobalStoreInstructions # pylint: disable=invalid-name
 
-    Sectors : typing.Final[typing.Type[L1TEXCacheGlobalStoreSectors]] = L1TEXCacheGlobalStoreSectors # pylint: disable=invalid-name
+    Sectors : typing.Final[type[L1TEXCacheGlobalStoreSectors]] = L1TEXCacheGlobalStoreSectors # pylint: disable=invalid-name
 
 class L1TEXCacheLocalStoreInstructions:
     """
@@ -412,7 +412,7 @@ class L1TEXCacheLocalStore:
 
     NAME : typing.Final[str] = 'local store'
 
-    Instructions : typing.Final[typing.Type[L1TEXCacheLocalStoreInstructions]] = L1TEXCacheLocalStoreInstructions # pylint: disable=invalid-name
+    Instructions : typing.Final[type[L1TEXCacheLocalStoreInstructions]] = L1TEXCacheLocalStoreInstructions # pylint: disable=invalid-name
 
 class L1TEXCache:
     """
@@ -422,11 +422,11 @@ class L1TEXCache:
     """
     NAME : typing.Final[str] = 'L1/TEX cache'
 
-    GlobalLoad : typing.Final[typing.Type[L1TEXCacheGlobalLoad]] = L1TEXCacheGlobalLoad # pylint: disable=invalid-name
+    GlobalLoad : typing.Final[type[L1TEXCacheGlobalLoad]] = L1TEXCacheGlobalLoad # pylint: disable=invalid-name
 
-    GlobalStore : typing.Final[typing.Type[L1TEXCacheGlobalStore]] = L1TEXCacheGlobalStore # pylint: disable=invalid-name
+    GlobalStore : typing.Final[type[L1TEXCacheGlobalStore]] = L1TEXCacheGlobalStore # pylint: disable=invalid-name
 
-    LocalStore : typing.Final[typing.Type[L1TEXCacheLocalStore]] = L1TEXCacheLocalStore # pylint: disable=invalid-name
+    LocalStore : typing.Final[type[L1TEXCacheLocalStore]] = L1TEXCacheLocalStore # pylint: disable=invalid-name
 
 MetricKind : typing.TypeAlias = Metric | MetricCorrelation | MetricDeviceAttribute
 

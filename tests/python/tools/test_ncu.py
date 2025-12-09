@@ -30,17 +30,17 @@ class TestProfilingResults:
             accessors = ('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
             data = ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum' : 100.,
-                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
-                'L1/TEX cache global load sectors.sum' : 0.
-            })
+                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.}),
+                'L1/TEX cache global load sectors.sum' : 0.,
+            }),
         )
         results.assign_metrics(
             accessors = ('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
             data = ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum' : 96.,
-                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.,}),
-                'L1/TEX cache global load sectors.sum' : 0.
-            })
+                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.}),
+                'L1/TEX cache global load sectors.sum' : 0.,
+            }),
         )
         return results
 
@@ -69,15 +69,15 @@ class TestProfilingResults:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next`.
         """
-        key, metrics = results.query_single_next(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',))
+        key, metrics = results.query_single_next(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel'))
         assert key == 'kernel'
-        assert metrics == results.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel',))
+        assert metrics == results.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'))
 
     def test_query_single_next_metrics(self, results : ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next_metrics`.
         """
-        key, metrics = results.query_single_next_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel',))
+        key, metrics = results.query_single_next_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel'))
         assert key == 'kernel'
         assert metrics['smsp__inst_executed.sum'] == 100.
 
@@ -90,7 +90,7 @@ class TestProfilingResults:
         assert metrics['smsp__inst_executed.sum'] == 100.
 
         with pytest.raises(TypeError, match = "Expecting entry 'nvtx_push_region_kernel' to be a leaf node with profiling metrics at ()."):
-            next(results.query(('nvtx_range_name', 'nvtx_push_region_A',)).iter_metrics())
+            next(results.query(('nvtx_range_name', 'nvtx_push_region_A')).iter_metrics())
 
     def test_assign_metrics(self) -> None:
         """
@@ -103,7 +103,7 @@ class TestProfilingResults:
             data = ncu.ProfilingMetrics({'my-value' : 42}),
         )
 
-        assert other_results.query_metrics(accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel',))['my-value'] == 42
+        assert other_results.query_metrics(accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel'))['my-value'] == 42
 
     def test_aggregate_metrics(self) -> None:
         """
@@ -112,15 +112,15 @@ class TestProfilingResults:
         other_results = ncu.ProfilingResults()
         other_results.assign_metrics(
             accessors = ('range-0', 'range-1', 'kernel-A'),
-            data = ncu.ProfilingMetrics({'my-counter-int' : 42, 'my-counter-float' : 666.})
+            data = ncu.ProfilingMetrics({'my-counter-int' : 42, 'my-counter-float' : 666.}),
         )
         other_results.assign_metrics(
             accessors = ('range-0', 'range-1', 'kernel-B'),
-            data = ncu.ProfilingMetrics({'my-counter-int' : 43, 'my-counter-float' : 667.})
+            data = ncu.ProfilingMetrics({'my-counter-int' : 43, 'my-counter-float' : 667.}),
         )
         other_results.assign_metrics(
             accessors = ('range-0', 'range-1', 'kernel-C'),
-            data = ncu.ProfilingMetrics({'my-counter-int' : 44, 'my-counter-float' : 668.})
+            data = ncu.ProfilingMetrics({'my-counter-int' : 44, 'my-counter-float' : 668.}),
         )
 
         aggregated = {'my-counter-int' : 42 + 43 + 44, 'my-counter-float' : 666. + 667. + 668.}
@@ -177,7 +177,7 @@ class TestCommand:
                 'ncu', '--print-summary=per-kernel', '--warp-sampling-interval=0',
                 '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever'),
                 '--log-file', pathlib.Path('my-output-path.log'),
-                'my-executable'
+                'my-executable',
             ), env = None, cwd = None)
 
         with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
@@ -186,7 +186,7 @@ class TestCommand:
                 'ncu', '--print-summary=per-kernel', '--warp-sampling-interval=0',
                 '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever'),
                 '--log-file', pathlib.Path('my-output-path.log'),
-                'my-executable'
+                'my-executable',
             ), env = {'MY_BASE_ENV': '666', 'IT_MATTERS': 'ON'}, cwd = bindir)
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
@@ -246,10 +246,10 @@ class TestSession:
             output = workdir / 'report-saxpy-basics',
             executable = bindir / self.SAXPY,
             metrics = METRICS,
-            nvtx_includes = tuple(map(
-                lambda x: f'application_domain@{x}/',
-                ('launch_saxpy_kernel_first_time', 'launch_saxpy_kernel_second_time'),
-            )),
+            nvtx_includes = tuple(
+                f'application_domain@{x}/'
+                for x in ('launch_saxpy_kernel_first_time', 'launch_saxpy_kernel_second_time')
+            ),
         )).run(
             retries = 5,
         )

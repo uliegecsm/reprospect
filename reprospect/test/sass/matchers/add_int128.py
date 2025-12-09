@@ -68,7 +68,7 @@ class AddInt128(SequenceMatcher):
                 f'{iadd_step_0_reg_0.rtype}{iadd_step_0_reg_0.index}',
                 f'{iadd_step_0_reg_0.rtype}{iadd_step_0_reg_0.index}',
                 f'{iadd_step_0_reg_1.rtype}{iadd_step_0_reg_1.index}',
-            )
+            ),
         )
         if (matched_iadd_step_1 := matcher_iadd_step_1.match(instructions[1])) is None:
             return None
@@ -79,13 +79,13 @@ class AddInt128(SequenceMatcher):
         iadd_step_2_reg_1 = f'{iadd_step_0_reg_1.rtype}{iadd_step_0_reg_1.index + 2}'
 
         matcher_iadd_step_2 = OpcodeModsWithOperandsMatcher(
-            opcode = 'IADD', modifiers = ('64', 'X',),
+            opcode = 'IADD', modifiers = ('64', 'X'),
             operands = (
                 iadd_step_2_reg_0,
                 iadd_step_2_reg_0,
                 iadd_step_2_reg_1,
                 matched_iadd_step_0.operands[1],
-            )
+            ),
         )
         if (matched_iadd_step_2 := matcher_iadd_step_2.match(instructions[2])) is None:
             return None
@@ -148,7 +148,7 @@ class AddInt128(SequenceMatcher):
                 'RZ',
                 PatternBuilder.PRED,
                 '!PT',
-            )
+            ),
         )
         if (matched_iadd3_step_1 := matcher_iadd3_step_1.match(instructions[1])) is None:
             return None
@@ -168,7 +168,7 @@ class AddInt128(SequenceMatcher):
                 'RZ',
                 PatternBuilder.PRED,
                 '!PT',
-            )
+            ),
         )
         if (matched_iadd3_step_2 := matcher_iadd3_step_2.match(instructions[2])) is None:
             return None
@@ -188,7 +188,7 @@ class AddInt128(SequenceMatcher):
                 'RZ',
                 PatternBuilder.PRED,
                 '!PT',
-            )
+            ),
         )
         if (matched_iadd3_step_3 := matcher_iadd3_step_3.match(instructions[3])) is None:
             return None

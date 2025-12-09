@@ -15,7 +15,7 @@ class TestAnyMatcher:
         'MOV R8, c[0x0][0x140]' : InstructionMatch(opcode = 'MOV', modifiers = (), operands = ('R8', 'c[0x0][0x140]')),
         'LDG.E.SYS R4, [R2]' : InstructionMatch(opcode = 'LDG', modifiers = ('E', 'SYS'), operands = ('R4', '[R2]')),
         'STG.E [R2], R4' : InstructionMatch(opcode = 'STG', modifiers = ('E',), operands = ('[R2]', 'R4')),
-        'STG.E.64.SYS [R2.64+UR4], R4' : InstructionMatch(opcode = 'STG', modifiers = ('E', '64', 'SYS',), operands = ('[R2.64+UR4]', 'R4')),
+        'STG.E.64.SYS [R2.64+UR4], R4' : InstructionMatch(opcode = 'STG', modifiers = ('E', '64', 'SYS'), operands = ('[R2.64+UR4]', 'R4')),
         'IADD3 R2, R2, 0x4, RZ' : InstructionMatch(opcode = 'IADD3', modifiers = (), operands = ('R2', 'R2', '0x4', 'RZ')),
         'ISETP.NE.AND P0, PT, R1, RZ, PT' : InstructionMatch(opcode = 'ISETP', modifiers = ('NE', 'AND'), operands = ('P0', 'PT', 'R1', 'RZ', 'PT')),
         'FMUL.FTZ R2, R2, R3' : InstructionMatch(opcode = 'FMUL', modifiers = ('FTZ',), operands = ('R2', 'R2', 'R3')),
@@ -46,7 +46,7 @@ class TestAnyMatcher:
 
     MATCHER : typing.Final[AnyMatcher] = AnyMatcher()
 
-    @pytest.mark.parametrize('instruction,expected', INSTRUCTIONS.items())
+    @pytest.mark.parametrize(('instruction', 'expected'), INSTRUCTIONS.items())
     def test(self, instruction : str, expected : InstructionMatch) -> None:
         matched = self.MATCHER.match(inst = instruction)
 

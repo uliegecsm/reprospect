@@ -1,7 +1,6 @@
 import logging
 import pathlib
 import subprocess
-import typing
 
 from reprospect.utils              import cmake
 from reprospect.tools.architecture import NVIDIAArch
@@ -14,7 +13,7 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
     object_file : bool = True,
     resource_usage : bool = False,
     ptx : bool = False,
-) -> typing.Tuple[pathlib.Path, str]:
+) -> tuple[pathlib.Path, str]:
     """
     Compile the `source` in `cwd` for `arch`.
 
@@ -58,7 +57,7 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
             if ptx:
                 cmd.append('--cuda-include-ptx=' + arch.as_sm)
             if resource_usage:
-                cmd += ['-Xcuda-ptxas', '-v',]
+                cmd += ['-Xcuda-ptxas', '-v']
         case _:
             raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
 

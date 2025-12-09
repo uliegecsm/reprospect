@@ -60,7 +60,7 @@ class TestAtomicAddInt128(add.TestCase):
         return 'examples_kokkos_atomic_add_int128'
 
     SIGNATURE_MATCHER : typing.ClassVar[re.Pattern[str]] = re.compile(
-        r'AtomicAddFunctor<Kokkos::View<__int128\s*\*\s*, Kokkos::CudaSpace>>'
+        r'AtomicAddFunctor<Kokkos::View<__int128\s*\*\s*, Kokkos::CudaSpace>>',
     )
 
     def test_no_atomic_add_128(self, decoder : Decoder) -> None:

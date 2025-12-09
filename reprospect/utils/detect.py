@@ -18,7 +18,7 @@ class GPUDetector:
 
         By default, results are cached.
     """
-    COLUMNS : typing.ClassVar[dict[str, typing.Type[str] | numpy.dtype]] = {'uuid' : str, 'index' : numpy.dtype('int32'), 'name' : str, 'compute_cap' : str}
+    COLUMNS : typing.ClassVar[dict[str, type[str] | numpy.dtype]] = {'uuid' : str, 'index' : numpy.dtype('int32'), 'name' : str, 'compute_cap' : str}
 
     _cache : typing.ClassVar[pandas.DataFrame | None] = None
 
@@ -30,7 +30,7 @@ class GPUDetector:
         cls._cache = None
 
     @classmethod
-    def get(cls, cache : bool = True, enrich : bool = True) -> pandas.DataFrame:
+    def get(cls, *, cache : bool = True, enrich : bool = True) -> pandas.DataFrame:
         if cache and cls._cache is not None:
             return cls._cache
 
@@ -42,7 +42,7 @@ class GPUDetector:
         return results
 
     @classmethod
-    def detect(cls, enrich : bool = True) -> pandas.DataFrame:
+    def detect(cls, *, enrich : bool = True) -> pandas.DataFrame:
         """
         Implementation of the detection.
         """
@@ -59,14 +59,14 @@ class GPUDetector:
                 raise RuntimeError(gpus.columns)
             if enrich:
                 gpus.loc[:, 'architecture'] = gpus['compute_cap'].apply(
-                    lambda x: architecture.NVIDIAArch.from_compute_capability(int(x.replace('.', '')))
+                    lambda x: architecture.NVIDIAArch.from_compute_capability(int(x.replace('.', ''))),
                 )
             return gpus
         logging.warning("'nvidia-smi' not found.")
         return pandas.DataFrame(columns = cls.COLUMNS.keys()) # type: ignore[arg-type]
 
     @classmethod
-    def count(cls, cache : bool = True) -> int:
+    def count(cls, *, cache : bool = True) -> int:
         """
         Get the number of available GPUs.
         """
@@ -86,9 +86,9 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.cc:
-        gpus = map(lambda x: x.replace('.', ''), map(str, GPUDetector.get(enrich = False)['compute_cap']))
+        gpus = (x.replace('.', '') for x in map(str, GPUDetector.get(enrich = False)['compute_cap']))
     else:
-        gpus = map(str, GPUDetector.get(enrich = True)['architecture'])
+        gpus = (str(x) for x in GPUDetector.get(enrich = True)['architecture'])
 
     print(args.sep.join(gpus), end = '')
 

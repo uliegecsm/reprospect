@@ -1,5 +1,6 @@
 import ctypes
 import logging
+import re
 import unittest
 
 import cuda.bindings.driver # type: ignore[import-not-found]
@@ -29,10 +30,8 @@ class TestCuda(unittest.TestCase):
         """
         device_properties.Cuda.load()
 
-        try:
+        with pytest.raises(RuntimeError, match = re.escape("My random information string. failed with error code CudaDriverError(value=100) (CUDA_ERROR_NO_DEVICE): no CUDA-capable device is detected")):
             device_properties.Cuda.check_driver_status(status = device_properties.CudaDriverError(value = 100), info = 'My random information string.')
-        except RuntimeError as e:
-            assert str(e) == "My random information string. failed with error code CudaDriverError(value=100) (CUDA_ERROR_NO_DEVICE): no CUDA-capable device is detected"
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_check_runtime_status(self) -> None:
@@ -41,10 +40,8 @@ class TestCuda(unittest.TestCase):
         """
         device_properties.Cuda.load()
 
-        try:
+        with pytest.raises(RuntimeError, match = re.escape("My random information string. failed with error code CudaRuntimeError(value=201) (cudaErrorDeviceUninitialized): invalid device context")):
             device_properties.Cuda.check_runtime_status(status = device_properties.CudaRuntimeError(value = 201), info = 'My random information string.')
-        except RuntimeError as e:
-            assert str(e) == "My random information string. failed with error code CudaRuntimeError(value=201) (cudaErrorDeviceUninitialized): invalid device context"
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
     def test_device_count(self) -> None:

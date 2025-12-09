@@ -235,7 +235,7 @@ class Range:
         if not includes and not excludes:
             self.actions = tuple(Action(nvtx_range = self.range, index = iaction) for iaction in range(self.range.num_actions()))
         else:
-            self.actions = tuple(Action(nvtx_range = self.range, index = iaction) for iaction in self.range.actions_by_nvtx(includes if includes else [], excludes if excludes else []))
+            self.actions = tuple(Action(nvtx_range = self.range, index = iaction) for iaction in self.range.actions_by_nvtx(includes or [], excludes or []))
 
     def __repr__(self) -> str:
         return f'{self.range} (index {self.index})'
@@ -358,7 +358,7 @@ class Report:
         elif path is None and name is None and command is not None:
             self.path = command.output.with_suffix('.ncu-rep')
         else:
-            raise RuntimeError()
+            raise RuntimeError
 
         self.report = self.ncu_report.load_report(self.path)
 
@@ -370,7 +370,7 @@ class Report:
         range_idx : int = 0,
         includes : typing.Iterable[str] | None = None,
         excludes : typing.Iterable[str] | None = None,
-        demangler : typing.Type[CuppFilt | LlvmCppFilt] | None = None,
+        demangler : type[CuppFilt | LlvmCppFilt] | None = None,
     ) -> ProfilingResults:
         """
         Extract the `metrics` of the actions in the range with ID `range_idx`.

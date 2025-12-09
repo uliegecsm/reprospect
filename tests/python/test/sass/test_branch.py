@@ -18,7 +18,7 @@ class TestBranchMatcher:
     Zoo of real ``BRA`` instructions.
     """
 
-    @pytest.mark.parametrize('instruction,expected', INSTRUCTIONS.items())
+    @pytest.mark.parametrize(('instruction', 'expected'), INSTRUCTIONS.items())
     def test(self, instruction : str, expected : InstructionMatch) -> None:
         matcher = BranchMatcher()
 

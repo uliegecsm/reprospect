@@ -75,7 +75,7 @@ class TestAllocation(CMakeAwareTestCase):
     """
     Run the companion executable and make a nice visualization.
     """
-    TIME_UNIT :typing.Final[typing.Literal['ns']] = 'ns'
+    TIME_UNIT :typing.Final = 'ns'
     """
     Time unit of the benchmark.
     """
@@ -86,7 +86,7 @@ class TestAllocation(CMakeAwareTestCase):
     """
 
     PATTERN : typing.Final[re.Pattern[str]] = re.compile(
-        r'^With(CUDA|Kokkos)<(true|false)>/((?:cuda|kokkos)(?:_async)?)/count:([0-9]+)/size:([0-9]+)'
+        r'^With(CUDA|Kokkos)<(true|false)>/((?:cuda|kokkos)(?:_async)?)/count:([0-9]+)/size:([0-9]+)',
     )
 
     @classmethod
@@ -153,7 +153,7 @@ class TestAllocation(CMakeAwareTestCase):
         """
         def process(bench_case) -> dict[str, Framework | bool | int | float]:
             logging.debug(f'Processing benchmark case {bench_case["name"]}.')
-            assert self.TIME_UNIT == bench_case['time_unit']
+            assert bench_case['time_unit'] == self.TIME_UNIT
             return {
                 **self.params(name=bench_case['name']),
                 'real_time': bench_case['real_time'],
@@ -300,7 +300,7 @@ class HandleSubtitle(matplotlib.legend_handler.HandlerBase):
         fontsize : float, trans: matplotlib.transforms.Transform,
     ) -> list[matplotlib.artist.Artist]:
         if not isinstance(orig_handle, Subtitle):
-            raise RuntimeError('Wrong usage.')
+            raise TypeError('Wrong usage.')
 
         text = matplotlib.text.Text(
             x = xdescent, y = ydescent,

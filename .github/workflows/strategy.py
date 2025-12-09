@@ -6,7 +6,6 @@ import logging
 import pprint
 import typing
 
-
 from reprospect.tools.architecture import NVIDIAArch
 
 AVAILABLE_RUNNER_ARCHES : typing.Final[tuple[NVIDIAArch, ...]] = (

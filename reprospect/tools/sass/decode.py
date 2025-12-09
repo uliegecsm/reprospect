@@ -142,7 +142,7 @@ class ControlCode:
             'A': bool((control >> 17) & 1),
             'B': bool((control >> 18) & 1),
             'C': bool((control >> 19) & 1),
-            'D': bool((control >> 20) & 1)
+            'D': bool((control >> 20) & 1),
         }
 
         return ControlCode(
@@ -214,7 +214,7 @@ class Decoder(rich_helpers.TableMixin):
         r'\s+'
         r'(.*?)(?=\s{2,}|[;?&])'
         r'.*?'
-        rf'/\*\s*({HEX})\s*\*/'
+        rf'/\*\s*({HEX})\s*\*/',
     )
     """
     Matcher for the full SASS line. It focuses on the offset, instruction and trailing hex encoding.
@@ -231,7 +231,7 @@ class Decoder(rich_helpers.TableMixin):
     These strings are ignored.
     """
 
-    def __init__(self, source : pathlib.Path | None = None, code : str | None = None, skip_until_headerflags : bool = True) -> None:
+    def __init__(self, *, source : pathlib.Path | None = None, code : str | None = None, skip_until_headerflags : bool = True) -> None:
         """
         Initialize the decoder with the SASS contained in `source` or `code`.
         """
@@ -241,21 +241,21 @@ class Decoder(rich_helpers.TableMixin):
         if source or code:
             self._parse(skip_until_headerflags = skip_until_headerflags)
 
-    def _parse(self, skip_until_headerflags : bool) -> None:
+    def _parse(self, *, skip_until_headerflags : bool = False) -> None:
         """
         Parse SASS lines.
         """
         if self.source is not None:
             with self.source.open('r', encoding = 'utf-8') as fin:
-                return self._parse_lines(fin, skip_until_headerflags)
+                return self._parse_lines(fin, skip_until_headerflags = skip_until_headerflags)
 
         if self.code is not None:
             with io.StringIO(self.code) as fin:
-                return self._parse_lines(fin, skip_until_headerflags)
+                return self._parse_lines(fin, skip_until_headerflags = skip_until_headerflags)
 
         raise RuntimeError('Neither code nor source was given.')
 
-    def _parse_lines(self, lines : typing.Iterable[str], skip_until_headerflags : bool) -> None:
+    def _parse_lines(self, lines : typing.Iterable[str], *, skip_until_headerflags : bool = False) -> None:
         headerflags = False
 
         iterator : typing.Iterator[str] = iter(lines)

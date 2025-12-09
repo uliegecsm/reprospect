@@ -20,16 +20,16 @@ class TestTracingResults:
     """
     CUDA_API_TRACE : typing.Final[pandas.DataFrame] = pandas.DataFrame(
         {
-            'Start (us)'    : [176741.213, 176855.658, 266224.028,],
-            'Duration (us)' : [0.942, 87265.752, 1.753],
-            'Name'          : ['cuModuleGetLoadingMode', 'cudaStreamCreate', 'cudaStreamCreate',],
-            'Result'        : [0, 0, 0,],
-            'CorrID'        : [1, 233, 234,],
-            'Pid'           : [52655, 52655, 52655,],
-            'Tid'           : [52655, 52655, 52655,],
-            'T-Pri'         : [20, 20, 20,],
-            'Thread Name'   : ['tests_cpp_cuda_', 'tests_cpp_cuda_', 'tests_cpp_cuda_',],
-        }
+            'Start (us)'    : (176741.213, 176855.658, 266224.028),
+            'Duration (us)' : (0.942, 87265.752, 1.753),
+            'Name'          : ('cuModuleGetLoadingMode', 'cudaStreamCreate', 'cudaStreamCreate'),
+            'Result'        : (0, 0, 0),
+            'CorrID'        : (1, 233, 234),
+            'Pid'           : (52655, 52655, 52655),
+            'Tid'           : (52655, 52655, 52655),
+            'T-Pri'         : (20, 20, 20),
+            'Thread Name'   : ('tests_cpp_cuda_', 'tests_cpp_cuda_', 'tests_cpp_cuda_'),
+        },
     )
 
     def test(self) -> None:
@@ -94,7 +94,7 @@ class TestSession:
                 executable = bindir / self.EXECUTABLE,
                 output = cwd / self.EXECUTABLE.name,
                 nvtx_capture = nvtx_capture,
-            )
+            ),
         )
         ns.run(cwd = cwd)
         ns.export_to_sqlite(cwd = cwd)
@@ -393,7 +393,7 @@ NVTX events
                     assert len(report.nvtx_events.events) == 7
 
                     assert report.nvtx_events.get(
-                        accessors = ['start-end-level-0', 'push-pop-level-1', 'push-pop-level-2', 'push-pop-level-3']
+                        accessors = ['start-end-level-0', 'push-pop-level-1', 'push-pop-level-2', 'push-pop-level-3'],
                     )['text'].tolist() == 3 * ['push-pop-level-3']
 
                     assert str(report.nvtx_events) == """\

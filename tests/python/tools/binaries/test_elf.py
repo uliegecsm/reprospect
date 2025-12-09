@@ -37,7 +37,7 @@ class TestGetComputeCapabilityFromEFlags:
     and reading the value of `flags` from the header for each architecture.
     """
 
-    @pytest.mark.parametrize('cc,e_flags', CC_E_FLAGS.items())
+    @pytest.mark.parametrize(('cc', 'e_flags'), CC_E_FLAGS.items())
     def test(self, cc : int, e_flags : int) -> None:
         b0 = e_flags         & 0xFF
         b1 = (e_flags >> 8)  & 0xFF
@@ -53,7 +53,7 @@ class TestGetComputeCapabilityFromEFlags:
 
         logging.info(f'For cc {cc}, the e_flags {e_flags} are composed of {b0}, {b1}, {b2} and {b3}.')
 
-    @pytest.mark.parametrize('cc,e_flags', CC_E_FLAGS.items())
+    @pytest.mark.parametrize(('cc', 'e_flags'), CC_E_FLAGS.items())
     def test_get_compute_capability_from_e_flags(self, cc : int, e_flags : int) -> None:
         assert ELF.compute_capability(e_flags).as_int == cc
 
@@ -198,7 +198,7 @@ class TestSaxpy:
     """
     FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
 
-    @pytest.fixture(scope = 'function')
+    @pytest.fixture
     def object_file(self, parameters : Parameters, cmake_file_api : cmake.FileAPI, workdir : pathlib.Path) -> pathlib.Path:
         """
         Compile into object file.

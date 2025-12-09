@@ -10,7 +10,7 @@ import docutils.parsers.rst.states
 
 project = 'ReProspect'
 author = 'Tomasetti, R and Arnst, M.'
-copyright = f'{datetime.datetime.now().year}, {author}'
+copyright = f'{datetime.datetime.now(datetime.timezone.utc).year}, {author}'
 
 PROJECT_DIR = pathlib.Path(__file__).parent.parent.parent
 
@@ -46,7 +46,7 @@ html_last_updated_fmt = str()
 
 # To the best of our knowledge, NVIDIA does not provide an object inventory.
 extlinks = {
-    'ncu_report': ('https://docs.nvidia.com/nsight-compute/PythonReportInterface/index.html#ncu_report.%s', '%s')
+    'ncu_report': ('https://docs.nvidia.com/nsight-compute/PythonReportInterface/index.html#ncu_report.%s', '%s'),
 }
 
 intersphinx_mapping = {
@@ -74,7 +74,7 @@ apidoc_modules = [
         'destination' : 'api',
         'max_depth' : 4,
         'implicit_namespaces' : True,
-    }
+    },
 ]
 
 bibtex_bibfiles = ['references.bib']

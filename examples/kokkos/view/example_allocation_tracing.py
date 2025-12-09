@@ -76,7 +76,7 @@ class TestNSYS(TestAllocation):
         enum_cuda_mem_kind = report.table(name = 'ENUM_CUDA_MEM_KIND', dtype = {'name' : str, 'id' : int})
 
         return report.single_row(
-            data = enum_cuda_mem_kind[enum_cuda_mem_kind['name'] == f'CUDA_MEMOPR_MEMORY_KIND_{memory}']
+            data = enum_cuda_mem_kind[enum_cuda_mem_kind['name'] == f'CUDA_MEMOPR_MEMORY_KIND_{memory}'],
         )['id']
 
     def checks(self, *,

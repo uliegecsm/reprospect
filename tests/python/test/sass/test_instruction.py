@@ -2,7 +2,6 @@ import functools
 import logging
 import os
 import pathlib
-import typing
 
 import pytest
 import regex
@@ -189,7 +188,7 @@ class TestPatternBuilder:
         assert matched.group('operands') == 'desc[UR86][R2.64+0x10]' and matched.captures('operands') == ['desc[UR86][R2.64+0x10]']
 
         # Enforced offset behaviour.
-        pattern = PatternBuilder.desc_reg64_addr(True)
+        pattern = PatternBuilder.desc_reg64_addr(offset = True)
 
         assert regex.match(pattern, string = 'desc[UR86][R0.64]') is None
 
@@ -199,7 +198,7 @@ class TestPatternBuilder:
         assert matched.group('operands') == 'desc[UR86][R2.64+0x10]' and matched.captures('operands') == ['desc[UR86][R2.64+0x10]']
 
         # Disabled offset behaviour.
-        pattern = PatternBuilder.desc_reg64_addr(False)
+        pattern = PatternBuilder.desc_reg64_addr(offset = False)
 
         matched = regex.match(pattern, string = 'desc[UR86][R0.64]')
         assert matched is not None
@@ -393,7 +392,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
-        matcher_type : typing.Type[AtomicMatcher] | typing.Type[ReductionMatcher]
+        matcher_type : type[AtomicMatcher | ReductionMatcher]
         if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<12.8'):
             matcher_type = AtomicMatcher
         else:
@@ -418,7 +417,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
-        matcher_type : typing.Type[AtomicMatcher] | typing.Type[ReductionMatcher]
+        matcher_type : type[AtomicMatcher | ReductionMatcher]
         if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<12.8'):
             matcher_type = AtomicMatcher
         else:

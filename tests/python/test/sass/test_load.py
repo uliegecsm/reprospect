@@ -132,6 +132,9 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         matcher = LoadMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 256, readonly = True, memory = 'G')
         assert matcher.match(inst = 'LDG.E.ENL2.256.CONSTANT R12, R8, desc[UR4][R2.64]') is not None
 
+        matcher = LoadMatcher(arch = NVIDIAArch.from_compute_capability(90), size = 64, readonly = True, memory = 'G')
+        assert matcher.match(inst = 'LDG.E.64.CONSTANT R22, desc[UR10][R48.64+0x180]') is not None
+
         matcher = LoadGlobalMatcher(arch = NVIDIAArch.from_compute_capability(86), size = 16, readonly = True, extend = 'U')
         assert matcher.match(inst = 'LDG.E.U16.CONSTANT R3, [R2.64]') is not None
 

@@ -32,6 +32,12 @@ class TestStoreMatcher:
         matcher = StoreMatcher(arch = NVIDIAArch.from_compute_capability(120), size = 256, memory = 'G')
         assert matcher.match(inst = 'STG.E.ENL2.256 desc[UR4][R4.64], R8, R12') is not None
 
+        matcher = StoreMatcher(arch = NVIDIAArch.from_compute_capability(86), size = 16, extend = 'U', memory = None)
+        assert matcher.match(inst = 'ST.E.U16 [R2.64], R3') is not None
+
+        matcher = StoreMatcher(arch = NVIDIAArch.from_compute_capability(86), size = 16, extend = 'S', memory = 'G')
+        assert matcher.match(inst = 'STG.E.S16 [R2.64], R4') is not None
+
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """

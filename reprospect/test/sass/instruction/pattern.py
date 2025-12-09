@@ -519,11 +519,18 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
 
         super().__init__(arch = arch)
 
+    def _get_size(self) -> int | str | None:
+        if self.size is not None and self.size < 32:
+            return f'{self.extend}{self.size}'
+        if self.size is not None and self.size > 32:
+            return self.size
+        return None
+
     def _get_modifiers(self) -> tuple[str, ...]:
         return (
             'E',
             *(('ENL2',) if self.size is not None and self.size == 256 else ()),
-            f'{self.extend}{self.size}' if self.size is not None and self.size < 32 else self.size,
+            self._get_size(),
             self.cache,
             *(('SYS',) if self.arch.compute_capability in (70, 75) else ()),
         )
@@ -591,7 +598,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
 
         STG.E.ENL2.256 desc[UR4][R4.64], R8, R12
     """
-    __slots__ = ('size', 'memory')
+    __slots__ = ('size', 'memory', 'extend')
 
     TEMPLATE : typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}'
     TEMPLATE_256 : typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
@@ -600,6 +607,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
         arch : NVIDIAArch,
         size : int | None = None,
         memory : str | None = 'G',
+        extend : ExtendBitsMethod | None = None,
     ):
         """
         :param size: Optional bit size (*e.g.*, 32, 64, 128).
@@ -609,13 +617,21 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
 
         self.size = size
         self.memory = memory
+        self.extend : typing.Final[ExtendBitsMethod | None] = extend
         super().__init__(arch = arch)
+
+    def _get_size(self) -> int | str | None:
+        if self.size is not None and self.size < 32:
+            return f'{self.extend}{self.size}'
+        if self.size is not None and self.size > 32:
+            return self.size
+        return None
 
     def _get_modifiers(self) -> tuple[str, ...]:
         return (
             'E',
             *(('ENL2',) if self.size is not None and self.size == 256 else ()),
-            self.size,
+            self._get_size(),
             *(('SYS',) if self.arch.compute_capability in (70, 75) else ()),
         )
 
@@ -630,8 +646,8 @@ class StoreGlobalMatcher(StoreMatcher):
     """
     Specialization of :py:class:`StoreMatcher` for global memory (``STG``).
     """
-    def __init__(self, arch : NVIDIAArch, size : int | None = None) -> None:
-        super().__init__(arch = arch, size = size, memory = 'G')
+    def __init__(self, arch : NVIDIAArch, size : int | None = None, extend : ExtendBitsMethod | None = None) -> None:
+        super().__init__(arch = arch, size = size, memory = 'G', extend = extend)
 
 ThreadScope = typing.Literal['BLOCK', 'DEVICE', 'THREADS']
 """
@@ -689,7 +705,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
         dtype : tuple[str, int] | None = None,
     ):
         """
-        :param dtype: For instance, `('F', 64')` for a floating-point type 64-bits in size or `(S, 32)` for a signed integer type 32-bits in size.
+        :param dtype: For instance, `('F', 64)` for a floating-point type 64-bits in size or `(S, 32)` for a signed integer type 32-bits in size.
         """
         if dtype is not None:
             check_memory_instruction_word_size(size = int(dtype[1] / 8))
@@ -765,7 +781,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
         version : semantic_version.Version | None = None,
     ):
         """
-        :param dtype: For instance, `('F', 64')` for a floating-point type 64-bits in size or `(S, 32)` for a signed integer type 32-bits in size.
+        :param dtype: For instance, `('F', 64)` for a floating-point type 64-bits in size or `(S, 32)` for a signed integer type 32-bits in size.
         """
         if dtype is not None:
             check_memory_instruction_word_size(size = int(dtype[1] / 8))

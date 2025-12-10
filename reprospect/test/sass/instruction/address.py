@@ -98,7 +98,7 @@ class AddressMatcher:
                 return cls.build_address(reg = reg, offset = offset, captured = captured)
             case 80 | 86 | 89:
                 return cls.build_reg64_address(reg = reg, offset = offset, captured = captured)
-            case 90 | 100 | 120:
+            case 90 | 100 | 103 | 120:
                 return cls.build_desc_reg64_address(reg = reg, ureg = ureg, offset = offset, captured = captured)
             case _:
                 raise ValueError(f'unsupported architecture {arch}')

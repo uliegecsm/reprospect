@@ -104,7 +104,7 @@ class TestNVDisasm:
                         RegisterType.PRED : (1, 1),
                         RegisterType.UGPR : (6, 2),
                     }
-                case 90 | 100 | 120:
+                case 90 | 100 | 103 | 120:
                     expt_register_usage_details = {
                         RegisterType.GPR  : (8, 7),
                         RegisterType.PRED : (1, 1),
@@ -177,7 +177,7 @@ class TestNVDisasm:
                         self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (2, 2)},
                         self.SYMBOLS[1] : {RegisterType.GPR : (12,  9), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2)},
                     }
-                case 90 | 100:
+                case 90 | 100 | 103:
                     expt_register_usage_details = {
                         self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (1, 1), RegisterType.UGPR : (8, 4)},
                         self.SYMBOLS[1] : {RegisterType.GPR : (12, 10), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2)},

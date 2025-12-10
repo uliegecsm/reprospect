@@ -170,7 +170,7 @@ class TestDecoder:
                 expt_ninstrs = [16, 15]
             case 80 | 86 | 89:
                 expt_ninstrs = [24, 16]
-            case 90 | 100 | 120:
+            case 90 | 100 | 103 | 120:
                 expt_ninstrs = [32, 20]
             case _:
                 raise ValueError(f'unsupported {parameters.arch.compute_capability}')

@@ -233,15 +233,15 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         offset += self.collect(matched = matched, new = matched_operation)
 
         # Store the value.
-        matcher_store = StoreGlobalMatcher(arch = self.arch, size = self.size)
-        matched_store = matcher_store.match(instructions[offset])
+        matcher_store = instructions_contain(StoreGlobalMatcher(arch = self.arch, size = self.size))
+        matched_store = matcher_store.match(instructions = instructions[offset:])
 
-        if matched_store is None:
+        if matched_store is None or matcher_store.index is None:
             return None
 
-        assert matched_store.operands[1] == matched_load.operands[0]
+        assert matched_store[0].operands[1] == matched_load.operands[0]
 
-        offset += self.collect(matched = matched, new = matched_store)
+        offset += matcher_store.index + self.collect(matched = matched, new = matched_store)
 
         # The device atomic thread fence block (again).
         matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch = self.arch).match(instructions = instructions[offset::])

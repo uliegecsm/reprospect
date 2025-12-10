@@ -7,9 +7,12 @@ from reprospect.test.sass                import instruction
 from reprospect.test.sass.composite_impl import AnyOfMatcher, \
                                                 InSequenceAtMatcher, \
                                                 InSequenceMatcher, \
+                                                OrderedInterleavedInSequenceMatcher, \
                                                 OneOrMoreInSequenceMatcher, \
                                                 OrderedInSequenceMatcher, \
+                                                SequenceMatcher, \
                                                 UnorderedInSequenceMatcher, \
+                                                UnorderedInterleavedInSequenceMatcher, \
                                                 ZeroOrMoreInSequenceMatcher
 from reprospect.tools.sass               import ControlCode, Instruction
 
@@ -296,3 +299,52 @@ class TestAnyOfMatcher:
 
     def test_explain(self) -> None:
         assert AnyOfMatcher(MATCHER_DADD, MATCHER_DMUL).explain(instructions = DADD_NOP_DMUL) == f'None of {(MATCHER_DADD, MATCHER_DMUL)} did match {DADD_NOP_DMUL}.'
+
+class TestInterleavedInSequenceMatcher:
+    """
+    Tests for :py:class:`reprospect.test.sass.composite_impl.OrderedInterleavedInSequenceMatcher` and
+    :py:class:`reprospect.test.sass.composite_impl.UnorderedInterleavedInSequenceMatcher`.
+    """
+    INSTRUCTIONS : typing.Final[tuple[str, ...]] = (
+        'LDG.E.ENL2.256 R8, R4, desc[UR6][R2.64]',
+        'DADD R4, R4, UR12',
+        'NOP',
+        'NOP',
+        'NOP',
+        'NOP',
+        'DADD R6, R6, UR14',
+        'NOP',
+        'NOP',
+        'NOP',
+        'NOP',
+        'DADD R8, R8, UR16',
+        'NOP',
+        'NOP',
+        'NOP',
+        'NOP',
+        'DADD R10, R10, UR18',
+        'STG.E.ENL2.256 desc[UR6][R2.64], R4, R8',
+    )
+
+    DADD_MATCHERS : typing.Final[tuple[instruction.OpcodeModsWithOperandsMatcher, ...]] = (
+        instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R4',  'R4',  instruction.PatternBuilder.UREG)),
+        instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R6',  'R6',  instruction.PatternBuilder.UREG)),
+        instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R8',  'R8',  instruction.PatternBuilder.UREG)),
+        instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R10', 'R10', instruction.PatternBuilder.UREG)),
+    )
+
+    def check(self, matcher : SequenceMatcher) -> None:
+        assert (matched := matcher.match(self.INSTRUCTIONS)) is not None
+        assert len(matched) == 4
+        assert all(x.opcode == 'DADD' for x in matched)
+
+    def test_ordered(self) -> None:
+        self.check(matcher = OrderedInterleavedInSequenceMatcher(self.DADD_MATCHERS))
+
+        assert OrderedInterleavedInSequenceMatcher(self.DADD_MATCHERS).match(self.INSTRUCTIONS[::-1]) is None
+
+    def test_unordered(self) -> None:
+        matchers = list(self.DADD_MATCHERS)
+        random.shuffle(matchers)
+
+        self.check(matcher = UnorderedInterleavedInSequenceMatcher(matchers))

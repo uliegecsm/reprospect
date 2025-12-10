@@ -2,14 +2,15 @@ import re
 import sys
 import typing
 
-from reprospect.test.sass.composite      import instruction_is, unordered_instructions_are
+from reprospect.test.sass.composite import unordered_interleaved_instructions_are
 from reprospect.test.sass.composite_impl import UnorderedInSequenceMatcher
-from reprospect.test.sass.instruction    import InstructionMatch, \
-                                                OpcodeModsMatcher, \
-                                                OpcodeModsWithOperandsMatcher, \
-                                                PatternBuilder, \
-                                                RegisterMatcher
-from reprospect.tools.sass               import Decoder
+from reprospect.test.sass.instruction import (
+    InstructionMatch,
+    OpcodeModsWithOperandsMatcher,
+    PatternBuilder,
+    RegisterMatcher,
+)
+from reprospect.tools.sass import Decoder
 
 from examples.kokkos.atomic import add, desul
 
@@ -49,11 +50,7 @@ class AddKokkosComplexDouble:
             ),
         )
 
-        return unordered_instructions_are(
-            matcher_dadd_real,
-            instruction_is(OpcodeModsMatcher(opcode = 'NOP', operands = False)).zero_or_more_times(),
-            matcher_dadd_imag,
-        )
+        return unordered_interleaved_instructions_are(matcher_dadd_real, matcher_dadd_imag)
 
 class TestAtomicAddComplex128(add.TestCase):
     """

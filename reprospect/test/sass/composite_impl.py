@@ -3,7 +3,6 @@ Combine matchers from :py:mod:`reprospect.test.sass.instruction` into sequence m
 """
 
 import abc
-import itertools
 import sys
 import typing
 
@@ -111,7 +110,7 @@ class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
 
 class OrderedInSequenceMatcher(SequenceMatcher):
     """
-    Match a sequence of matchers in the order they are provided.
+    Match a sequence of :py:attr:`matchers` in the order they are provided.
 
     .. note::
 
@@ -120,7 +119,7 @@ class OrderedInSequenceMatcher(SequenceMatcher):
     __slots__ = ('matchers',)
 
     def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
-        self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
+        self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
 
     @override
     def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
@@ -141,7 +140,7 @@ class OrderedInSequenceMatcher(SequenceMatcher):
 
 class UnorderedInSequenceMatcher(SequenceMatcher):
     """
-    Match a sequence of matchers in some permutation of the order they are provided.
+    Match a sequence of :py:attr:`matchers` in some permutation of the order they are provided.
 
     .. note::
 
@@ -150,20 +149,27 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
     __slots__ = ('matchers',)
 
     def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
-        self.matchers : tuple[SequenceMatcher | InstructionMatcher, ...] = tuple(matchers)
+        self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
 
     @override
     def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        """
-        Cycle through all permutations of :py:attr:`matchers` (breaks on match).
+        return self.search(instructions = instructions, offset = 0, matchers = self.matchers) or None
 
-        .. note::
-
-            The implementation can be further optimized because it currently re-matches for each new permutation.
+    @classmethod
+    def search(cls, instructions : typing.Sequence[Instruction | str], offset : int, matchers : tuple[SequenceMatcher | InstructionMatcher, ...]) -> list[InstructionMatch] | None:
         """
-        for permutation in itertools.permutations(self.matchers):
-            if (matched := OrderedInSequenceMatcher(matchers = permutation).match(instructions = instructions)) is not None:
-                return matched
+        Backtracking problem.
+        """
+        if not matchers:
+            return []
+
+        for index, matcher in enumerate(matchers):
+            if isinstance(matcher, InstructionMatcher) and (single := matcher.match(instructions[offset])) is not None:
+                if (inner := cls.search(instructions = instructions, offset = offset + 1, matchers = matchers[:index] + matchers[index + 1:])) is not None:
+                    return [single] + inner
+            elif isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions = instructions[offset:])) is not None:
+                if (inner := cls.search(instructions = instructions, offset = offset + len(many), matchers = matchers[:index] + matchers[index + 1:])) is not None:
+                    return many + inner
         return None
 
     @override
@@ -227,6 +233,20 @@ class AnyOfMatcher(SequenceMatcher):
     @override
     def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
         return f'None of {self.matchers!r} did match {instructions}.'
+
+class OrderedInterleavedInSequenceMatcher(OrderedInSequenceMatcher):
+    """
+    Match a sequence of :py:attr:`matchers` in the order they are provided, allowing interleaved unmatched instructions in between.
+    """
+    def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
+        super().__init__(matchers = (InSequenceMatcher(matcher) for matcher in matchers))
+
+class UnorderedInterleavedInSequenceMatcher(UnorderedInSequenceMatcher):
+    """
+    Match a sequence of :py:attr:`matchers` in any order, allowing interleaved unmatched instructions in between.
+    """
+    def __init__(self, matchers: typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
+        super().__init__(matchers = (InSequenceMatcher(matcher) for matcher in matchers))
 
 OperandMatcher : typing.TypeAlias = str | AddressMatcher | ConstantMatcher | RegisterMatcher
 

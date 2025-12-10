@@ -1,6 +1,7 @@
 """
 Thin user-facing factories for the matchers in :py:mod:`reprospect.test.sass.composite_impl`.
 """
+from __future__ import annotations
 
 import sys
 import typing
@@ -25,7 +26,7 @@ class Fluentizer(instruction.InstructionMatcher):
     def __init__(self, matcher : instruction.InstructionMatcher) -> None:
         self.matcher : typing.Final[instruction.InstructionMatcher] = matcher
 
-    def times(self, num : int) -> composite_impl.SequenceMatcher:
+    def times(self, num : int) -> composite_impl.InSequenceAtMatcher | composite_impl.OrderedInSequenceMatcher:
         """
         Match :py:attr:`matcher` `num` times (consecutively).
 
@@ -53,7 +54,7 @@ class Fluentizer(instruction.InstructionMatcher):
         """
         return composite_impl.ZeroOrMoreInSequenceMatcher(matcher = self.matcher)
 
-    def with_operand(self, index : int, operand : OperandMatcher) -> 'Fluentizer':
+    def with_operand(self, index : int, operand : OperandMatcher) -> Fluentizer:
         """
         >>> from reprospect.test.sass.composite   import instruction_is
         >>> from reprospect.test.sass.instruction import Fp32AddMatcher, RegisterMatcher
@@ -68,7 +69,7 @@ class Fluentizer(instruction.InstructionMatcher):
             index = index, operand = operand,
         ))
 
-    def with_operands(self, operands : typing.Collection[tuple[int, OperandMatcher]]) -> instruction.InstructionMatcher:
+    def with_operands(self, operands : typing.Collection[tuple[int, OperandMatcher]]) -> Fluentizer:
         """
         Similar to :py:meth:`with_operand` for many operands.
 
@@ -173,3 +174,43 @@ def any_of(*matchers : instruction.InstructionMatcher | composite_impl.SequenceM
     True
     """
     return composite_impl.AnyOfMatcher(*matchers)
+
+def interleaved_instructions_are(*matchers : instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.OrderedInterleavedInSequenceMatcher:
+    """
+    Match a sequence of instructions against `matchers`, allowing matched instructions to be interleaved with unmatched instructions.
+
+    >>> from reprospect.test.sass.composite import interleaved_instructions_are
+    >>> from reprospect.test.sass.instruction import OpcodeModsMatcher
+    >>> matcher = interleaved_instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
+    ... )
+    >>> matcher.match(instructions = ('YIELD', 'NOP')) is not None
+    True
+    >>> matcher.match(instructions = ('NOP', 'YIELD')) is None
+    True
+    >>> matcher.match(instructions = ('YIELD', 'FADD R0, R1, R2', 'NOP')) is not None
+    True
+    """
+    return composite_impl.OrderedInterleavedInSequenceMatcher(matchers)
+
+def unordered_interleaved_instructions_are(*matchers : instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.UnorderedInterleavedInSequenceMatcher:
+    """
+    Match a sequence of instructions against `matchers` (unordered), allowing matched instructions to be interleaved with unmatched instructions.
+
+    >>> from reprospect.test.sass.composite import unordered_interleaved_instructions_are
+    >>> from reprospect.test.sass.instruction import OpcodeModsMatcher
+    >>> matcher = unordered_interleaved_instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
+    ... )
+    >>> matcher.match(instructions = ('YIELD', 'NOP')) is not None
+    True
+    >>> matcher.match(instructions = ('NOP', 'YIELD')) is not None
+    True
+    >>> matcher.match(instructions = ('YIELD', 'FADD R0, R1, R2', 'NOP')) is not None
+    True
+    >>> matcher.match(instructions = ('YIELD',)) is None
+    True
+    """
+    return composite_impl.UnorderedInterleavedInSequenceMatcher(matchers)

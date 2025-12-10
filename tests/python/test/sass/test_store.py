@@ -1,13 +1,12 @@
 import logging
-import os
 import typing
 
 import pytest
-import semantic_version
 
+from reprospect.test import features
 from reprospect.test.sass.instruction import StoreMatcher, StoreGlobalMatcher
-from reprospect.tools.architecture    import NVIDIAArch
-from reprospect.utils                 import cmake
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.utils import cmake
 
 from tests.python.parameters                 import Parameters, PARAMETERS
 from tests.python.test.sass.test_instruction import (
@@ -95,16 +94,14 @@ class TestStoreMatcher:
 
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
-        # Before CUDA 13, double4 is always 16-bytes aligned.
-        aligned_16 : typing.Final[bool] = semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13')
+        aligned_16 : typing.Final[bool] = features.Memory(arch = parameters.arch).max_transaction_size == 16
 
         # Find the wide stores(s).
-        # Before BLACKWELL, there must be two 128-bits stores.
         matcher_s_128 = StoreGlobalMatcher(arch = parameters.arch, size = 128)
         matcher_s_256 = StoreGlobalMatcher(arch = parameters.arch, size = 256)
         s_128 = tuple(filter(matcher_s_128, decoder.instructions))
         s_256 = tuple(filter(matcher_s_256, decoder.instructions))
-        if parameters.arch.compute_capability < 100 or aligned_16:
+        if aligned_16:
             assert len(s_128) == 2 and len(s_256) == 0
         else:
             assert len(s_128) == 0 and len(s_256) == 1

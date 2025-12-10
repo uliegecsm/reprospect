@@ -11,7 +11,7 @@ class TestAddressMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.address.AddressMatcher`.
     """
-    def test_address(self):
+    def test_address(self) -> None:
         ARCH : typing.Final[NVIDIAArch] = NVIDIAArch.from_str('VOLTA70')
 
         ADDRESS : typing.Final[str] = '[R42]'
@@ -28,7 +28,7 @@ class TestAddressMatcher:
         assert AddressMatcher(arch = ARCH, reg = 'R27'                 ).match(ADDRESS_WITH_OFFSET) is None
         assert AddressMatcher(arch = ARCH, reg = 'R42', offset = '0x20').match(ADDRESS_WITH_OFFSET) is None
 
-    def test_reg64_address(self):
+    def test_reg64_address(self) -> None:
         ARCH : typing.Final[NVIDIAArch] = NVIDIAArch.from_str('AMPERE86')
 
         ADDRESS : typing.Final[str] = '[R42.64]'
@@ -45,7 +45,7 @@ class TestAddressMatcher:
         assert AddressMatcher(arch = ARCH, reg = 'R27'                 ).match(ADDRESS_WITH_OFFSET) is None
         assert AddressMatcher(arch = ARCH, reg = 'R42', offset = '0x20').match(ADDRESS_WITH_OFFSET) is None
 
-    def test_desc_reg64_address(self):
+    def test_desc_reg64_address(self) -> None:
         ARCH : typing.Final[NVIDIAArch] = NVIDIAArch.from_str('BLACKWELL120')
 
         ADDRESS : typing.Final[str] = 'desc[UR4][R42.64]'
@@ -66,7 +66,7 @@ class TestAddressMatcher:
         assert AddressMatcher(arch = ARCH, ureg = 'UR6', reg = 'R42', offset = '0x10').match(ADDRESS_WITH_OFFSET) is None
         assert AddressMatcher(arch = ARCH, ureg = 'UR4', reg = 'R42', offset = '0x20').match(ADDRESS_WITH_OFFSET) is None
 
-    def test_build_pattern(self):
+    def test_build_pattern(self) -> None:
         ARCH : typing.Final[NVIDIAArch] = NVIDIAArch.from_str('BLACKWELL120')
 
         assert AddressMatcher.build_pattern(arch = ARCH) == r'desc\[UR[0-9]+\]\[(?:R[0-9]+|UR[0-9]+)\.64(?:\+0x[0-9A-Fa-f]+)?\]'

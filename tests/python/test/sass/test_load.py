@@ -1,21 +1,20 @@
 import logging
-import os
 import pathlib
 import re
 import typing
 
 import pytest
-import semantic_version
 
-from reprospect.test.sass.composite   import instructions_contain, instruction_is
+from reprospect.test import features
+from reprospect.test.sass.composite import instructions_contain, instruction_is
 from reprospect.test.sass.instruction import (
     InstructionMatch,
     LoadConstantMatcher, LoadGlobalMatcher, LoadMatcher,
     OpcodeModsWithOperandsMatcher,
     PatternBuilder,
 )
-from reprospect.tools.architecture    import NVIDIAArch
-from reprospect.utils                 import cmake
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.utils import cmake
 
 from tests.python.parameters                 import Parameters, PARAMETERS
 from tests.python.test.sass.test_instruction import (
@@ -222,27 +221,24 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
 
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
-        # Before CUDA 13, double4 is always 16-bytes aligned.
-        aligned_16 : typing.Final[bool] = semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13')
+        aligned_16 : typing.Final[bool] = features.Memory(arch = parameters.arch).max_transaction_size == 16
 
         # Find the read-only wide load(s).
-        # Before BLACKWELL, there must be two 128-bits loads.
         matcher_lro_128 = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = True)
         matcher_lro_256 = LoadGlobalMatcher(arch = parameters.arch, size = 256, readonly = True)
         lro_128 = tuple(filter(matcher_lro_128, decoder.instructions))
         lro_256 = tuple(filter(matcher_lro_256, decoder.instructions))
-        if parameters.arch.compute_capability < 100 or aligned_16:
+        if aligned_16:
             assert len(lro_128) == 2 and len(lro_256) == 0
         else:
             assert len(lro_128) == 0 and len(lro_256) == 1
 
         # Find the wide load(s).
-        # Before BLACKWELL, there must be two 128-bits loads.
         matcher_l_128 = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = False)
         matcher_l_256 = LoadGlobalMatcher(arch = parameters.arch, size = 256, readonly = False)
         l_128 = tuple(filter(matcher_l_128, decoder.instructions))
         l_256 = tuple(filter(matcher_l_256, decoder.instructions))
-        if parameters.arch.compute_capability < 100 or aligned_16:
+        if aligned_16:
             assert len(l_128) == 2 and len(l_256) == 0
         else:
             assert len(l_128) == 0 and len(l_256) == 1

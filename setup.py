@@ -17,6 +17,7 @@ def enable_mypyc(dist : Distribution) -> None:
 
     ext_modules = mypycify(
         [
+            'reprospect/test/features.py',
             'reprospect/test/sass/composite.py',
             'reprospect/test/sass/composite_impl.py',
             'reprospect/test/sass/instruction/address.py',

@@ -39,21 +39,18 @@ __global__ void elementwise_add_restrict_128_wide(float4* __restrict__ const dst
 """Element-wise add with 128-bit :code:`float4`."""
 
 CODE_ELEMENTWISE_ADD_RESTRICT_256_WIDE = """\
-#if CUDART_VERSION < 13000
-    using scalar_t = double4;
-#else
-    using scalar_t = double4_32a;
-#endif
-
-__global__ void elementwise_add_restrict_256_wide(scalar_t* __restrict__ const dst, const scalar_t* __restrict__ const src)
+struct alignas(4 * sizeof(double)) Tester {
+    double x, y, z, w;
+};
+__global__ void elementwise_add_restrict_256_wide(Tester* __restrict__ const dst, const Tester* __restrict__ const src)
 {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
-    const scalar_t& a = src[index];
-    const scalar_t& b = dst[index];
-    dst[index] = scalar_t{.x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z, .w = a.w + b.w};
+    const Tester& a = src[index];
+    const Tester& b = dst[index];
+    dst[index] = Tester{.x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z, .w = a.w + b.w};
 }
 """
-"""Element-wise add with 256-bit :code:`double4_32a`."""
+"""Element-wise add with 256-bits aligned elements."""
 
 @functools.lru_cache(maxsize = 128)
 def get_decoder(*, cwd : pathlib.Path, arch : NVIDIAArch, file : pathlib.Path, cmake_file_api : cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:

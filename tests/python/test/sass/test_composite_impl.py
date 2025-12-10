@@ -36,23 +36,23 @@ class TestInSequenceAtMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.composite_impl.InSequenceAtMatcher`.
     """
-    def test_match_first_element(self):
+    def test_match_first_element(self) -> None:
         """
         Matches the first element.
         """
-        [matched] = InSequenceAtMatcher(matcher = MATCHER_DADD).match(instructions = DADD_NOP_DMUL[0:1])
+        assert (matched := InSequenceAtMatcher(matcher = MATCHER_DADD).match(instructions = DADD_NOP_DMUL[0:1])) is not None
+        assert len(matched) == 1
+        assert matched[0].opcode == 'DADD'
 
-        assert matched.opcode == 'DADD'
-
-    def test_match_with_start(self):
+    def test_match_with_start(self) -> None:
         """
         Matches the element pointed to by `start`.
         """
-        [matched] = InSequenceAtMatcher(matcher = MATCHER_DADD).match(instructions = NOP_DMUL_NOP_DADD[4::])
+        assert (matched := InSequenceAtMatcher(matcher = MATCHER_DADD).match(instructions = NOP_DMUL_NOP_DADD[4::])) is not None
+        assert len(matched) == 1
+        assert matched[0].opcode == 'DADD'
 
-        assert matched.opcode == 'DADD'
-
-    def test_no_match(self):
+    def test_no_match(self) -> None:
         """
         Raises if the first element does not match.
         """
@@ -66,7 +66,7 @@ class TestZeroOrMoreInSequenceMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.composite_impl.ZeroOrMoreInSequenceMatcher`.
     """
-    def test_matches_zero(self):
+    def test_matches_zero(self) -> None:
         """
         Matches zero time with sequence :py:const:`DADD_NOP_DMUL`.
         """
@@ -74,7 +74,7 @@ class TestZeroOrMoreInSequenceMatcher:
 
         assert not matched
 
-    def test_assert_matches_always_true(self):
+    def test_assert_matches_always_true(self) -> None:
         """
         Matching zero time is fine.
         """
@@ -82,11 +82,11 @@ class TestZeroOrMoreInSequenceMatcher:
 
         assert len(ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).assert_matches(instructions = NOP_DMUL_NOP_DADD)) == 1
 
-    def test_matches_with_start(self):
+    def test_matches_with_start(self) -> None:
         """
         Matches many times, with a `start` and sequence :py:const:`DADD_NOP_DMUL`.
         """
-        matched = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).match(instructions = DADD_NOP_DMUL[1::])
+        assert (matched := ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).match(instructions = DADD_NOP_DMUL[1::])) is not None
 
         assert len(matched) == 3 and all(x.opcode == 'NOP' for x in matched)
 
@@ -98,7 +98,7 @@ class TestOneOrMoreInSequenceMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.composite_impl.OneOrMoreInSequenceMatcher`.
     """
-    def test_matches_zero(self):
+    def test_matches_zero(self) -> None:
         """
         Does not match sequence :py:const:`DADD_NOP_DMUL`.
         """
@@ -109,23 +109,29 @@ class TestOneOrMoreInSequenceMatcher:
         with pytest.raises(RuntimeError, match = 'did not match'):
             matcher.assert_matches(instructions = DADD_NOP_DMUL)
 
-    def test_matches_one(self):
+    def test_matches_one(self) -> None:
         """
         Matches the sequence :py:const:`DADD_NOP_DMUL`.
         """
         matcher = OneOrMoreInSequenceMatcher(matcher = MATCHER_DADD)
 
-        assert len(matcher.match(instructions = DADD_NOP_DMUL)) == 1
-        assert len(matcher.assert_matches(instructions = DADD_NOP_DMUL)) == 1
+        assert (matched := matcher.match(instructions = DADD_NOP_DMUL)) is not None
+        assert len(matched) == 1
 
-    def test_matches_more(self):
+        assert (matched := matcher.assert_matches(instructions = DADD_NOP_DMUL)) is not None
+        assert len(matched) == 1
+
+    def test_matches_more(self) -> None:
         """
         Matches the sequence :py:const:`DADD_NOP_DMUL` many times starting at 1.
         """
         matcher = OneOrMoreInSequenceMatcher(matcher = MATCHER_NOP)
 
-        assert len(matcher.match(instructions = DADD_NOP_DMUL[1::])) == 3
-        assert len(matcher.assert_matches(instructions = DADD_NOP_DMUL[1::])) == 3
+        assert (matched := matcher.match(instructions = DADD_NOP_DMUL[1::])) is not None
+        assert len(matched) == 3
+
+        assert (matched := matcher.assert_matches(instructions = DADD_NOP_DMUL[1::])) is not None
+        assert len(matched) == 3
 
     def test_explain(self) -> None:
         assert OneOrMoreInSequenceMatcher(matcher = MATCHER_NOP).explain(instructions = DADD_NOP_DMUL) == f'{MATCHER_NOP} did not match {DADD_NOP_DMUL[0]}.'
@@ -140,28 +146,28 @@ class TestOrderedInSequenceMatcher:
         MATCHER_DMUL,
     ))
 
-    def test_match_with_nop(self):
+    def test_match_with_nop(self) -> None:
         """
         Matches the sequence :py:const:`DADD_NOP_DMUL`.
         """
-        matched = self.MATCHER.match(instructions = DADD_NOP_DMUL)
+        assert (matched := self.MATCHER.match(instructions = DADD_NOP_DMUL)) is not None
 
         assert len(matched) == 5
         assert matched[0].opcode == 'DADD'
         assert all(x.opcode == 'NOP' for x in matched[1:-2])
         assert matched[-1].opcode == 'DMUL'
 
-    def test_match(self):
+    def test_match(self) -> None:
         """
         Matches the sequence :py:const:`DADD_DMUL`.
         """
-        matched = self.MATCHER.match(instructions = DADD_DMUL)
+        assert (matched := self.MATCHER.match(instructions = DADD_DMUL)) is not None
 
         assert len(matched) == 2
         assert matched[0].opcode == 'DADD'
         assert matched[1].opcode == 'DMUL'
 
-    def test_no_match(self):
+    def test_no_match(self) -> None:
         """
         Does not match reversed sequence :py:const:`DADD_DMUL`.
         """
@@ -175,11 +181,11 @@ class TestUnorderedInSequenceMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.composite_impl.UnorderedInSequenceMatcher`.
     """
-    def test_match_with_nop(self):
+    def test_match_with_nop(self) -> None:
         """
         Matches the sequence :py:const:`DADD_NOP_DMUL`.
         """
-        inners = [
+        inners : list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             MATCHER_DMUL,
             MATCHER_DADD,
@@ -187,15 +193,14 @@ class TestUnorderedInSequenceMatcher:
 
         random.shuffle(inners)
 
-        matched = UnorderedInSequenceMatcher(matchers = inners).match(instructions = DADD_NOP_DMUL)
-
+        assert (matched := UnorderedInSequenceMatcher(matchers = inners).match(instructions = DADD_NOP_DMUL)) is not None
         assert len(matched) == 5
 
-    def test_without_nop(self):
+    def test_without_nop(self) -> None:
         """
         Matches the sequence :py:const:`DADD_DMUL`.
         """
-        inners = [
+        inners : list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             MATCHER_DMUL,
             MATCHER_DADD,
@@ -203,15 +208,14 @@ class TestUnorderedInSequenceMatcher:
 
         random.shuffle(inners)
 
-        matched = UnorderedInSequenceMatcher(matchers = inners).match(instructions = DADD_DMUL)
-
+        assert (matched := UnorderedInSequenceMatcher(matchers = inners).match(instructions = DADD_DMUL)) is not None
         assert len(matched) == 2
 
-    def test_with_split_nop(self):
+    def test_with_split_nop(self) -> None:
         """
         Matches the sequence :py:const:`NOP_DMUL_NOP_DADD`.
         """
-        inners = [
+        inners : list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             MATCHER_DMUL,
@@ -220,15 +224,14 @@ class TestUnorderedInSequenceMatcher:
 
         random.shuffle(inners)
 
-        matched = UnorderedInSequenceMatcher(matchers = inners).match(instructions = NOP_DMUL_NOP_DADD)
-
+        assert (matched := UnorderedInSequenceMatcher(matchers = inners).match(instructions = NOP_DMUL_NOP_DADD)) is not None
         assert len(matched) == 5
 
-    def test_no_match(self):
+    def test_no_match(self) -> None:
         """
         All permutations fail on sequence :py:const:`NOP_DMUL_NOP_DADD`.
         """
-        inners = [
+        inners : list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             MATCHER_DMUL,
             MATCHER_DADD,

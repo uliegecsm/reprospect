@@ -1,7 +1,18 @@
-from reprospect.test.sass.composite      import any_of, Fluentizer, instructions_are, instructions_contain, instruction_is, unordered_instructions_are
-from reprospect.test.sass.composite_impl import AnyOfMatcher, InSequenceMatcher, InSequenceAtMatcher, OneOrMoreInSequenceMatcher, OrderedInSequenceMatcher, UnorderedInSequenceMatcher, ZeroOrMoreInSequenceMatcher
-from reprospect.test.sass.instruction    import AnyMatcher, Fp32AddMatcher, InstructionMatch, OpcodeModsMatcher, RegisterMatcher
-from reprospect.tools.sass.decode        import RegisterType
+from reprospect.test.sass.composite import (
+    any_of, Fluentizer,
+    instruction_is, instructions_are, instructions_contain,
+    interleaved_instructions_are,
+    unordered_interleaved_instructions_are, unordered_instructions_are,
+)
+from reprospect.test.sass.composite_impl import (
+    AnyOfMatcher, InSequenceMatcher,
+    InSequenceAtMatcher, OrderedInterleavedInSequenceMatcher,
+    OneOrMoreInSequenceMatcher, UnorderedInterleavedInSequenceMatcher,
+    OrderedInSequenceMatcher, UnorderedInSequenceMatcher,
+    ZeroOrMoreInSequenceMatcher,
+)
+from reprospect.test.sass.instruction import AnyMatcher, Fp64AddMatcher, Fp32AddMatcher, InstructionMatch, OpcodeModsMatcher, RegisterMatcher
+from reprospect.tools.sass.decode import RegisterType
 
 class TestInstructionIs:
     """
@@ -108,9 +119,11 @@ class TestUnorderedInstructionsAre:
     Tests for :py:func:`reprospect.test.sass.composite.unordered_instructions_are`.
     """
     def test(self) -> None:
-        matcher = unordered_instructions_are(Fp32AddMatcher(), Fp32AddMatcher())
+        matcher = unordered_instructions_are(Fp32AddMatcher(), Fp64AddMatcher())
         assert isinstance(matcher, UnorderedInSequenceMatcher)
-        assert len(matcher.matchers) == 2 and all(isinstance(x, Fp32AddMatcher) for x in matcher.matchers)
+        assert len(matcher.matchers) == 2
+        assert isinstance(matcher.matchers[0], Fp32AddMatcher)
+        assert isinstance(matcher.matchers[1], Fp64AddMatcher)
 
 class TestInstructionsContain:
     """
@@ -127,3 +140,19 @@ class TestAnyOf:
     def test(self) -> None:
         matcher = any_of(Fp32AddMatcher(), Fp32AddMatcher())
         assert isinstance(matcher, AnyOfMatcher)
+
+class TestInterleavedInstructionsAre:
+    """
+    Tests for :py:func:`reprospect.test.sass.composite.interleaved_instructions_are`.
+    """
+    def test(self) -> None:
+        matcher = interleaved_instructions_are(Fp32AddMatcher(), Fp64AddMatcher())
+        assert isinstance(matcher, OrderedInterleavedInSequenceMatcher)
+
+class TestUnorderedInterleavedInstructionsAre:
+    """
+    Tests for :py:func:`reprospect.test.sass.composite.unordered_interleaved_instructions_are`.
+    """
+    def test(self) -> None:
+        matcher = unordered_interleaved_instructions_are(Fp32AddMatcher(), Fp64AddMatcher())
+        assert isinstance(matcher, UnorderedInterleavedInSequenceMatcher)

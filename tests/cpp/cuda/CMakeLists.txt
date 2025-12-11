@@ -16,7 +16,10 @@ function(add_one_executable FILE)
 
 endfunction()
 
-find_package(CUDAToolkit REQUIRED COMPONENTS cudart nvtx3)
+find_package(
+    CUDAToolkit REQUIRED
+    COMPONENTS cuda_driver cudart nvtx3
+)
 
 add_one_executable(graph)
 add_one_executable(saxpy)

@@ -5,6 +5,8 @@ import subprocess
 from reprospect.utils              import cmake
 from reprospect.tools.architecture import NVIDIAArch
 
+QUALITY_FLAGS : tuple[str, ...] = ('-Wall', '-Wextra', '-Werror')
+
 def get_compilation_output(*, # pylint: disable=too-many-branches
     source : pathlib.Path,
     cwd : pathlib.Path,
@@ -29,6 +31,16 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
         cuda_toolchain['compiler']['path'],
         '-std=c++20',
     ]
+
+    # Code quality flags.
+    match cuda_compiler_id:
+        case 'NVIDIA':
+            cmd.extend(f'-Xcompiler={x}' for x in QUALITY_FLAGS)
+        case 'Clang':
+            cmd.extend(QUALITY_FLAGS)
+            cmd.append('-Wno-error=unknown-cuda-version')
+        case _:
+            raise ValueError(f'unsupported compiler ID {cuda_compiler_id}')
 
     # For compiling an executable, if the source ends with '.cpp', we need '-x cu' for nvcc and '-x cuda' for clang.
     if not object_file and source.suffix == '.cpp':
@@ -61,17 +73,15 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
         case _:
             raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
 
+    # Allow any include within the repository.
+    cmd.append(f"-I{cmake_file_api.cache['reprospect_SOURCE_DIR']['value']}")
+
     # Append link flags if needed.
     if not object_file:
-        match cuda_compiler_id:
-            case 'NVIDIA':
-                pass
-            case 'Clang':
-                cudart = pathlib.Path(cmake_file_api.cache['CUDA_CUDART']['value'])
-                cmd.append(f'-L{cudart.parent}')
-                cmd.append('-lcudart')
-            case _:
-                raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
+        cmd.append(f"-L{pathlib.Path(cmake_file_api.cache['CUDA_cudart_LIBRARY']['value']).parent}")
+        cmd.append('-lcudart')
+        cmd.append(f"-L{pathlib.Path(cmake_file_api.cache['CUDA_cuda_driver_LIBRARY']['value']).parent}")
+        cmd.append('-lcuda')
     else:
         cmd.append('-c')
 

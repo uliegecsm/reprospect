@@ -50,7 +50,7 @@ __global__ void elementwise_add_restrict_256_wide(Tester* __restrict__ const dst
     dst[index] = Tester{.x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z, .w = a.w + b.w};
 }
 """
-"""Element-wise add with 256-bits aligned elements."""
+"""Element-wise add with 256-bit aligned elements."""
 
 @functools.lru_cache(maxsize = 128)
 def get_decoder(*, cwd : pathlib.Path, arch : NVIDIAArch, file : pathlib.Path, cmake_file_api : cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:

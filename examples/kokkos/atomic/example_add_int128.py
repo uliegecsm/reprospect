@@ -65,7 +65,7 @@ class TestAtomicAddInt128(add.TestCase):
 
     def test_no_atomic_add_128(self, decoder : Decoder) -> None:
         """
-        There is no match for an atomic add of size 128-bits.
+        There is no match for an atomic add of 128-bit size.
         """
         matcher_atom = AtomicMatcher   (operation = 'ADD', dtype = ('S', 128), scope = 'DEVICE', consistency = 'STRONG', arch = self.arch)
         matcher_red  = ReductionMatcher(operation = 'ADD', dtype = ('S', 128), scope = 'DEVICE', consistency = 'STRONG', arch = self.arch)

@@ -14,7 +14,7 @@ Beyond the annotations, there are other differences, including:
   (`PR #8212 <https://github.com/kokkos/kokkos/pull/8212>`_).
 
 This example analyzes the impact of the specified alignment of :code:`Kokkos::complex`.
-It analyzes a kernel that reads from and writes to contiguous arrays of 128-bits structures:
+It analyzes a kernel that reads from and writes to contiguous arrays of 128-bit structures:
 
     +---------------------------------+---------------------------------+------------------------+-------------------------+
     |                                 | Type                            | :code:`sizeof` [bytes] | :code:`alignof` [bytes] |
@@ -29,9 +29,9 @@ The example proceeds in two steps:
 #. :py:class:`TestSASS` examines compiler-generated instructions from the binary.
 
    It shows that with specified alignment, reading or writing a :code:`Kokkos::complex<double>`
-   value in global memory compiles to 128-bits instructions.
+   value in global memory compiles to 128-bit instructions.
 
-   By contrast, with the default alignment, the compiler generates two successive 64-bits instructions, the first
+   By contrast, with the default alignment, the compiler generates two successive 64-bit instructions, the first
    for the real part, and the second for the imaginary part.
 
 #. :py:class:`TestNCU` performs a kernel profiling.

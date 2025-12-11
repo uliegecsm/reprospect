@@ -62,7 +62,7 @@ class TestStoreMatcher:
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict_128_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
-        Test 128-bits wide store with
+        Test 128-bit wide store with
         :py:const:`tests.python.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
@@ -86,7 +86,7 @@ class TestStoreMatcher:
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict_256_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
-        Test 256-bits wide store with
+        Test 256-bit wide store with
         :py:const:`tests.python.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_256_WIDE`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'

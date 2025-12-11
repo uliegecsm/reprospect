@@ -186,7 +186,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict_128_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
-        Test 128-bits wide loads with
+        Test 128-bit wide loads with
         :py:const:`tests.python.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
@@ -213,7 +213,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_elementwise_add_restrict_256_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
-        Test 256-bits wide loads with
+        Test 256-bit wide loads with
         :py:const:`tests.python.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_256_WIDE`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'

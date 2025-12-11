@@ -228,7 +228,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         LDG.E R2, desc[UR6][R2.64]
         LD.E.64 R2, R4.64
 
-    Starting from `BLACKWELL`, 256-bits load instructions are available, such as::
+    Starting from `BLACKWELL`, 256-bit load instructions are available, such as::
 
         LDG.E.ENL2.256.CONSTANT R12, R8, desc[UR4][R2.64]
 
@@ -341,7 +341,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
         STG.E desc[UR6][R6.64], R15
         ST.E.64 R4.64, R2
 
-    Starting from `BLACKWELL`, 256-bits store instructions are available, such as::
+    Starting from `BLACKWELL`, 256-bit store instructions are available, such as::
 
         STG.E.ENL2.256 desc[UR4][R4.64], R8, R12
     """
@@ -454,7 +454,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
         dtype : tuple[str, int] | None = None,
     ):
         """
-        :param dtype: For instance, `('F', 64)` for a floating-point type 64-bits in size or `(S, 32)` for a signed integer type 32-bits in size.
+        :param dtype: For instance, `('F', 64)` for a 64-bit floating-point or `(S, 32)` for a signed 32-bit integer.
         """
         if dtype is not None:
             check_memory_instruction_word_size(size = int(dtype[1] / 8))
@@ -536,7 +536,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
         version : semantic_version.Version | None = None,
     ):
         """
-        :param dtype: For instance, `('F', 64)` for a floating-point type 64-bits in size or `(S, 32)` for a signed integer type 32-bits in size.
+        :param dtype: For instance, `('F', 64)` for a 64-bit floating-point or `(S, 32)` for a signed 32-bit integer.
         """
         if dtype is not None:
             check_memory_instruction_word_size(size = int(dtype[1] / 8))

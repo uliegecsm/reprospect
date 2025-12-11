@@ -55,3 +55,40 @@ class Memory:
         if self.arch.compute_capability < 100 or self.version in semantic_version.SimpleSpec('<13'):
             return 16
         return 32
+
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
+class PTX:
+    arch: NVIDIAArch
+
+    @property
+    def min_isa_version(self) -> semantic_version.Version: # pylint: disable=too-many-return-statements
+        """
+        Minimum PTX ISA version that supports :py:attr:`arch`.
+
+        References:
+
+        * https://docs.nvidia.com/cuda/parallel-thread-execution/#release-notes-ptx-release-history
+        """
+        match self.arch.compute_capability.as_int:
+            case 70:
+                return semantic_version.Version('6.0.0')
+            case 75:
+                return semantic_version.Version('6.3.0')
+            case 80:
+                return semantic_version.Version('7.0.0')
+            case 86:
+                return semantic_version.Version('7.1.0')
+            case 87:
+                return semantic_version.Version('7.4.0')
+            case 89 | 90:
+                return semantic_version.Version('7.8.0')
+            case 100:
+                return semantic_version.Version('8.6.0')
+            case 103 | 121:
+                return semantic_version.Version('8.8.0')
+            case 110:
+                return semantic_version.Version('9.0.0')
+            case 120:
+                return semantic_version.Version('8.7.0')
+            case _:
+                raise ValueError(self.arch)

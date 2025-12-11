@@ -1,0 +1,25 @@
+.version {version}
+.target sm_{cc}
+.address_size 64
+
+.visible .entry hfma2(.param .u64 out_ptr)
+{{
+    .reg .b64 %out;
+    .reg .f16 %a, %b, %c, %d, %e, %f, %g;
+
+    ld.param.u64 %out, [out_ptr];
+
+    mov.b16 %a, 0x3C00; // 1.0
+    mov.b16 %b, 0x4000; // 2.0
+    mov.b16 %c, 0x4200; // 3.0
+    mov.b16 %e, 0x4400; // 4.0
+    mov.b16 %f, 0x4500; // 5.0
+
+    fma.rn.f16 %d, %e, %f, %c;
+    fma.rn.f16 %g, %d, %b, %a;
+
+    st.global.b16 [%out], %d;
+    st.global.b16 [%out+2], %g;
+
+    ret;
+}}

@@ -42,6 +42,7 @@ CODE_ELEMENTWISE_ADD_RESTRICT_256_WIDE = """\
 struct alignas(4 * sizeof(double)) Tester {
     double x, y, z, w;
 };
+
 __global__ void elementwise_add_restrict_256_wide(Tester* __restrict__ const dst, const Tester* __restrict__ const src)
 {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;

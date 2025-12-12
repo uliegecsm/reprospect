@@ -27,8 +27,10 @@ class AddKokkosComplexDouble:
     2. imaginary parts
     3. possibly with NOP
     """
-    def build(self, load : InstructionMatch) -> UnorderedInSequenceMatcher:
-        load_register = load.operands[0]
+    def build(self, loads : typing.Collection[InstructionMatch]) -> UnorderedInSequenceMatcher:
+        if len(loads) != 1:
+            raise RuntimeError(self)
+        load_register = loads[0].operands[0]
 
         parsed = RegisterMatcher(special = False).match(load_register)
         assert parsed is not None
@@ -71,7 +73,7 @@ class TestAtomicAddComplex128(add.TestCase):
 
     def test_lock_based_atomic(self, decoder : Decoder) -> None:
         """
-        This test proves that it uses the lock-based atomic by looking for a multi-instruction pattern.
+        This test proves that it uses the lock-based atomic by looking for an instruction sequence pattern.
         """
         desul.LockBasedAtomicMatcher(
             arch = self.arch,

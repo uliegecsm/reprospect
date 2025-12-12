@@ -43,8 +43,10 @@ class AddInt128:
     """
     Addition of 2 :code:`__int128` that uses a specific set of registers.
     """
-    def build(self, load : InstructionMatch) -> OrderedInSequenceMatcher:
-        return instructions_are(RegisterMatchValidator(matcher = add_int128.AddInt128(), load = load))
+    def build(self, loads : typing.Collection[InstructionMatch]) -> OrderedInSequenceMatcher:
+        if len(loads) != 1:
+            raise RuntimeError(self)
+        return instructions_are(RegisterMatchValidator(matcher = add_int128.AddInt128(), load = loads[0]))
 
 class TestAtomicAddInt128(add.TestCase):
     """
@@ -75,7 +77,7 @@ class TestAtomicAddInt128(add.TestCase):
 
     def test_lock_based_atomic(self, decoder : Decoder) -> None:
         """
-        This test proves that it uses the lock-based atomic by looking for a multi-instruction pattern.
+        This test proves that it uses the lock-based atomic by looking for an instruction sequence pattern.
         """
         desul.LockBasedAtomicMatcher(
             arch = self.arch,

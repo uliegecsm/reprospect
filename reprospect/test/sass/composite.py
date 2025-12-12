@@ -54,7 +54,7 @@ class Fluentizer(instruction.InstructionMatcher):
         """
         return composite_impl.ZeroOrMoreInSequenceMatcher(matcher = self.matcher)
 
-    def with_operand(self, index : int, operand : OperandMatcher) -> Fluentizer:
+    def with_operand(self, operand : OperandMatcher, index : int | None = None) -> Fluentizer:
         """
         >>> from reprospect.test.sass.composite   import instruction_is
         >>> from reprospect.test.sass.instruction import Fp32AddMatcher, RegisterMatcher

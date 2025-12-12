@@ -17,8 +17,6 @@ class TestThen(CMakeAwareTestCase):
 
     It uses :file:`examples/kokkos/graph/example_then.cpp`.
     """
-    KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter = pathlib.Path)
-
     @classmethod
     @override
     def get_target_name(cls) -> str:

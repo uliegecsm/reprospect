@@ -5,9 +5,9 @@ Overview
 
 `ReProspect` provides a framework and tools for reproducible prospecting of CUDA applications.
 It is implemented in `Python` and builds on the NVIDIA tools:
-the `CUDA binary utilities`_ for binary analysis :cite:`nvidia-cuda-binary-utilities`,
+`Nsight Systems`_ for API tracing :cite:`nvidia-nsight-systems`,
 `Nsight Compute`_ for kernel profiling :cite:`nvidia-nsight-compute`,
-and `Nsight Systems`_ for API tracing :cite:`nvidia-nsight-systems`.
+and the `CUDA binary utilities`_ for binary analysis :cite:`nvidia-cuda-binary-utilities`.
 
 `ReProspect` provides an interface to launch these NVIDIA tools, as well as post-processing utilities to collect the results in tailored data structures.
 It also provides assertion functions to verify that the collected data match expectations.
@@ -19,18 +19,18 @@ such as the integration of such analyses in CI/CD pipelines and their increased 
 
 `ReProspect` supports three complementary forms of analysis:
 
-   .. rubric:: Binary analysis
+   .. rubric:: API tracing
 
-   Built on top of the `CUDA binary utilities`_ (``cuobjdump`` and ``nvdisasm``) to extract information from CUDA binaries,
-   such as the SASS instructions that make up a kernel, the associated control flow instructions, the resource usage, and so on.
+   Built on top of `Nsight Systems`_ (``nsys``) to record various runtime events, such as CUDA API calls, and examine application-level control flow.
 
    .. rubric:: Kernel profiling
 
    Built on top of `Nsight Compute`_ (``ncu``) to collect detailed per-kernel runtime metrics.
 
-   .. rubric:: API tracing
+   .. rubric:: Binary analysis
 
-   Built on top of `Nsight Systems`_ (``nsys``) to record various runtime events, such as CUDA API calls, and examine application-level control flow.
+   Built on top of the `CUDA binary utilities`_ (``cuobjdump`` and ``nvdisasm``) to extract information from CUDA binaries,
+   such as the SASS instructions that make up a kernel, the associated control flow instructions, the resource usage, and so on.
 
 In order to facilitate its integration in CI/CD pipelines, `ReProspect` has functionalities to interact with the build system,
 such as functionalities to obtain information about the compiler toolchain. Currently, these functionalities have been implemented only for the `CMake`_ build system.

@@ -22,6 +22,7 @@ class TestDispatch(CMakeAwareTestCase):
     It uses :file:`examples/kokkos/graph/example_dispatch.cpp`.
     """
     KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter = pathlib.Path)
+    """Used in :py:meth:`TestNSYS.report`."""
 
     @classmethod
     @override

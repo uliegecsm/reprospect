@@ -1,4 +1,4 @@
-:code:`Kokkos::complex` alignment
-=================================
+Alignment
+=========
 
 .. automodule:: examples.kokkos.complex.example_alignment

@@ -21,5 +21,5 @@ but remain independent of machine-specific factors such as host CPU or PCIe topo
     The proposed setup targets scenarios where each CI runner executes jobs independently and maintains its own persistent directory for caching.
     For example, jobs might run inside a `Docker` container on a GitHub CI, and store their cache in a mounted ``$HOME`` directory.
 
-- The cacher for ``ncu`` is :py:class:`reprospect.tools.ncu.Cacher`.
 - The cacher for ``nsys`` is :py:class:`reprospect.tools.nsys.Cacher`.
+- The cacher for ``ncu`` is :py:class:`reprospect.tools.ncu.Cacher`.

@@ -2,7 +2,11 @@ Tests
 =====
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    tests/nvtx
+
+.. toctree::
+   :maxdepth: 4
+
    tests/python

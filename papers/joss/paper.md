@@ -59,9 +59,9 @@ The ability to carry out the analysis fully programmatically ensures reproducibi
 For instance, whereas test suites traditionally check output correctness of public functionalities, they could also check API calls, hardware utilization, or code paths and instruction patterns in the generated machine code.
 
 For the CUDA stack, NVIDIA provides a set of proprietary tools, guaranteed to be up-to-date with their software and hardware.
-The runtime analysis tools Nsight Systems [REF] and Nsight Compute [REF] are designed for API tracing and kernel profiling.
+The runtime analysis tools Nsight Systems [@nsys2025] and Nsight Compute [@ncu2025] are designed for API tracing and kernel profiling.
 They both provide a GUI for *ad hoc* exploratory understanding of the results, as well as a low-level Python API for accessing the raw data.
-The CUDA binary tools [REF] provide command-line access to machine code (SASS or PTX [REF]) and other information embedded in the binaries.
+The CUDA binary tools [@binary2025] provide command-line access to machine code (SASS or PTX [@ptx2025]) and other information embedded in the binaries.
 However, these tools are designed to extract raw data and do not provide the infrastructure for effective programmatic analysis of these data.
 
 Several well-established open-source analysis tools are already available.

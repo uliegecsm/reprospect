@@ -77,6 +77,9 @@ apidoc_modules = [
     },
 ]
 
+apidoc_module_first = True
+apidoc_separate_modules = True
+
 bibtex_bibfiles = ['references.bib']
 
 rst_prolog = '''

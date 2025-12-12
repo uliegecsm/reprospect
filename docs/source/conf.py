@@ -28,6 +28,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.extlinks',
     'sphinx.ext.intersphinx',
+    'sphinx_copybutton',
     'sphinx_github_style',
     'sphinxcontrib.bibtex',
     'sphinxcontrib.mermaid',

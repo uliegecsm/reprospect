@@ -68,6 +68,12 @@ class TestInstructionIs:
         )
         assert matcher.match(inst = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
 
+        matcher = instruction_is(AnyMatcher()).with_operand(operand = 'UPT')
+        assert matcher.match(inst = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
+
+        matcher = instruction_is(AnyMatcher()).with_operand(operand = 'R42')
+        assert matcher.match(inst = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is None
+
     def test_with_operand_composed(self) -> None:
         """
         Similar to :py:meth:`test_with_operands` but calls

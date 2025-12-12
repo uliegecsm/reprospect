@@ -261,22 +261,26 @@ class OperandValidator(InstructionMatcher):
     """
     __slots__ = ('matcher', 'index', 'operand')
 
-    def __init__(self, matcher : InstructionMatcher, index : int, operand : OperandMatcher) -> None:
+    def __init__(self, matcher : InstructionMatcher, operand : OperandMatcher, index : int | None = None) -> None:
         self.matcher : typing.Final[InstructionMatcher] = matcher
-        self.index : typing.Final[int] = index
+        self.index : typing.Final[int | None] = index
         self.operand : typing.Final[OperandMatcher] = operand
+
+    def check(self, operand : str) -> bool:
+        if isinstance(self.operand, str) and operand == self.operand:
+            return True
+        return isinstance(self.operand, AddressMatcher | ConstantMatcher | RegisterMatcher) and self.operand.match(operand) is not None
 
     @override
     def match(self, inst : Instruction | str) -> InstructionMatch | None:
         if (matched := self.matcher.match(inst)) is not None:
-            try:
-                operand = matched.operands[self.index]
-            except IndexError:
-                return None
-            if isinstance(self.operand, str) and operand == self.operand:
-                return matched
-            if isinstance(self.operand, AddressMatcher | ConstantMatcher | RegisterMatcher) and self.operand.match(operand) is not None:
-                return matched
+            if self.index is not None:
+                try:
+                    return matched if self.check(operand = matched.operands[self.index]) else None
+                except IndexError:
+                    return None
+            else:
+                return matched if any(self.check(x) for x in matched.operands) else None
         return None
 
 class OperandsValidator(InstructionMatcher):

@@ -54,7 +54,20 @@ class Fluentizer(instruction.InstructionMatcher):
         """
         return composite_impl.ZeroOrMoreInSequenceMatcher(matcher = self.matcher)
 
-    def with_operand(self, operand : OperandMatcher, index : int | None = None) -> Fluentizer:
+    def with_modifier(self, modifier : str, index : int | None = None) -> Fluentizer:
+        """
+        >>> from reprospect.test.sass.composite import instruction_is
+        >>> from reprospect.test.sass.instruction import AnyMatcher
+        >>> matcher = instruction_is(AnyMatcher()).with_modifier(modifier='U32').with_operand(index=0, operand='R4')
+        >>> matcher.match(inst='IMAD.WIDE.U32 R4, R7, 0x4, R4')
+        InstructionMatch(opcode='IMAD', modifiers=('WIDE', 'U32'), operands=('R4', 'R7', '0x4', 'R4'), predicate=None, additional=None)
+        """
+        return Fluentizer(matcher = composite_impl.ModifierValidator(
+            matcher = self.matcher,
+            index = index, modifier = modifier,
+        ))
+
+    def with_operand(self, index : int, operand : OperandMatcher) -> Fluentizer:
         """
         >>> from reprospect.test.sass.composite   import instruction_is
         >>> from reprospect.test.sass.instruction import Fp32AddMatcher, RegisterMatcher

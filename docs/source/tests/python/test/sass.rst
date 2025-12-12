@@ -3,6 +3,7 @@ SASS
 
 .. automodule:: tests.python.test.sass.test_any
 .. automodule:: tests.python.test.sass.test_atomic
+.. automodule:: tests.python.test.sass.test_branch
 .. automodule:: tests.python.test.sass.test_composite
 .. automodule:: tests.python.test.sass.test_composite_impl
 .. automodule:: tests.python.test.sass.test_instruction
@@ -13,3 +14,4 @@ SASS
    :maxdepth: 2
 
    sass/instruction
+   sass/matchers

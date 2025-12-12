@@ -1,38 +1,37 @@
 .. _analysis-workflow:
 
-Analysis workflow |:test_tube:|
-===============================
+Analysis workflow
+=================
 
-Analysis is 3-fold |:mag:|
---------------------------
+Three components
+----------------
 
-Binary analysis
-~~~~~~~~~~~~~~~
-
-* :py:class:`reprospect.tools.binaries.CuObjDump`
-* :py:class:`reprospect.tools.binaries.NVDisasm`
-* :py:class:`reprospect.tools.sass.Decoder`
-
-Kernel profiling |:female_detective:|
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-* :py:class:`reprospect.tools.ncu.Cacher`
-* :py:class:`reprospect.tools.ncu.Session`
-* :py:class:`reprospect.tools.ncu.Report`
-
-API tracing |:movie_camera:|
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+API tracing
+~~~~~~~~~~~
 
 * :py:class:`reprospect.tools.nsys.Cacher`
 * :py:class:`reprospect.tools.nsys.Session`
 * :py:class:`reprospect.tools.nsys.Report`
 
-See for example:
+Kernel profiling
+~~~~~~~~~~~~~~~~
 
-* :py:class:`examples.kokkos.view.example_allocation_tracing.TestNSYS`
+* :py:class:`reprospect.tools.ncu.Cacher`
+* :py:class:`reprospect.tools.ncu.Session`
+* :py:class:`reprospect.tools.ncu.Report`
 
-From sources to binaries |:bricks:|
------------------------------------
+Binary analysis
+~~~~~~~~~~~~~~~
+
+* :py:class:`reprospect.tools.binaries.CuObjDump`
+* :py:class:`reprospect.tools.binaries.ELF`
+* :py:class:`reprospect.tools.binaries.NVDisasm`
+* :py:class:`reprospect.tools.sass.Decoder`
+* :py:class:`reprospect.test.sass.instruction.instruction.InstructionMatcher`
+* :py:class:`reprospect.test.sass.composite_impl.SequenceMatcher`
+
+From sources to binaries
+------------------------
 
 * :py:class:`reprospect.utils.cmake.FileAPI`
 

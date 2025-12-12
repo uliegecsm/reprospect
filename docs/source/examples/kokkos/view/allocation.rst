@@ -1,5 +1,5 @@
-`Kokkos::View` allocation
-=========================
+Allocation
+==========
 
 The use of API tracing to elucidate benchmarking results
 --------------------------------------------------------

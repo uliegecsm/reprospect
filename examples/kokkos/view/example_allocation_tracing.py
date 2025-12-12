@@ -34,6 +34,7 @@ class TestAllocation(CMakeAwareTestCase):
     It uses :file:`examples/kokkos/view/example_allocation_tracing.cpp`.
     """
     KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter = pathlib.Path)
+    """Used in :py:meth:`TestNSYS.report`."""
 
     @classmethod
     @override

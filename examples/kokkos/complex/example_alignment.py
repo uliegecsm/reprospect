@@ -94,6 +94,7 @@ class TestAlignment(CMakeAwareTestCase):
     SECTOR_SIZE : typing.Final[int] = 32
 
     KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter = pathlib.Path)
+    """Used in :py:meth:`TestNCU.report`."""
 
     @classmethod
     @override

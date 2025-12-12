@@ -52,14 +52,14 @@
     };
 
     % Binary analysis.
-    \node[box, left = 2.25cm of profiling] (static) {
+    \node[box, right = 2.25cm of profiling] (static) {
         \textbf{\textcolor{NavyBlue}{Binary analysis}}\\
         {\small CUDA \emph{binary utilities}}\\
         {\small ELF and SASS}
     };
 
     % API tracing.
-    \node[box, right = 2.25cm of profiling] (tracing) {
+    \node[box, left = 2.25cm of profiling] (tracing) {
         \textbf{\textcolor{NavyBlue}{API tracing}}\\
         {\small \emph{Nsight Systems}}\\
         {\small Records}
@@ -94,11 +94,11 @@
     \draw[arrow] (build) -- node[right, font = \small, text = NavyBlue] {Compile} (binaries);
 
     % Extract arraw.
-    \draw[arrow] (binaries) -- node[above, font = \small, text = NavyBlue, anchor = south east] {Extract} (static);
+    \draw[arrow] (binaries) -- node[above, font = \small, text = NavyBlue, anchor = south west] {Extract} (static);
 
     % Instrument arrows.
     \draw[arrow] (binaries) -- node[above, font = \small, text = NavyBlue, anchor = south west] {Instrument} (profiling);
-    \draw[arrow] (binaries) -- node[above, font = \small, text = NavyBlue, anchor = south west] {Instrument} (tracing);
+    \draw[arrow] (binaries) -- node[above, font = \small, text = NavyBlue, anchor = south east] {Instrument} (tracing);
 
     % Collect arrows.
     \draw[dasharrow] (static) -- (analysis);

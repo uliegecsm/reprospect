@@ -1,4 +1,4 @@
-:code:`then` node
-=================
+Then
+====
 
 .. automodule:: examples.kokkos.graph.example_then

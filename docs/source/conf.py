@@ -33,7 +33,6 @@ extensions = [
     'sphinxcontrib.bibtex',
     'sphinxcontrib.mermaid',
     'sphinxcontrib.tikz',
-    'sphinxemoji.sphinxemoji',
     'myst_nb',
 ]
 
@@ -68,6 +67,8 @@ autodoc_default_options = {
     'show-inheritance' : True,
     'undoc-members' : True,
 }
+
+autodoc_inherit_docstrings = False
 
 apidoc_modules = [
     {

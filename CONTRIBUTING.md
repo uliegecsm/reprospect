@@ -1,6 +1,6 @@
 # Contributing to `ReProspect`
 
-Thank you for your interest in improving `ReProspect`!
+Thank you for your interest in `ReProspect`!
 We welcome all contributions — whether you’re fixing a bug, refining the documentation, or adding new features.
 
 ## Reporting bugs

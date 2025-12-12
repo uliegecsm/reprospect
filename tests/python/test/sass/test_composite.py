@@ -1,3 +1,5 @@
+import typing
+
 from reprospect.test.sass.composite import (
     any_of, Fluentizer,
     instruction_is, instructions_are, instructions_contain,
@@ -41,6 +43,23 @@ class TestInstructionIs:
     def test_zero_or_more_time(self) -> None:
         matcher = instruction_is(Fp32AddMatcher()).zero_or_more_times()
         assert isinstance(matcher, ZeroOrMoreInSequenceMatcher)
+
+    def test_with_modifier(self) -> None:
+        """
+        Test :py:meth:`reprospect.test.sass.composite.Fluentizer.with_modifier`.
+        """
+        INSTRUCTION : typing.Final[str] = 'IMAD.WIDE.U32 R2, R0, R7, c[0x0][0x180]'
+        MATCHER : typing.Final[Fluentizer] = instruction_is(AnyMatcher())
+
+        assert MATCHER.with_modifier('WIDE', index = 0).match(INSTRUCTION) is not None
+        assert MATCHER.with_modifier('WIDE', index = 1).match(INSTRUCTION) is None
+        assert MATCHER.with_modifier('WIDE', index = None).match(INSTRUCTION) is not None
+
+        assert MATCHER.with_modifier('U32', index = 0).match(INSTRUCTION) is None
+        assert MATCHER.with_modifier('U32', index = 1).match(INSTRUCTION) is not None
+        assert MATCHER.with_modifier('U32', index = None).match(INSTRUCTION) is not None
+
+        assert MATCHER.with_modifier('HELLO', index = 0).match(INSTRUCTION) is None
 
     def test_with_operand(self) -> None:
         """

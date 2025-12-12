@@ -6,7 +6,12 @@ import typing
 import pytest
 
 from reprospect.test import features
-from reprospect.test.sass.composite import instructions_contain, instruction_is
+from reprospect.test.sass.composite import (
+    findall,
+    findunique,
+    instructions_contain,
+    instruction_is,
+)
 from reprospect.test.sass.instruction import (
     InstructionMatch,
     LoadConstantMatcher, LoadGlobalMatcher, LoadMatcher,
@@ -16,7 +21,7 @@ from reprospect.test.sass.instruction import (
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 
-from tests.parameters                 import Parameters, PARAMETERS
+from tests.parameters import Parameters, PARAMETERS
 from tests.test.sass.test_instruction import (
     get_decoder,
     CODE_ELEMENTWISE_ADD_RESTRICT,
@@ -196,17 +201,11 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
 
         # Find the read-only wide load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = True)
-        load_ro = list(filter(matcher, decoder.instructions))
-        assert len(load_ro) == 1, matcher
-
-        logging.info(load_ro[0])
+        [load_ro] = findunique(matcher, decoder.instructions)
 
         # Find the wide load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = False)
-        load = list(filter(matcher, decoder.instructions))
-        assert len(load) == 1
-
-        logging.info(load[0])
+        [load] = findunique(matcher, decoder.instructions)
 
         assert load_ro != load
 
@@ -226,8 +225,8 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         # Find the read-only wide load(s).
         matcher_lro_128 = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = True)
         matcher_lro_256 = LoadGlobalMatcher(arch = parameters.arch, size = 256, readonly = True)
-        lro_128 = tuple(filter(matcher_lro_128, decoder.instructions))
-        lro_256 = tuple(filter(matcher_lro_256, decoder.instructions))
+        lro_128 = findall(matcher_lro_128, decoder.instructions)
+        lro_256 = findall(matcher_lro_256, decoder.instructions)
         if aligned_16:
             assert len(lro_128) == 2 and len(lro_256) == 0
         else:
@@ -236,8 +235,8 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         # Find the wide load(s).
         matcher_l_128 = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = False)
         matcher_l_256 = LoadGlobalMatcher(arch = parameters.arch, size = 256, readonly = False)
-        l_128 = tuple(filter(matcher_l_128, decoder.instructions))
-        l_256 = tuple(filter(matcher_l_256, decoder.instructions))
+        l_128 = findall(matcher_l_128, decoder.instructions)
+        l_256 = findall(matcher_l_256, decoder.instructions)
         if aligned_16:
             assert len(l_128) == 2 and len(l_256) == 0
         else:
@@ -261,9 +260,9 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
 
             decoders[name], _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
-        assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['restrict'   ].instructions))) == 1
-        assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['no_restrict'].instructions))) == 0
-        assert len(list(filter(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['ldg'        ].instructions))) == 1
+        assert len(findall(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['restrict'   ].instructions)) == 1
+        assert len(findall(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['no_restrict'].instructions)) == 0
+        assert len(findall(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['ldg'        ].instructions)) == 1
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_zero_extend_u16(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
@@ -317,7 +316,6 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
                     arch = parameters.arch, size = 16, readonly = True, extend = 'U',
                 ))
                 [matched_u16_ro] = matcher_u16_ro.assert_matches(decoder_u16.instructions)
-                assert matcher_u16_ro.index is not None
 
                 matcher_prmt = instructions_contain(matcher = instruction_is(OpcodeModsWithOperandsMatcher(
                     opcode = 'PRMT',

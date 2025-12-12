@@ -1,13 +1,19 @@
 import typing
 
+import pytest
+
 from reprospect.test.sass.composite import (
-    any_of, Fluentizer,
+    any_of,
+    findall,
+    findunique,
+    Fluentizer,
     instruction_is, instructions_are, instructions_contain,
     interleaved_instructions_are,
     unordered_interleaved_instructions_are, unordered_instructions_are,
 )
 from reprospect.test.sass.composite_impl import (
-    AnyOfMatcher, InSequenceMatcher,
+    AnyOfMatcher,
+    InSequenceMatcher,
     InSequenceAtMatcher, OrderedInterleavedInSequenceMatcher,
     OneOrMoreInSequenceMatcher, UnorderedInterleavedInSequenceMatcher,
     OrderedInSequenceMatcher, UnorderedInSequenceMatcher,
@@ -181,3 +187,31 @@ class TestUnorderedInterleavedInstructionsAre:
     def test(self) -> None:
         matcher = unordered_interleaved_instructions_are(Fp32AddMatcher(), Fp64AddMatcher())
         assert isinstance(matcher, UnorderedInterleavedInSequenceMatcher)
+
+class TestFindall:
+    """
+    Tests for :py:func:`reprospect.test.sass.composite.findall`.
+    """
+    def test(self) -> None:
+        matched = findall(Fp32AddMatcher(), (
+            'FADD R0, R1, R2',
+            'NOP',
+            'NOP',
+            'DADD R0, R1, R2',
+            'FADD R45, R46, R47',
+        ))
+        assert len(matched) == 2
+
+class TestFindunique:
+    """
+    Tests for :py:func:`reprospect.test.sass.composite.findunique`.
+    """
+    def test(self) -> None:
+        with pytest.raises(ValueError):
+            findunique(Fp32AddMatcher(), (
+                'FADD R0, R1, R2',
+                'NOP',
+                'NOP',
+                'DADD R0, R1, R2',
+                'FADD R45, R46, R47',
+            ))

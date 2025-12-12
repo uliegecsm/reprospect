@@ -3,18 +3,21 @@ import typing
 
 import pytest
 
-from reprospect.test.sass                import instruction
-from reprospect.test.sass.composite_impl import AnyOfMatcher, \
-                                                InSequenceAtMatcher, \
-                                                InSequenceMatcher, \
-                                                OrderedInterleavedInSequenceMatcher, \
-                                                OneOrMoreInSequenceMatcher, \
-                                                OrderedInSequenceMatcher, \
-                                                SequenceMatcher, \
-                                                UnorderedInSequenceMatcher, \
-                                                UnorderedInterleavedInSequenceMatcher, \
-                                                ZeroOrMoreInSequenceMatcher
-from reprospect.tools.sass               import ControlCode, Instruction
+from reprospect.test.sass import instruction
+from reprospect.test.sass.composite_impl import (
+    AllInSequenceMatcher,
+    AnyOfMatcher,
+    InSequenceAtMatcher,
+    InSequenceMatcher,
+    OneOrMoreInSequenceMatcher,
+    OrderedInSequenceMatcher,
+    OrderedInterleavedInSequenceMatcher,
+    SequenceMatcher,
+    UnorderedInSequenceMatcher,
+    UnorderedInterleavedInSequenceMatcher,
+    ZeroOrMoreInSequenceMatcher,
+)
+from reprospect.tools.sass import ControlCode, Instruction
 
 CONTROL_CODE = ControlCode.decode(code = '0x000e220000000800')
 
@@ -264,7 +267,7 @@ class TestInSequenceMatcher:
 
         assert matcher.match(instructions = DADD_DMUL) is None
 
-        assert matcher.index is None
+        assert matcher.index == -1
 
     def test_explain(self) -> None:
         assert InSequenceMatcher(matcher = MATCHER_NOP).explain(instructions = DADD_DMUL) == f'{MATCHER_NOP} did not match.'
@@ -295,7 +298,7 @@ class TestAnyOfMatcher:
 
         assert matcher.match(instructions = (NOP, DADD, DMUL)) is None
 
-        assert matcher.index is None
+        assert matcher.index == -1
 
     def test_explain(self) -> None:
         assert AnyOfMatcher(MATCHER_DADD, MATCHER_DMUL).explain(instructions = DADD_NOP_DMUL) == f'None of {(MATCHER_DADD, MATCHER_DMUL)} did match {DADD_NOP_DMUL}.'
@@ -348,3 +351,38 @@ class TestInterleavedInSequenceMatcher:
         random.shuffle(matchers)
 
         self.check(matcher = UnorderedInterleavedInSequenceMatcher(matchers))
+
+class TestAllInSequenceMatcher:
+    """
+    Tests for :py:class:`reprospect.test.sass.composite_impl.AllInSequenceMatcher`.
+    """
+    def test_single(self) -> None:
+        """
+        The inner matcher is a :py:class:`reprospect.test.sass.instruction.InstructionMatcher`.
+        """
+        matcher = AllInSequenceMatcher(instruction.OpcodeModsMatcher(opcode='DADD'))
+        assert isinstance(matcher.matcher, InSequenceMatcher)
+        assert (matched := matcher.match(instructions=TestInterleavedInSequenceMatcher.INSTRUCTIONS))
+        assert len(matched) == 4
+        assert all(isinstance(x, list) for x in matched)
+        assert all(len(x) == 1 for x in matched)
+
+    def test_sequence(self) -> None:
+        """
+        The inner matcher is a :py:class:`reprospect.test.sass.composite_impl.SequenceMatcher`.
+        """
+        matcher = AllInSequenceMatcher(OrderedInSequenceMatcher(matchers=(
+            MATCHER_NOP,
+            MATCHER_NOP,
+            MATCHER_NOP,
+            MATCHER_NOP,
+        )))
+        assert isinstance(matcher.matcher, InSequenceMatcher)
+        assert (matched := matcher.match(instructions=TestInterleavedInSequenceMatcher.INSTRUCTIONS))
+        assert len(matched) == 3
+        assert all(isinstance(x, list) for x in matched)
+        assert all(len(x) == 4 for x in matched)
+
+    def test_no_match(self) -> None:
+        matcher = AllInSequenceMatcher(instruction.OpcodeModsMatcher(opcode='FADD'))
+        assert not matcher.match(TestInterleavedInSequenceMatcher.INSTRUCTIONS)

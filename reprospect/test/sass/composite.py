@@ -6,9 +6,9 @@ from __future__ import annotations
 import sys
 import typing
 
-from reprospect.test.sass                import composite_impl, instruction
+from reprospect.test.sass import composite_impl, instruction
 from reprospect.test.sass.composite_impl import OperandMatcher
-from reprospect.tools.sass               import Instruction
+from reprospect.tools.sass import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -183,8 +183,8 @@ def any_of(*matchers : instruction.InstructionMatcher | composite_impl.SequenceM
     ... )
     >>> matcher.match(instructions = ('FADD R1, R1, R2',)) is None
     True
-    >>> matcher.index is None
-    True
+    >>> matcher.index
+    -1
     """
     return composite_impl.AnyOfMatcher(*matchers)
 
@@ -227,3 +227,31 @@ def unordered_interleaved_instructions_are(*matchers : instruction.InstructionMa
     True
     """
     return composite_impl.UnorderedInterleavedInSequenceMatcher(matchers)
+
+def findall(matcher : instruction.InstructionMatcher | composite_impl.SequenceMatcher, instructions : typing.Sequence[Instruction | str]) -> list[list[instruction.InstructionMatch]]:
+    """
+    Find all matches for `matcher` in a sequence of instructions.
+    Similarly to :py:func:`re.findall`, return an empty list if no match found.
+
+    >>> from reprospect.test.sass.composite import findall
+    >>> from reprospect.test.sass.instruction import OpcodeModsMatcher
+    >>> findall(
+    ...     OpcodeModsMatcher(opcode='FADD', operands=True),
+    ...     (
+    ...         'NOP',
+    ...         'FADD R1, R1, R2',
+    ...         'NOP',
+    ...         'FADD R3, R4, R5',
+    ... ))
+    [[InstructionMatch(opcode='FADD', modifiers=(), operands=('R1', 'R1', 'R2'), predicate=None, additional=None)], [InstructionMatch(opcode='FADD', modifiers=(), operands=('R3', 'R4', 'R5'), predicate=None, additional=None)]]
+    """
+    return composite_impl.AllInSequenceMatcher(matcher).match(instructions=instructions)
+
+def findunique(matcher : instruction.InstructionMatcher | composite_impl.SequenceMatcher, instructions : typing.Sequence[Instruction | str]) -> list[instruction.InstructionMatch]:
+    """
+    Ensure that :py:meth:`findall` matches once.
+    """
+    matched = findall(matcher, instructions)
+    if len(matched) != 1:
+        raise ValueError
+    return matched[0]

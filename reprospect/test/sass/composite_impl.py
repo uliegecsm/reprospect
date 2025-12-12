@@ -190,7 +190,7 @@ class InSequenceMatcher(SequenceMatcher):
     __slots__ = ('matcher', 'index')
 
     def __init__(self, matcher : SequenceMatcher | InstructionMatcher) -> None:
-        self.matcher : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = [matcher])
+        self.matcher : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = (matcher,))
         self.index : int = -1
 
     @override
@@ -258,15 +258,25 @@ class AllInSequenceMatcher:
     """
     matcher : InSequenceMatcher = attrs.field(converter=lambda x: x if isinstance(x, InSequenceMatcher) else InSequenceMatcher(x))
 
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[list[InstructionMatch]]:
-        matches : list[list[InstructionMatch]] = []
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | list[list[InstructionMatch]]:
+        if isinstance(self.matcher.matcher.matchers[0], InstructionMatcher):
+            return self._match_single(instructions=instructions)
+        return self._match_sequence(instructions=instructions)
 
+    def _match_single(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch]:
+        matches : list[InstructionMatch] = []
         offset = 0
+        while (matched := self.matcher.match(instructions=instructions[offset:])):
+            matches.append(matched[0])
+            offset += self.matcher.index + 1
+        return matches
 
+    def _match_sequence(self, instructions : typing.Sequence[Instruction | str]) -> list[list[InstructionMatch]]:
+        matches : list[list[InstructionMatch]] = []
+        offset = 0
         while (matched := self.matcher.match(instructions=instructions[offset:])):
             matches.append(matched)
             offset += self.matcher.index + len(matched)
-
         return matches
 
 class ModifierValidator(InstructionMatcher):

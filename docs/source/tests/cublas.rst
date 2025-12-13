@@ -1,0 +1,4 @@
+cuBLAS
+======
+
+.. automodule:: tests.cublas

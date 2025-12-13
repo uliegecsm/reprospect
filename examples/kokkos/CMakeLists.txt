@@ -17,7 +17,7 @@ function(add_one_example FILE)
     add_test(
         NAME ${EXECUTABLE}
         COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/example_${FILE}.py
-                    --config-file=${CMAKE_SOURCE_DIR}/tests/python/.pytest.ini
+                    --config-file=${CMAKE_SOURCE_DIR}/tests/.pytest.ini
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 

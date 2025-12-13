@@ -33,7 +33,7 @@ else:
 
 def get_atomic_memory_suffix(compiler_id : str) -> typing.Literal['G', '']:
     """
-    See :py:meth:`tests.python.test.sass.test_atomic.TestAtomicMatcher.test_exch_device_ptr`.
+    See :py:meth:`tests.test.sass.test_atomic.TestAtomicMatcher.test_exch_device_ptr`.
     """
     match compiler_id:
         case 'NVIDIA':

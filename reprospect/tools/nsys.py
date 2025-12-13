@@ -365,7 +365,7 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
         # Add a 'level' column.
         events['level'] = -1
 
-        # We’ll build parent-child relationships using a stack.
+        # We'll build parent-child relationships using a stack.
         stack : list[typing.Hashable] = []
         child_map : dict[typing.Hashable, list[typing.Hashable]] = {i: [] for i in events.index}
 

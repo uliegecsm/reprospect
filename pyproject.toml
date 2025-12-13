@@ -41,6 +41,9 @@ packages = [
     "reprospect.utils",
 ]
 
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
 [tool.setuptools.dynamic]
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html#dynamic-metadata
 dependencies = {file = ["requirements/requirements.txt"]}

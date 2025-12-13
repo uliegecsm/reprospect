@@ -37,7 +37,7 @@ class TestGetArchFromCompileCommand:
         with open(pathlib.Path(os.environ['CMAKE_BINARY_DIR']) / 'compile_commands.json', encoding = 'utf-8') as fin:
             compile_commands = json.load(fin)
 
-        command = [x for x in compile_commands if x['file'].endswith('tests/cpp/cuda/test_saxpy.cpp')]
+        command = [x for x in compile_commands if x['file'].endswith('tests/assets/test_saxpy.cpp')]
         assert len(command) == 1
         cmake_cuda_architecture = int(cmake_file_api.cache['CMAKE_CUDA_ARCHITECTURES']['value'].split('-')[0])
         assert get_arch_from_compile_command(cmd = command[0]['command']) == {NVIDIAArch.from_compute_capability(cc = cmake_cuda_architecture)}

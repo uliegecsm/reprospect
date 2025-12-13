@@ -59,7 +59,7 @@ class TestFileAPI:
         """
         Check target information.
         """
-        for name in ['tests_cpp_cuda_graph', 'tests_cpp_cuda_saxpy']:
+        for name in ['tests_assets_graph', 'tests_assets_saxpy']:
             target = cmake_file_api.target(name = name)
 
             assert target['name'] == name

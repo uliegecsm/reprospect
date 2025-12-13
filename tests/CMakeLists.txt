@@ -1,3 +1,2 @@
-add_subdirectory(cpp)
-add_subdirectory(nvtx)
+add_subdirectory(assets)
 add_subdirectory(python)

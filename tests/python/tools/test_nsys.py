@@ -28,7 +28,7 @@ class TestTracingResults:
             'Pid'           : (52655, 52655, 52655),
             'Tid'           : (52655, 52655, 52655),
             'T-Pri'         : (20, 20, 20),
-            'Thread Name'   : ('tests_cpp_cuda_', 'tests_cpp_cuda_', 'tests_cpp_cuda_'),
+            'Thread Name'   : ('tests_assets_', 'tests_assets_', 'tests_assets_'),
         },
     )
 
@@ -37,22 +37,22 @@ class TestTracingResults:
         Test string representation of tracing results through conversion to a :py:class:`rich.table.Table`.
         """
         assert rich_helpers.to_string(rich_helpers.df_to_table(self.CUDA_API_TRACE)) == """\
-┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━┓
-┃ Start (us) ┃ Duration (us) ┃ Name                   ┃ Result ┃ CorrID ┃ Pid   ┃ Tid   ┃ T-Pri ┃ Thread Name     ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━┩
-│ 176741.213 │ 0.942         │ cuModuleGetLoadingMode │ 0      │ 1      │ 52655 │ 52655 │ 20    │ tests_cpp_cuda_ │
-│ 176855.658 │ 87265.752     │ cudaStreamCreate       │ 0      │ 233    │ 52655 │ 52655 │ 20    │ tests_cpp_cuda_ │
-│ 266224.028 │ 1.753         │ cudaStreamCreate       │ 0      │ 234    │ 52655 │ 52655 │ 20    │ tests_cpp_cuda_ │
-└────────────┴───────────────┴────────────────────────┴────────┴────────┴───────┴───────┴───────┴─────────────────┘
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Start (us) ┃ Duration (us) ┃ Name                   ┃ Result ┃ CorrID ┃ Pid   ┃ Tid   ┃ T-Pri ┃ Thread Name   ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ 176741.213 │ 0.942         │ cuModuleGetLoadingMode │ 0      │ 1      │ 52655 │ 52655 │ 20    │ tests_assets_ │
+│ 176855.658 │ 87265.752     │ cudaStreamCreate       │ 0      │ 233    │ 52655 │ 52655 │ 20    │ tests_assets_ │
+│ 266224.028 │ 1.753         │ cudaStreamCreate       │ 0      │ 234    │ 52655 │ 52655 │ 20    │ tests_assets_ │
+└────────────┴───────────────┴────────────────────────┴────────┴────────┴───────┴───────┴───────┴───────────────┘
 """
 
         single_row = self.CUDA_API_TRACE[self.CUDA_API_TRACE['Name'] == 'cuModuleGetLoadingMode'].squeeze()
         assert rich_helpers.to_string(rich_helpers.ds_to_table(single_row)) == """\
-┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━┓
-┃ Start (us) ┃ Duration (us) ┃ Name                   ┃ Result ┃ CorrID ┃ Pid   ┃ Tid   ┃ T-Pri ┃ Thread Name     ┃
-┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━┩
-│ 176741.213 │ 0.942         │ cuModuleGetLoadingMode │ 0      │ 1      │ 52655 │ 52655 │ 20    │ tests_cpp_cuda_ │
-└────────────┴───────────────┴────────────────────────┴────────┴────────┴───────┴───────┴───────┴─────────────────┘
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃ Start (us) ┃ Duration (us) ┃ Name                   ┃ Result ┃ CorrID ┃ Pid   ┃ Tid   ┃ T-Pri ┃ Thread Name   ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ 176741.213 │ 0.942         │ cuModuleGetLoadingMode │ 0      │ 1      │ 52655 │ 52655 │ 20    │ tests_assets_ │
+└────────────┴───────────────┴────────────────────────┴────────┴────────┴───────┴───────┴───────┴───────────────┘
 """
 
 class TestCommand:
@@ -86,7 +86,7 @@ class TestSession:
     """
     Test :py:class:`reprospect.tools.nsys.Session`.
     """
-    EXECUTABLE : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy'
+    EXECUTABLE : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
     def run(self, bindir : pathlib.Path, cwd : pathlib.Path, nvtx_capture : str | None = None) -> Session:
         ns = Session(
@@ -103,7 +103,7 @@ class TestSession:
 
     def test_cuda_api_trace(self, bindir, workdir) -> None:
         """
-        Collect all CUDA API calls of :file:`tests/cpp/cuda/test_saxpy.cpp`.
+        Collect all CUDA API calls of :file:`tests/assets/test_saxpy.cpp`.
         """
         ns = self.run(
             bindir = bindir, cwd = workdir,
@@ -215,8 +215,8 @@ class TestCacher:
     """
     Tests for :py:class:`reprospect.tools.nsys.Cacher`.
     """
-    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph'
-    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy'
+    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
+    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
     def test_hash_same(self, bindir) -> None:
         """
@@ -292,7 +292,7 @@ class TestReport:
     def report(self, bindir, workdir : pathlib.Path) -> Report:
         with Cacher(directory = workdir) as cacher:
             command = Command(
-                executable = bindir / 'tests' / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy',
+                executable = bindir / 'tests' / 'assets' / 'tests_assets_saxpy',
                 output = workdir / 'test-report.nsys-rep',
                 nvtx_capture = '*',
             )
@@ -385,7 +385,7 @@ NVTX events
                     executable = pathlib.Path(sys.executable),
                     output = workdir / 'test-report-nvtx',
                     nvtx_capture = '*',
-                    args = (pathlib.Path(__file__).parent.parent.parent / 'nvtx' / 'test_nvtx.py',),
+                    args = (pathlib.Path(__file__).parent.parent.parent / 'assets' / 'test_nvtx.py',),
                 )
                 entry = cacher.run(command = command, cwd = workdir)
 

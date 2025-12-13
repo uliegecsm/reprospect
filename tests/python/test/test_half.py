@@ -23,7 +23,7 @@ class TestSASS:
     """
     Tests that combine different half-precision SASS instructions.
     """
-    FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent.parent / 'tests' / 'cpp' / 'cuda' / 'test_half.cu'
+    FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent.parent / 'tests' / 'assets' / 'test_half.cu'
 
     @pytest.fixture(scope = 'class')
     def cuobjdump(self, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> CuObjDump:
@@ -132,7 +132,7 @@ class TestNCU:
     """
     `ncu`-based analysis of the individual *vs* packed implementation.
     """
-    HALF : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_half'
+    HALF : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_half'
 
     METRICS : typing.Final[tuple[ncu.metrics.MetricKind, ...]] = (
         ncu.MetricDeviceAttribute(name = 'display_name'),

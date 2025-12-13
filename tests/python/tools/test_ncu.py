@@ -194,8 +194,8 @@ class TestSession:
     """
     Test :py:class:`reprospect.tools.ncu.Session`.
     """
-    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph'
-    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy'
+    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
+    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
     def test_collect_basic_metrics_saxpy_with_nvtx_filtering(self, bindir, workdir) -> None:
         """
@@ -445,8 +445,8 @@ class TestCacher:
     """
     Tests for :py:class:`reprospect.tools.ncu.Cacher`.
     """
-    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_graph'
-    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'tests_cpp_cuda_saxpy'
+    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
+    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
     def test_hash_same(self, bindir) -> None:
         """

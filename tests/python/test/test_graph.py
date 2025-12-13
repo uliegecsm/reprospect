@@ -23,7 +23,7 @@ class TestGraph(CMakeAwareTestCase):
     @classmethod
     @override
     def get_target_name(cls) -> str:
-        return 'tests_cpp_cuda_graph'
+        return 'tests_assets_graph'
 
     DEMANGLED_NODE_A : typing.Final[dict[str, str]] = {
         'NVIDIA' : 'void add_and_increment_kernel<(unsigned int)0, >(unsigned int *)',

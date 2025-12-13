@@ -19,14 +19,14 @@ class TestSaxpy(CMakeAwareTestCase):
     """
     General test class.
     """
-    NAME : typing.Final[str] = 'tests_cpp_cuda_saxpy'
+    NAME : typing.Final[str] = 'tests_assets_saxpy'
 
-    TARGET_SOURCE : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'cpp' / 'cuda' / 'test_saxpy.cpp'
+    TARGET_SOURCE : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'test_saxpy.cpp'
 
     @classmethod
     @override
     def get_target_name(cls) -> str:
-        return 'tests_cpp_cuda_saxpy'
+        return 'tests_assets_saxpy'
 
 class TestSASS(TestSaxpy):
     """

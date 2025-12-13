@@ -41,8 +41,12 @@ pip install reprospect
 from reprospect.utils.detect import GPUDetector
 
 gpus = GPUDetector.get()
-print(gpus)
+# Display GPU information for inspection
+for _, gpu in gpus.iterrows():
+    print(f"GPU {gpu['index']}: {gpu['name']} (Compute {gpu['compute_cap']})")
 ```
+
+Note: The `print()` calls in examples are for demonstration in user scripts. Library code should use the `logging` module.
 
 ### Analyze CUDA Binaries
 

@@ -27,9 +27,9 @@ Be sure to include a short description and usage notes.
 
 ### Code Quality
 
-- Follow PEP 8 style guidelines (enforced by `ruff`)
+- Follow PEP 8 style guidelines (enforced by `ruff` and `pylint`)
 - Add type hints to all functions and methods
-- Use `logging` instead of `print()` for library code
+- Use `logging` instead of `print()` for library code (user-facing scripts and examples may use `print()`)
 - Write docstrings for public APIs
 - See [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md) for notes on code patterns and linting exceptions
 

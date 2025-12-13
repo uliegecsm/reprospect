@@ -1,0 +1,22 @@
+# Include license and documentation
+include LICENSE
+include README.md
+include CONTRIBUTING.md
+
+# Include requirements files
+recursive-include requirements *.txt
+
+# Include CMake files
+include CMakeLists.txt
+include CMakePresets.json
+recursive-include cmake *.cmake
+
+# Include type information
+include reprospect/py.typed
+
+# Exclude build artifacts and caches
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude .DS_Store
+global-exclude *.so
+global-exclude *.dylib

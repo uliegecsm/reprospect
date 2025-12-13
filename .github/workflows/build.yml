@@ -393,8 +393,8 @@ jobs:
             - name: Extensibility.
               run: |
                   python3 -m pytest \
-                      --config-file=${GITHUB_WORKSPACE}/tests/python/.pytest.ini \
-                      ${GITHUB_WORKSPACE}/tests/python/test_extensibility.py
+                      --config-file=${GITHUB_WORKSPACE}/tests/.pytest.ini \
+                      ${GITHUB_WORKSPACE}/tests/test_extensibility.py
 
             - name: Examples.
               run: |
@@ -520,8 +520,8 @@ jobs:
             - name: On the tests.
               run: |
                 export PYTHONPATH=$PWD${PYTHONPATH+:}${PYTHONPATH}
-                python3 -m pylint tests/python/ \
-                    --rcfile tests/python/.pylintrc \
+                python3 -m pylint tests/ \
+                    --rcfile tests/.pylintrc \
                     --verbose \
                     --fail-under=10
 
@@ -529,7 +529,7 @@ jobs:
               run: |
                 export PYTHONPATH=$PWD${PYTHONPATH+:}${PYTHONPATH}
                 python3 -m pylint examples \
-                    --rcfile tests/python/.pylintrc \
+                    --rcfile tests/.pylintrc \
                     --verbose \
                     --fail-under=10
 
@@ -554,12 +554,12 @@ jobs:
             - name: On the tests.
               run: |
                 export PYTHONPATH="$PWD${PYTHONPATH+:}${PYTHONPATH}"
-                mypy --config-file tests/python/.mypy.ini --explicit-package-bases tests/python
+                mypy --config-file tests/.mypy.ini --explicit-package-bases tests
 
             - name: On the examples.
               run: |
                 export PYTHONPATH="$PWD${PYTHONPATH+:}${PYTHONPATH}"
-                mypy --config-file tests/python/.mypy.ini --explicit-package-bases examples
+                mypy --config-file tests/.mypy.ini --explicit-package-bases examples
 
     ruff:
         runs-on: [self-hosted, linux, docker, amd64]

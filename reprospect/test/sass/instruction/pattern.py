@@ -179,14 +179,20 @@ class PatternBuilder:
         Note that the modifiers starting with a `?` are matched optionally.
         """
         opcode = PatternBuilder.group(opcode, group = 'opcode')
-        if modifiers is not None:
-            for modifier in filter(None, modifiers):
-                modifier = typing.cast(int | str, modifier)
-                if isinstance(modifier, str) and modifier.startswith('?'):
-                    opcode += PatternBuilder.zero_or_one(r'\.' + PatternBuilder.group(modifier[1::], group = 'modifiers'))
-                else:
-                    opcode += r'\.' + PatternBuilder.group(modifier, group = 'modifiers')
-        return opcode
+        if modifiers is None:
+            return opcode
+
+        parts : list[str] = [opcode]
+
+        for modifier in modifiers:
+            if not modifier:
+                continue
+            if isinstance(modifier, str) and modifier[0] == '?':
+                parts.append(PatternBuilder.zero_or_one(r'\.' + PatternBuilder.group(modifier[1:], group = 'modifiers')))
+            else:
+                parts.append(r'\.' + PatternBuilder.group(modifier, group = 'modifiers'))
+
+        return ''.join(parts)
 
     @classmethod
     @functools.cache

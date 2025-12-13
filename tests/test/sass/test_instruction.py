@@ -173,7 +173,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'STRONG', dtype = ('U', 32))
-        [matched] = findunique(matcher, decoder.instructions)
+        matched = findunique(matcher, decoder.instructions)
 
         assert {'ADD'}.issubset(matched.modifiers)
         assert len(matched.additional['address']) == 1
@@ -196,7 +196,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
             consistency = 'STRONG',
             dtype = ('U', 64),
         )
-        [matched] = findunique(matcher, decoder.instructions)
+        matched = findunique(matcher, decoder.instructions)
 
         assert {'ADD', '64'}.issubset(matched.modifiers)
         assert len(matched.additional['address']) == 1
@@ -213,7 +213,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', dtype = ('F', 32), scope = 'DEVICE', consistency = 'STRONG')
-        [matched] = findunique(matcher, decoder.instructions)
+        matched = findunique(matcher, decoder.instructions)
 
         assert {'F32', 'FTZ', 'RN'}.issubset(matched.modifiers)
         assert len(matched.additional['address']) == 1
@@ -230,7 +230,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', dtype = ('F', 64), scope = 'DEVICE', consistency = 'STRONG')
-        [matched] = findunique(matcher, decoder.instructions)
+        matched = findunique(matcher, decoder.instructions)
 
         assert {'F64', 'RN'}.issubset(matched.modifiers)
         assert len(matched.additional['address']) == 1
@@ -247,10 +247,10 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         # Note that the source is negated in another instruction.
-        assert len(findunique(
+        logging.info(findunique(
             matcher=ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'STRONG'),
             instructions=decoder.instructions,
-        )) == 1
+        ))
 
     def test_max_strong_device_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
         """
@@ -268,7 +268,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         else:
             matcher_type = ReductionMatcher
         matcher = matcher_type(arch = parameters.arch, operation = 'MAX', dtype = ('S', 64), scope = 'DEVICE', consistency = 'STRONG')
-        [matched] = findunique(matcher, decoder.instructions)
+        matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX', 'S64'}.issubset(matched.modifiers)
 
@@ -288,7 +288,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         else:
             matcher_type = ReductionMatcher
         matcher = matcher_type(arch = parameters.arch, operation = 'MAX', dtype = ('U', 64), scope = 'DEVICE', consistency = 'STRONG')
-        [matched] = findunique(matcher, decoder.instructions)
+        matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX', '64'}.issubset(matched.modifiers)
 
@@ -303,7 +303,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('S', 32), scope = 'DEVICE', consistency = 'STRONG')
-        [matched] = findunique(matcher, decoder.instructions)
+        matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX', 'S32'}.issubset(matched.modifiers)
 
@@ -318,7 +318,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         # Find the reduction.
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('U', 32), scope = 'DEVICE', consistency = 'STRONG')
-        [matched] = findunique(matcher, decoder.instructions)
+        matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX'}.issubset(matched.modifiers)
 

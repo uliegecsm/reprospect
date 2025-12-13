@@ -55,10 +55,10 @@ class CMakeMixin(abc.ABC):
         with open(self.CMAKE_BINARY_DIR / 'compile_commands.json', encoding = 'utf-8') as fin:
             commands = json.load(fin)
         target_source = next(self.target_sources)
-        archs = get_arch_from_compile_command(cmd = next(filter(
-            lambda x: str(target_source) in x['file'],
-            commands))['command'],
-        )
+        archs = get_arch_from_compile_command(cmd = next(
+            x for x in commands
+            if str(target_source) in x['file']
+        )['command'])
         assert len(archs) == 1
         return archs.pop()
 

@@ -201,11 +201,11 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
 
         # Find the read-only wide load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = True)
-        [load_ro] = findunique(matcher, decoder.instructions)
+        load_ro = findunique(matcher, decoder.instructions)
 
         # Find the wide load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = False)
-        [load] = findunique(matcher, decoder.instructions)
+        load = findunique(matcher, decoder.instructions)
 
         assert load_ro != load
 

@@ -23,18 +23,25 @@ class Fp16(PatternMatcher):
 
     * :cite:`ho-exploiting-2017`
     """
-    REG_LANE : typing.Final[str] = PatternBuilder.REG + r'\.H[01]_H[01]'
+    REGZ_LANE : typing.Final[str] = r'-?' + PatternBuilder.REGZ + r'\.H[01]_H[01]'
 
     @classmethod
-    def reg_lane(cls) -> str:
-        return PatternBuilder.group(cls.REG_LANE, group = 'operands')
+    def regz_lane(cls) -> str:
+        return PatternBuilder.group(cls.REGZ_LANE, group = 'operands')
 
     @classmethod
     def any_operand(cls) -> str:
-        return  PatternBuilder.group(
-            PatternBuilder.any(cls.REG_LANE, PatternBuilder.zero_or_more(PatternBuilder.PRE_OPERAND_MOD) + PatternBuilder.REGZ, PatternBuilder.IMMEDIATE),
+        return PatternBuilder.group(
+            PatternBuilder.any(cls.REGZ_LANE, PatternBuilder.zero_or_more(PatternBuilder.PRE_OPERAND_MOD) + PatternBuilder.REGZ, PatternBuilder.IMMEDIATE),
             group = 'operands',
         )
+
+    @classmethod
+    def regz_or_immediate(cls) -> str:
+        return PatternBuilder.group(PatternBuilder.any(
+            PatternBuilder.zero_or_more(PatternBuilder.PRE_OPERAND_MOD) + PatternBuilder.REGZ,
+            PatternBuilder.IMMEDIATE,
+        ), group = 'operands')
 
     @classmethod
     def dst(cls) -> str:
@@ -68,6 +75,18 @@ class Fp16FusedMulAddMatcher(Fp16):
             HFMA2 R0, R1.H0_H0, R2.H1_H1, 3, 1
 
           computes ``R0.H0 = R1.H0 * R2.H1 + 3.0`` and ``R0.H1 = R1.H0 * R2.H1 + 1.0``.
+
+    .. note::
+
+        For ``HFMA2.MMA`` with 5 operands, operands 2 and 3 appear to be multipliers for each lane.
+        The following results from ``dst += src`` where operands 2 and 3 are set to immediate unit::
+
+            LDG.E.CONSTANT R5, [R4.64]
+            LDG.E R0, [R2.64]
+            HFMA2.MMA R7, R0, 1, 1, R5
+            STG.E [R2.64], R7
+
+        This likely means "multiply both lanes of ``R0`` by 1 and add ``R5``".
     """
     TEMPLATE : typing.Final[str] = f"{PatternBuilder.opcode_mods('HFMA2', modifiers = ('?MMA',))} {Fp16.dst()}, {{op1}}, {{op2}}, {{op3}}(?:, {{op4}})?"
 
@@ -79,20 +98,17 @@ class Fp16FusedMulAddMatcher(Fp16):
     ))
 
     PATTERN_INDIVIDUAL : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1 = Fp16.reg_lane(),
-        op2 = Fp16.reg_lane(),
-        op3 = PatternBuilder.group(PatternBuilder.any(Fp16.REG_LANE, PatternBuilder.IMMEDIATE), group = 'operands'),
-        op4 = PatternBuilder.group(PatternBuilder.any(Fp16.REG_LANE, PatternBuilder.IMMEDIATE), group = 'operands'),
+        op1 = Fp16.regz_lane(),
+        op2 = Fp16.regz_lane(),
+        op3 = PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, PatternBuilder.IMMEDIATE), group = 'operands'),
+        op4 = PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, PatternBuilder.IMMEDIATE), group = 'operands'),
     ))
 
     PATTERN_PACKED : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = PatternBuilder.premodregz(),
-        op2 = PatternBuilder.premodregz(),
-        op3 = PatternBuilder.group(PatternBuilder.any(
-            PatternBuilder.zero_or_more(PatternBuilder.PRE_OPERAND_MOD) + PatternBuilder.REGZ,
-            PatternBuilder.IMMEDIATE,
-        ), group = 'operands'),
-        op4 = PatternBuilder.immediate(),
+        op2 = Fp16.regz_or_immediate(),
+        op3 = Fp16.regz_or_immediate(),
+        op4 = Fp16.regz_or_immediate(),
     ))
 
     def __init__(self, *, packed : bool | None = None) -> None:
@@ -128,8 +144,8 @@ class Fp16MulMatcher(Fp16):
     ))
 
     PATTERN_INDIVIDUAL : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1 = Fp16.reg_lane(),
-        op2 = Fp16.reg_lane(),
+        op1 = Fp16.regz_lane(),
+        op2 = Fp16.regz_lane(),
     ))
 
     PATTERN_PACKED : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
@@ -153,3 +169,77 @@ class Fp16MulMatcher(Fp16):
         else:
             pattern = self.PATTERN_INDIVIDUAL
         super().__init__(pattern = pattern)
+
+class Fp16AddMatcher(Fp16):
+    """
+    Matcher for 16-bit floating-point add (``HADD2``) instruction.
+
+    It may apply on :code:`__half`::
+
+        HADD2 R0, R2.H0_H0, R3.H0_H0
+
+    or on :code:`__half2`::
+
+        HADD2 R0, R2, R3
+    """
+    TEMPLATE : typing.Final[str] = f"{PatternBuilder.opcode_mods('HADD2', modifiers = ('?F32',))} {Fp16.dst()}, {{op1}}, {{op2}}"
+
+    PATTERN_ANY : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+        op1 = Fp16.any_operand(),
+        op2 = Fp16.any_operand(),
+    ))
+
+    PATTERN_PACKED : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+        op1 = PatternBuilder.reg(),
+        op2 = PatternBuilder.reg(),
+    ))
+
+    PATTERN_INDIVIDUAL : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+        op1 = Fp16.regz_lane(),
+        op2 = Fp16.regz_lane(),
+    ))
+
+    def __init__(self, *, packed: bool | None = None) -> None:
+        if packed is None:
+            pattern = self.PATTERN_ANY
+        elif packed is True:
+            pattern = self.PATTERN_PACKED
+        else:
+            pattern = self.PATTERN_INDIVIDUAL
+        super().__init__(pattern = pattern)
+
+class Fp16MinMaxMatcher(Fp16):
+    """
+    Matcher for 16-bit floating-point min-max (``HMNMX2``) instruction.
+    """
+    TEMPLATE : typing.Final[str] = f"{PatternBuilder.opcode_mods('HMNMX2')} {Fp16.dst()}, {{op1}}, {{op2}}, {{which}}"
+
+    PATTERN_ANY : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+        op1 = Fp16.any_operand(),
+        op2 = Fp16.any_operand(),
+        which = PatternBuilder.group(r'!?PT', group = 'operands'),
+    ))
+
+    PATTERN_MAX : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+        op1 = Fp16.any_operand(),
+        op2 = Fp16.any_operand(),
+        which = PatternBuilder.group('!PT', group = 'operands'),
+    ))
+
+    PATTERN_MIN : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+        op1 = Fp16.any_operand(),
+        op2 = Fp16.any_operand(),
+        which = PatternBuilder.group('PT', group = 'operands'),
+    ))
+
+    def __init__(self, *, pmax: bool | None = None) -> None:
+        """
+        :param pmax: If :py:obj:`True`, match a *max*. If :py:obj:`False`, match a *min*. Otherwise, match either *max* or *min*.
+        """
+        if pmax is None:
+            pattern = self.PATTERN_ANY
+        elif pmax is False:
+            pattern = self.PATTERN_MIN
+        else:
+            pattern = self.PATTERN_MAX
+        super().__init__(pattern=pattern)

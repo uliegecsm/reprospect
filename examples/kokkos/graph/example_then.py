@@ -1,8 +1,7 @@
-import pathlib
 import re
 import sys
 
-from reprospect.test               import CMakeAwareTestCase, environment
+from reprospect.test               import CMakeAwareTestCase
 from reprospect.tools              import binaries
 from reprospect.tools.binaries.elf import NvInfoEIATTR
 

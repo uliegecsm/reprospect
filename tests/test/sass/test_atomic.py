@@ -7,11 +7,11 @@ import pytest
 import regex
 import semantic_version
 
-from reprospect.tools.sass            import Instruction
+from reprospect.tools.sass import Instruction
 from reprospect.test.sass.instruction import AtomicMatcher, InstructionMatch, PatternBuilder
-from reprospect.utils                 import cmake
+from reprospect.utils import cmake
 
-from tests.parameters                 import Parameters, PARAMETERS
+from tests.parameters import Parameters, PARAMETERS
 from tests.test.sass.test_instruction import get_decoder
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)

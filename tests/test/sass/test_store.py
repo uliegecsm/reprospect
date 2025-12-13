@@ -4,11 +4,12 @@ import typing
 import pytest
 
 from reprospect.test import features
+from reprospect.test.sass.composite import findall
 from reprospect.test.sass.instruction import StoreMatcher, StoreGlobalMatcher
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 
-from tests.parameters                 import Parameters, PARAMETERS
+from tests.parameters import Parameters, PARAMETERS
 from tests.test.sass.test_instruction import (
     get_decoder,
     CODE_ELEMENTWISE_ADD_RESTRICT,
@@ -99,8 +100,8 @@ class TestStoreMatcher:
         # Find the wide stores(s).
         matcher_s_128 = StoreGlobalMatcher(arch = parameters.arch, size = 128)
         matcher_s_256 = StoreGlobalMatcher(arch = parameters.arch, size = 256)
-        s_128 = tuple(filter(matcher_s_128, decoder.instructions))
-        s_256 = tuple(filter(matcher_s_256, decoder.instructions))
+        s_128 = findall(matcher_s_128, decoder.instructions)
+        s_256 = findall(matcher_s_256, decoder.instructions)
         if aligned_16:
             assert len(s_128) == 2 and len(s_256) == 0
         else:

@@ -2,10 +2,13 @@
 Combine matchers from :py:mod:`reprospect.test.sass.instruction` into sequence matchers.
 """
 
+from __future__ import annotations
+
 import abc
 import sys
 import typing
 
+import attrs
 import mypy_extensions
 
 from reprospect.test.sass.instruction import (
@@ -188,7 +191,7 @@ class InSequenceMatcher(SequenceMatcher):
 
     def __init__(self, matcher : SequenceMatcher | InstructionMatcher) -> None:
         self.matcher : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = [matcher])
-        self.index : int | None = None
+        self.index : int = -1
 
     @override
     def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
@@ -214,7 +217,7 @@ class AnyOfMatcher(SequenceMatcher):
 
     def __init__(self, *matchers : SequenceMatcher | InstructionMatcher) -> None:
         self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
-        self.index : int | None = None
+        self.index : int = -1
 
     @override
     def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
@@ -247,6 +250,24 @@ class UnorderedInterleavedInSequenceMatcher(UnorderedInSequenceMatcher):
     """
     def __init__(self, matchers: typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
         super().__init__(matchers = (InSequenceMatcher(matcher) for matcher in matchers))
+
+@attrs.define(frozen=True, slots=True)
+class AllInSequenceMatcher:
+    """
+    Use :py:class:`InSequenceMatcher` to find all matches for :py:attr:`matcher` in a sequence of instructions.
+    """
+    matcher : InSequenceMatcher = attrs.field(converter=lambda x: x if isinstance(x, InSequenceMatcher) else InSequenceMatcher(x))
+
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[list[InstructionMatch]]:
+        matches : list[list[InstructionMatch]] = []
+
+        offset = 0
+
+        while (matched := self.matcher.match(instructions=instructions[offset:])):
+            matches.append(matched)
+            offset += self.matcher.index + len(matched)
+
+        return matches
 
 class ModifierValidator(InstructionMatcher):
     """

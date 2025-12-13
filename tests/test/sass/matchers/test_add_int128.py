@@ -47,8 +47,6 @@ st\.global\.v2\.(u|b)64 \[%rd\d+\], {%rd\d+, %rd\d+};
         matcher_load_src = instructions_contain(matcher = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = True))
         [matched_load_src] = matcher_load_src.assert_matches(instructions = decoder.instructions)
 
-        assert matcher_load_src.index is not None
-
         logging.info(matched_load_src)
 
         # Find the global load of the destination.

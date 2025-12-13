@@ -168,7 +168,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         matcher_start = instructions_contain(matcher = AtomicAcquireMatcher.build(arch = self.arch, compiler_id = self.compiler_id))
         matched_atomic_acquire = matcher_start.match(instructions = instructions)
 
-        if matched_atomic_acquire is None or matcher_start.index is None:
+        if matched_atomic_acquire is None:
             return None
 
         offset = matcher_start.index + self.collect(matched = matched, new = matched_atomic_acquire)
@@ -237,7 +237,6 @@ class LockBasedAtomicMatcher(SequenceMatcher):
 
         if matched_thread_fence is None:
             return None
-        assert matcher_thread_fence.index is not None
 
         offset_fence_exit = offset + matcher_thread_fence.index
         offset = offset_fence_exit + self.collect(matched = matched, new = matched_thread_fence)

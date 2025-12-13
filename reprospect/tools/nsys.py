@@ -341,13 +341,11 @@ class Report:
         # Get NVTX_EVENTS columns schema metadata, and remove the 'text'.
         # It is the only way to query all columns, while avoiding that the 'COALESCE'
         # duplicates the 'text' row (which would happen if selecting 'NVTX_EVENTS.*').
-        columns_but_text = ", ".join(
+        columns_but_text = ', '.join(
             f'NVTX_EVENTS.{x}'
-            for x in
-            filter(
-                lambda x: x != 'text',
-                pandas.read_sql_query("PRAGMA table_info(NVTX_EVENTS);", self.conn)['name'],
-        ))
+            for x in pandas.read_sql_query("PRAGMA table_info(NVTX_EVENTS);", self.conn)['name']
+            if x != 'text'
+        )
 
         query = f"""
 SELECT {columns_but_text},

@@ -379,8 +379,10 @@ class TestAllInSequenceMatcher:
         assert isinstance(matcher.matcher, InSequenceMatcher)
         assert (matched := matcher.match(instructions=TestInterleavedInSequenceMatcher.INSTRUCTIONS))
         assert len(matched) == 3
-        assert all(isinstance(x, list) for x in matched)
-        assert all(all(isinstance(y, instruction.InstructionMatch) for y in x) and len(x) == 4 for x in matched)
+        for x in matched:
+            assert isinstance(x, list)
+            assert len(x) == 4
+            assert all(isinstance(y, instruction.InstructionMatch) for y in x)
 
     def test_no_match(self) -> None:
         matcher = AllInSequenceMatcher(instruction.OpcodeModsMatcher(opcode='FADD'))

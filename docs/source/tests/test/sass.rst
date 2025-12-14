@@ -13,5 +13,6 @@ SASS
 .. toctree::
    :maxdepth: 2
 
+   sass/controlflow
    sass/instruction
    sass/matchers

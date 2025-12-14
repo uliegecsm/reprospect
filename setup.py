@@ -28,6 +28,7 @@ def enable_mypyc(dist : Distribution) -> None:
             'reprospect/test/sass/instruction/pattern.py',
             'reprospect/test/sass/instruction/register.py',
             'reprospect/test/sass/matchers/add_int128.py',
+            'reprospect/test/sass/matchers/convert_fp32_to_fp16.py',
             'reprospect/tools/architecture.py',
             'reprospect/tools/binaries/cuobjdump.py',
             'reprospect/tools/binaries/demangle.py',

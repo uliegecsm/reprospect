@@ -88,24 +88,34 @@ class TestFp16MulMatcher:
     Tests for :py:class:`reprospect.test.sass.instruction.half.Fp16MulMatcher`.
     """
     def test_individual(self) -> None:
-        assert (matched := Fp16MulMatcher(packed = False).match(inst = 'HMUL2 R0, R2.H0_H0, R3.H0_H0')) is not None
+        matcher = Fp16MulMatcher(packed=False)
+
+        assert (matched := matcher.match(inst = 'HMUL2 R0, R2.H0_H0, R3.H0_H0')) is not None
         assert matched.additional is not None
         assert matched.additional['dst'][0] == 'R0'
         assert matched.operands[-1] == 'R3.H0_H0'
 
+        assert matcher.match(inst='HMUL2 R0, R2, R3') is None
+
     def test_packed(self) -> None:
-        assert (matched := Fp16MulMatcher(packed = True).match(inst = 'HMUL2 R0, R2, R3')) is not None
+        matcher = Fp16MulMatcher(packed=True)
+
+        assert (matched := matcher.match(inst = 'HMUL2 R0, R2, R3')) is not None
         assert matched.additional is not None
         assert matched.additional['dst'][0] == 'R0'
         assert matched.operands[-1] == 'R3'
 
+        assert matcher.match(inst='HMUL2 R0, R2.H0_H0, R2.H0_H0') is None
+
     def test_any(self) -> None:
-        assert (matched := Fp16MulMatcher().match(inst = 'HMUL2 R0, R2.H1_H1, R3.H0_H0')) is not None
+        matcher = Fp16MulMatcher(packed=None)
+
+        assert (matched := matcher.match(inst = 'HMUL2 R0, R2.H1_H1, R3.H0_H0')) is not None
         assert matched.additional is not None
         assert matched.additional['dst'][0] == 'R0'
         assert matched.operands == ('R0', 'R2.H1_H1', 'R3.H0_H0')
 
-        assert (matched := Fp16MulMatcher().match(inst = 'HMUL2 R0, R2, R3')) is not None
+        assert (matched := matcher.match(inst = 'HMUL2 R0, R2, R3')) is not None
         assert matched.additional is not None
         assert matched.additional['dst'][0] == 'R0'
         assert matched.operands == ('R0', 'R2', 'R3')

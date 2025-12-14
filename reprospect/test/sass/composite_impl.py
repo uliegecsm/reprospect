@@ -131,7 +131,7 @@ class OrderedInSequenceMatcher(SequenceMatcher):
         for matcher in self.matchers:
             if isinstance(matcher, InstructionMatcher) and (single := matcher.match(inst = instructions[len(matches)])) is not None:
                 matches.append(single)
-            elif isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions[len(matches)::])) is not None:
+            elif isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions[len(matches):])) is not None:
                 matches.extend(many)
             else:
                 return None
@@ -190,20 +190,34 @@ class InSequenceMatcher(SequenceMatcher):
     __slots__ = ('matcher', 'index')
 
     def __init__(self, matcher : SequenceMatcher | InstructionMatcher) -> None:
-        self.matcher : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = (matcher,))
+        self.matcher : typing.Final[SequenceMatcher | InstructionMatcher] = matcher
         self.index : int = -1
 
-    @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        for index in range(len(instructions)):
-            if (matched := self.matcher.match(instructions = instructions[index::])) is not None:
+    def _match_single(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        assert isinstance(self.matcher, InstructionMatcher)
+        for index, instruction in enumerate(instructions):
+            if (single := self.matcher.match(inst=instruction)) is not None:
                 self.index = index
-                return matched
+                return [single]
+        return None
+
+    def _match_sequence(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        assert isinstance(self.matcher, SequenceMatcher)
+        for index in range(len(instructions)):
+            if (many := self.matcher.match(instructions=instructions[index:])) is not None:
+                self.index = index
+                return many
         return None
 
     @override
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        if isinstance(self.matcher, InstructionMatcher):
+            return self._match_single(instructions=instructions)
+        return self._match_sequence(instructions=instructions)
+
+    @override
     def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
-        return f'{self.matcher.matchers[0]!r} did not match.'
+        return f'{self.matcher!r} did not match.'
 
 class AnyOfMatcher(SequenceMatcher):
     """
@@ -237,12 +251,33 @@ class AnyOfMatcher(SequenceMatcher):
     def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
         return f'None of {self.matchers!r} did match {instructions}.'
 
-class OrderedInterleavedInSequenceMatcher(OrderedInSequenceMatcher):
+class OrderedInterleavedInSequenceMatcher(SequenceMatcher):
     """
     Match a sequence of :py:attr:`matchers` in the order they are provided, allowing interleaved unmatched instructions in between.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
+    __slots__ = ('matchers',)
+
     def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
-        super().__init__(matchers = (InSequenceMatcher(matcher) for matcher in matchers))
+        self.matchers : typing.Final[tuple[InSequenceMatcher, ...]] = tuple(
+            matcher if isinstance(matcher, InSequenceMatcher) else InSequenceMatcher(matcher)
+            for matcher in matchers
+        )
+
+    @override
+    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        matches : list[InstructionMatch] = []
+        offset = 0
+        for matcher in self.matchers:
+            if (many := matcher.match(instructions=instructions[offset:])) is not None:
+                matches.extend(many)
+                offset += matcher.index + len(many)
+            else:
+                return None
+        return matches or None
 
 class UnorderedInterleavedInSequenceMatcher(UnorderedInSequenceMatcher):
     """
@@ -259,7 +294,7 @@ class AllInSequenceMatcher:
     matcher : InSequenceMatcher = attrs.field(converter=lambda x: x if isinstance(x, InSequenceMatcher) else InSequenceMatcher(x))
 
     def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | list[list[InstructionMatch]]:
-        if isinstance(self.matcher.matcher.matchers[0], InstructionMatcher):
+        if isinstance(self.matcher.matcher, InstructionMatcher):
             return self._match_single(instructions=instructions)
         return self._match_sequence(instructions=instructions)
 

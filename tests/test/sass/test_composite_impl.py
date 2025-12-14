@@ -12,11 +12,11 @@ from reprospect.test.sass.composite_impl import (
     OneOrMoreInSequenceMatcher,
     OrderedInSequenceMatcher,
     OrderedInterleavedInSequenceMatcher,
-    SequenceMatcher,
     UnorderedInSequenceMatcher,
     UnorderedInterleavedInSequenceMatcher,
     ZeroOrMoreInSequenceMatcher,
 )
+from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import ControlCode, Instruction
 
 CONTROL_CODE = ControlCode.decode(code = '0x000e220000000800')
@@ -303,12 +303,11 @@ class TestAnyOfMatcher:
     def test_explain(self) -> None:
         assert AnyOfMatcher(MATCHER_DADD, MATCHER_DMUL).explain(instructions = DADD_NOP_DMUL) == f'None of {(MATCHER_DADD, MATCHER_DMUL)} did match {DADD_NOP_DMUL}.'
 
-class TestInterleavedInSequenceMatcher:
+class TestOrderedInterleavedInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.composite_impl.OrderedInterleavedInSequenceMatcher` and
-    :py:class:`reprospect.test.sass.composite_impl.UnorderedInterleavedInSequenceMatcher`.
+    Tests for :py:class:`reprospect.test.sass.composite_impl.OrderedInterleavedInSequenceMatcher`.
     """
-    INSTRUCTIONS : typing.Final[tuple[str, ...]] = (
+    INSTRUCTIONS_DADD : typing.Final[tuple[str, ...]] = (
         'LDG.E.ENL2.256 R8, R4, desc[UR6][R2.64]',
         'DADD R4, R4, UR12',
         'NOP',
@@ -329,28 +328,64 @@ class TestInterleavedInSequenceMatcher:
         'STG.E.ENL2.256 desc[UR6][R2.64], R4, R8',
     )
 
-    DADD_MATCHERS : typing.Final[tuple[instruction.OpcodeModsWithOperandsMatcher, ...]] = (
+    MATCHERS_DADD : typing.Final[tuple[instruction.OpcodeModsWithOperandsMatcher, ...]] = (
         instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R4',  'R4',  instruction.PatternBuilder.UREG)),
         instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R6',  'R6',  instruction.PatternBuilder.UREG)),
         instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R8',  'R8',  instruction.PatternBuilder.UREG)),
         instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R10', 'R10', instruction.PatternBuilder.UREG)),
     )
 
-    def check(self, matcher : SequenceMatcher) -> None:
-        assert (matched := matcher.match(self.INSTRUCTIONS)) is not None
-        assert len(matched) == 4
-        assert all(x.opcode == 'DADD' for x in matched)
+    INSTRUCTIONS_LDG : typing.Final[tuple[str, ...]] = (
+        'LDG.E.U16.SYS R2, [R2]',
+        'LDG.E.U16.SYS R4, [R4]',
+    )
 
-    def test_ordered(self) -> None:
-        self.check(matcher = OrderedInterleavedInSequenceMatcher(self.DADD_MATCHERS))
+    MATCHERS_LDG : typing.Final[tuple[instruction.LoadGlobalMatcher, ...]] = (
+        instruction.LoadGlobalMatcher(arch=NVIDIAArch.from_compute_capability(70), size=16, extend='U', readonly=False),
+        instruction.LoadGlobalMatcher(arch=NVIDIAArch.from_compute_capability(70), size=16, extend='U', readonly=False),
+    )
 
-        assert OrderedInterleavedInSequenceMatcher(self.DADD_MATCHERS).match(self.INSTRUCTIONS[::-1]) is None
+    def test_ldg(self) -> None:
+        matcher = OrderedInterleavedInSequenceMatcher(self.MATCHERS_LDG)
+        assert matcher.assert_matches(instructions=self.INSTRUCTIONS_LDG) == [
+            instruction.InstructionMatch(opcode='LDG', modifiers=('E', 'U16', 'SYS'), operands=('R2', '[R2]'), additional={'address': ['[R2]']}),
+            instruction.InstructionMatch(opcode='LDG', modifiers=('E', 'U16', 'SYS'), operands=('R4', '[R4]'), additional={'address': ['[R4]']}),
+        ]
 
-    def test_unordered(self) -> None:
-        matchers = list(self.DADD_MATCHERS)
+        assert matcher.match(instructions=self.INSTRUCTIONS_DADD) is None
+
+    def test_dadd(self) -> None:
+        matcher = OrderedInterleavedInSequenceMatcher(self.MATCHERS_DADD)
+        assert matcher.assert_matches(instructions=self.INSTRUCTIONS_DADD) == [
+            instruction.InstructionMatch(opcode='DADD', modifiers=(), operands=('R4', 'R4', 'UR12')),
+            instruction.InstructionMatch(opcode='DADD', modifiers=(), operands=('R6', 'R6', 'UR14')),
+            instruction.InstructionMatch(opcode='DADD', modifiers=(), operands=('R8', 'R8', 'UR16')),
+            instruction.InstructionMatch(opcode='DADD', modifiers=(), operands=('R10', 'R10', 'UR18')),
+        ]
+
+        assert matcher.match(instructions=self.INSTRUCTIONS_DADD[::-1]) is None
+        assert matcher.match(instructions=self.INSTRUCTIONS_LDG) is None
+
+    def test_no_match(self) -> None:
+        matcher = OrderedInterleavedInSequenceMatcher((
+            instruction.OpcodeModsMatcher(opcode='YIELD', operands=False),
+            instruction.OpcodeModsMatcher(opcode='NOP', operands=False),
+        ))
+        assert matcher.match(instructions=(
+            'YIELD', 'YIELD',
+        )) is None
+
+class TestUnorderedInterleavedInSequenceMatcher:
+    """
+    Tests for :py:class:`reprospect.test.sass.composite_impl.UnorderedInterleavedInSequenceMatcher`.
+    """
+    def test_dadd(self) -> None:
+        matchers = list(TestOrderedInterleavedInSequenceMatcher.MATCHERS_DADD)
         random.shuffle(matchers)
 
-        self.check(matcher = UnorderedInterleavedInSequenceMatcher(matchers))
+        assert (matched := UnorderedInterleavedInSequenceMatcher(matchers).match(TestOrderedInterleavedInSequenceMatcher.INSTRUCTIONS_DADD)) is not None
+        assert len(matched) == 4
+        assert all(x.opcode == 'DADD' for x in matched)
 
 class TestAllInSequenceMatcher:
     """
@@ -362,7 +397,7 @@ class TestAllInSequenceMatcher:
         """
         matcher = AllInSequenceMatcher(instruction.OpcodeModsMatcher(opcode='DADD'))
         assert isinstance(matcher.matcher, InSequenceMatcher)
-        assert (matched := matcher.match(instructions=TestInterleavedInSequenceMatcher.INSTRUCTIONS))
+        assert (matched := matcher.match(instructions=TestOrderedInterleavedInSequenceMatcher.INSTRUCTIONS_DADD))
         assert len(matched) == 4
         assert all(isinstance(x, instruction.InstructionMatch) for x in matched)
 
@@ -377,7 +412,7 @@ class TestAllInSequenceMatcher:
             MATCHER_NOP,
         )))
         assert isinstance(matcher.matcher, InSequenceMatcher)
-        assert (matched := matcher.match(instructions=TestInterleavedInSequenceMatcher.INSTRUCTIONS))
+        assert (matched := matcher.match(instructions=TestOrderedInterleavedInSequenceMatcher.INSTRUCTIONS_DADD))
         assert len(matched) == 3
         for x in matched:
             assert isinstance(x, list)
@@ -386,4 +421,4 @@ class TestAllInSequenceMatcher:
 
     def test_no_match(self) -> None:
         matcher = AllInSequenceMatcher(instruction.OpcodeModsMatcher(opcode='FADD'))
-        assert not matcher.match(TestInterleavedInSequenceMatcher.INSTRUCTIONS)
+        assert not matcher.match(TestOrderedInterleavedInSequenceMatcher.INSTRUCTIONS_DADD)

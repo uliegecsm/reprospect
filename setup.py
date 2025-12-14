@@ -20,6 +20,7 @@ def enable_mypyc(dist : Distribution) -> None:
             'reprospect/test/features.py',
             'reprospect/test/sass/composite.py',
             'reprospect/test/sass/composite_impl.py',
+            'reprospect/test/sass/controlflow/block.py',
             'reprospect/test/sass/instruction/address.py',
             'reprospect/test/sass/instruction/constant.py',
             'reprospect/test/sass/instruction/instruction.py',

@@ -7,5 +7,6 @@ add_pytest(instruction)
 add_pytest(load)
 add_pytest(store)
 
+add_subdirectory(controlflow)
 add_subdirectory(instruction)
 add_subdirectory(matchers)

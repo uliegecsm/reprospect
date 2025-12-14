@@ -7,12 +7,12 @@ import typing
 import pytest
 
 from reprospect.test.sass.composite import instructions_contain, any_of
+from reprospect.test.sass.controlflow.block import BlockMatcher
 from reprospect.test.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
 from reprospect.test.sass.instruction.half import Fp16MulMatcher, Fp16FusedMulAddMatcher
 from reprospect.tools import ncu
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.sass import ControlFlow, Decoder
-from reprospect.tools.sass.controlflow import BasicBlock
 from reprospect.utils import cmake, detect
 
 from tests.parameters import Parameters, PARAMETERS
@@ -101,19 +101,8 @@ class TestSASS:
         matcher_load_16 = instructions_contain(LoadGlobalMatcher(arch = parameters.arch, size = 16, readonly = True, extend = 'U'))
         matcher_load_32 = instructions_contain(LoadGlobalMatcher(arch = parameters.arch, size = 32, readonly = True))
 
-        block_individual: BasicBlock | None = None
-        block_packed: BasicBlock | None = None
-
-        for block in cfg.blocks:
-            if block_individual is None and matcher_load_16.match(instructions = block.instructions) is not None:
-                block_individual = block
-            elif block_packed is None and matcher_load_32.match(instructions = block.instructions) is not None:
-                block_packed = block
-            if block_individual is not None and block_packed is not None:
-                break
-
-        assert block_individual is not None
-        assert block_packed is not None, matcher_load_32.matcher.matchers[0]
+        block_individual, _ = BlockMatcher(matcher_load_16).assert_matches(cfg=cfg)
+        block_packed    , _ = BlockMatcher(matcher_load_32).assert_matches(cfg=cfg)
 
         instructions_contain(Fp16MulMatcher(packed = False)).assert_matches(instructions = block_individual.instructions[matcher_load_16.index:])
 

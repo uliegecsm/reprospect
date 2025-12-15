@@ -8,12 +8,12 @@ not sufficient.
 :code:`Kokkos` relies on a complex implementation strategy with many macros
 for providing math function overload resolution.
 For half-precision types, :code:`Kokkos` provides a
-[templated fallback](https://github.com/kokkos/kokkos/blob/f4de0debe3053bb1babc084b5731ad938952f563/core/src/impl/Kokkos_Half_MathematicalFunctions.hpp#L110-L114)
+`templated fallback <https://github.com/kokkos/kokkos/blob/f4de0debe3053bb1babc084b5731ad938952f563/core/src/impl/Kokkos_Half_MathematicalFunctions.hpp#L110-L114>`_
 that casts to :code:`float`, and the CUDA backend provides a
-[non-template overload](https://github.com/kokkos/kokkos/blob/f4de0debe3053bb1babc084b5731ad938952f563/core/src/Cuda/Kokkos_Cuda_Half_MathematicalFunctions.hpp#L19-L21)
+`non-template overload <https://github.com/kokkos/kokkos/blob/f4de0debe3053bb1babc084b5731ad938952f563/core/src/Cuda/Kokkos_Cuda_Half_MathematicalFunctions.hpp#L19-L21>`_
 that uses the CUDA intrinsics.
 According to the
-[best viable function rules](https://en.cppreference.com/w/cpp/language/overload_resolution.html#Best_viable_function),
+`best viable function rules <https://en.cppreference.com/w/cpp/language/overload_resolution.html#Best_viable_function>`_,
 the non-template overload is selected.
 
 Manual inspection of the source code to verify that the correct implementation path is maintained

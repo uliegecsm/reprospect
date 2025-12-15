@@ -286,14 +286,14 @@ jobs:
                 test -f .coverage
                 mv .coverage coverage.${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
 
-            - uses: actions/upload-artifact@v5
+            - uses: actions/upload-artifact@v6
               with:
                   name: tests-${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                   path: artifacts
                   retention-days: 1
                   if-no-files-found: error
 
-            - uses: actions/upload-artifact@v5
+            - uses: actions/upload-artifact@v6
               with:
                   name: tests-coverage-${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
                   path: coverage.${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
@@ -324,7 +324,7 @@ jobs:
               env:
                   CIBW_ARCHS: x86_64
                   CIBW_BUILD: "${{ matrix.pyver }}-manylinux*"
-            - uses: actions/upload-artifact@v5
+            - uses: actions/upload-artifact@v6
               with:
                   name: package-${{ matrix.pyver }}
                   path: wheelhouse/
@@ -343,7 +343,7 @@ jobs:
                   python-version: '3.11'
             - run: python -m pip install -U build
             - run: python -m build --sdist --verbose --outdir wheelhouse .
-            - uses: actions/upload-artifact@v5
+            - uses: actions/upload-artifact@v6
               with:
                   name: package-sdist
                   path: wheelhouse/
@@ -432,7 +432,7 @@ jobs:
                 coverage report --data-file=.coverage --fail-under=95
                 coverage html   --data-file=.coverage --directory=htmlcoverage
 
-            - uses: actions/upload-artifact@v5
+            - uses: actions/upload-artifact@v6
               with:
                   name: tests-coverage
                   path: htmlcoverage/
@@ -495,7 +495,7 @@ jobs:
                 inara -o pdf -p -v paper.md
 
             - if: steps.changed-files.outputs.any_changed == 'true'
-              uses: actions/upload-artifact@v5
+              uses: actions/upload-artifact@v6
               with:
                   name: papers
                   path: papers/**/*.pdf

@@ -7,4 +7,5 @@
    kokkos/atomic
    kokkos/complex
    kokkos/graph
+   kokkos/half
    kokkos/view

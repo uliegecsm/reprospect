@@ -15,12 +15,12 @@ import functools
 import logging
 import pathlib
 import re
-import sys
 import textwrap
 import typing
 
 import mypy_extensions
 import pandas
+import regex
 import rich.console
 import rich.text
 import rich.table
@@ -32,14 +32,23 @@ from reprospect.tools.binaries.symtab    import get_symbol_table
 from reprospect.utils                    import rich_helpers
 from reprospect.utils.subprocess_helpers import popen_stream
 
-if sys.version_info >= (3, 11):
-    from enum import StrEnum
-else:
-    from backports.strenum.strenum import StrEnum
+RESOURCE_USAGE_PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(
+    r'\s*'
+    r'REG:(?P<register>\d+)\s+'
+    r'STACK:(?P<stack>\d+)\s+'
+    r'SHARED:(?P<shared>\d+)\s+'
+    r'LOCAL:(?P<local>\d+)\s+'
+    r'(CONSTANT\[(?P<constant_bank>\d+)\]:(?P<constant_size>\d+)\s*)+'
+    r'TEXTURE:(?P<texture>\d+)\s+'
+    r'SURFACE:(?P<surface>\d+)\s+'
+    r'SAMPLER:(?P<sampler>\d+)',
+)
 
-class ResourceType(StrEnum):
+@mypy_extensions.mypyc_attr(native_class=True)
+@dataclasses.dataclass(slots=True, frozen=True, repr=True)
+class ResourceUsage: # pylint: disable=too-many-instance-attributes
     """
-    Resource usage fields.
+    Resource usage.
 
     References:
 
@@ -47,39 +56,36 @@ class ResourceType(StrEnum):
     * :cite:`openwall-wiki-parsing-nvidia`
     * :cite:`nvidia-cuda-compiler-driver-nvcc-statistics`
     """
-    # Registers.
-    REGISTER = 'REG'
-    # Shared memory.
-    SHARED = 'SHARED'
-    # Constant memory. Note that there might be several "banks" (cmem[0], cmem[1] and so on).
-    CONSTANT = 'CONSTANT'
+    register: int = 0
+    constant: dict[int, int] = dataclasses.field(default_factory=dict)
+    shared: int = 0
+    local: int = 0
+    sampler: int = 0
+    stack: int = 0
+    surface: int = 0
+    texture: int = 0
 
-    LOCAL   = 'LOCAL'
-    SAMPLER = 'SAMPLER'
-    STACK   = 'STACK'
-    SURFACE = 'SURFACE'
-    TEXTURE = 'TEXTURE'
+    def __str__(self) -> str:
+        return f'REG: {self.register}, STACK: {self.stack}, SHARED: {self.shared}, LOCAL: {self.local}, CONSTANT: {self.constant}, TEXTURE: {self.texture}, SURFACE: {self.surface}, SAMPLER: {self.sampler}'
 
-class ResourceUsage(dict[ResourceType, int | dict[int, int]]):
-    """
-    Dictionary of resource usage.
-    """
     @classmethod
     def parse(cls, line : str) -> ResourceUsage:
         """
         Parse a resource usage line, such as produced by ``cuobjdump`` with ``--dump-resource-usage``.
         """
-        res : ResourceUsage = cls()
-        for token in re.findall(r'([A-Z]+)(?:\[([0-9]+)\])?:([0-9]+)', line):
-            t = ResourceType(token[0])
-            match t:
-                case ResourceType.CONSTANT:
-                    if t not in res:
-                        res[t] = {}
-                    typing.cast(dict[int, int], res[t])[int(token[1])] = int(token[2])
-                case _:
-                    res[t] = int(token[2])
-        return res
+        if not (matched := RESOURCE_USAGE_PATTERN.match(line)):
+            raise ValueError(line)
+
+        return cls(
+            register=int(matched.group('register')),
+            stack=int(matched.group('stack')),
+            shared=int(matched.group('shared')),
+            local=int(matched.group('local')),
+            constant={int(bank): int(value) for bank, value in zip(matched.captures('constant_bank'), matched.captures('constant_size'), strict=True)},
+            texture=int(matched.group('texture')),
+            surface=int(matched.group('surface')),
+            sampler=int(matched.group('sampler')),
+        )
 
 @mypy_extensions.mypyc_attr(native_class = True)
 @dataclasses.dataclass(slots = True)
@@ -113,7 +119,7 @@ class Function:
         table.add_row("Code", rich.text.Text(textwrap.dedent(self.code.expandtabs()).rstrip()), end_section = True)
 
         # Resource usage.
-        table.add_row("Resource usage", ", ".join(f"{key}: {value}" for key, value in self.ru.items()))
+        table.add_row("Resource usage", str(self.ru))
 
         return table
 

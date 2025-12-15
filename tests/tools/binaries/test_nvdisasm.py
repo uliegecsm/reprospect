@@ -5,7 +5,7 @@ import unittest.mock
 import pytest
 
 from reprospect.tools.architecture      import NVIDIAArch
-from reprospect.tools.binaries          import CuObjDump, CuppFilt, LlvmCppFilt, ResourceType, NVDisasm
+from reprospect.tools.binaries          import CuObjDump, CuppFilt, LlvmCppFilt, NVDisasm
 from reprospect.tools.binaries.nvdisasm import Function, DetailedRegisterUsage
 from reprospect.tools.sass.decode       import RegisterType
 from reprospect.utils                   import cmake
@@ -83,7 +83,7 @@ class TestNVDisasm:
             )
 
             # cuobjdump reports a register usage of 10 GPRs.
-            assert cuobjdump.functions[self.SIGNATURE].ru[ResourceType.REGISTER] == 10
+            assert cuobjdump.functions[self.SIGNATURE].ru.register == 10
 
             # nvdisasm indicates that the span R0-R7 of GPR registers is used.
             disasm = NVDisasm(file = cubin, arch = parameters.arch)

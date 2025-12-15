@@ -6,13 +6,126 @@ import typing
 import pytest
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import CuObjDump, CuppFilt, Function, ResourceType, ResourceUsage
+from reprospect.tools.binaries     import CuObjDump, CuppFilt, Function, ResourceUsage
 from reprospect.utils              import cmake
 from reprospect.utils              import rich_helpers
 
 from tests.compilation import get_compilation_output, get_cubin_name
 from tests.cublas      import CuBLAS
 from tests.parameters  import Parameters, PARAMETERS
+
+class TestResourceUsage:
+    """
+    Tests related to :py:class:`reprospect.tools.binaries.cuobjdump.ResourceUsage`.
+    """
+    def test(self) -> None:
+        assert ResourceUsage.parse('REG:61 STACK:0 SHARED:8448 LOCAL:0 CONSTANT[0]:452 TEXTURE:0 SURFACE:0 SAMPLER:0') == ResourceUsage(
+            register=61, shared=8448,
+            constant={0: 452},
+        )
+        assert ResourceUsage.parse('REG:32 STACK:0 SHARED:0 LOCAL:0 CONSTANT[0]:392 TEXTURE:0 SURFACE:0 SAMPLER:0') == ResourceUsage(
+            register=32,
+            constant={0: 392},
+        )
+        assert ResourceUsage.parse('REG:32 STACK:0 SHARED:0 LOCAL:0 CONSTANT[2]:128 CONSTANT[0]:392 TEXTURE:1 SURFACE:2 SAMPLER:3') == ResourceUsage(
+            register=32,
+            constant={0: 392, 2: 128},
+            texture=1, surface=2, sampler=3,
+        )
+
+        with pytest.raises(ValueError):
+            ResourceUsage.parse('not-a-valid-resource-usage')
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
+    class TestSharedMemory:
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'shared_memory.cu'
+        SIGNATURE: typing.Final[str] = '_Z20shared_memory_kernelPfj'
+
+        def test(self, workdir: pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+            output, compilation = get_compilation_output(
+                source=self.FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=True,
+                resource_usage=True,
+                cmake_file_api=cmake_file_api,
+            )
+
+            assert f"Compiling entry function '{self.SIGNATURE}' for '{parameters.arch.as_sm}'" in compilation, compilation
+
+            ru = CuObjDump(file=output, arch=parameters.arch, demangler=None).functions[self.SIGNATURE].ru
+
+            if parameters.arch.compute_capability < 90:
+                assert f'Used 10 registers, used 1 barriers, {128 * 4} bytes smem, 364 bytes cmem[0]' in compilation, compilation
+                assert ru == ResourceUsage(register=10, shared=128 * 4, constant={0: 364})
+            elif parameters.arch.compute_capability < 100:
+                assert f'Used 10 registers, used 1 barriers, {128 * 4} bytes smem' in compilation, compilation
+                assert ru == ResourceUsage(register=10, shared=1536, constant={0: 540})
+            else:
+                assert f'Used 10 registers, used 1 barriers, {128 * 4} bytes smem' in compilation, compilation
+                assert ru == ResourceUsage(register=10, shared=1536, constant={0: 908})
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
+    class TestWideLoadStore:
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'wide_load_store.cu'
+        SIGNATURE: typing.Final[str] = '_Z22wide_load_store_kernelP15MyAlignedStructIdEPKS0_'
+
+        def test(self, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+            output, compilation = get_compilation_output(
+                source=self.FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=True,
+                resource_usage=True,
+                cmake_file_api=cmake_file_api,
+            )
+
+            assert f"Compiling entry function '{self.SIGNATURE}' for '{parameters.arch.as_sm}'" in compilation, compilation
+
+            ru = CuObjDump(file=output, arch=parameters.arch, demangler=None).functions[self.SIGNATURE].ru
+
+            if parameters.arch.compute_capability < 90:
+                assert 'Used 12 registers, used 0 barriers, 368 bytes cmem[0]' in compilation, compilation
+                assert ru == ResourceUsage(register=12, constant={0: 368})
+            elif parameters.arch.compute_capability < 100:
+                expt_regs = {
+                    'NVIDIA': 14,
+                    'Clang': 12,
+                }[cmake_file_api.toolchains['CUDA']['compiler']['id']]
+                assert f'Used {expt_regs} registers, used 0 barriers' in compilation, compilation
+                assert ru == ResourceUsage(register=expt_regs, constant={0: 544})
+            else:
+                assert 'Used 12 registers, used 0 barriers' in compilation, compilation
+                assert ru == ResourceUsage(register=12, constant={0: 912})
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
+    class TestSaxpy:
+        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'tools' / 'assets' / 'saxpy.cu'
+        SIGNATURE: typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
+
+        def test(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+            output, compilation = get_compilation_output(
+                source=self.FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=True,
+                resource_usage=True,
+                cmake_file_api=cmake_file_api,
+            )
+
+            assert f"Compiling entry function '{self.SIGNATURE}' for '{parameters.arch.as_sm}'" in compilation, compilation
+
+            ru = CuObjDump(file=output, arch=parameters.arch, demangler=None).functions[self.SIGNATURE].ru
+
+            if parameters.arch.compute_capability < 90:
+                assert 'Used 10 registers, used 0 barriers, 380 bytes cmem[0]' in compilation, compilation
+                assert ru == ResourceUsage(register=10, constant={0: 380})
+            elif parameters.arch.compute_capability < 100:
+                assert 'Used 10 registers, used 0 barriers' in compilation, compilation
+                assert ru == ResourceUsage(register=10, constant={0: 556})
+            else:
+                assert 'Used 10 registers, used 0 barriers' in compilation, compilation
+                assert ru == ResourceUsage(register=10, constant={0: 924})
 
 class TestFunction:
     """
@@ -28,16 +141,10 @@ class TestFunction:
                                                                                                             /* 0x000e6e0000002100 */
 """
 
-    RU : typing.Final[ResourceUsage] = ResourceUsage({
-        ResourceType.REGISTER : 10,
-        ResourceType.STACK    : 0,
-        ResourceType.SHARED   : 0,
-        ResourceType.LOCAL    : 0,
-        ResourceType.CONSTANT : {0: 924},
-        ResourceType.TEXTURE  : 0,
-        ResourceType.SURFACE  : 0,
-        ResourceType.SAMPLER  : 0,
-    })
+    RU : typing.Final[ResourceUsage] = ResourceUsage(
+        register=10,
+        constant={0: 924},
+    )
 
     def test_string_representation(self) -> None:
         """
@@ -125,16 +232,10 @@ class TestCuObjDump:
             else:
                 cst = 924
 
-            assert cuobjdump.functions[self.SIGNATURE].ru == ResourceUsage({
-                ResourceType.REGISTER: 10,
-                ResourceType.STACK: 0,
-                ResourceType.SHARED: 0,
-                ResourceType.LOCAL: 0,
-                ResourceType.CONSTANT: {0: cst},
-                ResourceType.TEXTURE: 0,
-                ResourceType.SURFACE: 0,
-                ResourceType.SAMPLER: 0,
-            }), cuobjdump.functions[self.SIGNATURE].ru
+            assert cuobjdump.functions[self.SIGNATURE].ru == ResourceUsage(
+                register=10,
+                constant={0: cst},
+            ), cuobjdump.functions[self.SIGNATURE].ru
 
             assert cuobjdump.functions[self.SIGNATURE].symbol == self.SYMBOL
 

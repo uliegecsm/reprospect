@@ -89,7 +89,7 @@ class TestProfilingResults:
         assert key == 'kernel'
         assert metrics['smsp__inst_executed.sum'] == 100.
 
-        with pytest.raises(TypeError, match = "Expecting entry 'nvtx_push_region_kernel' to be a leaf node with profiling metrics at ()."):
+        with pytest.raises(TypeError, match = r"Expecting entry 'nvtx_push_region_kernel' to be a leaf node with profiling metrics at ()."):
             next(results.query(('nvtx_range_name', 'nvtx_push_region_A')).iter_metrics())
 
     def test_assign_metrics(self) -> None:

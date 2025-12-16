@@ -187,7 +187,7 @@ class InSequenceMatcher(SequenceMatcher):
 
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    __slots__ = ('matcher', 'index')
+    __slots__ = ('index', 'matcher')
 
     def __init__(self, matcher : SequenceMatcher | InstructionMatcher) -> None:
         self.matcher : typing.Final[SequenceMatcher | InstructionMatcher] = matcher
@@ -227,7 +227,7 @@ class AnyOfMatcher(SequenceMatcher):
 
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    __slots__ = ('matchers', 'index')
+    __slots__ = ('index', 'matchers')
 
     def __init__(self, *matchers : SequenceMatcher | InstructionMatcher) -> None:
         self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
@@ -323,7 +323,7 @@ class ModifierValidator(InstructionMatcher):
 
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    __slots__ = ('matcher', 'index', 'modifier')
+    __slots__ = ('index', 'matcher', 'modifier')
 
     def __init__(self, matcher : InstructionMatcher, modifier : str, index : int | None = None) -> None:
         self.matcher : typing.Final[InstructionMatcher] = matcher
@@ -353,7 +353,7 @@ class OperandValidator(InstructionMatcher):
 
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    __slots__ = ('matcher', 'index', 'operand')
+    __slots__ = ('index', 'matcher', 'operand')
 
     def __init__(self, matcher : InstructionMatcher, operand : OperandMatcher, index : int | None = None) -> None:
         self.matcher : typing.Final[InstructionMatcher] = matcher

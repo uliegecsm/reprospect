@@ -229,7 +229,7 @@ class Range:
     includes : dataclasses.InitVar[typing.Iterable[str] | None] = None
     excludes : dataclasses.InitVar[typing.Iterable[str] | None] = None
 
-    def __post_init__(self, report, includes : typing.Iterable[str] | None = None, excludes : typing.Iterable[str] | None = None) -> None:
+    def __post_init__(self, report, includes : typing.Iterable[str] | None, excludes : typing.Iterable[str] | None) -> None:
         self.range = report.range_by_idx(self.index)
 
         if not includes and not excludes:

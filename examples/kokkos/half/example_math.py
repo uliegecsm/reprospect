@@ -202,11 +202,12 @@ class TestMax(CMakeAwareTestCase):
         """
         Typically::
 
-            LDG.E.U16 R2, [R2.64]
-            LDG.E.U16 R5, [R4.64]
+            LDG.E.U16 R2, desc[UR6][R2.64]
+            LDG.E.U16 R5, desc[UR6][R4.64]
             ...
             HMNMX2 R5, R2.H0_H0, R5.H0_H0, !PT
-            STG.E.U16 [R6.64], R5
+            ...
+            STG.E.U16 desc[UR6][R6.64], R5
         """
         block, offset, matched_ldg_a, matched_ldg_b = self.match_block_and_loads(instructions=instructions)
 
@@ -225,15 +226,15 @@ class TestMax(CMakeAwareTestCase):
         """
         Typically::
 
-            LDG.E.U16 R2, [R2.64]
-            LDG.E.U16 R4, [R4.64]
+            LDG.E.U16 R2, desc[UR6][R2.64]
+            LDG.E.U16 R4, desc[UR6][R4.64]
             ...
             HADD2.F32 R6, -RZ, R2.H0_H0
             HADD2.F32 R7, -RZ, R4.H0_H0
             FMNMX R6, R6, R7, !PT
-            F2FP.PACK_AB R3, RZ, R6
+            F2FP.F16.F32.PACK_AB R3, RZ, R6
             ...
-            STG.E.U16 [R6.64], R3
+            STG.E.U16 desc[UR6][R6.64], R3
         """
         block, offset, matched_ldg_a, matched_ldg_b = self.match_block_and_loads(instructions=instructions)
 

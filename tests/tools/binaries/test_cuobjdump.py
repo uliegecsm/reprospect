@@ -287,7 +287,7 @@ class TestCuObjDump:
             # This binary is not compiled to an object file. With `nvcc` as the compiler, the binary then contains
             # more than one embedded CUDA binary file. Hence, check that calling symtab raises.
             if cmake_file_api.toolchains['CUDA']['compiler']['id'] == 'NVIDIA':
-                with pytest.raises(RuntimeError, match = 'The host binary file contains more than one embedded CUDA binary file.'):
+                with pytest.raises(RuntimeError, match = r'The host binary file contains more than one embedded CUDA binary file.'):
                     cuobjdump.symtab # pylint: disable=pointless-statement
 
             # Extract the embedded CUDA binary file and check that calling its symtab works.

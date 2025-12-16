@@ -4,11 +4,11 @@ from .elf       import ELF
 from .nvdisasm  import NVDisasm
 
 __all__ = (
-    'CuObjDump',
     'ELF',
-    'Function',
-    'ResourceUsage',
+    'CuObjDump',
     'CuppFilt',
+    'Function',
     'LlvmCppFilt',
     'NVDisasm',
+    'ResourceUsage',
 )

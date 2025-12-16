@@ -220,9 +220,6 @@ class CuObjDump:
                 current_function_symbol_code = line[len(START):].rstrip('\n')
                 current_function_code = demangler.demangle(current_function_symbol_code) if demangler else current_function_symbol_code
 
-            else:
-                pass
-
     @classmethod
     def extract(cls, *,
         file : pathlib.Path,

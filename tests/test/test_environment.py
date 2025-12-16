@@ -13,7 +13,7 @@ class TestEnvironmentField:
         """
         Raises if neither an attribute name nor an environment key is given.
         """
-        with pytest.raises(AttributeError,match = 'Descriptor not initialized properly.'):
+        with pytest.raises(AttributeError,match = r'Descriptor not initialized properly.'):
             EnvironmentField().read(None, None)
 
     def test_read_str_converter(self, monkeypatch) -> None:

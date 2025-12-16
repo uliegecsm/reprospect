@@ -73,8 +73,8 @@ __all__ = (
     'InstructionMatch',
     'InstructionMatcher',
     'LoadConstantMatcher',
-    'LoadMatcher',
     'LoadGlobalMatcher',
+    'LoadMatcher',
     'OpcodeModsMatcher',
     'OpcodeModsWithOperandsMatcher',
     'PatternBuilder',
@@ -82,6 +82,6 @@ __all__ = (
     'ReductionMatcher',
     'RegisterMatch',
     'RegisterMatcher',
-    'StoreMatcher',
     'StoreGlobalMatcher',
+    'StoreMatcher',
 )

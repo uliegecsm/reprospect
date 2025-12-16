@@ -129,6 +129,7 @@ extend-select = [
     "PYI",
     "RET",
     "RSE",
+    "RUF",
     "S110",
     "SIM101",
     "SIM103",
@@ -165,6 +166,10 @@ extend-select = [
     "UP045",
     "W",
     "YTT",
+]
+ignore = [
+    "RUF005",
+    "RUF018",
 ]
 
 [tool.pylint.main]

@@ -65,7 +65,7 @@ class FileAPI:
         """
         Retrieve the CMake cache.
         """
-        cache_json = self.cmake_reply_path / self.reader.index().reply.stateless[(cmake_file_api.kinds.kind.ObjectKind.CACHE, self.CACHE_VERSION)].jsonFile
+        cache_json = self.cmake_reply_path / self.reader.index().reply.stateless[cmake_file_api.kinds.kind.ObjectKind.CACHE, self.CACHE_VERSION].jsonFile
 
         with cache_json.open('rb') as file:
             entries = ijson.items(file, 'entries.item')
@@ -79,7 +79,7 @@ class FileAPI:
         """
         Retrieve the toolchains information.
         """
-        toolchains_json = self.cmake_reply_path / self.reader.index().reply.stateless[(cmake_file_api.kinds.kind.ObjectKind.TOOLCHAINS, self.TOOLCHAINS_VERSION)].jsonFile
+        toolchains_json = self.cmake_reply_path / self.reader.index().reply.stateless[cmake_file_api.kinds.kind.ObjectKind.TOOLCHAINS, self.TOOLCHAINS_VERSION].jsonFile
 
         with toolchains_json.open('rb') as file:
             toolchains = ijson.items(file, 'toolchains.item')
@@ -95,7 +95,7 @@ class FileAPI:
 
         This function assumes that there is only a single build configuration.
         """
-        codemodel_json = self.cmake_reply_path / self.reader.index().reply.stateless[(cmake_file_api.kinds.kind.ObjectKind.CODEMODEL, self.CODEMODEL_VERSION)].jsonFile
+        codemodel_json = self.cmake_reply_path / self.reader.index().reply.stateless[cmake_file_api.kinds.kind.ObjectKind.CODEMODEL, self.CODEMODEL_VERSION].jsonFile
 
         with codemodel_json.open('rb') as file:
             configurations = list(ijson.items(file, 'configurations.item'))

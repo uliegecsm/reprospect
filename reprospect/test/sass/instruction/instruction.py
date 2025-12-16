@@ -204,7 +204,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
     * https://docs.nvidia.com/gameworks/content/developertools/desktop/analysis/report/cudaexperiments/kernellevel/memorystatisticsglobal.htm
     * https://developer.nvidia.com/blog/whats-new-and-important-in-cuda-toolkit-13-0/#updated_vector_types
     """
-    __slots__ = ('size', 'cache', 'memory', 'extend')
+    __slots__ = ('cache', 'extend', 'memory', 'size')
 
     TEMPLATE : typing.Final[str] = f'{{opcode}} {PatternBuilder.reg()}, {{address}}'
     TEMPLATE_256 : typing.Final[str] = f'{{opcode}} {PatternBuilder.reg()}, {PatternBuilder.reg()}, {{address}}'
@@ -310,7 +310,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
 
         STG.E.ENL2.256 desc[UR4][R4.64], R8, R12
     """
-    __slots__ = ('size', 'memory', 'extend')
+    __slots__ = ('extend', 'memory', 'size')
 
     TEMPLATE : typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}'
     TEMPLATE_256 : typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'

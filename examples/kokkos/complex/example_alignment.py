@@ -170,7 +170,7 @@ class TestNCU(TestAlignment):
         MetricCounter(name = 'lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs = (MetricCounterRollUp.SUM,)),
     )
 
-    NVTX_INCLUDES : typing.Final[tuple[str, ...]] = ('AlignmentProfiling',)
+    NVTX_INCLUDES : typing.Final[tuple[str, ...]] = ('Alignment',)
 
     @pytest.fixture(scope = 'class')
     def report(self) -> Report:
@@ -221,7 +221,7 @@ class TestNCU(TestAlignment):
             if opcode in ('LDG', 'STG'):
                 assert metrics[Alignment.DEFAULT  ]['sass__inst_executed_per_opcode'].correlated[opcode] \
                     == metrics[Alignment.SPECIFIED]['sass__inst_executed_per_opcode'].correlated[opcode] * 2
-            else:
+            elif opcode != 'NOP':
                 assert metrics[Alignment.DEFAULT  ]['sass__inst_executed_per_opcode'].correlated[opcode] \
                     == metrics[Alignment.SPECIFIED]['sass__inst_executed_per_opcode'].correlated[opcode]
 

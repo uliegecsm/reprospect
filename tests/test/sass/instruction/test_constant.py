@@ -31,4 +31,4 @@ class TestConstantMatcher:
         assert ConstantMatcher(bank = '0x2'                  ).match(CONSTANT) is None
 
     def test_build_pattern(self) -> None:
-        assert ConstantMatcher.build_pattern(bank = '0x0', capture_bank = True, captured = False) == r'c\[(?P<bank>0x0)\]\[(?:0x[0-9c]+|R[0-9]+|UR[0-9]+)\]'
+        assert ConstantMatcher.build_pattern(bank = '0x0', capture_bank = True, captured = False) == r'c\[(?P<bank>0x0)\]\[(?:0x[0-9a-f]+|R[0-9]+|UR[0-9]+)\]'

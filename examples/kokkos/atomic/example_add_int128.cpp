@@ -15,6 +15,8 @@ int main(int argc, char* argv[])
         static_assert( sizeof(scalar_t) == 16);
         static_assert(alignof(scalar_t) == 16);
 
+        static_assert(std::is_trivially_copyable_v<scalar_t>);
+
         ::reprospect::examples::kokkos::atomic::AtomicAdd<scalar_t>::run(Kokkos::Cuda{}, scalar_t{42});
     }
 }

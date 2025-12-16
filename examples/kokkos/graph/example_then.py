@@ -42,7 +42,7 @@ class TestELF(TestThen):
             r'Kokkos::Impl::ParallelFor<Kokkos::Impl::ThenWrapper<'
             r'reprospect::examples::kokkos::graph::Functor<'
             r'Kokkos::View<int, Kokkos::CudaUVMSpace>>>, '
-            rf'Kokkos::RangePolicy<Kokkos::Cuda, Kokkos::Impl::IsGraphKernelTag, Kokkos::LaunchBounds<{one}, {zero}>>, '
+            rf'Kokkos::RangePolicy<Kokkos::Cuda, Kokkos::Impl::IsGraphKernelTag, Kokkos::LaunchBounds<{one}, {zero}>, void>, '
             rf'Kokkos::Cuda>, {one}, {zero}>\({arg}\)',
         )
 

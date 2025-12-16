@@ -31,7 +31,10 @@ class Load256Matcher:
     def build(self) -> SequenceMatcher:
         match Memory(arch = self.arch).max_transaction_size:
             case 16:
-                return instruction_is(LoadGlobalMatcher(arch = self.arch, size = 128, readonly = False)).times(num=2)
+                return interleaved_instructions_are(
+                    LoadGlobalMatcher(arch=self.arch, size=128, readonly=False),
+                    LoadGlobalMatcher(arch=self.arch, size=128, readonly=False),
+                )
             case 32:
                 return instruction_is(LoadGlobalMatcher(arch = self.arch, size = 256, readonly = False)).times(num=1)
             case _:
@@ -109,9 +112,9 @@ class TestAtomicAddDouble256(add.TestCase):
         r'AtomicAddFunctor<Kokkos::View<reprospect::examples::kokkos::atomic::Double4Aligned32\s*\*\s*, Kokkos::CudaSpace>>',
     )
 
-    def test_lock_based_atomic(self, decoder : Decoder) -> None:
+    def test_lock_atomic(self, decoder : Decoder) -> None:
         """
-        This test proves that it uses the lock-based atomic by looking for an instruction sequence pattern.
+        This test proves that it uses the lock-based implementation.
         """
         desul.LockBasedAtomicMatcher(
             arch = self.arch,

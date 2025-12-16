@@ -2,17 +2,17 @@ import re
 import sys
 import typing
 
-from reprospect.test.sass.composite      import instructions_are
+from reprospect.test.sass.composite import instructions_are
 from reprospect.test.sass.composite_impl import OrderedInSequenceMatcher, SequenceMatcher
-from reprospect.test.sass.instruction    import AtomicMatcher, \
-                                                InstructionMatch, \
-                                                ReductionMatcher, \
-                                                RegisterMatch, \
-                                                RegisterMatcher
-from reprospect.test.sass.matchers       import add_int128
-from reprospect.tools.sass               import Decoder, Instruction
+from reprospect.test.sass.instruction import (
+    InstructionMatch,
+    RegisterMatch,
+    RegisterMatcher,
+)
+from reprospect.test.sass.matchers import add_int128
+from reprospect.tools.sass import ControlFlow, Decoder, Instruction
 
-from examples.kokkos.atomic import add, desul
+from examples.kokkos.atomic import add, cas, desul
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -61,11 +61,7 @@ class AddInt128:
 
 class TestAtomicAddInt128(add.TestCase):
     """
-    Verify that :code:`Kokkos::atomic_add` for :code:`__int128` maps to
-    the `desul` lock-based array implementation.
-
-    Although :code:`__int128` meets the requirements for 128-bit CAS,
-    the current embedded `desul` version does not support it.
+    Tests for :code:`__int128`.
     """
     @classmethod
     @override
@@ -76,22 +72,32 @@ class TestAtomicAddInt128(add.TestCase):
         r'AtomicAddFunctor<Kokkos::View<__int128\s*\*\s*, Kokkos::CudaSpace>>',
     )
 
-    def test_no_atomic_add_128(self, decoder : Decoder) -> None:
+    def test_lock_atomic_before_hopper90(self, decoder : Decoder) -> None:
         """
-        There is no match for an atomic add of 128-bit size.
+        This test proves that it uses the lock-based implementation.
         """
-        matcher_atom = AtomicMatcher   (operation = 'ADD', dtype = ('S', 128), scope = 'DEVICE', consistency = 'STRONG', arch = self.arch)
-        matcher_red  = ReductionMatcher(operation = 'ADD', dtype = ('S', 128), scope = 'DEVICE', consistency = 'STRONG', arch = self.arch)
-
-        assert not any(matcher_atom.match(inst) for inst in decoder.instructions)
-        assert not any(matcher_red .match(inst) for inst in decoder.instructions)
-
-    def test_lock_based_atomic(self, decoder : Decoder) -> None:
-        """
-        This test proves that it uses the lock-based atomic by looking for an instruction sequence pattern.
-        """
-        desul.LockBasedAtomicMatcher(
+        matched = desul.LockBasedAtomicMatcher(
             arch = self.arch,
             operation = AddInt128(),
             compiler_id = self.toolchains['CUDA']['compiler']['id'],
-        ).assert_matches(instructions = decoder.instructions)
+        ).match(instructions = decoder.instructions)
+
+        if self.arch.compute_capability.as_int >= 90:
+            assert matched is None
+        else:
+            assert matched is not None
+
+    def test_cas_atomic_as_of_hopper90(self, decoder: Decoder) -> None:
+        """
+        This test proves that it uses the CAS-based implementation.
+        """
+        matched = cas.AtomicCAS(
+            arch=self.arch,
+            operation=AddInt128(),
+            size=128,
+        ).match(cfg=ControlFlow.analyze(instructions=decoder.instructions))
+
+        if self.arch.compute_capability.as_int >= 90:
+            assert matched is not None
+        else:
+            assert matched is None

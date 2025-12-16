@@ -51,7 +51,7 @@ struct MulAddFunctor
 };
 
 template <typename ComplexType>
-class AlignmentProfiling
+class Alignment
 {
 public:
     static constexpr size_t size = 1024;
@@ -93,18 +93,18 @@ int main(int argc, char* argv[])
     {
         using namespace reprospect::examples::kokkos::complex;
 
-        Kokkos::Profiling::ProfilingSection profiling_section {"AlignmentProfiling"};
+        Kokkos::Profiling::ProfilingSection profiling_section {"Alignment"};
         profiling_section.start();
 
         using complex_double_specified_alignment_t = Kokkos::complex<double>;
         static_assert(std::alignment_of_v<complex_double_specified_alignment_t> == sizeof(double) * 2);
         static_assert(sizeof(complex_double_specified_alignment_t) == sizeof(double) * 2);
-        AlignmentProfiling<complex_double_specified_alignment_t>::run(Kokkos::Cuda{});
+        Alignment<complex_double_specified_alignment_t>::run(Kokkos::Cuda{});
 
         using complex_double_t = Complex<double>;
         static_assert(std::alignment_of_v<complex_double_t> == sizeof(double));
         static_assert(sizeof(complex_double_t) == sizeof(double) * 2);
-        AlignmentProfiling<complex_double_t>::run(Kokkos::Cuda{});
+        Alignment<complex_double_t>::run(Kokkos::Cuda{});
 
         profiling_section.stop();
     }

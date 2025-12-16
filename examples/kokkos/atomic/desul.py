@@ -1,3 +1,40 @@
+"""
+:code:`Kokkos` provides extended atomic support for objects of arbitrary size.
+Therefore, it has to support types that are not directly handled by the backend.
+This is achieved through the `desul <https://github.com/desul/desul>`_ library :cite:`ctrott-2022`,
+that, depending on the size of the object and the targeted hardware, maps atomic operations to either:
+
+1. atomic instruction
+2. CAS loop
+3. sharded lock table
+
+Traditionally, CUDA atomics supported up to 64-bit size operations.
+Since compute capability 9.0, CUDA `supports atomic CAS for objects up to 128-bit size <https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#atomiccas>`_.
+Therefore, there has been some effort in :code:`Kokkos` to bring this support through `desul`.
+For instance, a :code:`Kokkos::atomic_add` for 128-bit aligned :code:`Kokkos::complex<double>` should use
+the sharded lock table implementation only for compute capability below 9.0,
+and resort to the CAS-based implementation otherwise.
+
+- https://github.com/kokkos/kokkos/pull/8025
+- https://github.com/kokkos/kokkos/pull/8495
+- https://github.com/kokkos/kokkos/pull/8511
+
+To ensure that :code:`Kokkos` implements the right code path, the following matchers can be used:
+
+* :py:class:`examples.kokkos.atomic.cas.AtomicCAS`
+* :py:class:`examples.kokkos.atomic.desul.LockBasedAtomicMatcher`
+
+The following tests:
+
+* :py:meth:`examples.kokkos.atomic.example_add_complex64.TestAtomicAddComplex64`
+* :py:meth:`examples.kokkos.atomic.example_add_complex128.TestAtomicAddComplex128`
+* :py:meth:`examples.kokkos.atomic.example_add_double256.TestAtomicAddDouble256`
+* :py:meth:`examples.kokkos.atomic.example_add_int128.TestAtomicAddInt128`
+
+verify that :code:`Kokkos::atomic_add` maps to the right implementation
+by looking for an instruction sequence pattern.
+"""
+
 import logging
 import sys
 import typing

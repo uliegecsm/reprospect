@@ -285,10 +285,9 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     def test_sign_extend_s16(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
         """
-        :py:attr:`CODE_EXTEND` leads to sign extension only if both pointers are not decorated with
-        :code:`__restrict__` when using ``nvcc``.
+        Check when :py:attr:`CODE_EXTEND` leads to sign extension.
 
-        With ``clang``, it always leads to sign extension.
+        Uses :py:meth:`reprospect.test.features.Memory.sign_extension`.
         """
         FILE_S16 = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.s16.cu'
         FILE_U16 = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.u16.cu'
@@ -303,26 +302,23 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         matcher_s16 = LoadGlobalMatcher(arch = parameters.arch, size = 16, readonly = False, extend = 'S')
         instructions_contain(matcher_s16).assert_matches(decoder_s16.instructions)
 
-        # Check that it does not lead to sign extension for nvcc.
+        # Check that it does not lead to sign extension under some circumstances.
         matcher_s16_ro = LoadGlobalMatcher(arch = parameters.arch, size = 16, readonly = True, extend = 'S')
+        assert instructions_contain(matcher_s16).match(decoder_u16.instructions) is None
 
-        match cmake_file_api.toolchains['CUDA']['compiler']['id']:
-            case 'NVIDIA':
-                assert instructions_contain(matcher_s16)   .match(decoder_u16.instructions) is None
-                assert instructions_contain(matcher_s16_ro).match(decoder_u16.instructions) is None
+        if not features.Memory(arch=parameters.arch).sign_extension(compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id']):
+            assert instructions_contain(matcher_s16_ro).match(decoder_u16.instructions) is None
 
-                # But it rather lead to zero extension with permutation.
-                matcher_u16_ro = instructions_contain(matcher = LoadGlobalMatcher(
-                    arch = parameters.arch, size = 16, readonly = True, extend = 'U',
-                ))
-                [matched_u16_ro] = matcher_u16_ro.assert_matches(decoder_u16.instructions)
+            # But it rather lead to zero extension with permutation.
+            matcher_u16_ro = instructions_contain(matcher = LoadGlobalMatcher(
+                arch = parameters.arch, size = 16, readonly = True, extend = 'U',
+            ))
+            [matched_u16_ro] = matcher_u16_ro.assert_matches(decoder_u16.instructions)
 
-                matcher_prmt = instructions_contain(matcher = instruction_is(OpcodeModsWithOperandsMatcher(
-                    opcode = 'PRMT',
-                    operands = (PatternBuilder.REG, PatternBuilder.REG, PatternBuilder.HEX, PatternBuilder.REGZ),
-                )).with_operand(index = 1, operand = matched_u16_ro.operands[0]))
-                matcher_prmt.assert_matches(decoder_u16.instructions[matcher_u16_ro.next_index::])
-            case 'Clang':
-                assert instructions_contain(matcher_s16_ro).match(decoder_u16.instructions) is not None
-            case _:
-                raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
+            matcher_prmt = instructions_contain(matcher = instruction_is(OpcodeModsWithOperandsMatcher(
+                opcode = 'PRMT',
+                operands = (PatternBuilder.REG, PatternBuilder.REG, PatternBuilder.HEX, PatternBuilder.REGZ),
+            )).with_operand(index = 1, operand = matched_u16_ro.operands[0]))
+            matcher_prmt.assert_matches(decoder_u16.instructions[matcher_u16_ro.next_index::])
+        else:
+            assert instructions_contain(matcher_s16_ro).match(decoder_u16.instructions) is not None

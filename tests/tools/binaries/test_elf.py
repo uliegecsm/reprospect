@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import pathlib
@@ -10,13 +11,34 @@ import pytest
 import semantic_version
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import CuObjDump
+from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.binaries.elf import ELF, TkInfo, CuInfo, NvInfo, NvInfoEntry, NvInfoEIFMT, NvInfoEIATTR
-from reprospect.utils              import cmake, nvcc
+from reprospect.utils import cmake, nvcc
 
 from tests.compilation import get_compilation_output, get_cubin_name
-from tests.cublas      import CuBLAS
-from tests.parameters  import Parameters, PARAMETERS
+from tests.cublas import CuBLAS
+from tests.parameters import Parameters, PARAMETERS
+
+@functools.cache
+def nvcc_version() -> semantic_version.Version:
+    return nvcc.get_version()
+
+def check_version(version: int|str) -> None:
+    """
+    Check `version` against ``nvcc`` version.
+
+    .. note::
+
+        As of CUDA 13.1, tools report 13.0.
+    """
+    ver = nvcc_version()
+
+    expt_minor = 0 if ver in semantic_version.SimpleSpec('==13.1') else ver.minor
+
+    if isinstance(version, int):
+        assert version == int(f'{ver.major}{expt_minor}')
+    else:
+        assert f'{ver.major}.{expt_minor}' in version
 
 class TestGetComputeCapabilityFromEFlags:
     CC_E_FLAGS : typing.Final[dict[int, int]] = {
@@ -168,13 +190,8 @@ class TestCuBLAS:
             assert elf.is_cuda
             assert elf.arch == parameters.arch
 
-    @pytest.fixture(scope = 'class')
-    @staticmethod
-    def version() -> semantic_version.Version:
-        return nvcc.get_version()
-
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_embedded_cubin_cuinfo_and_tkinfo(self, version : semantic_version.Version, parameters : Parameters, cublas : CuBLAS, workdir : pathlib.Path) -> None:
+    def test_embedded_cubin_cuinfo_and_tkinfo(self, parameters : Parameters, cublas : CuBLAS, workdir : pathlib.Path) -> None:
         """
         Retrieve the `cuinfo` and `tkinfo` note sections from a cuBLAS cubin.
         """
@@ -183,13 +200,13 @@ class TestCuBLAS:
         cuinfo, tkinfo = get_cuinfo_and_tkinfo(arch = parameters.arch, file = cubin)
 
         if cuinfo is not None:
-            assert cuinfo.toolkit_version == int(f'{version.major}{version.minor}')
+            check_version(version=cuinfo.toolkit_version)
 
         if tkinfo is not None:
             assert tkinfo.tool_name == 'ptxas'
             assert f'-arch {parameters.arch.as_sm}' in tkinfo.tool_options
             assert '-m 64' in tkinfo.tool_options
-            assert f'{version.major}.{version.minor}' in tkinfo.tool_version
+            check_version(version=tkinfo.tool_version)
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestSaxpy:

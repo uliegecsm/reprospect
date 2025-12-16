@@ -162,8 +162,8 @@ def instructions_contain(matcher : instruction.InstructionMatcher | composite_im
     ... ))
     >>> matcher.match(instructions = ('NOP', 'NOP', 'YIELD', 'FADD R1, R1, R2'))
     [InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='FADD', modifiers=(), operands=('R1', 'R1', 'R2'), predicate=None, additional=None)]
-    >>> matcher.index
-    2
+    >>> matcher.next_index
+    4
     """
     return composite_impl.InSequenceMatcher(matcher)
 
@@ -183,8 +183,10 @@ def any_of(*matchers : instruction.InstructionMatcher | composite_impl.SequenceM
     ... )
     >>> matcher.match(instructions = ('FADD R1, R1, R2',)) is None
     True
-    >>> matcher.index
-    -1
+    >>> matcher.match(instructions=('NOP',)) is not None
+    True
+    >>> matcher.matched
+    1
     """
     return composite_impl.AnyOfMatcher(*matchers)
 

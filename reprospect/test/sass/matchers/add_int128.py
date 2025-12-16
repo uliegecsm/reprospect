@@ -2,8 +2,8 @@ import sys
 import typing
 
 from reprospect.test.sass.composite_impl import SequenceMatcher
-from reprospect.test.sass.instruction    import InstructionMatch, OpcodeModsWithOperandsMatcher, PatternBuilder, RegisterMatcher
-from reprospect.tools.sass.decode        import Instruction
+from reprospect.test.sass.instruction import InstructionMatch, OpcodeModsWithOperandsMatcher, PatternBuilder, RegisterMatcher
+from reprospect.tools.sass.decode import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -32,7 +32,16 @@ class AddInt128(SequenceMatcher):
 
         According to https://docs.nvidia.com/cuda/parallel-thread-execution/#extended-precision-arithmetic-instructions-add-cc, the carry-out
         value is written in the condition code register, usually ``P0``.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
+    __slots__ = ('_index',)
+
+    def __init__(self) -> None:
+        self._index: int = 0
+
     def pattern_3IADD(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
         """
         Typically::
@@ -91,6 +100,8 @@ class AddInt128(SequenceMatcher):
             return None
 
         matched.append(matched_iadd_step_2)
+
+        self._index = 3
 
         return matched
 
@@ -195,6 +206,8 @@ class AddInt128(SequenceMatcher):
 
         matched.append(matched_iadd3_step_3)
 
+        self._index = 4
+
         return matched
 
     @override
@@ -205,3 +218,8 @@ class AddInt128(SequenceMatcher):
         if instruction.startswith('IADD3'):
             return self.pattern_4IADD3(instructions = instructions)
         return None
+
+    @override
+    @property
+    def next_index(self) -> int:
+        return self._index

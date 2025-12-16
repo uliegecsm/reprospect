@@ -60,9 +60,9 @@ class TestSASS:
         matcher_load = instructions_contain(LoadGlobalMatcher(arch = parameters.arch, size = 16, readonly = True, extend = 'U'))
         matcher_load.assert_matches(instructions = decoder.instructions)
         matcher_hmul = instructions_contain(Fp16MulMatcher(packed=False))
-        matcher_hmul.assert_matches(instructions = decoder.instructions[matcher_load.index:])
+        matcher_hmul.assert_matches(instructions = decoder.instructions[matcher_load.next_index:])
         matcher_store = instructions_contain(StoreGlobalMatcher(arch = parameters.arch, size = 16, extend = 'U'))
-        matcher_store.assert_matches(instructions = decoder.instructions[matcher_hmul.index:])
+        matcher_store.assert_matches(instructions = decoder.instructions[matcher_hmul.next_index:])
 
     def test_packed(self, parameters : Parameters, cuobjdump : CuObjDump) -> None:
         """
@@ -104,12 +104,12 @@ class TestSASS:
         block_individual, _ = BlockMatcher(matcher_load_16).assert_matches(cfg=cfg)
         block_packed    , _ = BlockMatcher(matcher_load_32).assert_matches(cfg=cfg)
 
-        instructions_contain(Fp16MulMatcher(packed = False)).assert_matches(instructions = block_individual.instructions[matcher_load_16.index:])
+        instructions_contain(Fp16MulMatcher(packed = False)).assert_matches(instructions = block_individual.instructions[matcher_load_16.next_index:])
 
         instructions_contain(any_of(
             Fp16MulMatcher(packed=True),
             Fp16FusedMulAddMatcher(packed=True),
-        )).assert_matches(instructions = block_packed.instructions[matcher_load_32.index:])
+        )).assert_matches(instructions = block_packed.instructions[matcher_load_32.next_index:])
 
         # Let's check that the PTX is actually the same for every architecture.
         ptx = subprocess.check_output(('cuobjdump', '--dump-ptx', cuobjdump.file)).decode()

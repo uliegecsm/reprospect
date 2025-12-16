@@ -42,31 +42,35 @@ class TestInSequenceAtMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.composite_impl.InSequenceAtMatcher`.
     """
+    MATCHER: typing.Final[InSequenceAtMatcher] = InSequenceAtMatcher(matcher = MATCHER_DADD)
+
     def test_match_first_element(self) -> None:
         """
         Matches the first element.
         """
-        assert (matched := InSequenceAtMatcher(matcher = MATCHER_DADD).match(instructions = DADD_NOP_DMUL[0:1])) is not None
+        matched = self.MATCHER.assert_matches(instructions = DADD_NOP_DMUL[0:1])
         assert len(matched) == 1
         assert matched[0].opcode == 'DADD'
+        assert self.MATCHER.next_index == 1
 
     def test_match_with_start(self) -> None:
         """
         Matches the element pointed to by `start`.
         """
-        assert (matched := InSequenceAtMatcher(matcher = MATCHER_DADD).match(instructions = NOP_DMUL_NOP_DADD[4::])) is not None
+        matched = self.MATCHER.assert_matches(instructions = NOP_DMUL_NOP_DADD[4::])
         assert len(matched) == 1
         assert matched[0].opcode == 'DADD'
+        assert self.MATCHER.next_index == 1
 
     def test_no_match(self) -> None:
         """
         Raises if the first element does not match.
         """
         with pytest.raises(RuntimeError, match = 'did not match'):
-            InSequenceAtMatcher(matcher = MATCHER_DADD).assert_matches(instructions = list(reversed(DADD_DMUL)))
+            self.MATCHER.assert_matches(instructions = list(reversed(DADD_DMUL)))
 
     def test_explain(self) -> None:
-        assert InSequenceAtMatcher(matcher = MATCHER_DADD).explain(instructions = NOP_DMUL_NOP_DADD) == f'{MATCHER_DADD!r} did not match {NOP_DMUL_NOP_DADD[0]!r}.'
+        assert self.MATCHER.explain(instructions = NOP_DMUL_NOP_DADD) == f'{MATCHER_DADD!r} did not match {NOP_DMUL_NOP_DADD[0]!r}.'
 
 class TestZeroOrMoreInSequenceMatcher:
     """
@@ -76,9 +80,10 @@ class TestZeroOrMoreInSequenceMatcher:
         """
         Matches zero time with sequence :py:const:`DADD_NOP_DMUL`.
         """
-        matched = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).match(instructions = DADD_NOP_DMUL)
-
+        matcher = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP)
+        matched = matcher.match(instructions = DADD_NOP_DMUL)
         assert not matched
+        assert matcher.next_index == 0
 
     def test_assert_matches_always_true(self) -> None:
         """
@@ -92,9 +97,10 @@ class TestZeroOrMoreInSequenceMatcher:
         """
         Matches many times, with a `start` and sequence :py:const:`DADD_NOP_DMUL`.
         """
-        assert (matched := ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP).match(instructions = DADD_NOP_DMUL[1::])) is not None
-
+        matcher = ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP)
+        matched = matcher.assert_matches(instructions = DADD_NOP_DMUL[1::])
         assert len(matched) == 3 and all(x.opcode == 'NOP' for x in matched)
+        assert matcher.next_index == 3
 
     def test_explain(self) -> None:
         with pytest.raises(RuntimeError, match = 'It always matches'):
@@ -123,9 +129,11 @@ class TestOneOrMoreInSequenceMatcher:
 
         assert (matched := matcher.match(instructions = DADD_NOP_DMUL)) is not None
         assert len(matched) == 1
+        assert matcher.next_index == 1
 
         assert (matched := matcher.assert_matches(instructions = DADD_NOP_DMUL)) is not None
         assert len(matched) == 1
+        assert matcher.next_index == 1
 
     def test_matches_more(self) -> None:
         """
@@ -135,9 +143,11 @@ class TestOneOrMoreInSequenceMatcher:
 
         assert (matched := matcher.match(instructions = DADD_NOP_DMUL[1::])) is not None
         assert len(matched) == 3
+        assert matcher.next_index == 3
 
         assert (matched := matcher.assert_matches(instructions = DADD_NOP_DMUL[1::])) is not None
         assert len(matched) == 3
+        assert matcher.next_index == 3
 
     def test_explain(self) -> None:
         assert OneOrMoreInSequenceMatcher(matcher = MATCHER_NOP).explain(instructions = DADD_NOP_DMUL) == f'{MATCHER_NOP} did not match {DADD_NOP_DMUL[0]}.'
@@ -162,6 +172,7 @@ class TestOrderedInSequenceMatcher:
         assert matched[0].opcode == 'DADD'
         assert all(x.opcode == 'NOP' for x in matched[1:-2])
         assert matched[-1].opcode == 'DMUL'
+        assert self.MATCHER.next_index == 5
 
     def test_match(self) -> None:
         """
@@ -172,6 +183,7 @@ class TestOrderedInSequenceMatcher:
         assert len(matched) == 2
         assert matched[0].opcode == 'DADD'
         assert matched[1].opcode == 'DMUL'
+        assert self.MATCHER.next_index == 2
 
     def test_no_match(self) -> None:
         """
@@ -199,8 +211,10 @@ class TestUnorderedInSequenceMatcher:
 
         random.shuffle(inners)
 
-        assert (matched := UnorderedInSequenceMatcher(matchers = inners).match(instructions = DADD_NOP_DMUL)) is not None
+        matcher = UnorderedInSequenceMatcher(matchers = inners)
+        matched = matcher.assert_matches(instructions = DADD_NOP_DMUL)
         assert len(matched) == 5
+        assert matcher.next_index == 5
 
     def test_without_nop(self) -> None:
         """
@@ -214,8 +228,10 @@ class TestUnorderedInSequenceMatcher:
 
         random.shuffle(inners)
 
-        assert (matched := UnorderedInSequenceMatcher(matchers = inners).match(instructions = DADD_DMUL)) is not None
+        matcher = UnorderedInSequenceMatcher(matchers = inners)
+        matched = matcher.assert_matches(instructions = DADD_DMUL)
         assert len(matched) == 2
+        assert matcher.next_index == 2
 
     def test_with_split_nop(self) -> None:
         """
@@ -230,8 +246,10 @@ class TestUnorderedInSequenceMatcher:
 
         random.shuffle(inners)
 
-        assert (matched := UnorderedInSequenceMatcher(matchers = inners).match(instructions = NOP_DMUL_NOP_DADD)) is not None
+        matcher = UnorderedInSequenceMatcher(matchers = inners)
+        matched = matcher.assert_matches(instructions = NOP_DMUL_NOP_DADD)
         assert len(matched) == 5
+        assert matcher.next_index == 5
 
     def test_no_match(self) -> None:
         """
@@ -259,15 +277,12 @@ class TestInSequenceMatcher:
         matcher = InSequenceMatcher(matcher = MATCHER_DADD)
 
         assert matcher.match(instructions = NOP_DMUL_NOP_DADD) is not None
-
-        assert matcher.index == 4
+        assert matcher.next_index == 5
 
     def test_no_match(self) -> None:
         matcher = InSequenceMatcher(matcher = MATCHER_NOP)
 
         assert matcher.match(instructions = DADD_DMUL) is None
-
-        assert matcher.index == -1
 
     def test_explain(self) -> None:
         assert InSequenceMatcher(matcher = MATCHER_NOP).explain(instructions = DADD_DMUL) == f'{MATCHER_NOP} did not match.'
@@ -283,12 +298,13 @@ class TestAnyOfMatcher:
         )
 
         assert matcher.match(instructions = NOP_DMUL_NOP_DADD) is not None
-
-        assert matcher.index == 0
+        assert matcher.matched == 0
+        assert matcher.next_index == len(NOP_DMUL_NOP_DADD)
 
         assert matcher.match(instructions = (DADD,)) is not None
 
-        assert matcher.index == 1
+        assert matcher.matched == 1
+        assert matcher.next_index == 1
 
     def test_no_match(self) -> None:
         matcher = AnyOfMatcher(
@@ -297,8 +313,7 @@ class TestAnyOfMatcher:
         )
 
         assert matcher.match(instructions = (NOP, DADD, DMUL)) is None
-
-        assert matcher.index == -1
+        assert matcher.matched == -1
 
     def test_explain(self) -> None:
         assert AnyOfMatcher(MATCHER_DADD, MATCHER_DMUL).explain(instructions = DADD_NOP_DMUL) == f'None of {(MATCHER_DADD, MATCHER_DMUL)} did match {DADD_NOP_DMUL}.'
@@ -351,6 +366,7 @@ class TestOrderedInterleavedInSequenceMatcher:
             instruction.InstructionMatch(opcode='LDG', modifiers=('E', 'U16', 'SYS'), operands=('R2', '[R2]'), additional={'address': ['[R2]']}),
             instruction.InstructionMatch(opcode='LDG', modifiers=('E', 'U16', 'SYS'), operands=('R4', '[R4]'), additional={'address': ['[R4]']}),
         ]
+        assert matcher.next_index == 2
 
         assert matcher.match(instructions=self.INSTRUCTIONS_DADD) is None
 
@@ -362,6 +378,7 @@ class TestOrderedInterleavedInSequenceMatcher:
             instruction.InstructionMatch(opcode='DADD', modifiers=(), operands=('R8', 'R8', 'UR16')),
             instruction.InstructionMatch(opcode='DADD', modifiers=(), operands=('R10', 'R10', 'UR18')),
         ]
+        assert matcher.next_index == 17
 
         assert matcher.match(instructions=self.INSTRUCTIONS_DADD[::-1]) is None
         assert matcher.match(instructions=self.INSTRUCTIONS_LDG) is None
@@ -383,9 +400,11 @@ class TestUnorderedInterleavedInSequenceMatcher:
         matchers = list(TestOrderedInterleavedInSequenceMatcher.MATCHERS_DADD)
         random.shuffle(matchers)
 
-        assert (matched := UnorderedInterleavedInSequenceMatcher(matchers).match(TestOrderedInterleavedInSequenceMatcher.INSTRUCTIONS_DADD)) is not None
+        matcher = UnorderedInterleavedInSequenceMatcher(matchers)
+        matched = matcher.assert_matches(TestOrderedInterleavedInSequenceMatcher.INSTRUCTIONS_DADD)
         assert len(matched) == 4
         assert all(x.opcode == 'DADD' for x in matched)
+        assert matcher.next_index == 17
 
 class TestAllInSequenceMatcher:
     """

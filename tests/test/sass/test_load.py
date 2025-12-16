@@ -321,7 +321,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
                     opcode = 'PRMT',
                     operands = (PatternBuilder.REG, PatternBuilder.REG, PatternBuilder.HEX, PatternBuilder.REGZ),
                 )).with_operand(index = 1, operand = matched_u16_ro.operands[0]))
-                matcher_prmt.assert_matches(decoder_u16.instructions[matcher_u16_ro.index::])
+                matcher_prmt.assert_matches(decoder_u16.instructions[matcher_u16_ro.next_index::])
             case 'Clang':
                 assert instructions_contain(matcher_s16_ro).match(decoder_u16.instructions) is not None
             case _:

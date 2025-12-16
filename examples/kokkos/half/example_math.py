@@ -155,9 +155,7 @@ class TestMax(CMakeAwareTestCase):
         logging.info(matched_ldg)
         assert len(matched_ldg) == 2
 
-        offset = matcher_ldg.index + 2
-
-        return block, offset, matched_ldg[0], matched_ldg[1]
+        return block, matcher_ldg.next_index, matched_ldg[0], matched_ldg[1]
 
     def match_store(self, src : str, instructions : typing.Sequence[Instruction]) -> None:
         instructions_contain(instruction_is(StoreGlobalMatcher(
@@ -173,15 +171,13 @@ class TestMax(CMakeAwareTestCase):
         """
         matcher_hadd2_a = instructions_contain(instruction_is(Fp16AddMatcher(packed=None)).with_modifier('F32').with_operand(f'{src_a}.H0_H0'))
         [matched_hadd2_a] = matcher_hadd2_a.assert_matches(instructions=instructions)
-        assert matcher_hadd2_a.index is not None
         logging.info(matched_hadd2_a)
-        offset = matcher_hadd2_a.index + 1
+        offset = matcher_hadd2_a.next_index
 
         matcher_hadd2_b = instructions_contain(instruction_is(Fp16AddMatcher(packed=None)).with_operand(f'{src_b}.H0_H0'))
         [matched_hadd2_b] = matcher_hadd2_b.assert_matches(instructions=instructions[offset:])
-        assert matcher_hadd2_b.index is not None
         logging.info(matched_hadd2_b)
-        offset += matcher_hadd2_b.index + 1
+        offset += matcher_hadd2_b.next_index
 
         return offset, matched_hadd2_a, matched_hadd2_b
 
@@ -193,10 +189,9 @@ class TestMax(CMakeAwareTestCase):
         """
         matcher = instructions_contain(ConvertFp32ToFp16(arch=self.arch, src=src))
         [matched] = matcher.assert_matches(instructions=instructions)
-        assert matcher.index is not None
         logging.info(matched)
 
-        return matcher.index + 1, matched
+        return matcher.next_index, matched
 
     def match_fp16(self, instructions : typing.Sequence[Instruction]) -> None:
         """
@@ -217,8 +212,7 @@ class TestMax(CMakeAwareTestCase):
             index=2, operand=f'{matched_ldg_b.operands[0]}.H0_H0',
         ))
         [matched_hmnmx2] = matcher_hmnmx2.assert_matches(instructions=block.instructions[offset:])
-        assert matcher_hmnmx2.index is not None
-        offset += matcher_hmnmx2.index + 1
+        offset += matcher_hmnmx2.next_index
 
         self.match_store(src=matched_hmnmx2.operands[0], instructions=block.instructions[offset:])
 
@@ -251,7 +245,6 @@ class TestMax(CMakeAwareTestCase):
             matched_hadd2_a.operands[0], matched_hadd2_b.operands[0], '!PT',
         )))
         [matched_fmnmx] = matcher_fmnmx.assert_matches(instructions=block.instructions[offset:])
-        assert matcher_fmnmx.index is not None
         logging.info(matched_fmnmx)
 
         advanced, matched = self.match_fp32_to_fp16(src=matched_fmnmx.operands[0], instructions=block.instructions[offset:])

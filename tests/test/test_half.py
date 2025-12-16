@@ -7,7 +7,7 @@ import typing
 import pytest
 
 from reprospect.test.sass.composite import instructions_contain, any_of
-from reprospect.test.sass.controlflow.block import BlockMatcher
+from reprospect.test.sass.controlflow.block import BasicBlockMatcher
 from reprospect.test.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
 from reprospect.test.sass.instruction.half import Fp16MulMatcher, Fp16FusedMulAddMatcher
 from reprospect.tools import ncu
@@ -101,8 +101,8 @@ class TestSASS:
         matcher_load_16 = instructions_contain(LoadGlobalMatcher(arch = parameters.arch, size = 16, readonly = True, extend = 'U'))
         matcher_load_32 = instructions_contain(LoadGlobalMatcher(arch = parameters.arch, size = 32, readonly = True))
 
-        block_individual, _ = BlockMatcher(matcher_load_16).assert_matches(cfg=cfg)
-        block_packed    , _ = BlockMatcher(matcher_load_32).assert_matches(cfg=cfg)
+        block_individual, _ = BasicBlockMatcher(matcher_load_16).assert_matches(cfg=cfg)
+        block_packed    , _ = BasicBlockMatcher(matcher_load_32).assert_matches(cfg=cfg)
 
         instructions_contain(Fp16MulMatcher(packed = False)).assert_matches(instructions = block_individual.instructions[matcher_load_16.next_index:])
 

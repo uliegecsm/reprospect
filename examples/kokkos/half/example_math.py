@@ -43,7 +43,7 @@ from reprospect.test.sass.composite import (
     instructions_contain,
     instruction_is,
 )
-from reprospect.test.sass.controlflow.block import BlockMatcher
+from reprospect.test.sass.controlflow.block import BasicBlockMatcher
 from reprospect.test.sass.instruction import (
     InstructionMatch,
     LoadGlobalMatcher,
@@ -151,7 +151,7 @@ class TestMax(CMakeAwareTestCase):
             LoadGlobalMatcher(arch = self.arch, size = 16, extend = 'U', readonly = False),
             LoadGlobalMatcher(arch = self.arch, size = 16, extend = 'U', readonly = False),
         ))
-        block, matched_ldg = BlockMatcher(matcher_ldg).assert_matches(cfg=ControlFlow.analyze(instructions=instructions))
+        block, matched_ldg = BasicBlockMatcher(matcher_ldg).assert_matches(cfg=ControlFlow.analyze(instructions=instructions))
         logging.info(matched_ldg)
         assert len(matched_ldg) == 2
 

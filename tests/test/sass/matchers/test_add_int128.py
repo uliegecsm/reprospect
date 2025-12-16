@@ -51,13 +51,13 @@ st\.global\.v2\.(u|b)64 \[%rd\d+\], {%rd\d+, %rd\d+};
 
         # Find the global load of the destination.
         matcher_load_dst = instruction_is(matcher = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = False)).times(1)
-        [matched_load_dst] = matcher_load_dst.assert_matches(instructions = decoder.instructions[matcher_load_src.index + 1::])
+        [matched_load_dst] = matcher_load_dst.assert_matches(instructions = decoder.instructions[matcher_load_src.next_index:])
 
         logging.info(matched_load_dst)
 
         # Find the int128 addition pattern.
         matcher = add_int128.AddInt128()
-        matched = matcher.assert_matches(instructions = decoder.instructions[matcher_load_src.index + 2::])
+        matched = matcher.assert_matches(instructions = decoder.instructions[matcher_load_src.next_index + 1:])
 
         logging.info(matched)
 

@@ -22,7 +22,13 @@ else:
 class RegisterMatchValidator(SequenceMatcher):
     """
     Validate that :py:attr:`matcher` uses :py:attr:`load_register`.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
+    __slots__ = ('load_register', 'matcher', 'start_register_matcher')
+
     def __init__(self, matcher : add_int128.AddInt128, load : InstructionMatch) -> None:
         self.matcher : typing.Final[add_int128.AddInt128] = matcher
         """Inner matcher."""
@@ -38,6 +44,11 @@ class RegisterMatchValidator(SequenceMatcher):
             if self.start_register_matcher.match(matched[0].additional['start'][0]) is not None:
                 return matched
         return None
+
+    @override
+    @property
+    def next_index(self) -> int:
+        return self.matcher.next_index
 
 class AddInt128:
     """

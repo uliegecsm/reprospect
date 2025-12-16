@@ -142,6 +142,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         self.level : typing.Final[int] = level
         self.load : typing.Final[SequenceMatcher] = load or InSequenceAtMatcher(matcher = LoadGlobalMatcher(arch = self.arch, size = size, readonly = False))
         self.store : typing.Final[SequenceMatcher] = store or InSequenceAtMatcher(matcher = StoreGlobalMatcher(arch = self.arch, size = size))
+        self._index : int = 0
 
     def collect(self, matched : list[InstructionMatch], new : InstructionMatch | list[InstructionMatch]) -> int:
         if isinstance(new, list):
@@ -170,8 +171,8 @@ class LockBasedAtomicMatcher(SequenceMatcher):
 
         if matched_atomic_acquire is None:
             return None
-
-        offset = matcher_start.index + self.collect(matched = matched, new = matched_atomic_acquire)
+        self.collect(matched = matched, new = matched_atomic_acquire)
+        offset = matcher_start.next_index
 
         # Then, one or two PLOP3.LUT instructions.
         matched_plop3_lut = instruction_is(
@@ -238,8 +239,9 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         if matched_thread_fence is None:
             return None
 
-        offset_fence_exit = offset + matcher_thread_fence.index
-        offset = offset_fence_exit + self.collect(matched = matched, new = matched_thread_fence)
+        offset_fence_exit = offset + matcher_thread_fence.next_index - len(matched_thread_fence)
+        offset += matcher_thread_fence.next_index
+        self.collect(matched = matched, new = matched_thread_fence)
 
         # The load corresponds to the dereferencing line at
         # https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L41.
@@ -290,4 +292,11 @@ class LockBasedAtomicMatcher(SequenceMatcher):
 
         self.collect(matched = matched, new = matched_atomic_release)
 
+        self._index = offset + 1
+
         return matched
+
+    @override
+    @property
+    def next_index(self) -> int:
+        return self._index

@@ -266,3 +266,33 @@ flowchart TD
             assert cfg.blocks[14].instructions == tuple(decoder.instructions[52:53])
 
             assert cfg.blocks[14] not in cfg.edges
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
+    class TestVirtualFunctions:
+        """
+        Virtual functions on device generate branching instructions whose targets are resolved at runtime::
+
+            CALL.REL.NOINC R2 0x0
+
+        ``nvdisasm`` does not consider them as creating a new basic block.
+        """
+        VIRTUAL_CU: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'virtual.cu'
+
+        def test(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
+            FILE = workdir / f'virtual.{request.node.originalname}.{parameters.arch.as_sm}.cu'
+            if not FILE.is_file():
+                FILE.symlink_to(target=self.VIRTUAL_CU)
+
+            decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
+            cfg = ControlFlow.analyze(instructions=decoder.instructions)
+
+            assert len(cfg.blocks) == 5
+            assert cfg.blocks[0].instructions[-1].instruction.startswith('BSYNC')
+            assert cfg.blocks[2].instructions[-1].instruction.startswith('BSYNC')
+
+            assert cfg.edges[cfg.blocks[0]] == {cfg.blocks[1]}
+            assert cfg.edges[cfg.blocks[1]] == {cfg.blocks[2]}
+            assert cfg.edges[cfg.blocks[2]] == {cfg.blocks[3]}
+
+            assert len(cfg.blocks[3].instructions) == 1
+            assert cfg.blocks[3].instructions[0].instruction == 'EXIT'

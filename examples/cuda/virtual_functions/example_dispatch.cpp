@@ -73,7 +73,7 @@ struct Base
     __device__ virtual void foo(const unsigned int /* */) const = 0;
     __device__ virtual void bar(const unsigned int /* */) const = 0;
 
-    __host__ __device__ virtual ~Base() = default;
+    __host__ __device__ virtual ~Base() {}
 };
 
 template <typename T>

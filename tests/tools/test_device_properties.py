@@ -3,7 +3,7 @@ import logging
 import re
 import unittest
 
-import cuda.bindings.driver # type: ignore[import-not-found]
+import cuda.bindings.driver # type: ignore[import-not-found] # pylint: disable=wrong-import-order
 import pytest
 
 from reprospect.tools import device_properties

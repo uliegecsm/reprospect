@@ -1,6 +1,6 @@
 #include <array>
 
-#include "common/cuda_runtime.hpp"
+#include "cuda/runtime_helper.hpp"
 #include "nvtx3/nvtx3.hpp"
 
 #include "test_half.cu"

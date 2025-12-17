@@ -10,6 +10,8 @@ function(add_one_executable FILE)
 
     target_sources(${EXECUTABLE} PRIVATE ${FILENAME})
 
+    target_include_directories(${EXECUTABLE} PRIVATE ${CMAKE_SOURCE_DIR})
+
     target_link_libraries(${EXECUTABLE} PRIVATE CUDA::cudart nvtx3::nvtx3-cpp)
 
     set_source_files_properties(${FILENAME} PROPERTIES LANGUAGE CUDA)

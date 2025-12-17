@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "common/cuda_runtime.hpp"
+#include "cuda/runtime_helper.hpp"
 #include "nvtx3/nvtx3.hpp"
 
 /**

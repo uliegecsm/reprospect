@@ -1,5 +1,5 @@
-#ifndef REPROSPECT_TESTS_ASSETS_COMMON_CUDA_RUNTIME_HPP
-#define REPROSPECT_TESTS_ASSETS_COMMON_CUDA_RUNTIME_HPP
+#ifndef REPROSPECT_CUDA_RUNTIME_HELPER_HPP
+#define REPROSPECT_CUDA_RUNTIME_HELPER_HPP
 
 #include <source_location>
 #include <sstream>
@@ -7,7 +7,7 @@
 
 #include "cuda_runtime.h"
 
-namespace reprospect::tests
+namespace reprospect::cuda
 {
 //! Check a CUDA runtime call returns @c cudaError::cudaSuccess.
 inline void check_cudart_call(
@@ -26,9 +26,9 @@ inline void check_cudart_call(
         throw std::runtime_error(oss.str());
     }
 }
-} // namespace reprospect::tests
+} // namespace reprospect::cuda
 
 #define REPROSPECT_CHECK_CUDART_CALL(statement) \
-    ::reprospect::tests::check_cudart_call((statement), #statement)
+    ::reprospect::cuda::check_cudart_call((statement), #statement)
 
-#endif // REPROSPECT_TESTS_ASSETS_COMMON_CUDA_RUNTIME_HPP
+#endif // REPROSPECT_CUDA_RUNTIME_HELPER_HPP

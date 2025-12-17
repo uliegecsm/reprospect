@@ -49,4 +49,5 @@ function(add_one_example FILE)
 
 endfunction()
 
+add_subdirectory(cuda)
 add_subdirectory(kokkos)

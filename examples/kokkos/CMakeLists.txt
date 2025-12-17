@@ -1,32 +1,8 @@
-function(add_one_example FILE)
-
-    set(FILENAME ${CMAKE_CURRENT_SOURCE_DIR}/example_${FILE}.cpp)
-
-    get_parent_relpath_repr(DIRECTORY ${CMAKE_SOURCE_DIR} FILENAME ${FILENAME})
-
-    set(EXECUTABLE ${gprr_PARENT_RELPATH_REPR}_${FILE})
-
-    add_executable(${EXECUTABLE})
-
-    target_sources(${EXECUTABLE} PRIVATE ${FILENAME})
-
-    set_source_files_properties(${FILENAME} PROPERTIES LANGUAGE CUDA)
-
-    target_link_libraries(${EXECUTABLE} PRIVATE Kokkos::kokkoscore)
-
-    add_test(
-        NAME ${EXECUTABLE}
-        COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/example_${FILE}.py
-                    --config-file=${CMAKE_SOURCE_DIR}/tests/.pytest.ini
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+function(add_one_kokkos_example FILE)
+    add_one_example(${FILE}
+        EXTRA_PRIVATE_LINK_LIBS Kokkos::kokkoscore
+        EXTRA_TEST_ENV KOKKOS_TOOLS_NVTX_CONNECTOR_LIB set $<TARGET_FILE:KokkosTools::kp_nvtx_connector>
     )
-
-    pytest_skip_mark(${EXECUTABLE})
-
-    test_environment(${EXECUTABLE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
-    test_environment(${EXECUTABLE} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
-    test_environment(${EXECUTABLE} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
-    test_environment(${EXECUTABLE} KOKKOS_TOOLS_NVTX_CONNECTOR_LIB set $<TARGET_FILE:KokkosTools::kp_nvtx_connector>)
 
 endfunction()
 

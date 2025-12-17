@@ -1,1 +1,1 @@
-add_one_example(math)
+add_one_kokkos_example(math)

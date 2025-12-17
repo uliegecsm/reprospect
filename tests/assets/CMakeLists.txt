@@ -10,7 +10,7 @@ function(add_one_executable FILE)
 
     target_sources(${EXECUTABLE} PRIVATE ${FILENAME})
 
-    target_link_libraries(${EXECUTABLE} PRIVATE CUDA::cudart CUDA::nvtx3)
+    target_link_libraries(${EXECUTABLE} PRIVATE CUDA::cudart nvtx3::nvtx3-cpp)
 
     set_source_files_properties(${FILENAME} PROPERTIES LANGUAGE CUDA)
 
@@ -18,8 +18,9 @@ endfunction()
 
 find_package(
     CUDAToolkit REQUIRED
-    COMPONENTS cuda_driver cudart nvtx3
+    COMPONENTS cuda_driver cudart
 )
+find_package(nvtx3 REQUIRED)
 
 add_one_executable(graph)
 add_one_executable(half)

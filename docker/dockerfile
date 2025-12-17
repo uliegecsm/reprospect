@@ -166,14 +166,48 @@ RUN <<EOF
     cmake --build build -j4 --target install
 EOF
 
+FROM requirements-compiler-${CXX_COMPILER_ID} AS nvtx3
+
+ARG NVTX3_VERSION
+
+ADD --unpack=true https://github.com/NVIDIA/NVTX/archive/refs/tags/v${NVTX3_VERSION}.tar.gz /opt/NVIDIA/
+
+# See https://github.com/NVIDIA/NVTX/issues/140.
+COPY <<EOF /opt/NVIDIA/NVTX-${NVTX3_VERSION}/nvtx-install.patch
+--- c/CMakeLists.txt.old 2025-12-17 10:06:32.849766429 +0000
++++ c/CMakeLists.txt 2025-12-17 10:06:37.800063794 +0000
+@@ -85,7 +85,7 @@
+     )
+
+     # Install the targets
+-    install(TARGETS nvtx3-c nvtx3-cpp EXPORT nvtx3-targets)
++    install(TARGETS nvtx3-c nvtx3-cpp EXPORT nvtx3-targets INCLUDES DESTINATION $\{CMAKE_INSTALL_INCLUDEDIR\})
+     install(EXPORT nvtx3-targets
+         FILE nvtx3-targets.cmake
+         NAMESPACE nvtx3::
+EOF
+
+RUN <<EOF
+    set -ex
+    cd /opt/NVIDIA/NVTX-${NVTX3_VERSION}
+    patch -p0 < nvtx-install.patch
+    cd c/
+    cmake -S . -B build -DNVTX3_INSTALL=ON -DCMAKE_INSTALL_PREFIX=/opt/nvtx3-${NVTX3_VERSION}
+    cmake --build build --target install
+EOF
+
 FROM nsight-systems
 
 ARG DOXYGEN_VERSION
 ARG GOOGLEBENCHMARK_VERSION
+ARG NVTX3_VERSION
 
 COPY --from=doxygen /opt/doxygen-${DOXYGEN_VERSION} /opt/doxygen-${DOXYGEN_VERSION}
 
 COPY --from=google-benchmark /opt/google-benchmark-${GOOGLEBENCHMARK_VERSION} /opt/google-benchmark-${GOOGLEBENCHMARK_VERSION}
 
+COPY --from=nvtx3 /opt/nvtx3-${NVTX3_VERSION} /opt/nvtx3-${NVTX3_VERSION}
+
 ENV benchmark_ROOT=/opt/google-benchmark-${GOOGLEBENCHMARK_VERSION}
 ENV Doxygen_ROOT=/opt/doxygen-${DOXYGEN_VERSION}
+ENV nvtx3_ROOT=/opt/nvtx3-${NVTX3_VERSION}

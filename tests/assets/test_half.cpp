@@ -1,7 +1,7 @@
 #include <array>
 
 #include "common/cuda_runtime.hpp"
-#include "cub/detail/nvtx3.hpp"
+#include "nvtx3/nvtx3.hpp"
 
 #include "test_half.cu"
 

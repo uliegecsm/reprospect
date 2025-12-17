@@ -1,7 +1,11 @@
+#include <algorithm>
 #include <memory>
 #include <random>
+#include <ranges>
 #include <stdexcept>
 #include <vector>
+
+#include "cuda.h"
 
 #include "cuda/runtime_helper.hpp"
 #include "nvtx3/nvtx3.hpp"
@@ -18,14 +22,8 @@ namespace reprospect::examples::cuda::virtual_functions
 /**
  * @name Utilities for dispatching virtual functions in device kernels.
  *
- * The main challenge when dealing with virtual functions in device kernels is ensuring that the correct
- * vtable is used on device. This requires that the derived class instance is constructed on device.
- *
- * The following utilities facilitate this by providing a way to copy construct a device object
- * from a host object. This is achieved by allocating raw memory on device and using
- * a placement new within a device kernel to construct the device object in that memory. A custom
- * deleter is provided to a @c std::shared_ptr to ensure that the device object is properly
- * destructed on device and the memory is freed when the @c std::shared_ptr goes out of scope.
+ * The main challenge in dealing with virtual functions in device kernels is ensuring that the correct
+ * vtable is used. This requires that the derived class instance is constructed on device.
  *
  * References:
  *
@@ -52,15 +50,24 @@ struct DeviceDeleter
 };
 
 template <typename Derived>
-__global__ void __launch_bounds__(1, 1) copy_construct_kernel(Derived* const ptr, const Derived derived) {
-    if (blockIdx.x == 0) new (ptr) Derived(derived);
+__global__ void __launch_bounds__(1, 1) copy_construct_kernel(Derived* const ptr, const Derived derived)
+{
+    if (blockIdx.x == 0)
+    {
+#if defined(__NVCC__) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ == 700
+        const Derived copy = derived;
+        new (ptr) Derived(copy);
+#else
+        new (ptr) Derived(derived);
+#endif
+    }
 }
 
 template <typename Derived>
-std::shared_ptr<Derived> copy_to_device(cudaStream_t stream, const Derived& derived)
+std::shared_ptr<Derived> copy_to_device(const cudaStream_t stream, const Derived& derived)
 {
     Derived* ptr = nullptr;
-    REPROSPECT_CHECK_CUDART_CALL(cudaMalloc(&ptr, sizeof(Derived)));
+    REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&ptr, sizeof(Derived), stream));
 
     copy_construct_kernel<<<1, 1, 0, stream>>>(ptr, derived);
 
@@ -73,7 +80,10 @@ struct Base
     __device__ virtual void foo(const unsigned int /* */) const = 0;
     __device__ virtual void bar(const unsigned int /* */) const = 0;
 
-    __host__ __device__ virtual ~Base() = default;
+#if defined (__NVCC__) and (CUDA_VERSION >= 13000)
+    __host__ __device__
+#endif
+    virtual ~Base() = default;
 };
 
 template <typename T>
@@ -144,20 +154,17 @@ public:
     using derived_b_t = DerivedB<value_t>;
 
 public:
-    Dispatch(cudaStream_t stream)
+    Dispatch(const cudaStream_t stream)
       : generator(std::random_device{}())
     {
         //! Create and initialize buffer.
-        REPROSPECT_CHECK_CUDART_CALL(cudaMalloc(&x, size * sizeof(value_t)));
+        REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&x, size * sizeof(value_t), stream));
 
         REPROSPECT_CHECK_CUDART_CALL(cudaMemsetAsync(x, 0, size * sizeof(value_t), stream));
 
         //! Create host and device objects.
-        const derived_a_t derived_a_h(x);
-        derived_a_sdptr = copy_to_device(stream, derived_a_h);
-
-        const derived_b_t derived_b_h(x);
-        derived_b_sdptr = copy_to_device(stream, derived_b_h);
+        derived_a_sdptr = copy_to_device(stream, derived_a_t(x));
+        derived_b_sdptr = copy_to_device(stream, derived_b_t(x));
     }
 
     ~Dispatch() {
@@ -215,23 +222,15 @@ public:
         return std::bernoulli_distribution{0.5}(generator);
     }
 
-    void check(cudaStream_t stream, const value_t expt_val) const {
+    void check(cudaStream_t stream, const value_t expt_val) const
+    {
         std::vector<value_t> x_h(size);
         REPROSPECT_CHECK_CUDART_CALL(
             cudaMemcpyAsync(x_h.data(), x, size * sizeof(value_t), cudaMemcpyDeviceToHost, stream)
         );
         REPROSPECT_CHECK_CUDART_CALL(cudaStreamSynchronize(stream));
 
-        bool all_as_expected = true;
-        for (unsigned int index = 0; index < size; ++index)
-        {
-            if (x_h[index] != expt_val) {
-                all_as_expected = false;
-                break;
-            }
-        }
-
-        if (!all_as_expected) {
+        if (!std::ranges::all_of(x_h | std::views::take(size), [expt_val](const auto& val) { return val == expt_val; })) {
             throw std::runtime_error("buffer elements not as expected");
         }
     }
@@ -251,14 +250,14 @@ int main()
     cudaStream_t stream;
     REPROSPECT_CHECK_CUDART_CALL(cudaStreamCreate(&stream));
 
-    nvtxRangePush("Dispatch");
+    {
+        nvtx3::scoped_range range("dispatch");
 
-    Dispatch{stream}.run_static_foo     (stream);
-    Dispatch{stream}.run_dynamic_foo    (stream);
-    Dispatch{stream}.run_dynamic_bar    (stream);
-    Dispatch{stream}.run_dynamic_foo_bar(stream);
-
-    nvtxRangePop();
+        Dispatch{stream}.run_static_foo     (stream);
+        Dispatch{stream}.run_dynamic_foo    (stream);
+        Dispatch{stream}.run_dynamic_bar    (stream);
+        Dispatch{stream}.run_dynamic_foo_bar(stream);
+    }
 
     REPROSPECT_CHECK_CUDART_CALL(cudaStreamDestroy(stream));
 

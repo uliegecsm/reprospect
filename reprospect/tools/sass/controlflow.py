@@ -85,7 +85,6 @@ class ControlFlow:
     Analyze SASS instructions from a :py:class:`reprospect.tools.sass.Decoder` to construct a :py:class:`reprospect.tools.sass.controlflow.Graph`.
     """
     BRANCHING : typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join((
-        'CALL',
         'BPT',
         'BRA',
         'BREAK',
@@ -97,6 +96,9 @@ class ControlFlow:
         'JMXU',
         'RET',
     )) + ')')
+    """
+    Branching instructions that create a new basic block.
+    """
 
     SYNCHRONIZATION : typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join((
         'BSSY',

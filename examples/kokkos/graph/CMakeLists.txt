@@ -1,2 +1,2 @@
-add_one_example(dispatch)
-add_one_example(then)
+add_one_kokkos_example(dispatch)
+add_one_kokkos_example(then)

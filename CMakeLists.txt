@@ -35,6 +35,14 @@ cmake_file_api(QUERY API_VERSION 1
   CODEMODEL 2
 )
 
+if(ReProspect_ENABLE_TESTS OR ReProspect_ENABLE_EXAMPLES)
+    find_package(
+        CUDAToolkit REQUIRED
+        COMPONENTS cuda_driver cudart
+    )
+    find_package(nvtx3 REQUIRED)
+endif()
+
 if(ReProspect_ENABLE_TESTS)
     enable_testing()
     add_subdirectory(tests)

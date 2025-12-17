@@ -1,1 +1,1 @@
-add_one_example(alignment)
+add_one_kokkos_example(alignment)

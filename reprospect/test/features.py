@@ -56,6 +56,41 @@ class Memory:
             return 16
         return 32
 
+    def sign_extension(self, compiler_id: str) -> bool:
+        """
+        When loading a 16-bit signed value into a 32-bit register, compilers  may use either sign-extending or zero-extending loads:
+
+        * ``nvcc`` may use either approach.
+        * ``clang`` always uses sign extension.
+
+        Sign extension can be performed by the load instruction itself::
+
+            LDG.E.S16.CONSTANT R3, desc[UR4][R2.64]
+            ...
+            STG.E desc[UR4][R4.64], R3
+
+        or by a subsequent ``PRMT`` instruction after a zero-extending load::
+
+            LDG.E.U16.CONSTANT.SYS R2, [R2]
+            PRMT R7, R2, 0x9910, RZ
+            STG.E.SYS [R4], R7
+
+        :return: :py:obj:`True` if the load instruction uses *sign extension*.
+
+        .. seealso::
+
+            :py:const:`reprospect.test.sass.instruction.instruction.ExtendBitsMethod`.
+        """
+        match compiler_id:
+            case 'NVIDIA':
+                if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.1'):
+                    return False
+                return self.arch.compute_capability.as_int >= 100
+            case 'Clang':
+                return True
+            case _:
+                raise ValueError(f"unsupported compiler {compiler_id}")
+
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
 class PTX:
     arch: NVIDIAArch

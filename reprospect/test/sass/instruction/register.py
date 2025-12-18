@@ -1,11 +1,32 @@
 from __future__ import annotations
 
 import dataclasses
+import sys
+import typing
 
 import attrs
 import regex
 
+from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.sass.decode import RegisterType
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum.strenum import StrEnum
+
+class RegisterModifier(StrEnum):
+    """
+    Allowed register value modifier.
+
+    References:
+
+    * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L67
+    """
+    NOT = '!'
+    NEG = '-'
+    ABS = '|'
+    INV = '~'
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class RegisterMatch:
@@ -16,6 +37,7 @@ class RegisterMatch:
     rtype: RegisterType
     index: int | None = None
     reuse: bool = False
+    modifier: RegisterModifier | None = None
 
     @classmethod
     def parse(cls, bits: regex.Match[str]) -> RegisterMatch:
@@ -29,11 +51,19 @@ class RegisterMatch:
             if len(value) == 1:
                 index = int(value[0])
 
+        modifier: RegisterModifier | None = None
+        if (value := captured.get('modifier')) is not None:
+            if len(value) == 1:
+                modifier = RegisterModifier(value[0])
+
         return cls(
             rtype = RegisterType(rtype[0]),
             index = index,
             reuse = bool(captured.get('reuse')),
+            modifier=modifier,
         )
+
+REGISTER_MATCHER_MOD_PRE: typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.group(PatternBuilder.PRE_OPERAND_MOD, group='modifier'))
 
 @attrs.define(frozen = True, slots = True, kw_only = True)
 class RegisterMatcher:
@@ -44,6 +74,7 @@ class RegisterMatcher:
     special: bool | None = None
     index: int | None = None
     reuse: bool | None = None
+    modifier: RegisterModifier | None = None
 
     pattern: regex.Pattern[str] = attrs.field(init = False)
 
@@ -52,7 +83,8 @@ class RegisterMatcher:
             raise RuntimeError(self)
 
         object.__setattr__(self, 'pattern', regex.compile(''.join(filter(None, (
-            rf'(?P<rtype>({self.rtype.value if self.rtype else "R|UR|P|UP"}))',
+            self._build_modifier(),
+            PatternBuilder.group(self.rtype.value if self.rtype else 'R|UR|P|UP', group='rtype'),
             self._build_special(),
             self._build_index(),
             self._build_reuse(),
@@ -66,6 +98,11 @@ class RegisterMatcher:
     def __call__(self, reg: str) -> RegisterMatch | None:
         return self.match(reg = reg)
 
+    def _build_modifier(self) -> str|None:
+        if self.modifier is None:
+            return REGISTER_MATCHER_MOD_PRE
+        return PatternBuilder.group(self.modifier.value, group='modifier')
+
     def _build_special(self) -> str | None:
         if self.index is not None:
             return None
@@ -74,7 +111,7 @@ class RegisterMatcher:
 
         idx = self.rtype.special if self.rtype is not None else r'Z|T'
 
-        special = rf'(?P<special>({idx}))'
+        special = PatternBuilder.group(idx, group='special')
 
         if self.special is None:
             return special + '?'
@@ -84,8 +121,8 @@ class RegisterMatcher:
         if self.special is True:
             return None
         if self.index is not None:
-            return rf'(?P<index>({self.index}))'
-        index = r'(?P<index>(\d+))'
+            return PatternBuilder.group(self.index, group='index')
+        index = PatternBuilder.group(r'\d+', group='index')
         if self.special is None:
             return index + '?'
         return index
@@ -97,7 +134,7 @@ class RegisterMatcher:
             return None
         if self.rtype is not None and self.rtype.is_predicate:
             return None
-        reuse = r'(?P<reuse>\.reuse)'
+        reuse = PatternBuilder.group(r'\.reuse', group='reuse')
         if self.reuse is None:
             return reuse + '?'
         return reuse

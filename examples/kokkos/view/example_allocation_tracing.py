@@ -166,7 +166,7 @@ class TestNSYS(TestAllocation):
             selectors = {
                 'malloc': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMalloc'),
                 'memcpy': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
-                'free': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
+                'free':   nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
             },
         )
 
@@ -191,7 +191,7 @@ class TestNSYS(TestAllocation):
             selectors = {
                 'malloc': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMallocManaged'),
                 'memcpy': None,
-                'free': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
+                'free':   nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
             },
         )
 
@@ -216,7 +216,7 @@ class TestNSYS(TestAllocation):
             selectors = {
                 'malloc': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMallocAsync'),
                 'memcpy': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
-                'free': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFreeAsync'),
+                'free':   nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFreeAsync'),
             },
         )
 
@@ -241,6 +241,6 @@ class TestNSYS(TestAllocation):
             selectors = {
                 'malloc': nsys.ReportPatternSelector(column = 'name', pattern = re.compile(r'^cudaMallocManaged')),
                 'memcpy': None,
-                'free': nsys.ReportPatternSelector(column = 'name', pattern = re.compile(r'^cudaFree')),
+                'free':   nsys.ReportPatternSelector(column = 'name', pattern = re.compile(r'^cudaFree')),
             },
         )

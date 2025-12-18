@@ -57,7 +57,7 @@ class TestNVDisasm:
             * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/UserGuide.md?plain=1#L262
         """
         CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
-        SYMBOL: typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
+        SYMBOL:    typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
         SIGNATURE: typing.Final[str] = CuppFilt.demangle(SYMBOL)
 
         SASS_ANNOTATED_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass.annotated'
@@ -95,18 +95,18 @@ class TestNVDisasm:
             match parameters.arch.compute_capability.as_int:
                 case 70 | 75:
                     expt_register_usage_details = {
-                        RegisterType.GPR: (8, 6),
+                        RegisterType.GPR:  (8, 6),
                         RegisterType.PRED: (1, 1),
                     }
                 case 80 | 86 | 89:
                     expt_register_usage_details = {
-                        RegisterType.GPR: (8, 6),
+                        RegisterType.GPR:  (8, 6),
                         RegisterType.PRED: (1, 1),
                         RegisterType.UGPR: (6, 2),
                     }
                 case 90 | 100 | 103 | 120:
                     expt_register_usage_details = {
-                        RegisterType.GPR: (8, 7),
+                        RegisterType.GPR:  (8, 7),
                         RegisterType.PRED: (1, 1),
                         RegisterType.UGPR: (7, 3),
                     }
@@ -133,8 +133,8 @@ class TestNVDisasm:
         When there are many kernels.
         """
         CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cu'
-        CPP_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
-        SYMBOLS: typing.Final[tuple[str, ...]] = ('_Z6say_hiv', '_Z20vector_atomic_add_42PKfS0_Pfj')
+        CPP_FILE:  typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
+        SYMBOLS:   typing.Final[tuple[str, ...]] = ('_Z6say_hiv', '_Z20vector_atomic_add_42PKfS0_Pfj')
 
         def test_from_executable(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
@@ -184,7 +184,7 @@ class TestNVDisasm:
                     }
                 case 120:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18),                             RegisterType.UGPR: (8, 4)},
+                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18),                            RegisterType.UGPR: (8, 4)},
                         self.SYMBOLS[1]: {RegisterType.GPR: (12, 10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
                     }
                 case _:

@@ -90,21 +90,21 @@ class TestControlFlow:
     Tests for :py:class:`reprospect.tools.sass.controlflow.ControlFlow`.
     """
     class TestIfs:
-        CU_IFS: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.cu'
+        CU_IFS:         typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.cu'
         SASS_IFS_SM120: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.sm_120.sass'
-        INSTRUCTIONS: typing.Final[list[Instruction]] = Decoder(source = SASS_IFS_SM120).instructions
+        INSTRUCTIONS:   typing.Final[list[Instruction]] = Decoder(source = SASS_IFS_SM120).instructions
 
         def test_find_entry_points(self) -> None:
             assert ControlFlow.find_entry_points(instructions = self.INSTRUCTIONS) == {
-                int('0000', base = 16),
+                int('0000',  base = 16),
                 int('0x130', base = 16),
-                int('0090', base = 16),
-                int('0100', base = 16),
-                int('0130', base = 16),
-                int('0150', base = 16),
+                int('0090',  base = 16),
+                int('0100',  base = 16),
+                int('0130',  base = 16),
+                int('0150',  base = 16),
                 int('0x1a0', base = 16),
-                int('01a0', base = 16),
-                int('01b0', base = 16),
+                int('01a0',  base = 16),
+                int('01b0',  base = 16),
             }
 
         def test_create_blocks(self) -> None:

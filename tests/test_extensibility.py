@@ -69,7 +69,7 @@ class TestInstructionMatching:
 
     DADD: typing.Final[Instruction] = Instruction(offset = 0, instruction = 'DADD R4, R4, c[0x0][0x180]', hex = '0x0', control = CONTROLCODE)
     DMUL: typing.Final[Instruction] = Instruction(offset = 0, instruction = 'DMUL R6, R6, c[0x0][0x188]', hex = '0x1', control = CONTROLCODE)
-    NOP: typing.Final[Instruction] = Instruction(offset = 0, instruction = 'NOP',                        hex = '0x2', control = CONTROLCODE)
+    NOP:  typing.Final[Instruction] = Instruction(offset = 0, instruction = 'NOP',                        hex = '0x2', control = CONTROLCODE)
 
     def test_NewInstructionMatcher(self) -> None:
         result = instruction_is(matcher = NewInstructionMatcher()).times(3).match(instructions = (self.DADD, self.DMUL, self.NOP))

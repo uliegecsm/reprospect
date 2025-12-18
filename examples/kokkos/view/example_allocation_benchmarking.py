@@ -221,19 +221,19 @@ class TestAllocation(CMakeAwareTestCase):
         FONTSIZE = 22
 
         LINESTYLES: typing.Final[dict[bool, matplotlib.lines.Line2D]] = {
-            True: matplotlib.lines.Line2D((0,), (0,), color = 'black', linestyle = 'solid',  lw = 4, label = 'async'),
+            True:  matplotlib.lines.Line2D((0,), (0,), color = 'black', linestyle = 'solid',  lw = 4, label = 'async'),
             False: matplotlib.lines.Line2D((0,), (0,), color = 'black', linestyle = 'dotted', lw = 4, label = 'sync'),
         }
 
         MARKERS: typing.Final[dict[Framework, matplotlib.lines.Line2D]] = {
-            Framework.CUDA: matplotlib.lines.Line2D((0,), (0,), color = 'black', marker = 's', linestyle = '', markersize = 10, markerfacecolor = 'grey', label = 'CUDA'),
+            Framework.CUDA:   matplotlib.lines.Line2D((0,), (0,), color = 'black', marker = 's', linestyle = '', markersize = 10, markerfacecolor = 'grey', label = 'CUDA'),
             Framework.KOKKOS: matplotlib.lines.Line2D((0,), (0,), color = 'black', marker = 'o', linestyle = '', markersize = 10, markerfacecolor = 'grey', label = 'Kokkos'),
         }
 
         COLORS: typing.Final[dict[int, matplotlib.lines.Line2D]] = {
-            1: matplotlib.lines.Line2D((0,), (0,), color = 'black', lw = 2, linestyle = 'solid', label = '1'),
-            4: matplotlib.lines.Line2D((0,), (0,), color = 'red',   lw = 2, linestyle = 'solid', label = '4'),
-            8: matplotlib.lines.Line2D((0,), (0,), color = 'green', lw = 2, linestyle = 'solid', label = '8'),
+            1:  matplotlib.lines.Line2D((0,), (0,), color = 'black', lw = 2, linestyle = 'solid', label = '1'),
+            4:  matplotlib.lines.Line2D((0,), (0,), color = 'red',   lw = 2, linestyle = 'solid', label = '4'),
+            8:  matplotlib.lines.Line2D((0,), (0,), color = 'green', lw = 2, linestyle = 'solid', label = '8'),
             12: matplotlib.lines.Line2D((0,), (0,), color = 'blue',  lw = 2, linestyle = 'solid', label = '12'),
         }
 

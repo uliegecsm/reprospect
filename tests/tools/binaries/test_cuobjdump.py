@@ -197,9 +197,9 @@ class TestCuObjDump:
         """
         When the kernel performs a `saxpy`.
         """
-        CPP_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
+        CPP_FILE:  typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
         CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
-        SYMBOL: typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
+        SYMBOL:    typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
         SIGNATURE: typing.Final[str] = CuppFilt.demangle(SYMBOL)
 
         def test_sass_from_object(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
@@ -316,7 +316,7 @@ class TestCuObjDump:
             ``__device__`` functions have been inlined.
         """
         CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cu'
-        CPP_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
+        CPP_FILE:  typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
 
         FUNCTIONS: typing.Final[dict[str, str]] = {
             '_Z6say_hiv': 'say_hi()',

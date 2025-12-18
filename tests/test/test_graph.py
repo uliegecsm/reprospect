@@ -27,7 +27,7 @@ class TestGraph(CMakeAwareTestCase):
 
     DEMANGLED_NODE_A: typing.Final[dict[str, str]] = {
         'NVIDIA': 'void add_and_increment_kernel<(unsigned int)0, >(unsigned int *)',
-        'Clang': 'void add_and_increment_kernel<0u>(unsigned int*)',
+        'Clang':  'void add_and_increment_kernel<0u>(unsigned int*)',
     }
 
 class TestSASS(TestGraph):

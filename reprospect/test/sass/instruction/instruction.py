@@ -312,7 +312,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
     """
     __slots__ = ('extend', 'memory', 'size')
 
-    TEMPLATE: typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}'
+    TEMPLATE:     typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}'
     TEMPLATE_256: typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
 
     def __init__(self,

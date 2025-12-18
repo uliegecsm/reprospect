@@ -107,9 +107,9 @@ def floating_point_add_pattern(*, ftype: typing.Literal['F', 'D']) -> regex.Patt
     return regex.compile(
         PatternBuilder.opcode_mods(f'{ftype}ADD', modifiers=('?FTZ',)) + r'\s+' +
         PatternBuilder.groups(PatternBuilder.REG, groups=('dst', 'operands')) + r'\s*,\s*' +
-        PatternBuilder.premodregz() + r'\s*,\s*' +
+        PatternBuilder.mathmodregz() + r'\s*,\s*' +
         PatternBuilder.any(
-            PatternBuilder.premodregz(), PatternBuilder.ureg(),
+            PatternBuilder.mathmodregz(), PatternBuilder.ureg(),
             ConstantMatcher.build_pattern(),
             PatternBuilder.immediate(),
         ),

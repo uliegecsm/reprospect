@@ -1,16 +1,20 @@
 from __future__ import annotations
 
 import dataclasses
-import typing
 
 import attrs
 import regex
 
-from reprospect.test.sass.instruction.operand import OperandModifier, OPERAND_MODIFIER
+from reprospect.test.sass.instruction.operand import (
+    OPERAND_MODIFIER_ABS,
+    OPERAND_MODIFIER_MATH,
+    OperandModifierMath,
+)
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.sass.decode import RegisterType
 
-@dataclasses.dataclass(frozen = True, slots = True)
+
+@dataclasses.dataclass(frozen=True, slots=True)
 class RegisterMatch:
     """
     If :py:attr:`index` is :py:obj:`None`, it is a special register (*e.g.*
@@ -19,7 +23,7 @@ class RegisterMatch:
     rtype: RegisterType
     index: int | None = None
     reuse: bool = False
-    modifier: OperandModifier | None = None
+    math: OperandModifierMath | None = None
 
     @classmethod
     def parse(cls, bits: regex.Match[str]) -> RegisterMatch:
@@ -33,19 +37,17 @@ class RegisterMatch:
             if len(value) == 1:
                 index = int(value[0])
 
-        modifier: OperandModifier | None = None
-        if (value := captured.get('modifier')) is not None:
+        math: OperandModifierMath | None = None
+        if (value := captured.get('modifier_math')) is not None:
             if len(value) == 1:
-                modifier = OperandModifier(value[0])
+                math = OperandModifierMath(value[0])
 
         return cls(
             rtype=RegisterType(rtype[0]),
             index=index,
             reuse=bool(captured.get('reuse')),
-            modifier=modifier,
+            math=math,
         )
-
-REGISTER_MATCHER_MOD_PRE: typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.group(OPERAND_MODIFIER, group='modifier'))
 
 @attrs.define(frozen=True, slots=True, kw_only=True)
 class RegisterMatcher:
@@ -56,7 +58,7 @@ class RegisterMatcher:
     special: bool | None = None
     index: int | None = None
     reuse: bool | None = None
-    modifier: OperandModifier | None = None
+    math: OperandModifierMath | None = None
 
     pattern: regex.Pattern[str] = attrs.field(init=False)
 
@@ -65,11 +67,12 @@ class RegisterMatcher:
             raise RuntimeError(self)
 
         object.__setattr__(self, 'pattern', regex.compile(''.join(filter(None, (
-            self._build_modifier(),
+            self._build_modifier_math_pre(),
             PatternBuilder.group(self.rtype.value if self.rtype else 'R|UR|P|UP', group='rtype'),
             self._build_special(),
             self._build_index(),
             self._build_reuse(),
+            self._build_modifier_math_post(),
         )))))
 
     def match(self, reg: str) -> RegisterMatch | None:
@@ -80,10 +83,17 @@ class RegisterMatcher:
     def __call__(self, reg: str) -> RegisterMatch | None:
         return self.match(reg=reg)
 
-    def _build_modifier(self) -> str | None:
-        if self.modifier is None:
-            return REGISTER_MATCHER_MOD_PRE
-        return PatternBuilder.group(self.modifier.value, group='modifier')
+    def _build_modifier_math_pre(self) -> str | None:
+        if self.math is None:
+            return PatternBuilder.zero_or_one(PatternBuilder.group(OPERAND_MODIFIER_MATH, group='modifier_math'))
+        return PatternBuilder.group(self.math.value, group='modifier_math')
+
+    def _build_modifier_math_post(self) -> str | None:
+        if self.math is None:
+            return PatternBuilder.zero_or_one(OPERAND_MODIFIER_ABS)
+        if self.math is OperandModifierMath.ABS:
+            return OPERAND_MODIFIER_ABS
+        return None
 
     def _build_special(self) -> str | None:
         if self.index is not None:

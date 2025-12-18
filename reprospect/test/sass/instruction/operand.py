@@ -6,18 +6,17 @@ if sys.version_info >= (3, 11):
 else:
     from backports.strenum.strenum import StrEnum
 
-OPERAND_MODIFIER: typing.Final[str] = r'[\-!\|~]'
-"""Match any modifier of :py:class:`OperandModifier`."""
+OPERAND_MODIFIER_MATH: typing.Final[str] = r'[\-!\|~]'
+"""Match any math modifier (NOT, NEG, INV, ABS)."""
 
-class OperandModifier(StrEnum):
+OPERAND_MODIFIER_ABS: typing.Final[str] = r'\|'
+"""Match absolute value delimiter."""
+
+class OperandModifierMath(StrEnum):
     """
-    Allowed operand value modifier.
-
-    References:
-
-    * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L67
+    Math operand modifier.
     """
     NOT = '!'
     NEG = '-'
-    ABS = '|'
     INV = '~'
+    ABS = '|'

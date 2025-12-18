@@ -266,13 +266,9 @@ class TestDecoder:
         cublas = CuBLAS(cmake_file_api=cmake_file_api)
 
         try:
-            [cubin] = cublas.extract(arch=parameters.arch, cwd=workdir, randomly=True)
+            cuobjdump = cublas.cubin(arch=parameters.arch, cwd=workdir, sass=True)
         except IndexError:
             pytest.skip(f'The library {cublas.libcublas} does not contain any CUDA binary file for {parameters.arch}.')
-
-        assert cubin.is_file()
-
-        cuobjdump = binaries.CuObjDump(file=cubin, arch=parameters.arch, sass=True)
 
         for name, function in cuobjdump.functions.items():
             decoder = sass.Decoder(code=function.code)

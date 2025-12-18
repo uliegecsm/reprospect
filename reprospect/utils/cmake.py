@@ -57,7 +57,7 @@ class FileAPI:
     CODEMODEL_VERSION = 2
 
     def __init__(self, cmake_build_directory: pathlib.Path) -> None:
-        self.reader = cmake_file_api.reply.v1.api.CMakeFileApiV1(build_path = cmake_build_directory)
+        self.reader = cmake_file_api.reply.v1.api.CMakeFileApiV1(build_path=cmake_build_directory)
         self.cmake_reply_path = cmake_build_directory / '.cmake' / 'api' / 'v1' / 'reply'
 
     @functools.cached_property
@@ -104,7 +104,7 @@ class FileAPI:
 
         return configurations[0]
 
-    @functools.lru_cache(maxsize = 128)
+    @functools.lru_cache(maxsize=128)
     def target(self, name: str) -> TargetDict:
         """
         Retrieve the information available for the target `name`.

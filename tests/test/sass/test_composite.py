@@ -44,7 +44,7 @@ class TestInstructionIs:
         matcher = instruction_is(Fp32AddMatcher())
         assert isinstance(matcher, Fluentizer)
 
-        assert (matched := matcher.match(inst = 'FADD R2, R2, R3')) is not None
+        assert (matched := matcher.match(inst='FADD R2, R2, R3')) is not None
         assert isinstance(matched, InstructionMatch)
 
     def test_times_1(self) -> None:
@@ -71,47 +71,47 @@ class TestInstructionIs:
         INSTRUCTION: typing.Final[str] = 'IMAD.WIDE.U32 R2, R0, R7, c[0x0][0x180]'
         MATCHER: typing.Final[Fluentizer] = instruction_is(AnyMatcher())
 
-        assert MATCHER.with_modifier('WIDE', index = 0).match(INSTRUCTION) is not None
-        assert MATCHER.with_modifier('WIDE', index = 1).match(INSTRUCTION) is None
-        assert MATCHER.with_modifier('WIDE', index = None).match(INSTRUCTION) is not None
+        assert MATCHER.with_modifier('WIDE', index=0).match(INSTRUCTION) is not None
+        assert MATCHER.with_modifier('WIDE', index=1).match(INSTRUCTION) is None
+        assert MATCHER.with_modifier('WIDE', index=None).match(INSTRUCTION) is not None
 
-        assert MATCHER.with_modifier('U32', index = 0).match(INSTRUCTION) is None
-        assert MATCHER.with_modifier('U32', index = 1).match(INSTRUCTION) is not None
-        assert MATCHER.with_modifier('U32', index = None).match(INSTRUCTION) is not None
+        assert MATCHER.with_modifier('U32', index=0).match(INSTRUCTION) is None
+        assert MATCHER.with_modifier('U32', index=1).match(INSTRUCTION) is not None
+        assert MATCHER.with_modifier('U32', index=None).match(INSTRUCTION) is not None
 
-        assert MATCHER.with_modifier('HELLO', index = 0).match(INSTRUCTION) is None
+        assert MATCHER.with_modifier('HELLO', index=0).match(INSTRUCTION) is None
 
     def test_with_operand(self) -> None:
         """
         Test :py:meth:`reprospect.test.sass.composite.Fluentizer.with_operand`.
         """
         matcher = instruction_is(Fp32AddMatcher()).with_operand(
-            index = 1,
-            operand = 'R2',
+            index=1,
+            operand='R2',
         )
         assert isinstance(matcher, Fluentizer)
-        assert matcher.match(inst = 'FADD R2, R2, R3') is not None
-        assert matcher.match(inst = 'FADD R4, R4, RZ') is None
+        assert matcher.match(inst='FADD R2, R2, R3') is not None
+        assert matcher.match(inst='FADD R4, R4, RZ') is None
 
         matcher = instruction_is(Fp32AddMatcher()).with_operand(
-            index = 2,
-            operand = RegisterMatcher(rtype = RegisterType.GPR, special = False),
+            index=2,
+            operand=RegisterMatcher(rtype=RegisterType.GPR, special=False),
         )
         assert isinstance(matcher, Fluentizer)
-        assert matcher.match(inst = 'FADD R2, R2, R3') is not None
-        assert matcher.match(inst = 'FADD R2, R2, RZ') is None
+        assert matcher.match(inst='FADD R2, R2, R3') is not None
+        assert matcher.match(inst='FADD R2, R2, RZ') is None
 
         matcher = instruction_is(AnyMatcher()).with_operand(
-            index = -1,
-            operand = RegisterMatcher(rtype = RegisterType.UGPR, special = True),
+            index=-1,
+            operand=RegisterMatcher(rtype=RegisterType.UGPR, special=True),
         )
-        assert matcher.match(inst = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
+        assert matcher.match(inst='UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
 
-        matcher = instruction_is(AnyMatcher()).with_operand(operand = 'UPT')
-        assert matcher.match(inst = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
+        matcher = instruction_is(AnyMatcher()).with_operand(operand='UPT')
+        assert matcher.match(inst='UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
 
-        matcher = instruction_is(AnyMatcher()).with_operand(operand = 'R42')
-        assert matcher.match(inst = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is None
+        matcher = instruction_is(AnyMatcher()).with_operand(operand='R42')
+        assert matcher.match(inst='UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is None
 
     def test_with_operand_composed(self) -> None:
         """
@@ -120,26 +120,26 @@ class TestInstructionIs:
         many times.
         """
         matcher = instruction_is(Fp32AddMatcher()).with_operand(
-            index = 2, operand = 'R3',
+            index=2, operand='R3',
         ).with_operand(
-            index = 1,
-            operand = RegisterMatcher(rtype = RegisterType.GPR, index = 2),
+            index=1,
+            operand=RegisterMatcher(rtype=RegisterType.GPR, index=2),
         )
         assert isinstance(matcher, Fluentizer)
-        assert matcher.match(inst = 'FADD R2, R2, R3') is not None
-        assert matcher.match(inst = 'FADD R3, R2, R3') is not None
-        assert matcher.match(inst = 'FADD R2, R2, RZ') is None
+        assert matcher.match(inst='FADD R2, R2, R3') is not None
+        assert matcher.match(inst='FADD R3, R2, R3') is not None
+        assert matcher.match(inst='FADD R2, R2, RZ') is None
 
     def test_with_operands(self) -> None:
         """
         Test :py:meth:`reprospect.test.sass.composite.Fluentizer.with_operands`.
         """
-        matcher = instruction_is(AnyMatcher()).with_operands(operands = (
+        matcher = instruction_is(AnyMatcher()).with_operands(operands=(
             (-1, 'URZ'),
-            ( 1, RegisterMatcher(rtype = RegisterType.UPRED, special = True)),
+            ( 1, RegisterMatcher(rtype=RegisterType.UPRED, special=True)),
         ))
         assert isinstance(matcher, Fluentizer)
-        assert matcher.match(inst = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
+        assert matcher.match(inst='UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
 
 class TestInstructionsAre:
     """
@@ -153,7 +153,7 @@ class TestInstructionsAre:
     def test_mix(self) -> None:
         matcher = instructions_are(
             Fp32AddMatcher(),
-            instruction_is(OpcodeModsMatcher(opcode = 'NOP', operands = False)).zero_or_more_times(),
+            instruction_is(OpcodeModsMatcher(opcode='NOP', operands=False)).zero_or_more_times(),
             Fp32AddMatcher(),
         )
         assert isinstance(matcher, OrderedInSequenceMatcher)

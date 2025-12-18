@@ -24,4 +24,4 @@ def get_arch_from_compile_command(cmd: str) -> set[NVIDIAArch]:
         for match in pattern.finditer(cmd):
             matches.update(g for g in match.groups() if g)
 
-    return {NVIDIAArch.from_compute_capability(cc = int(m)) for m in matches}
+    return {NVIDIAArch.from_compute_capability(cc=int(m)) for m in matches}

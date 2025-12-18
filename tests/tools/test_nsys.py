@@ -69,25 +69,25 @@ class TestCommand:
         """
         Check that the environment is handled properly.
         """
-        with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
-            Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever')).run()
-            check_call.assert_called_with(args = (
+        with unittest.mock.patch('subprocess.check_call', return_value=0) as check_call:
+            Command(executable='my-executable', output=pathlib.Path('my-output-path.whatever')).run()
+            check_call.assert_called_with(args=(
                 'nsys', 'profile',
                 '--sample=none', '--backtrace=none', '--cpuctxsw=none',
                 '--trace=cuda', '--force-overwrite=true', '-o', pathlib.Path('my-output-path.whatever.nsys-rep'),
                 'my-executable',
-            ), env = None, cwd = None)
+            ), env=None, cwd=None)
 
-        with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
-            Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever'), env = {'IT_MATTERS': 'ON'}).run(env = {'MY_BASE_ENV': '666'}, cwd = bindir)
-            check_call.assert_called_with(args = (
+        with unittest.mock.patch('subprocess.check_call', return_value=0) as check_call:
+            Command(executable='my-executable', output=pathlib.Path('my-output-path.whatever'), env={'IT_MATTERS': 'ON'}).run(env={'MY_BASE_ENV': '666'}, cwd=bindir)
+            check_call.assert_called_with(args=(
                 'nsys', 'profile',
                 '--sample=none', '--backtrace=none', '--cpuctxsw=none',
                 '--trace=cuda', '--force-overwrite=true', '-o', pathlib.Path('my-output-path.whatever.nsys-rep'),
                 'my-executable',
-            ), env = {'MY_BASE_ENV': '666', 'IT_MATTERS': 'ON'}, cwd = bindir)
+            ), env={'MY_BASE_ENV': '666', 'IT_MATTERS': 'ON'}, cwd=bindir)
 
-@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestSession:
     """
     Test :py:class:`reprospect.tools.nsys.Session`.
@@ -96,14 +96,14 @@ class TestSession:
 
     def run(self, bindir: pathlib.Path, cwd: pathlib.Path, nvtx_capture: str | None = None) -> Session:
         ns = Session(
-            command = Command(
-                executable = bindir / self.EXECUTABLE,
-                output = cwd / self.EXECUTABLE.name,
-                nvtx_capture = nvtx_capture,
+            command=Command(
+                executable=bindir / self.EXECUTABLE,
+                output=cwd / self.EXECUTABLE.name,
+                nvtx_capture=nvtx_capture,
             ),
         )
-        ns.run(cwd = cwd)
-        ns.export_to_sqlite(cwd = cwd)
+        ns.run(cwd=cwd)
+        ns.export_to_sqlite(cwd=cwd)
 
         return ns
 
@@ -112,11 +112,11 @@ class TestSession:
         Collect all CUDA API calls of :file:`tests/assets/test_saxpy.cpp`.
         """
         ns = self.run(
-            bindir = bindir, cwd = workdir,
-            nvtx_capture = "outer_useless_range@application_domain",
+            bindir=bindir, cwd=workdir,
+            nvtx_capture="outer_useless_range@application_domain",
         )
 
-        cuda_api_trace = ns.extract_statistical_report(report = 'cuda_api_trace')
+        cuda_api_trace = ns.extract_statistical_report(report='cuda_api_trace')
 
         logging.info(f'Report cuda_api_trace:\n{rich_helpers.to_string(rich_helpers.df_to_table(cuda_api_trace))}')
 
@@ -159,15 +159,15 @@ class TestSession:
         """
         Process the `nsys` report with :py:class:`reprospect.tools.nsys.Report`.
         """
-        ns = self.run(bindir = bindir, cwd = workdir)
+        ns = self.run(bindir=bindir, cwd=workdir)
 
-        cuda_api_trace = ns.extract_statistical_report(report = 'cuda_api_trace')
+        cuda_api_trace = ns.extract_statistical_report(report='cuda_api_trace')
 
-        with Report(db = ns.command.output.with_suffix('.sqlite')) as report:
+        with Report(db=ns.command.output.with_suffix('.sqlite')) as report:
 
             logging.info(f'Tables are {report.tables}.')
 
-            cupti_activity_kind_synchronization = report.table(name = 'CUPTI_ACTIVITY_KIND_SYNCHRONIZATION')
+            cupti_activity_kind_synchronization = report.table(name='CUPTI_ACTIVITY_KIND_SYNCHRONIZATION')
 
             logging.info(f'Table CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:\n{rich_helpers.to_string(rich_helpers.df_to_table(cupti_activity_kind_synchronization))}')
 
@@ -178,13 +178,13 @@ class TestSession:
             assert len(cuda_stream_synchronize) == 2
 
             # Each call to 'cudaStreamSynchronize' targets a distinct stream.
-            stream_id_a = report.get_correlated_row(src = cuda_stream_synchronize.iloc[0], dst = cupti_activity_kind_synchronization, correlation_src = 'CorrID')['streamId']
-            stream_id_b = report.get_correlated_row(src = cuda_stream_synchronize.iloc[1], dst = cupti_activity_kind_synchronization, correlation_src = 'CorrID')['streamId']
+            stream_id_a = report.get_correlated_row(src=cuda_stream_synchronize.iloc[0], dst=cupti_activity_kind_synchronization, correlation_src='CorrID')['streamId']
+            stream_id_b = report.get_correlated_row(src=cuda_stream_synchronize.iloc[1], dst=cupti_activity_kind_synchronization, correlation_src='CorrID')['streamId']
 
             assert stream_id_a != stream_id_b
 
             # Check that the 'saxpy' kernels ran on stream B.
-            cupti_activity_kind_kernel = report.table(name = 'CUPTI_ACTIVITY_KIND_KERNEL')
+            cupti_activity_kind_kernel = report.table(name='CUPTI_ACTIVITY_KIND_KERNEL')
             saxpy_kernel_first  = cupti_activity_kind_kernel.iloc[0]
             saxpy_kernel_second = cupti_activity_kind_kernel.iloc[1]
 
@@ -202,20 +202,20 @@ class TestSession:
                 assert kernel['blockZ'] == 1
 
             # Check 'saxpy' kernels launch type.
-            ENUM_CUDA_KERNEL_LAUNCH_TYPE = report.table(name = 'ENUM_CUDA_KERNEL_LAUNCH_TYPE')
+            ENUM_CUDA_KERNEL_LAUNCH_TYPE = report.table(name='ENUM_CUDA_KERNEL_LAUNCH_TYPE')
             logging.info(f'Table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_helpers.df_to_table(ENUM_CUDA_KERNEL_LAUNCH_TYPE))}')
 
-            CUDA_KERNEL_LAUNCH_TYPE_REGULAR = report.single_row(data = ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])
+            CUDA_KERNEL_LAUNCH_TYPE_REGULAR = report.single_row(data=ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])
             logging.info(f'Results selected from table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_helpers.ds_to_table(CUDA_KERNEL_LAUNCH_TYPE_REGULAR))}')
 
             assert saxpy_kernel_first ['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR['id']
             assert saxpy_kernel_second['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR['id']
 
             # Check 'saxpy' kernels mangled and demangled names.
-            stringids = report.table(name = 'StringIds')
+            stringids = report.table(name='StringIds')
             for kernel in [saxpy_kernel_first, saxpy_kernel_second]:
-                assert report.single_row(data = stringids[stringids['id'] == kernel['mangledName'  ]])['value'] == '_Z12saxpy_kerneljfPKfPf'
-                assert report.single_row(data = stringids[stringids['id'] == kernel['demangledName']])['value'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
+                assert report.single_row(data=stringids[stringids['id'] == kernel['mangledName'  ]])['value'] == '_Z12saxpy_kerneljfPKfPf'
+                assert report.single_row(data=stringids[stringids['id'] == kernel['demangledName']])['value'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
 
 class TestCacher:
     """
@@ -229,15 +229,15 @@ class TestCacher:
         Test :py:meth:`reprospect.tools.nsys.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir) as cacher:
+            with Cacher(directory=tmpdir) as cacher:
                 command = Command(
-                    executable = bindir / self.GRAPH,
-                    output = pathlib.Path('I-dont-care') / 'osef',
-                    opts = ('--nvtx',),
-                    args = ('--bla=42',),
+                    executable=bindir / self.GRAPH,
+                    output=pathlib.Path('I-dont-care') / 'osef',
+                    opts=('--nvtx',),
+                    args=('--bla=42',),
                 )
-                hash_a = cacher.hash(command = command)
-                hash_b = cacher.hash(command = command)
+                hash_a = cacher.hash(command=command)
+                hash_b = cacher.hash(command=command)
 
                 assert hash_a.digest() == hash_b.digest()
 
@@ -246,15 +246,15 @@ class TestCacher:
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir) as cacher:
-                hash_a = cacher.hash(command = Command(executable = bindir / self.GRAPH, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',)))
-                hash_b = cacher.hash(command = Command(executable = bindir / self.SAXPY, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',)))
-                hash_c = cacher.hash(command = Command(executable = bindir / self.SAXPY, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',), env = {'HELLO': 'WORLD'}))
+            with Cacher(directory=tmpdir) as cacher:
+                hash_a = cacher.hash(command=Command(executable=bindir / self.GRAPH, output=pathlib.Path('I-dont-care') / 'osef', opts=('--nvtx',), args=('--bla=42',)))
+                hash_b = cacher.hash(command=Command(executable=bindir / self.SAXPY, output=pathlib.Path('I-dont-care') / 'osef', opts=('--nvtx',), args=('--bla=42',)))
+                hash_c = cacher.hash(command=Command(executable=bindir / self.SAXPY, output=pathlib.Path('I-dont-care') / 'osef', opts=('--nvtx',), args=('--bla=42',), env={'HELLO': 'WORLD'}))
 
                 assert hash_a.digest() != hash_b.digest()
                 assert hash_b.digest() != hash_c.digest()
 
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_cache_hit(self, bindir, workdir) -> None:
         """
         The cacher should hit on the second call.
@@ -262,16 +262,16 @@ class TestCacher:
         FILES: typing.Final[tuple[str]] = ('report-cached.nsys-rep',)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with Cacher(directory = tmpdir) as cacher:
+            with Cacher(directory=tmpdir) as cacher:
                 command = Command(
-                    executable = bindir / self.GRAPH,
-                    output = workdir / FILES[0],
-                    opts = ('--env-var=HELLO=WORLD',),
+                    executable=bindir / self.GRAPH,
+                    output=workdir / FILES[0],
+                    opts=('--env-var=HELLO=WORLD',),
                 )
 
                 assert os.listdir(cacher.directory) == ['cache.db']
 
-                results_first = cacher.run(command = command)
+                results_first = cacher.run(command=command)
 
                 assert results_first.cached is False
 
@@ -283,29 +283,29 @@ class TestCacher:
                 assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
                 assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
 
-                results_second = cacher.run(command = command)
+                results_second = cacher.run(command=command)
 
                 assert results_second.cached is True
 
                 assert all(x in os.listdir(workdir) for x in FILES)
 
-@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestReport:
     """
     Test :py:class:`reprospect.tools.nsys.Report`.
     """
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def report(self, bindir, workdir: pathlib.Path) -> Report:
-        with Cacher(directory = workdir) as cacher:
+        with Cacher(directory=workdir) as cacher:
             command = Command(
-                executable = bindir / 'tests' / 'assets' / 'tests_assets_saxpy',
-                output = workdir / 'test-report.nsys-rep',
-                nvtx_capture = '*',
+                executable=bindir / 'tests' / 'assets' / 'tests_assets_saxpy',
+                output=workdir / 'test-report.nsys-rep',
+                nvtx_capture='*',
             )
 
-            entry = cacher.run(command = command, cwd = workdir)
+            entry = cacher.run(command=command, cwd=workdir)
 
-            return Report(db = cacher.export_to_sqlite(command = command, entry = entry))
+            return Report(db=cacher.export_to_sqlite(command=command, entry=entry))
 
     def test_get_events_within_nested_nvtx_ranges(self, report) -> None:
         """
@@ -331,7 +331,7 @@ class TestReport:
             for text, event_type_name in TOP_LEVEL.items():
                 assert roots[roots['text'] == text].squeeze()['eventTypeName'] == event_type_name
 
-            events = report.get_events(table = 'CUPTI_ACTIVITY_KIND_RUNTIME', accessors = ['outer_useless_range', 'create_streams'])
+            events = report.get_events(table='CUPTI_ACTIVITY_KIND_RUNTIME', accessors=['outer_useless_range', 'create_streams'])
 
             assert events['name'].apply(strip_cuda_api_suffix).tolist() == [
                 'cuModuleGetLoadingMode',
@@ -341,7 +341,7 @@ class TestReport:
 
             # Stream synchronize events can also be retrieved using NVTX filtering.
             # But their table does not have string IDs to correlate.
-            api = report.get_events(table = 'CUPTI_ACTIVITY_KIND_SYNCHRONIZATION', accessors = ('outer_useless_range', 'initialize_data'), stringids = None)
+            api = report.get_events(table='CUPTI_ACTIVITY_KIND_SYNCHRONIZATION', accessors=('outer_useless_range', 'initialize_data'), stringids=None)
             assert len(api) == 1
 
     class TestReportNvtxEvents:
@@ -357,13 +357,13 @@ class TestReport:
 
                 assert len(events.events['text']) == 7
 
-                assert len(events.get(accessors = ())) == 7
+                assert len(events.get(accessors=())) == 7
 
-                assert len(events.get(accessors = ('outer',))) == 0
+                assert len(events.get(accessors=('outer',))) == 0
 
-                assert events.get(accessors = ['outer_useless_range'])['text'].tolist() == ['outer_useless_range']
+                assert events.get(accessors=['outer_useless_range'])['text'].tolist() == ['outer_useless_range']
 
-                assert events.get(accessors = ['outer_useless_range', 'create_streams'])['text'].tolist() == ['create_streams']
+                assert events.get(accessors=['outer_useless_range', 'create_streams'])['text'].tolist() == ['create_streams']
 
         def test_string_representation(self, report) -> None:
             """
@@ -386,20 +386,20 @@ NVTX events
             Use :py:class:`tests.assets.test_nvtx.TestNVTX.intricated` to check that we can
             build the hierarchy of NVTX events for arbitrarily complicated situations.
             """
-            with Cacher(directory = workdir) as cacher:
+            with Cacher(directory=workdir) as cacher:
                 command = Command(
-                    executable = pathlib.Path(sys.executable),
-                    output = workdir / 'test-report-nvtx',
-                    nvtx_capture = '*',
-                    args = (pathlib.Path(__file__).parent.parent / 'assets' / 'test_nvtx.py',),
+                    executable=pathlib.Path(sys.executable),
+                    output=workdir / 'test-report-nvtx',
+                    nvtx_capture='*',
+                    args=(pathlib.Path(__file__).parent.parent / 'assets' / 'test_nvtx.py',),
                 )
-                entry = cacher.run(command = command, cwd = workdir)
+                entry = cacher.run(command=command, cwd=workdir)
 
-                with Report(db = cacher.export_to_sqlite(command = command, entry = entry)) as report:
+                with Report(db=cacher.export_to_sqlite(command=command, entry=entry)) as report:
                     assert len(report.nvtx_events.events) == 7
 
                     assert report.nvtx_events.get(
-                        accessors = ['start-end-level-0', 'push-pop-level-1', 'push-pop-level-2', 'push-pop-level-3'],
+                        accessors=['start-end-level-0', 'push-pop-level-1', 'push-pop-level-2', 'push-pop-level-3'],
                     )['text'].tolist() == 3 * ['push-pop-level-3']
 
                     assert str(report.nvtx_events) == """\

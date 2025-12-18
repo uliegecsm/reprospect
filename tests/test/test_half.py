@@ -19,26 +19,26 @@ from tests.parameters import PARAMETERS, Parameters
 from tests.test.sass.test_instruction import get_compilation_output
 
 
-@pytest.mark.parametrize('parameters', PARAMETERS, ids = str, scope = 'class')
+@pytest.mark.parametrize('parameters', PARAMETERS, ids=str, scope='class')
 class TestSASS:
     """
     Tests that combine different half-precision SASS instructions.
     """
     FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'test_half.cu'
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def cuobjdump(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> CuObjDump:
         output, _ = get_compilation_output(
-            source = self.FILE,
-            cwd = workdir,
-            arch = parameters.arch,
-            object_file = True,
-            resource_usage = False,
-            cmake_file_api = cmake_file_api,
-            ptx = True,
+            source=self.FILE,
+            cwd=workdir,
+            arch=parameters.arch,
+            object_file=True,
+            resource_usage=False,
+            cmake_file_api=cmake_file_api,
+            ptx=True,
         )
 
-        cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = True)
+        cuobjdump = CuObjDump(file=output, arch=parameters.arch, sass=True)
 
         assert len(cuobjdump.functions) == 2
 
@@ -57,13 +57,13 @@ class TestSASS:
             HMUL2 R0, R2.H0_H0, R2.H0_H0
             STG.E.U16.SYS [R4], R0
         """
-        decoder = Decoder(code = cuobjdump.functions['pow2_individual(__half *, const __half *, unsigned int)'].code)
-        matcher_load = instructions_contain(LoadGlobalMatcher(arch = parameters.arch, size = 16, readonly = True, extend = 'U'))
-        matcher_load.assert_matches(instructions = decoder.instructions)
+        decoder = Decoder(code=cuobjdump.functions['pow2_individual(__half *, const __half *, unsigned int)'].code)
+        matcher_load = instructions_contain(LoadGlobalMatcher(arch=parameters.arch, size=16, readonly=True, extend='U'))
+        matcher_load.assert_matches(instructions=decoder.instructions)
         matcher_hmul = instructions_contain(Fp16MulMatcher(packed=False))
-        matcher_hmul.assert_matches(instructions = decoder.instructions[matcher_load.next_index:])
-        matcher_store = instructions_contain(StoreGlobalMatcher(arch = parameters.arch, size = 16, extend = 'U'))
-        matcher_store.assert_matches(instructions = decoder.instructions[matcher_hmul.next_index:])
+        matcher_hmul.assert_matches(instructions=decoder.instructions[matcher_load.next_index:])
+        matcher_store = instructions_contain(StoreGlobalMatcher(arch=parameters.arch, size=16, extend='U'))
+        matcher_store.assert_matches(instructions=decoder.instructions[matcher_hmul.next_index:])
 
     def test_packed(self, parameters: Parameters, cuobjdump: CuObjDump) -> None:
         """
@@ -95,29 +95,29 @@ class TestSASS:
 
         instead of ``HMUL2``, depending on the targeted architecture.
         """
-        decoder = Decoder(code = cuobjdump.functions['pow2_packed(__half *, const __half *, unsigned int)'].code)
+        decoder = Decoder(code=cuobjdump.functions['pow2_packed(__half *, const __half *, unsigned int)'].code)
 
-        cfg = ControlFlow.analyze(instructions = decoder.instructions)
+        cfg = ControlFlow.analyze(instructions=decoder.instructions)
 
-        matcher_load_16 = instructions_contain(LoadGlobalMatcher(arch = parameters.arch, size = 16, readonly = True, extend = 'U'))
-        matcher_load_32 = instructions_contain(LoadGlobalMatcher(arch = parameters.arch, size = 32, readonly = True))
+        matcher_load_16 = instructions_contain(LoadGlobalMatcher(arch=parameters.arch, size=16, readonly=True, extend='U'))
+        matcher_load_32 = instructions_contain(LoadGlobalMatcher(arch=parameters.arch, size=32, readonly=True))
 
         block_individual, _ = BasicBlockMatcher(matcher_load_16).assert_matches(cfg=cfg)
         block_packed, _ = BasicBlockMatcher(matcher_load_32).assert_matches(cfg=cfg)
 
-        instructions_contain(Fp16MulMatcher(packed = False)).assert_matches(instructions = block_individual.instructions[matcher_load_16.next_index:])
+        instructions_contain(Fp16MulMatcher(packed=False)).assert_matches(instructions=block_individual.instructions[matcher_load_16.next_index:])
 
         instructions_contain(any_of(
             Fp16MulMatcher(packed=True),
             Fp16FusedMulAddMatcher(packed=True),
-        )).assert_matches(instructions = block_packed.instructions[matcher_load_32.next_index:])
+        )).assert_matches(instructions=block_packed.instructions[matcher_load_32.next_index:])
 
         # Let's check that the PTX is actually the same for every architecture.
         ptx = subprocess.check_output(('cuobjdump', '--dump-ptx', cuobjdump.file)).decode()
         assert re.search(r'mul\.f16x2 %r\d+,%r\d+,%r\d+;',  ptx) is not None
         assert re.search(r'mul\.f16 %rs\d+,%rs\d+,%rs\d+;', ptx) is not None
 
-@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestNCU:
     """
     `ncu`-based analysis of the individual *vs* packed implementation.
@@ -125,7 +125,7 @@ class TestNCU:
     HALF: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_half'
 
     METRICS: typing.Final[tuple[ncu.metrics.MetricKind, ...]] = (
-        ncu.MetricDeviceAttribute(name = 'display_name'),
+        ncu.MetricDeviceAttribute(name='display_name'),
         ncu.L1TEXCacheGlobalLoadInstructions.create(),
         ncu.L1TEXCacheGlobalLoadRequests.create(),
         ncu.L1TEXCacheGlobalLoadSectors.create(),
@@ -146,20 +146,20 @@ class TestNCU:
         'packed': 65,
     }
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def results(self, workdir: pathlib.Path, bindir: pathlib.Path) -> ncu.ProfilingResults:
-        with ncu.Cacher(directory = workdir) as cacher:
+        with ncu.Cacher(directory=workdir) as cacher:
             command = ncu.Command(
-                output = workdir / 'report-half',
-                executable = bindir / self.HALF,
-                metrics = self.METRICS,
-                nvtx_includes = tuple(f'half@{x}/' for x in ('individual', 'packed')),
+                output=workdir / 'report-half',
+                executable=bindir / self.HALF,
+                metrics=self.METRICS,
+                nvtx_includes=tuple(f'half@{x}/' for x in ('individual', 'packed')),
             )
-            cacher.run(command = command, retries = 5)
+            cacher.run(command=command, retries=5)
 
-            report = ncu.Report(command = command)
+            report = ncu.Report(command=command)
 
-            return report.extract_results_in_range(metrics = self.METRICS)
+            return report.extract_results_in_range(metrics=self.METRICS)
 
     def test_memory(self, results: ncu.ProfilingResults) -> None:
         """

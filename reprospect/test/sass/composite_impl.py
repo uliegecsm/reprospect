@@ -25,7 +25,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-@mypy_extensions.mypyc_attr(allow_interpreted_subclasses = True)
+@mypy_extensions.mypyc_attr(allow_interpreted_subclasses=True)
 class SequenceMatcher(abc.ABC):
     """
     Base class for matchers of a sequence of instructions.
@@ -56,8 +56,8 @@ class SequenceMatcher(abc.ABC):
         """
         Derived matchers are allowed to provide a nice message by implementing :py:meth:`explain`.
         """
-        if (matched := self.match(instructions = instructions)) is None:
-            raise RuntimeError(self.explain(instructions = instructions))
+        if (matched := self.match(instructions=instructions)) is None:
+            raise RuntimeError(self.explain(instructions=instructions))
         return matched
 
     def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str: # pylint: disable=unused-argument
@@ -131,7 +131,7 @@ class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
     """
     @override
     def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        return super().match(instructions = instructions) or []
+        return super().match(instructions=instructions) or []
 
     @override
     def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
@@ -158,7 +158,7 @@ class OrderedInSequenceMatcher(SequenceMatcher):
         self._index = 0
 
         for matcher in self.matchers:
-            if isinstance(matcher, InstructionMatcher) and (single := matcher.match(inst = instructions[self._index])) is not None:
+            if isinstance(matcher, InstructionMatcher) and (single := matcher.match(inst=instructions[self._index])) is not None:
                 matches.append(single)
                 self._index += 1
             elif isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions[self._index:])) is not None:
@@ -193,7 +193,7 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
 
     @override
     def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        if (matched := self.search(instructions = instructions, offset = 0, matchers = self.matchers)) is not None:
+        if (matched := self.search(instructions=instructions, offset=0, matchers=self.matchers)) is not None:
             self._index = matched[0]
             return matched[1]
         return None
@@ -212,10 +212,10 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
 
         for index, matcher in enumerate(matchers):
             if isinstance(matcher, InstructionMatcher) and (single := matcher.match(instructions[offset])) is not None:
-                if (inner := cls.search(instructions = instructions, offset = offset + 1, matchers = matchers[:index] + matchers[index + 1:])) is not None:
+                if (inner := cls.search(instructions=instructions, offset=offset + 1, matchers=matchers[:index] + matchers[index + 1:])) is not None:
                     return inner[0], [single] + inner[1]
-            elif isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions = instructions[offset:])) is not None:
-                if (inner := cls.search(instructions = instructions, offset = offset + matcher.next_index, matchers = matchers[:index] + matchers[index + 1:])) is not None:
+            elif isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions=instructions[offset:])) is not None:
+                if (inner := cls.search(instructions=instructions, offset=offset + matcher.next_index, matchers=matchers[:index] + matchers[index + 1:])) is not None:
                     return inner[0], many + inner[1]
         return None
 
@@ -294,11 +294,11 @@ class AnyOfMatcher(SequenceMatcher):
         Loop over the :py:attr:`matchers` and return the first match.
         """
         for index, matcher in enumerate(self.matchers):
-            if isinstance(matcher, InstructionMatcher) and (single := matcher.match(inst = instructions[0])) is not None:
+            if isinstance(matcher, InstructionMatcher) and (single := matcher.match(inst=instructions[0])) is not None:
                 self.matched = index
                 self._index = 1
                 return [single]
-            if isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions = instructions)) is not None:
+            if isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions=instructions)) is not None:
                 self.matched = index
                 self._index = matcher.next_index
                 return many
@@ -352,7 +352,7 @@ class UnorderedInterleavedInSequenceMatcher(UnorderedInSequenceMatcher):
     Match a sequence of :py:attr:`matchers` in any order, allowing interleaved unmatched instructions in between.
     """
     def __init__(self, matchers: typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
-        super().__init__(matchers = (
+        super().__init__(matchers=(
             InSequenceMatcher(matcher) if not isinstance(matcher, InSequenceMatcher) else matcher
             for matcher in matchers
         ))
@@ -441,7 +441,7 @@ class OperandValidator(InstructionMatcher):
         if (matched := self.matcher.match(inst)) is not None:
             if self.index is not None:
                 try:
-                    return matched if self.check(operand = matched.operands[self.index]) else None
+                    return matched if self.check(operand=matched.operands[self.index]) else None
                 except IndexError:
                     return None
             else:

@@ -38,7 +38,7 @@ class Cacher(abc.ABC):
     #: Name of the table.
     TABLE: typing.ClassVar[str]
 
-    @dataclasses.dataclass(frozen = True)
+    @dataclasses.dataclass(frozen=True)
     class Entry:
         #: Set to `True` if the result was served from cache.
         cached: bool
@@ -59,7 +59,7 @@ class Cacher(abc.ABC):
         self.directory = pathlib.Path(directory)
 
         if not self.directory.is_dir():
-            self.directory.mkdir(parents = True, exist_ok = True)
+            self.directory.mkdir(parents=True, exist_ok=True)
 
         self.file = self.directory / 'cache.db'
 
@@ -69,7 +69,7 @@ class Cacher(abc.ABC):
         """
         Connect to the database.
         """
-        self.database = self.create_db(file = self.file) if not self.file.is_file() else sqlite3.connect(self.file)
+        self.database = self.create_db(file=self.file) if not self.file.is_file() else sqlite3.connect(self.file)
         return self
 
     def __exit__(self, *args, **kwargs) -> None:
@@ -125,14 +125,14 @@ class Cacher(abc.ABC):
 
             directory = self.directory / hexdigest
 
-            directory.mkdir(parents = True, exist_ok = True)
+            directory.mkdir(parents=True, exist_ok=True)
 
             if row is None:
                 logging.info(f'Cache miss (with hash {hexdigest}).')
 
-                self.populate(directory = directory, **kwargs)
+                self.populate(directory=directory, **kwargs)
 
-                entry = Cacher.Entry(cached = False, digest = hexdigest, timestamp = datetime.datetime.now(datetime.timezone.utc), directory = directory)
+                entry = Cacher.Entry(cached=False, digest=hexdigest, timestamp=datetime.datetime.now(datetime.timezone.utc), directory=directory)
 
                 cursor.execute(
                     f'REPLACE INTO {self.TABLE} (hash, timestamp) VALUES (?, ?)',
@@ -143,6 +143,6 @@ class Cacher(abc.ABC):
 
                 logging.info(f'Cache hit dating from {timestamp} (with hash {hexdigest}).')
 
-                entry = Cacher.Entry(cached = True, digest = hexdigest, timestamp = datetime.datetime.fromisoformat(timestamp), directory = directory)
+                entry = Cacher.Entry(cached=True, digest=hexdigest, timestamp=datetime.datetime.fromisoformat(timestamp), directory=directory)
 
             return entry

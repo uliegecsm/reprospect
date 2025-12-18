@@ -20,7 +20,7 @@ import cuda.bindings.driver  # type: ignore[import-not-found]
 from reprospect.tools import architecture
 
 
-@dataclasses.dataclass(frozen = True, eq = True)
+@dataclasses.dataclass(frozen=True, eq=True)
 class CudaRuntimeError:
     """
     CUDA runtime error code.
@@ -39,7 +39,7 @@ class CudaRuntimeError:
         libcudart.cudaGetErrorName.restype   = ctypes.c_char_p
         return libcudart.cudaGetErrorName(self.value).decode(), libcudart.cudaGetErrorString(self.value).decode()
 
-@dataclasses.dataclass(frozen = True, eq = True)
+@dataclasses.dataclass(frozen=True, eq=True)
 class CudaDriverError:
     """
     CUDA driver error code.
@@ -89,7 +89,7 @@ class Cuda:
         """
         if not status.success:
             assert cls.libcuda is not None
-            error_name, error_msg = status.get(libcuda = cls.libcuda)
+            error_name, error_msg = status.get(libcuda=cls.libcuda)
             raise RuntimeError(
                 f"{info} failed with error code {status} ({error_name}): {error_msg}",
             )
@@ -101,7 +101,7 @@ class Cuda:
         """
         if not status.success:
             assert cls.libcudart is not None
-            error_name, error_msg = status.get(libcudart = cls.libcudart)
+            error_name, error_msg = status.get(libcudart=cls.libcudart)
             raise RuntimeError(
                 f"{info} failed with error code {status} ({error_name}): {error_msg}",
             )
@@ -116,7 +116,7 @@ class Cuda:
         @functools.wraps(handle)
         def wrapper(*args, **kwargs):
             status = handle(*args, **kwargs)
-            cls.check_driver_status(status = CudaDriverError(value = status), info = handle.__name__)
+            cls.check_driver_status(status=CudaDriverError(value=status), info=handle.__name__)
             return status
         return wrapper
 
@@ -130,13 +130,13 @@ class Cuda:
         @functools.wraps(handle)
         def wrapper(*args, **kwargs):
             status = handle(*args, **kwargs)
-            cls.check_runtime_status(status = CudaRuntimeError(value = status), info = handle.__name__)
+            cls.check_runtime_status(status=CudaRuntimeError(value=status), info=handle.__name__)
             return status
         return wrapper
 
     def __init__(self, flags: int = 0) -> None:
         self.load()
-        self.check_driver_api_call(func = 'cuInit')(flags)
+        self.check_driver_api_call(func='cuInit')(flags)
 
     @functools.cached_property
     def device_count(self) -> int:
@@ -144,7 +144,7 @@ class Cuda:
         Wrap ``cudaGetDeviceCount``.
         """
         count = ctypes.c_int()
-        self.check_runtime_api_call(func = 'cudaGetDeviceCount')(ctypes.byref(count))
+        self.check_runtime_api_call(func='cudaGetDeviceCount')(ctypes.byref(count))
         return count.value
 
     def get_device_attribute(self, *, value_type: type, attribute: cuda.bindings.driver.CUdevice_attribute, device: int) -> typing.Any:
@@ -152,7 +152,7 @@ class Cuda:
         Retrieve an attribute of `device`.
         """
         value = value_type()
-        self.check_runtime_api_call(func = 'cudaDeviceGetAttribute')(ctypes.byref(value), attribute.value, device)
+        self.check_runtime_api_call(func='cudaDeviceGetAttribute')(ctypes.byref(value), attribute.value, device)
         return value.value
 
     def get_device_compute_capability(self, *, device: int) -> architecture.ComputeCapability:
@@ -161,19 +161,19 @@ class Cuda:
         """
         cc_major = ctypes.c_int()
         cc_minor = ctypes.c_int()
-        self.check_driver_api_call(func = 'cuDeviceComputeCapability')(
+        self.check_driver_api_call(func='cuDeviceComputeCapability')(
             ctypes.byref(cc_major),
             ctypes.byref(cc_minor),
             ctypes.c_int(device),
         )
-        return architecture.ComputeCapability(major = cc_major.value, minor = cc_minor.value)
+        return architecture.ComputeCapability(major=cc_major.value, minor=cc_minor.value)
 
     def get_device_name(self, *, device: int, length: int = 150) -> str:
         """
         Get name of `device`.
         """
         name = b' ' * length
-        self.check_driver_api_call(func = 'cuDeviceGetName')(ctypes.c_char_p(name), len(name), device)
+        self.check_driver_api_call(func='cuDeviceGetName')(ctypes.c_char_p(name), len(name), device)
         return name.split(b"\0", 1)[0].decode()
 
     def get_device_total_memory(self, *, device: int) -> int:
@@ -181,7 +181,7 @@ class Cuda:
         Get device total memory.
         """
         total_mem = ctypes.c_size_t()
-        self.check_driver_api_call(func = 'cuDeviceTotalMem')(
+        self.check_driver_api_call(func='cuDeviceTotalMem')(
             ctypes.byref(total_mem),
             ctypes.c_int(device),
         )

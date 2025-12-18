@@ -49,8 +49,8 @@ def enable_mypyc(dist: Distribution) -> None:
             'reprospect/utils/nvcc.py',
             'reprospect/utils/subprocess_helpers.py',
         ],
-        verbose = True,
-        strict_dunder_typing = True,
+        verbose=True,
+        strict_dunder_typing=True,
     )
     logging.info(f'The following mypyc extension modules will be used:\n{pprint.pformat(ext_modules)}')
     dist.ext_modules = ext_modules
@@ -66,7 +66,7 @@ class bdist_wheel(_bdist_wheel):
         assert self.root_is_pure is False
 
 setup(
-    cmdclass = {
+    cmdclass={
         "bdist_wheel": bdist_wheel,
     },
 )

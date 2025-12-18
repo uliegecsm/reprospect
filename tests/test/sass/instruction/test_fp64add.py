@@ -22,13 +22,13 @@ __global__ void fp64_add(double* __restrict__ const dst, const double* __restric
 """
 
     def test(self) -> None:
-        matched = Fp64AddMatcher().match(inst = 'DADD R6, R4, R2')
+        matched = Fp64AddMatcher().match(inst='DADD R6, R4, R2')
         assert matched is not None
         assert matched.additional is not None
         assert matched.additional['dst'][0] == 'R6'
         assert matched.operands[-1] == 'R2'
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test_from_compiled(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_FP64_ADD`.
@@ -36,7 +36,7 @@ __global__ void fp64_add(double* __restrict__ const dst, const double* __restric
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_FP64_ADD)
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         matcher = Fp64AddMatcher()
         [dadd] = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]

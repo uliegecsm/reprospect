@@ -27,8 +27,8 @@ class CMakeMixin(abc.ABC):
     """
     Mixin to integrate with CMake build system.
     """
-    CMAKE_BINARY_DIR = EnvironmentField(converter = pathlib.Path)
-    CMAKE_CURRENT_BINARY_DIR = EnvironmentField(converter = pathlib.Path)
+    CMAKE_BINARY_DIR = EnvironmentField(converter=pathlib.Path)
+    CMAKE_CURRENT_BINARY_DIR = EnvironmentField(converter=pathlib.Path)
 
     @classmethod
     @abc.abstractmethod
@@ -41,7 +41,7 @@ class CMakeMixin(abc.ABC):
         Get working directory for the analysis based on the CMake current binary directory.
         """
         cwd = self.CMAKE_CURRENT_BINARY_DIR / (self.get_target_name() + '-case')
-        cwd.mkdir(parents = False, exist_ok = True)
+        cwd.mkdir(parents=False, exist_ok=True)
         return cwd
 
     @functools.cached_property
@@ -53,10 +53,10 @@ class CMakeMixin(abc.ABC):
 
         See also https://cmake.org/cmake/help/latest/variable/CMAKE_EXPORT_COMPILE_COMMANDS.html.
         """
-        with open(self.CMAKE_BINARY_DIR / 'compile_commands.json', encoding = 'utf-8') as fin:
+        with open(self.CMAKE_BINARY_DIR / 'compile_commands.json', encoding='utf-8') as fin:
             commands = json.load(fin)
         target_source = next(self.target_sources)
-        archs = get_arch_from_compile_command(cmd = next(
+        archs = get_arch_from_compile_command(cmd=next(
             x for x in commands
             if str(target_source) in x['file']
         )['command'])
@@ -65,7 +65,7 @@ class CMakeMixin(abc.ABC):
 
     @functools.cached_property
     def cmake_file_api(self) -> cmake.FileAPI:
-        return cmake.FileAPI(cmake_build_directory = self.CMAKE_BINARY_DIR)
+        return cmake.FileAPI(cmake_build_directory=self.CMAKE_BINARY_DIR)
 
     @functools.cached_property
     def target(self) -> cmake.TargetDict:

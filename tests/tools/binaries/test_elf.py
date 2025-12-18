@@ -92,7 +92,7 @@ class TestCUDART:
     """
     Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using the CUDA runtime shared library.
     """
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def cudart(self, cmake_file_api: cmake.FileAPI) -> pathlib.Path:
         cudart = pathlib.Path(cmake_file_api.cache['CUDA_CUDART']['value'])
         assert cudart.is_file()
@@ -102,7 +102,7 @@ class TestCUDART:
         """
         The CUDA runtime shared library is a shared library and not itself a cubin.
         """
-        with ELF(file = cudart) as elf:
+        with ELF(file=cudart) as elf:
             logging.info(elf.header)
 
             assert elf.header['e_type'] == 'ET_DYN'
@@ -113,12 +113,12 @@ class TestCUDART:
         The CUDA runtime shared library does not contain embedded cubins.
         """
         with pytest.raises(subprocess.CalledProcessError) as exc:
-            tuple(CuObjDump.list_elf(file = cudart))
+            tuple(CuObjDump.list_elf(file=cudart))
         assert 'does not contain device code' in exc.value.stderr
 
 def get_cubin(arch: NVIDIAArch, cublas: CuBLAS, workdir: pathlib.Path) -> pathlib.Path:
     try:
-        [cubin] = cublas.extract(arch = arch, cwd = workdir, randomly = True)
+        [cubin] = cublas.extract(arch=arch, cwd=workdir, randomly=True)
     except IndexError:
         pytest.skip(f'{cublas} does not contain an embedded cubin for {arch}.')
     assert cubin.is_file()
@@ -130,18 +130,18 @@ def get_cuinfo_and_tkinfo(*, arch: NVIDIAArch, file: pathlib.Path, version: sema
 
     It takes care of checking if each note section has to exist or not, given the `arch` and CUDA `version`.
     """
-    with ELF(file = file) as elf:
+    with ELF(file=file) as elf:
 
         def has(*, name: str) -> bool:
-            return elf.elf.has_section(section_name = '.note.nv.' + name)
+            return elf.elf.has_section(section_name='.note.nv.' + name)
 
         def get(*, name: str) -> elftools.elf.sections.NoteSection:
-            section = elf.elf.get_section_by_name(name = '.note.nv.' + name)
+            section = elf.elf.get_section_by_name(name='.note.nv.' + name)
             assert isinstance(section, elftools.elf.sections.NoteSection)
             return section
 
-        cuinfos: tuple[CuInfo, ...] | None = tuple(note for note in CuInfo.decode(note = get(name = 'cuinfo'))) if has(name = 'cuinfo') else None
-        tkinfos: tuple[TkInfo, ...] | None = tuple(note for note in TkInfo.decode(note = get(name = 'tkinfo'))) if has(name = 'tkinfo') else None
+        cuinfos: tuple[CuInfo, ...] | None = tuple(note for note in CuInfo.decode(note=get(name='cuinfo'))) if has(name='cuinfo') else None
+        tkinfos: tuple[TkInfo, ...] | None = tuple(note for note in TkInfo.decode(note=get(name='tkinfo'))) if has(name='tkinfo') else None
 
         cuinfo: CuInfo | None = None
         if version in semantic_version.SimpleSpec('<13.0.0'):
@@ -172,41 +172,41 @@ class TestCuBLAS:
     """
     Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using the cuBLAS shared library.
     """
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def cublas(self, cmake_file_api: cmake.FileAPI) -> CuBLAS:
-        return CuBLAS(cmake_file_api = cmake_file_api)
+        return CuBLAS(cmake_file_api=cmake_file_api)
 
     def test_shared_library(self, cublas: CuBLAS) -> None:
         """
         The cuBLAS shared library is a shared library and not itself a cubin.
         """
-        with ELF(file = cublas.libcublas) as elf:
+        with ELF(file=cublas.libcublas) as elf:
             logging.info(elf.header)
 
             assert elf.header['e_type'] == 'ET_DYN'
             assert not elf.is_cuda
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test_embedded_cubin(self, parameters: Parameters, cublas: CuBLAS, workdir: pathlib.Path) -> None:
         """
         The cuBLAS shared library contains embedded cubins for many, but not all, architectures.
         """
-        cubin = get_cubin(arch = parameters.arch, cublas = cublas, workdir = workdir)
-        with ELF(file = cubin) as elf:
+        cubin = get_cubin(arch=parameters.arch, cublas=cublas, workdir=workdir)
+        with ELF(file=cubin) as elf:
             logging.info(elf.header)
 
             assert elf.header['e_type'] == 'ET_EXEC'
             assert elf.is_cuda
             assert elf.arch == parameters.arch
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test_embedded_cubin_cuinfo_and_tkinfo(self, parameters: Parameters, cublas: CuBLAS, workdir: pathlib.Path) -> None:
         """
         Retrieve the `cuinfo` and `tkinfo` note sections from a cuBLAS cubin.
         """
-        cubin = get_cubin(arch = parameters.arch, cublas = cublas, workdir = workdir)
+        cubin = get_cubin(arch=parameters.arch, cublas=cublas, workdir=workdir)
 
-        cuinfo, tkinfo = get_cuinfo_and_tkinfo(arch = parameters.arch, file = cubin)
+        cuinfo, tkinfo = get_cuinfo_and_tkinfo(arch=parameters.arch, file=cubin)
 
         if cuinfo is not None:
             check_version(version=cuinfo.toolkit_version)
@@ -217,7 +217,7 @@ class TestCuBLAS:
             assert '-m 64' in tkinfo.tool_options
             check_version(version=tkinfo.tool_version)
 
-@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+@pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestSaxpy:
     """
     Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using an object file.
@@ -230,12 +230,12 @@ class TestSaxpy:
         Compile into object file.
         """
         object_file, _ = get_compilation_output(
-            source = self.FILE,
-            cwd = workdir,
-            arch = parameters.arch,
-            object_file = True,
-            resource_usage = True,
-            cmake_file_api = cmake_file_api,
+            source=self.FILE,
+            cwd=workdir,
+            arch=parameters.arch,
+            object_file=True,
+            resource_usage=True,
+            cmake_file_api=cmake_file_api,
         )
         assert object_file.is_file()
         return object_file
@@ -247,17 +247,17 @@ class TestSaxpy:
         * is a relocatable and not itself a cubin
         * contains an embedded cubin for the target architecture
         """
-        with ELF(file = object_file) as elf:
+        with ELF(file=object_file) as elf:
             logging.info(elf.header)
 
             assert elf.header['e_type'] == 'ET_REL'
             assert not elf.is_cuda
 
-        [name] = CuObjDump.extract_elf(file = object_file, arch = parameters.arch, name = 'saxpy', cwd = workdir)
+        [name] = CuObjDump.extract_elf(file=object_file, arch=parameters.arch, name='saxpy', cwd=workdir)
         cubin = workdir / name
         assert cubin.is_file()
 
-        with ELF(file = cubin) as elf:
+        with ELF(file=cubin) as elf:
             logging.info(elf.header)
 
             assert elf.header['e_type'] == 'ET_EXEC'
@@ -268,11 +268,11 @@ class TestSaxpy:
         """
         Retrieve the `cuinfo` and `tkinfo` note sections from a compiled output.
         """
-        [name] = CuObjDump.extract_elf(file = object_file, arch = parameters.arch, name = 'saxpy', cwd = workdir)
+        [name] = CuObjDump.extract_elf(file=object_file, arch=parameters.arch, name='saxpy', cwd=workdir)
         cubin = workdir / name
         assert cubin.is_file()
 
-        cuinfo, tkinfo = get_cuinfo_and_tkinfo(arch = parameters.arch, file = cubin)
+        cuinfo, tkinfo = get_cuinfo_and_tkinfo(arch=parameters.arch, file=cubin)
 
         if cuinfo is not None:
             assert cuinfo.virtual_sm == parameters.arch.compute_capability.as_int
@@ -308,47 +308,47 @@ class TestNvInfo:
         """
         Parse :py:attr:`DATA_0`.
         """
-        assert NvInfo.parse(data = self.DATA_0).attributes == (
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION,    value = (int('0x82', base = 16),)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.NVAL, eiattr = NvInfoEIATTR.SW2861232_WAR,       value = None),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.PARAM_CBANK,         value = (int('0x9', base = 16), int('0x380160', base = 16))),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE,    value = int('0x38', base = 16)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,         value = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x00'),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,        value = int('0xff', base = 16)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MERCURY_ISA_VERSION, value = 0),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value = (int('0x60', base = 16), int('0x170', base = 16))),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.MAX_THREADS,         value = 3 * (int('0x1', base = 16),)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CRS_STACK_SIZE,      value = (int('0x0', base = 16),)),
+        assert NvInfo.parse(data=self.DATA_0).attributes == (
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.CUDA_API_VERSION,    value=(int('0x82', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.NVAL, eiattr=NvInfoEIATTR.SW2861232_WAR,       value=None),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.PARAM_CBANK,         value=(int('0x9', base=16), int('0x380160', base=16))),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.CBANK_PARAM_SIZE,    value=int('0x38', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,         value=b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x00'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MAXREG_COUNT,        value=int('0xff', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MERCURY_ISA_VERSION, value=0),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value=(int('0x60', base=16), int('0x170', base=16))),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.MAX_THREADS,         value=3 * (int('0x1', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.CRS_STACK_SIZE,      value=(int('0x0', base=16),)),
         )
 
     def test_parse_data_1(self) -> None:
         """
         Parse :py:attr:`DATA_1`.
         """
-        assert NvInfo.parse(data = self.DATA_1).attributes == (
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION,    value = (int('0x82', base = 16),)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.NVAL, eiattr = NvInfoEIATTR.SW2861232_WAR,       value = None),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.PARAM_CBANK,         value = (int('0xc', base = 16), int('0x780160', base = 16))),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE,    value = int('0x78', base = 16)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,         value = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01'),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,        value = int('0xff', base = 16)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MERCURY_ISA_VERSION, value = 0),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value = (int('0x10', base = 16),)),
+        assert NvInfo.parse(data=self.DATA_1).attributes == (
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.CUDA_API_VERSION,    value=(int('0x82', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.NVAL, eiattr=NvInfoEIATTR.SW2861232_WAR,       value=None),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.PARAM_CBANK,         value=(int('0xc', base=16), int('0x780160', base=16))),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.CBANK_PARAM_SIZE,    value=int('0x78', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,         value=b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MAXREG_COUNT,        value=int('0xff', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MERCURY_ISA_VERSION, value=0),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value=(int('0x10', base=16),)),
         )
 
     def test_parse_data_2(self) -> None:
         """
         Parse :py:attr:`DATA_2`.
         """
-        assert NvInfo.parse(data = self.DATA_2).attributes == (
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION,    value = (int('0x82', base = 16),)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.NVAL, eiattr = NvInfoEIATTR.SW2861232_WAR,       value = None),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.PARAM_CBANK,         value = (int('0xf', base = 16), int('0x780160', base = 16))),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE,    value = int('0x78', base = 16)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,         value = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01'),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,        value = int('0xff', base = 16)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MERCURY_ISA_VERSION, value = 0),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value = (int('0x10', base = 16),)),
+        assert NvInfo.parse(data=self.DATA_2).attributes == (
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.CUDA_API_VERSION,    value=(int('0x82', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.NVAL, eiattr=NvInfoEIATTR.SW2861232_WAR,       value=None),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.PARAM_CBANK,         value=(int('0xf', base=16), int('0x780160', base=16))),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.CBANK_PARAM_SIZE,    value=int('0x78', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,         value=b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MAXREG_COUNT,        value=int('0xff', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MERCURY_ISA_VERSION, value=0),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value=(int('0x10', base=16),)),
         )
 
     def test_parse_data_3(self) -> None:
@@ -406,26 +406,26 @@ class TestNvInfo:
             Format: EIFMT_SVAL
             Value: 0x60 0xe0
         """
-        assert NvInfo.parse(data = self.DATA_3).attributes == (
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.SW_WAR,                  value = (int('0x1', base = 16),)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION,        value = (int('0x80', base = 16),)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.PARAM_CBANK,             value = (int('0x2', base = 16), int('0x1c0160', base = 16))),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE,        value = int('0x1c', base = 16)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,             value = b'\x00\x00\x00\x00\x03\x00\x18\x00\x00\xf0\x11\x00'),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,             value = b'\x00\x00\x00\x00\x02\x00\x10\x00\x00\xf0!\x00'),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,             value = b'\x00\x00\x00\x00\x01\x00\x08\x00\x00\xf0!\x00'),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.KPARAM_INFO,             value = b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\x11\x00'),
-            NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,            value = int('0xff', base = 16)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.WARP_WIDE_INSTR_OFFSETS, value = (int('0x10', base = 16),)),
-            NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.EXIT_INSTR_OFFSETS,      value = (int('0x60', base = 16), int('0xe0', base = 16))),
+        assert NvInfo.parse(data=self.DATA_3).attributes == (
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.SW_WAR,                  value=(int('0x1', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.CUDA_API_VERSION,        value=(int('0x80', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.PARAM_CBANK,             value=(int('0x2', base=16), int('0x1c0160', base=16))),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.CBANK_PARAM_SIZE,        value=int('0x1c', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,             value=b'\x00\x00\x00\x00\x03\x00\x18\x00\x00\xf0\x11\x00'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,             value=b'\x00\x00\x00\x00\x02\x00\x10\x00\x00\xf0!\x00'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,             value=b'\x00\x00\x00\x00\x01\x00\x08\x00\x00\xf0!\x00'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,             value=b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\x11\x00'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MAXREG_COUNT,            value=int('0xff', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.WARP_WIDE_INSTR_OFFSETS, value=(int('0x10', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.EXIT_INSTR_OFFSETS,      value=(int('0x60', base=16), int('0xe0', base=16))),
         )
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     @staticmethod
     def version() -> semantic_version.Version:
         return nvcc.get_version()
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test(self, version, parameters: Parameters, cmake_file_api: cmake.FileAPI, workdir: pathlib.Path) -> None:
         """
         Extract the `.nv.info.<mangled>` section of the kernel.
@@ -433,28 +433,28 @@ class TestNvInfo:
         FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
 
         output, _ = get_compilation_output(
-            source = FILE,
-            cwd = workdir,
-            arch = parameters.arch,
-            object_file = False,
-            resource_usage = False,
-            cmake_file_api = cmake_file_api,
+            source=FILE,
+            cwd=workdir,
+            arch=parameters.arch,
+            object_file=False,
+            resource_usage=False,
+            cmake_file_api=cmake_file_api,
         )
         _, cubin = CuObjDump.extract(
-            file = output,
-            arch = parameters.arch,
-            cwd = workdir,
-            sass = False,
-            cubin = get_cubin_name(
-                compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
-                file = output,
-                arch = parameters.arch,
-                object_file = False,
+            file=output,
+            arch=parameters.arch,
+            cwd=workdir,
+            sass=False,
+            cubin=get_cubin_name(
+                compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                file=output,
+                arch=parameters.arch,
+                object_file=False,
             ),
         )
-        with ELF(file = cubin) as elf:
+        with ELF(file=cubin) as elf:
             assert {
-                NvInfoEntry(eifmt = NvInfoEIFMT.SVAL, eiattr = NvInfoEIATTR.CUDA_API_VERSION, value = (int(f'{version.major}{version.minor}'),)),
-                NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.CBANK_PARAM_SIZE, value = int('0x1c', base = 16)),
-                NvInfoEntry(eifmt = NvInfoEIFMT.HVAL, eiattr = NvInfoEIATTR.MAXREG_COUNT,     value = int('0xff', base = 16)),
-            }.issubset(elf.nvinfo(mangled = '_Z12saxpy_kernelfPKfPfj').attributes)
+                NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.CUDA_API_VERSION, value=(int(f'{version.major}{version.minor}'),)),
+                NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.CBANK_PARAM_SIZE, value=int('0x1c', base=16)),
+                NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MAXREG_COUNT,     value=int('0xff', base=16)),
+            }.issubset(elf.nvinfo(mangled='_Z12saxpy_kernelfPKfPfj').attributes)

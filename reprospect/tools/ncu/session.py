@@ -11,7 +11,7 @@ import attrs
 from reprospect.tools.ncu.metrics import MetricKind, gather
 
 
-@attrs.define(frozen = True, slots = True, kw_only = True)
+@attrs.define(frozen=True, slots=True, kw_only=True)
 class Command: # pylint: disable=too-many-instance-attributes
     """
     Run a ``ncu`` command line.
@@ -22,7 +22,7 @@ class Command: # pylint: disable=too-many-instance-attributes
     """Report file."""
     opts: tuple[str, ...] = ()
     """Options that do not involve paths."""
-    log: pathlib.Path = attrs.field(init = False)
+    log: pathlib.Path = attrs.field(init=False)
     """Log file."""
     metrics: tuple[MetricKind, ...] | None = None
     """Metrics."""
@@ -36,7 +36,7 @@ class Command: # pylint: disable=too-many-instance-attributes
     env: typing.Mapping[str, str] | None = None
     """Mapping used to update the environment before running, see :py:meth:`run`."""
 
-    cmd: tuple[str | pathlib.Path, ...] = attrs.field(init = False)
+    cmd: tuple[str | pathlib.Path, ...] = attrs.field(init=False)
 
     def __attrs_post_init__(self) -> None:
         """
@@ -80,9 +80,9 @@ class Command: # pylint: disable=too-many-instance-attributes
             if env is None:
                 env = os.environ.copy()
             env.update(self.env)
-        return subprocess.check_call(args = self.cmd, env = env, cwd = cwd)
+        return subprocess.check_call(args=self.cmd, env=env, cwd=cwd)
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class Session:
     """
     `Nsight Compute` session interface.
@@ -121,12 +121,12 @@ class Session:
         for retry in reversed(range(retries)):
             try:
                 logging.info(f"Launching 'ncu' with {self.command.cmd} (log file at {self.command.log}).")
-                self.command.run(cwd = cwd, env = env)
+                self.command.run(cwd=cwd, env=env)
                 break
             except subprocess.CalledProcessError:
                 retry_allowed = False
                 if retry > 0 and self.command.log.is_file():
-                    with open(self.command.output.with_suffix('.log'), encoding = 'utf-8') as fin:
+                    with open(self.command.output.with_suffix('.log'), encoding='utf-8') as fin:
                         for line in fin:
                             if line.startswith('==ERROR== Profiling failed because a driver resource was unavailable.'):
                                 logging.warning('Retrying because a driver resource was unavailable.')

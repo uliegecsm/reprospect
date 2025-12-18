@@ -21,18 +21,18 @@ class TestComputeCapability:
     Tests for :py:class:`reprospect.tools.architecture.ComputeCapability`.
     """
     def test_from_int(self) -> None:
-        assert ComputeCapability.from_int(86) == ComputeCapability(major = 8, minor = 6)
+        assert ComputeCapability.from_int(86) == ComputeCapability(major=8, minor=6)
 
     def test_lt(self) -> None:
-        cc = ComputeCapability(major = 8, minor = 6)
+        cc = ComputeCapability(major=8, minor=6)
 
-        assert cc >  70 and cc >  ComputeCapability(major = 7, minor = 0)
-        assert cc >= 70 and cc >= ComputeCapability(major = 7, minor = 0)
+        assert cc >  70 and cc >  ComputeCapability(major=7, minor=0)
+        assert cc >= 70 and cc >= ComputeCapability(major=7, minor=0)
 
-        assert cc <  90 and cc <  ComputeCapability(major = 9, minor = 0)
-        assert cc <= 90 and cc <= ComputeCapability(major = 9, minor = 0)
+        assert cc <  90 and cc <  ComputeCapability(major=9, minor=0)
+        assert cc <= 90 and cc <= ComputeCapability(major=9, minor=0)
 
-        assert cc == 86 and cc == ComputeCapability(major = 8, minor = 6)
+        assert cc == 86 and cc == ComputeCapability(major=8, minor=6)
 
     def test_supported(self) -> None:
         """
@@ -51,13 +51,13 @@ class TestComputeCapability:
             else:
                 logging.info(f'{cc!r} is supported by CUDA {CUDA_VERSION}.')
                 assert CUDA_VERSION in CUDA_SUPPORT[cc.as_int]
-                assert cc.supported(version = CUDA_VERSION)
+                assert cc.supported(version=CUDA_VERSION)
                 count += 1
 
         assert count > 0
 
         # VOLTA70 is supported until CUDA 13.
-        assert not ComputeCapability.from_int(70).supported(version = semantic_version.Version('13.0.0'))
+        assert not ComputeCapability.from_int(70).supported(version=semantic_version.Version('13.0.0'))
 
 class TestNVIDIAFamily:
     """
@@ -82,19 +82,19 @@ class TestNVIDIAArch:
     Tests for :py:class:`reprospect.tools.architecture.NVIDIAArch`.
     """
     def test_from_compute_capability(self) -> None:
-        assert NVIDIAArch.from_compute_capability(cc = 70) == NVIDIAArch(family = NVIDIAFamily.VOLTA, compute_capability = ComputeCapability(major = 7, minor = 0))
+        assert NVIDIAArch.from_compute_capability(cc=70) == NVIDIAArch(family=NVIDIAFamily.VOLTA, compute_capability=ComputeCapability(major=7, minor=0))
 
     def test_from_str(self) -> None:
-        assert NVIDIAArch.from_str('AMPERE86') == NVIDIAArch(family = NVIDIAFamily.AMPERE, compute_capability = ComputeCapability(major = 8, minor = 6))
+        assert NVIDIAArch.from_str('AMPERE86') == NVIDIAArch(family=NVIDIAFamily.AMPERE, compute_capability=ComputeCapability(major=8, minor=6))
 
-        with pytest.raises(ValueError, match = 'unsupported architecture AMPERE86dd'):
+        with pytest.raises(ValueError, match='unsupported architecture AMPERE86dd'):
             NVIDIAArch.from_str('AMPERE86dd')
 
     def test_as_compute(self) -> None:
         assert NVIDIAArch.from_str('HOPPER90').as_compute == 'compute_90'
 
     def test_as_sm(self) -> None:
-        assert NVIDIAArch.from_compute_capability(cc = 80).as_sm == 'sm_80'
+        assert NVIDIAArch.from_compute_capability(cc=80).as_sm == 'sm_80'
 
     def test_str(self) -> None:
         assert str(NVIDIAArch.from_compute_capability(75)) == 'TURING75'
@@ -102,14 +102,14 @@ class TestNVIDIAArch:
     def test_repr(self) -> None:
         assert repr(NVIDIAArch.from_compute_capability(86)) == "NVIDIAArch(family=<NVIDIAFamily.AMPERE: 'AMPERE'>, compute_capability=ComputeCapability(major=8, minor=6))"
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test_str_cycle(self, parameters: Parameters) -> None:
         assert NVIDIAArch.from_str(str(parameters.arch)) == parameters.arch
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test_cc_cycle(self, parameters: Parameters) -> None:
         assert NVIDIAArch.from_compute_capability(parameters.arch.compute_capability.as_int) == parameters.arch
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test_in_cuda_support(self, parameters: Parameters) -> None:
         assert parameters.arch.compute_capability.as_int in CUDA_SUPPORT

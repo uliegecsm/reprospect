@@ -52,10 +52,10 @@ def install_cuda_bindings(target: packaging.version.Version) -> None:
     * https://nvidia.github.io/cuda-python/latest/
     * https://nvidia.github.io/cuda-python/cuda-bindings/latest/
     """
-    versions = get_available(package = 'cuda-bindings')
+    versions = get_available(package='cuda-bindings')
     logging.info(f'Available versions for \'cuda-bindings\': {versions}.')
 
-    candidate = get_candidate(target = target, versions = versions)
+    candidate = get_candidate(target=target, versions=versions)
 
     if candidate is not None:
         logging.info(f'Installing \'cuda-bindings\' {candidate}.')
@@ -63,10 +63,10 @@ def install_cuda_bindings(target: packaging.version.Version) -> None:
     else:
         logging.warning('Could not find a suitable version of \'cuda-bindings\'.')
 
-        versions = get_available(package = 'cuda-python')
+        versions = get_available(package='cuda-python')
         logging.info(f'Available versions for \'cuda-python\': {versions}.')
 
-        candidate = get_candidate(target = target, versions = versions)
+        candidate = get_candidate(target=target, versions=versions)
 
         if candidate is None:
             raise RuntimeError('Could not find a suitable version of \'cuda-python\'.')
@@ -81,21 +81,21 @@ def parse_args() -> argparse.Namespace:
     Parse CLI arguments.
     """
     parser = argparse.ArgumentParser(
-        formatter_class = argparse.ArgumentDefaultsHelpFormatter,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    parser.add_argument('--version', type = packaging.version.Version, required = False, default = os.environ['CUDA_VERSION'])
+    parser.add_argument('--version', type=packaging.version.Version, required=False, default=os.environ['CUDA_VERSION'])
 
     return parser.parse_args()
 
 def main() -> None:
 
-    logging.basicConfig(level = logging.INFO)
+    logging.basicConfig(level=logging.INFO)
 
     args = parse_args()
     logging.info(f'Received arguments: {args}.')
 
-    install_cuda_bindings(target = args.version)
+    install_cuda_bindings(target=args.version)
 
 if __name__ == '__main__':
 

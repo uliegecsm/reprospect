@@ -103,7 +103,7 @@ class TestAlignment(CMakeAwareTestCase):
     COMPLEX_DOUBLE_SIZE: typing.Final[int] = 16
     SECTOR_SIZE: typing.Final[int] = 32
 
-    KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter = pathlib.Path)
+    KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter=pathlib.Path)
     """Used in :py:meth:`TestNCU.report`."""
 
     @classmethod
@@ -124,17 +124,17 @@ class TestSASS(TestAlignment):
     def cubin(self) -> pathlib.Path:
         return self.cwd / f'examples_kokkos_complex_alignment.1.{self.arch.as_sm}.cubin'
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def cuobjdump(self) -> CuObjDump:
-        return CuObjDump.extract(file = self.executable, arch = self.arch, sass = True, cwd = self.cwd, cubin = self.cubin.name, demangler = self.demangler)[0]
+        return CuObjDump.extract(file=self.executable, arch=self.arch, sass=True, cwd=self.cwd, cubin=self.cubin.name, demangler=self.demangler)[0]
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def decoder(self, cuobjdump: CuObjDump) -> dict[Alignment, Decoder]:
         def get_decoder(alignment: Alignment) -> Decoder:
             pattern = self.SIGNATURE[alignment]
             fctn = cuobjdump.functions[next(sig for sig in cuobjdump.functions if pattern.search(sig) is not None)]
             logging.info(f'SASS code and resource usage from CuObjDump for {alignment} alignment:\n{fctn}')
-            decoder = Decoder(code = fctn.code)
+            decoder = Decoder(code=fctn.code)
             logging.info(f'Decoded SASS code for {alignment} alignment:\n{decoder}')
             return decoder
         return {alignment: get_decoder(alignment) for alignment in Alignment}
@@ -152,65 +152,65 @@ class TestSASS(TestAlignment):
         expt_ldg_count_specified = self.LOAD_COUNT
         expt_ldg_count_default   = expt_ldg_count_specified * 2
 
-        assert sum(1 for inst in decoder[Alignment.DEFAULT]  .instructions if LoadGlobalMatcher(arch = self.arch, size = 64 )(inst)) == expt_ldg_count_default
-        assert sum(1 for inst in decoder[Alignment.SPECIFIED].instructions if LoadGlobalMatcher(arch = self.arch, size = 128)(inst)) == expt_ldg_count_specified
+        assert sum(1 for inst in decoder[Alignment.DEFAULT]  .instructions if LoadGlobalMatcher(arch=self.arch, size=64 )(inst)) == expt_ldg_count_default
+        assert sum(1 for inst in decoder[Alignment.SPECIFIED].instructions if LoadGlobalMatcher(arch=self.arch, size=128)(inst)) == expt_ldg_count_specified
 
         expt_stg_count_specified = self.STORE_COUNT
         expt_stg_count_default   = expt_stg_count_specified * 2
 
-        assert sum(1 for inst in decoder[Alignment.DEFAULT]  .instructions if StoreGlobalMatcher(arch = self.arch, size = 64 )(inst)) == expt_stg_count_default
-        assert sum(1 for inst in decoder[Alignment.SPECIFIED].instructions if StoreGlobalMatcher(arch = self.arch, size = 128)(inst)) == expt_stg_count_specified
+        assert sum(1 for inst in decoder[Alignment.DEFAULT]  .instructions if StoreGlobalMatcher(arch=self.arch, size=64 )(inst)) == expt_stg_count_default
+        assert sum(1 for inst in decoder[Alignment.SPECIFIED].instructions if StoreGlobalMatcher(arch=self.arch, size=128)(inst)) == expt_stg_count_specified
 
-@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestNCU(TestAlignment):
     """
     Kernel profiling.
     """
     METRICS: tuple[Metric | MetricCorrelation, ...] = (
         # Overall instruction count.
-        MetricCounter(name = 'smsp__inst_executed', subs = (MetricCounterRollUp.SUM,)),
+        MetricCounter(name='smsp__inst_executed', subs=(MetricCounterRollUp.SUM,)),
         # Specific instruction counts (LDG and STG and others).
-        MetricCorrelation(name = 'sass__inst_executed_per_opcode'),
+        MetricCorrelation(name='sass__inst_executed_per_opcode'),
         # Memory traffic.
         L1TEXCache.GlobalLoad.Instructions.create(),
         L1TEXCache.GlobalLoad.Sectors.create(),
         L1TEXCache.GlobalLoad.SectorMisses.create(),
         L1TEXCache.GlobalStore.Instructions.create(),
         L1TEXCache.LocalStore.Instructions.create(),
-        MetricCounter(name = 'lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs = (MetricCounterRollUp.SUM,)),
+        MetricCounter(name='lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs=(MetricCounterRollUp.SUM,)),
     )
 
     NVTX_INCLUDES: typing.Final[tuple[str, ...]] = ('Alignment',)
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def report(self) -> Report:
         with Cacher() as cacher:
             command = Command(
-                output = self.cwd / 'ncu',
-                executable = self.executable,
-                metrics = self.METRICS,
-                nvtx_includes = self.NVTX_INCLUDES,
-                args = (
+                output=self.cwd / 'ncu',
+                executable=self.executable,
+                metrics=self.METRICS,
+                nvtx_includes=self.NVTX_INCLUDES,
+                args=(
                     f'--kokkos-tools-libs={self.KOKKOS_TOOLS_NVTX_CONNECTOR_LIB}',
                 ),
             )
             cacher.run(
-                command = command,
-                cwd = self.cwd,
-                retries = 5,
+                command=command,
+                cwd=self.cwd,
+                retries=5,
             )
-        return Report(command = command)
+        return Report(command=command)
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def metrics(self, report: Report) -> dict[Alignment, ProfilingMetrics]:
         results_in_range = report.extract_results_in_range(
-            metrics = self.METRICS,
-            includes = self.NVTX_INCLUDES,
+            metrics=self.METRICS,
+            includes=self.NVTX_INCLUDES,
         )
 
         def get_metrics(alignment: Alignment) -> ProfilingMetrics:
-            results = results_in_range.query(accessors = (alignment.value, 'multiply and add view elements'))
-            _, metrics = results.query_single_next_metrics(accessors = ())
+            results = results_in_range.query(accessors=(alignment.value, 'multiply and add view elements'))
+            _, metrics = results.query_single_next_metrics(accessors=())
             logging.info(f'Kernel profiling results for {alignment} alignment:\n{results}')
             return metrics
 

@@ -11,10 +11,10 @@ class TestFileAPI:
     """
     Tests for :py:class:`reprospect.utils.cmake.FileAPI`.
     """
-    @pytest.fixture(scope = 'session')
+    @pytest.fixture(scope='session')
     def cmake_file_api(self) -> cmake.FileAPI:
         return cmake.FileAPI(
-            cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
+            cmake_build_directory=pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
         )
 
     def test_cache(self, cmake_file_api: cmake.FileAPI) -> None:
@@ -61,7 +61,7 @@ class TestFileAPI:
         Check target information.
         """
         for name in ['tests_assets_graph', 'tests_assets_saxpy']:
-            target = cmake_file_api.target(name = name)
+            target = cmake_file_api.target(name=name)
 
             assert target['name'] == name
             assert 'paths' in target
@@ -72,5 +72,5 @@ class TestFileAPI:
             assert len(target['sources']) == 1
             assert 'path' in target['sources'][0]
 
-        with pytest.raises(ValueError, match = r'Target \'some-random-name\' not found.'):
-            cmake_file_api.target(name = 'some-random-name')
+        with pytest.raises(ValueError, match=r'Target \'some-random-name\' not found.'):
+            cmake_file_api.target(name='some-random-name')

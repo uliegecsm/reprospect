@@ -19,8 +19,8 @@ def to_string(
     Use :py:class:`rich.console.Console` in capture mode to render a :py:mod:`rich`
     object to a string.
     """
-    with rich.console.Console(width = width, **kwargs) as console, console.capture() as capture:
-        console.print(ro, no_wrap = no_wrap)
+    with rich.console.Console(width=width, **kwargs) as console, console.capture() as capture:
+        console.print(ro, no_wrap=no_wrap)
     return capture.get()
 
 def ds_to_table(ds: pandas.Series) -> rich.table.Table:
@@ -53,9 +53,9 @@ def df_to_table(
     if rich_table is None:
         rich_table = rich.table.Table()
 
-    return rich_tools.df_to_table(df, rich_table = rich_table, show_index = show_index, **kwargs)
+    return rich_tools.df_to_table(df, rich_table=rich_table, show_index=show_index, **kwargs)
 
-class TableMixin(metaclass = abc.ABCMeta):
+class TableMixin(metaclass=abc.ABCMeta):
     """
     Define :py:meth:`__str__` based on the :py:class:`rich.table.Table` representation from :py:meth:`to_table`.
     """
@@ -72,7 +72,7 @@ class TableMixin(metaclass = abc.ABCMeta):
         """
         return to_string(self.to_table())
 
-class TreeMixin(metaclass = abc.ABCMeta):
+class TreeMixin(metaclass=abc.ABCMeta):
     """
     Define :py:meth:`__str__` based on the :py:class:`rich.tree.Tree` representation from :py:meth:`to_tree`.
     """

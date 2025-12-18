@@ -18,11 +18,11 @@ def parse_args() -> argparse.Namespace:
     Parse CLI arguments.
     """
     parser = argparse.ArgumentParser(
-        description = "Install Nsight Systems with apt.",
-        formatter_class = argparse.ArgumentDefaultsHelpFormatter,
+        description="Install Nsight Systems with apt.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    parser.add_argument('--version', type = str, required = False, help = f'Version of the package ({PACKAGE}) to install.', default = detect_cuda_version())
+    parser.add_argument('--version', type=str, required=False, help=f'Version of the package ({PACKAGE}) to install.', default=detect_cuda_version())
 
     return parser.parse_args()
 
@@ -33,8 +33,8 @@ def install(*, args: argparse.Namespace) -> None:
     package = PACKAGE + '-' + args.version
     logging.info(f'Installing nsight-systems with {package}.')
     system_helpers.apt.install.install_packages(
-        packages = [package],
-        update = True, clean = True,
+        packages=[package],
+        update=True, clean=True,
     )
 
 def detect_cuda_version() -> str:
@@ -51,7 +51,7 @@ def detect_cuda_version() -> str:
 
     if shutil.which('nvidia-smi') is not None:
         for line in subprocess.check_output(('nvidia-smi', '--version')).decode().splitlines():
-            if "CUDA Version" in line and (matched := re.search(pattern = r'([0-9]+).([0-9]+)', string = line)) is not None:
+            if "CUDA Version" in line and (matched := re.search(pattern=r'([0-9]+).([0-9]+)', string=line)) is not None:
                 return f'{matched.group(1)}-{matched.group(2)}'
 
     if shutil.which('nvcc') is not None:
@@ -62,12 +62,12 @@ def detect_cuda_version() -> str:
 
 def main() -> None:
 
-    logging.basicConfig(level = logging.INFO)
+    logging.basicConfig(level=logging.INFO)
 
     args = parse_args()
     logging.info(f"Received arguments: {args}")
 
-    install(args = args)
+    install(args=args)
 
 if __name__ == "__main__":
 

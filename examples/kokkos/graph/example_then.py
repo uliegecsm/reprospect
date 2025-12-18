@@ -57,12 +57,12 @@ class TestELF(TestThen):
         * https://docs.nvidia.com/cuda/cuda-c-programming-guide/#launch-bounds
         """
         cuobjdump, cubin = binaries.CuObjDump.extract(
-            file = self.executable,
-            arch = self.arch,
-            cwd = self.cwd,
-            sass = False,
-            demangler = None,
-            cubin = f'{self.executable.name}.1.{self.arch.as_sm}.cubin',
+            file=self.executable,
+            arch=self.arch,
+            cwd=self.cwd,
+            sass=False,
+            demangler=None,
+            cubin=f'{self.executable.name}.1.{self.arch.as_sm}.cubin',
         )
         assert cubin.is_file()
 
@@ -75,8 +75,8 @@ class TestELF(TestThen):
         demangled = filtered['name'].apply(self.demangler.demangle)
         [mangled] = filtered.loc[demangled.str.match(self.signature_matcher), 'name']
 
-        with binaries.ELF(file = cubin) as elf:
-            nvinfo = elf.nvinfo(mangled = mangled)
-            [max_threads] = nvinfo.iter(eiattr = NvInfoEIATTR.MAX_THREADS)
+        with binaries.ELF(file=cubin) as elf:
+            nvinfo = elf.nvinfo(mangled=mangled)
+            [max_threads] = nvinfo.iter(eiattr=NvInfoEIATTR.MAX_THREADS)
 
             assert max_threads.value == (1, 1, 1)

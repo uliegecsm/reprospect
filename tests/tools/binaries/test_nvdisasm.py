@@ -28,7 +28,7 @@ class TestFunction:
         """
         Test string representation of :py:class:`reprospect.tools.binaries.nvdisasm.Function`.
         """
-        assert str(Function(registers = self.REGISTERS)) == """\
+        assert str(Function(registers=self.REGISTERS)) == """\
 ┏━━━━━━┳━━━━━━━━━┳━━━━━━┓
 ┃      ┃ Span    ┃ Used ┃
 ┡━━━━━━╇━━━━━━━━━╇━━━━━━┩
@@ -63,32 +63,32 @@ class TestNVDisasm:
 
         SASS_ANNOTATED_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass.annotated'
 
-        @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+        @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
         def test_from_object(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CUDA_FILE` as object, extract cubin and run ``nvdisasm``.
             """
             output, _ = get_compilation_output(
-                source = self.CUDA_FILE,
-                cwd = workdir,
-                arch = parameters.arch,
-                object_file = True,
-                cmake_file_api = cmake_file_api,
+                source=self.CUDA_FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=True,
+                cmake_file_api=cmake_file_api,
             )
 
             cuobjdump, cubin = CuObjDump.extract(
-                file = output,
-                arch = parameters.arch,
-                cwd = workdir,
-                cubin = output.stem,
+                file=output,
+                arch=parameters.arch,
+                cwd=workdir,
+                cubin=output.stem,
             )
 
             # cuobjdump reports a register usage of 10 GPRs.
             assert cuobjdump.functions[self.SIGNATURE].ru.register == 10
 
             # nvdisasm indicates that the span R0-R7 of GPR registers is used.
-            disasm = NVDisasm(file = cubin, arch = parameters.arch)
-            disasm.extract_register_usage_from_liveness_range_info(mangled = (self.SYMBOL,))
+            disasm = NVDisasm(file=cubin, arch=parameters.arch)
+            disasm.extract_register_usage_from_liveness_range_info(mangled=(self.SYMBOL,))
 
             assert len(disasm.functions) == 1
             assert self.SYMBOL in disasm.functions
@@ -121,14 +121,14 @@ class TestNVDisasm:
             """
             Read annotated SASS from file and check :py:meth:`reprospect.tools.binaries.NVDisasm.parse_sass_with_liveness_range_info`.
             """
-            with self.SASS_ANNOTATED_FILE.open('r', encoding = 'utf-8') as fin:
+            with self.SASS_ANNOTATED_FILE.open('r', encoding='utf-8') as fin:
                 function = NVDisasm.parse_sass_with_liveness_range_info(
-                    function_mangled = self.SYMBOL,
-                    sass = iter(fin),
+                    function_mangled=self.SYMBOL,
+                    sass=iter(fin),
                 )
             assert function.registers == {RegisterType.GPR: (8, 7), RegisterType.PRED: (1, 1), RegisterType.UGPR: (7, 3)}
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     class TestMany:
         """
         When there are many kernels.
@@ -142,27 +142,27 @@ class TestNVDisasm:
             Compile :py:attr:`CPP_FILE` as an executable, extract cubin and run ``nvdisasm``.
             """
             output, _ = get_compilation_output(
-                source = self.CPP_FILE,
-                cwd = workdir,
-                arch = parameters.arch,
-                object_file = False,
-                cmake_file_api = cmake_file_api,
+                source=self.CPP_FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=False,
+                cmake_file_api=cmake_file_api,
             )
 
             _, cubin = CuObjDump.extract(
-                file = output,
-                arch = parameters.arch,
-                cwd = workdir,
-                cubin = get_cubin_name(
-                    compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
-                    file = output,
-                    arch = parameters.arch,
-                    object_file = False,
+                file=output,
+                arch=parameters.arch,
+                cwd=workdir,
+                cubin=get_cubin_name(
+                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    file=output,
+                    arch=parameters.arch,
+                    object_file=False,
                 ),
             )
 
-            disasm = NVDisasm(file = cubin, arch = parameters.arch)
-            disasm.extract_register_usage_from_liveness_range_info(mangled = self.SYMBOLS)
+            disasm = NVDisasm(file=cubin, arch=parameters.arch)
+            disasm.extract_register_usage_from_liveness_range_info(mangled=self.SYMBOLS)
 
             assert len(disasm.functions) == 2
             assert all(s in disasm.functions for s in self.SYMBOLS)
@@ -210,15 +210,15 @@ class TestNVDisasm:
             self.demangler = demangler
             self.functions = {
                 'my_kernel(float, const float *, float *, unsigned int)': Function(
-                    registers = TestFunction.REGISTERS,
+                    registers=TestFunction.REGISTERS,
                 ),
                 'my_other_kernel(float, const float *, float *, unsigned int)': Function(
-                    registers = TestFunction.REGISTERS,
+                    registers=TestFunction.REGISTERS,
                 ),
             }
 
         with unittest.mock.patch.object(NVDisasm, '__init__', mock_init):
-            disasm = NVDisasm(file = pathlib.Path('code_object.1.sm_120.cubin'), arch = NVIDIAArch.from_str('BLACKWELL120'))
+            disasm = NVDisasm(file=pathlib.Path('code_object.1.sm_120.cubin'), arch=NVIDIAArch.from_str('BLACKWELL120'))
 
             assert str(disasm) == """\
 NVDisasm of code_object.1.sm_120.cubin for architecture BLACKWELL120:

@@ -9,12 +9,12 @@ def get_symbol_table(*, file: pathlib.Path) -> pandas.DataFrame:
     """
     Extract the symbol table from `file`.
     """
-    with ELF(file = file) as elf:
+    with ELF(file=file) as elf:
         assert elf.elf is not None
-        [section] = elf.elf.iter_sections(type = 'SHT_SYMTAB')
+        [section] = elf.elf.iter_sections(type='SHT_SYMTAB')
 
         return pandas.DataFrame(
-            data = (
+            data=(
                 (
                     idx,
                     symbol['st_value'],
@@ -27,5 +27,5 @@ def get_symbol_table(*, file: pathlib.Path) -> pandas.DataFrame:
                 )
                 for idx, symbol in enumerate(section.iter_symbols())
             ),
-            columns = ('index', 'value', 'size', 'bind', 'type', 'visibility', 'shndx', 'name'),
+            columns=('index', 'value', 'size', 'bind', 'type', 'visibility', 'shndx', 'name'),
         )

@@ -25,9 +25,9 @@ index, uuid, name, compute_cap
         """
         detect.GPUDetector.clear_cache()
 
-        with unittest.mock.patch('shutil.which', side_effect = ['nvidia-smi']) as mock_shutil:
-            with unittest.mock.patch('subprocess.check_output', side_effect = [self.OUTPUT]) as mock_subprocess:
-                result = detect.GPUDetector.get(cache = True)
+        with unittest.mock.patch('shutil.which', side_effect=['nvidia-smi']) as mock_shutil:
+            with unittest.mock.patch('subprocess.check_output', side_effect=[self.OUTPUT]) as mock_subprocess:
+                result = detect.GPUDetector.get(cache=True)
 
                 assert isinstance(result, pandas.DataFrame)
 
@@ -42,7 +42,7 @@ index, uuid, name, compute_cap
                     'name': 'NVIDIA GeForce RTX 3090',
                     'compute_cap': '8.6',
                     'architecture': architecture.NVIDIAArch.from_str('AMPERE86'),
-                }), check_names = False)
+                }), check_names=False)
 
                 pandas.testing.assert_series_equal(result.iloc[1], pandas.Series({
                     'index': 1,
@@ -50,7 +50,7 @@ index, uuid, name, compute_cap
                     'name': 'NVIDIA A100-SXM4-40GB',
                     'compute_cap': '8.0',
                     'architecture': architecture.NVIDIAArch.from_str('AMPERE80'),
-                }), check_names = False)
+                }), check_names=False)
 
                 mock_shutil.assert_called_once()
 
@@ -61,8 +61,8 @@ index, uuid, name, compute_cap
         Test that :py:meth:`reprospect.utils.detect.GPUDetector.get` returns an empty :py:class:`pandas.DataFrame` if
         `nvidia-smi` is not found.
         """
-        with unittest.mock.patch('shutil.which', side_effect = [None]) as mock_shutil:
-            assert len(detect.GPUDetector.get(cache = False)) == 0
+        with unittest.mock.patch('shutil.which', side_effect=[None]) as mock_shutil:
+            assert len(detect.GPUDetector.get(cache=False)) == 0
 
             mock_shutil.assert_called_once()
 
@@ -73,10 +73,10 @@ index, uuid, name, compute_cap
         """
         detect.GPUDetector.clear_cache()
 
-        with unittest.mock.patch('shutil.which', side_effect = ['nvidia-smi']) as mock_shutil:
-            with unittest.mock.patch('subprocess.check_output', side_effect = [self.OUTPUT]) as mock_subprocess:
-                result_first  = detect.GPUDetector.get(cache = True)
-                result_second = detect.GPUDetector.get(cache = True)
+        with unittest.mock.patch('shutil.which', side_effect=['nvidia-smi']) as mock_shutil:
+            with unittest.mock.patch('subprocess.check_output', side_effect=[self.OUTPUT]) as mock_subprocess:
+                result_first  = detect.GPUDetector.get(cache=True)
+                result_second = detect.GPUDetector.get(cache=True)
 
                 pandas.testing.assert_frame_equal(result_first, result_second)
 
@@ -90,10 +90,10 @@ index, uuid, name, compute_cap
         """
         detect.GPUDetector.clear_cache()
 
-        with unittest.mock.patch('shutil.which', side_effect = ['nvidia-smi'] * 2) as mock_shutil:
-            with unittest.mock.patch('subprocess.check_output', side_effect = [self.OUTPUT] * 2) as mock_subprocess:
-                result_first  = detect.GPUDetector.get(cache = False)
-                result_second = detect.GPUDetector.get(cache = False)
+        with unittest.mock.patch('shutil.which', side_effect=['nvidia-smi'] * 2) as mock_shutil:
+            with unittest.mock.patch('subprocess.check_output', side_effect=[self.OUTPUT] * 2) as mock_subprocess:
+                result_first  = detect.GPUDetector.get(cache=False)
+                result_second = detect.GPUDetector.get(cache=False)
 
                 pandas.testing.assert_frame_equal(result_first, result_second)
 
@@ -110,8 +110,8 @@ class TestGPUDetectorAsScript:
         """
         Check that the output is correctly formatted according to the arguments.
         """
-        with unittest.mock.patch(target = 'shutil.which', side_effect = ['nvidia-smi'] * 4) as mock_shutil:
-            with unittest.mock.patch(target = 'subprocess.check_output', side_effect = [TestGPUDetector.OUTPUT] * 4) as mock_subprocess:
+        with unittest.mock.patch(target='shutil.which', side_effect=['nvidia-smi'] * 4) as mock_shutil:
+            with unittest.mock.patch(target='subprocess.check_output', side_effect=[TestGPUDetector.OUTPUT] * 4) as mock_subprocess:
                 # Compute capability, ';' separator.
                 detect.GPUDetector.clear_cache()
                 sys.argv = [self.SCRIPT, '--sep=;', '--cc']

@@ -111,7 +111,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
         Query the accessor path `accessors`, check that it leads to a leaf node with profiling metrics,
         and return this leaf node with profiling metrics.
         """
-        current = self.query(accessors = accessors)
+        current = self.query(accessors=accessors)
         if not isinstance(current, ProfilingMetrics):
             raise TypeError(f'Expecting leaf node with profiling metrics at {accessors}, got {type(current).__name__!r} instead.')
         return current
@@ -130,7 +130,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
         >>> results.query_single_next(('my_nvtx_range', 'my_nvtx_region'))
         ('my_kernel', {'my_metric': 42})
         """
-        current = self.query(accessors = accessors)
+        current = self.query(accessors=accessors)
         if isinstance(current, ProfilingResults):
             if len(current) != 1:
                 raise RuntimeError(f'Expecting a single entry at {accessors}, got {len(current)} entries instead.')
@@ -143,7 +143,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
         one entry, check that this entry is a leaf node with profiling metrics, and return this
         leaf node with profiling metrics.
         """
-        key, value = self.query_single_next(accessors = accessors)
+        key, value = self.query_single_next(accessors=accessors)
         if not isinstance(value, ProfilingMetrics):
             raise TypeError(f'Expecting leaf node {key!r} with profiling metrics as the single entry at {accessors}, got {type(value).__name__!r} instead.')
         return key, value
@@ -153,7 +153,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
         Query the accessor path `accessors`, check that it leads to an internal node, check that all entries
         are leaf nodes with profiling metrics, and return an iterator over these leaf nodes with profiling metrics.
         """
-        current = self.query(accessors = accessors)
+        current = self.query(accessors=accessors)
         if not isinstance(current, ProfilingResults):
             raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r} instead.')
         for key, value in current.data.items():
@@ -181,7 +181,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
 
         :param keys: Specific metric keys to aggregate. If :py:obj:`None`, uses all keys from the first leaf node.
         """
-        current = self.query(accessors = accessors)
+        current = self.query(accessors=accessors)
 
         if not isinstance(current, ProfilingResults):
             raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r}.')
@@ -193,7 +193,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
 
         return {
             key: sum(
-                v for _, m in current.iter_metrics(accessors = ())
+                v for _, m in current.iter_metrics(accessors=())
                 if isinstance(v := m[key], int | float)
             )
             for key in keys
@@ -215,13 +215,13 @@ class ProfilingResults(rich_helpers.TreeMixin):
             for key, value in data.data.items() if isinstance(data, ProfilingResults) else data.items():
                 if isinstance(value, ProfilingResults | ProfilingMetrics):
                     branch = tree.add(str(key))
-                    add_branch(tree = branch, data = value)
+                    add_branch(tree=branch, data=value)
                 else:
                     tree.add(f'{key}: {value}')
-        add_branch(tree = rt, data = self)
+        add_branch(tree=rt, data=self)
         return rt
 
-@dataclasses.dataclass(slots = True, frozen = False)
+@dataclasses.dataclass(slots=True, frozen=False)
 class Range:
     """
     Wrapper around :ncu_report:`IRange`.
@@ -231,8 +231,8 @@ class Range:
     If both :py:attr:`includes` and :py:attr:`excludes` are empty, load all actions in :py:attr:`range`.
     """
     index: int
-    range: typing.Any = dataclasses.field(init = False)
-    actions: tuple[Action, ...] = dataclasses.field(init = False)
+    range: typing.Any = dataclasses.field(init=False)
+    actions: tuple[Action, ...] = dataclasses.field(init=False)
 
     report: dataclasses.InitVar[typing.Any]
     includes: dataclasses.InitVar[typing.Iterable[str] | None] = None
@@ -242,21 +242,21 @@ class Range:
         self.range = report.range_by_idx(self.index)
 
         if not includes and not excludes:
-            self.actions = tuple(Action(nvtx_range = self.range, index = iaction) for iaction in range(self.range.num_actions()))
+            self.actions = tuple(Action(nvtx_range=self.range, index=iaction) for iaction in range(self.range.num_actions()))
         else:
-            self.actions = tuple(Action(nvtx_range = self.range, index = iaction) for iaction in self.range.actions_by_nvtx(includes or [], excludes or []))
+            self.actions = tuple(Action(nvtx_range=self.range, index=iaction) for iaction in self.range.actions_by_nvtx(includes or [], excludes or []))
 
     def __repr__(self) -> str:
         return f'{self.range} (index {self.index})'
 
-@dataclasses.dataclass(slots = True, frozen = False)
+@dataclasses.dataclass(slots=True, frozen=False)
 class Action:
     """
     Wrapper around :ncu_report:`IAction`.
     """
     index: int
-    action: typing.Any = dataclasses.field(init = False)
-    domains: tuple[NvtxDomain, ...] = dataclasses.field(init = False, default = ())
+    action: typing.Any = dataclasses.field(init=False)
+    domains: tuple[NvtxDomain, ...] = dataclasses.field(init=False, default=())
 
     nvtx_range: dataclasses.InitVar[typing.Any]
 
@@ -264,18 +264,18 @@ class Action:
         self.action = nvtx_range.action_by_idx(self.index)
 
         if (nvtx_state := self.action.nvtx_state()) is not None:
-            self.domains = tuple(NvtxDomain(nvtx_state = nvtx_state, index = idomain) for idomain in nvtx_state.domains())
+            self.domains = tuple(NvtxDomain(nvtx_state=nvtx_state, index=idomain) for idomain in nvtx_state.domains())
 
     def __repr__(self) -> str:
         return f"{self.action} (index {self.index}, domains {self.domains}, mangled {self.action.name(self.action.NameBase_MANGLED)})"
 
-@dataclasses.dataclass(slots = True, frozen = False)
+@dataclasses.dataclass(slots=True, frozen=False)
 class NvtxDomain:
     """
     Wrapper around :ncu_report:`INvtxDomainInfo`.
     """
     index: int
-    nvtx_domain: typing.Any = dataclasses.field(init = False)
+    nvtx_domain: typing.Any = dataclasses.field(init=False)
 
     nvtx_state: dataclasses.InitVar[typing.Any]
 
@@ -326,9 +326,9 @@ def load_ncu_report() -> types.ModuleType:
 
     nsight_compute_extra_python_dir = nsight_compute_dir / 'extras' / 'python'
     ncu_report_spec = importlib.util.spec_from_file_location(
-        name                       = "ncu_report",
-        location                   = nsight_compute_extra_python_dir / 'ncu_report.py',
-        submodule_search_locations = [str(nsight_compute_extra_python_dir)],
+        name="ncu_report",
+        location=nsight_compute_extra_python_dir / 'ncu_report.py',
+        submodule_search_locations=[str(nsight_compute_extra_python_dir)],
     )
     assert ncu_report_spec is not None
     ncu_report = importlib.util.module_from_spec(ncu_report_spec)
@@ -389,7 +389,7 @@ class Report:
         """
         logging.info(f'Collecting metrics {metrics} in report {self.path} for range {range_idx} with include filters {includes} and exclude filters {excludes}.')
 
-        current_range = Range(report = self.report, index = range_idx, includes = includes, excludes = excludes)
+        current_range = Range(report=self.report, index=range_idx, includes=includes, excludes=excludes)
 
         logging.debug(f'Parsing range {current_range}.')
 
@@ -403,7 +403,7 @@ class Report:
 
             logging.debug(f'Parsing action {action.action.name()} ({action}).')
 
-            results = self.collect_metrics_from_action(action = action, metrics = metrics)
+            results = self.collect_metrics_from_action(action=action, metrics=metrics)
 
             results['mangled']   = action.action.name(action.action.NameBase_MANGLED)
             results['demangled'] = action.action.name(action.action.NameBase_DEMANGLED) if demangler is None else demangler.demangle(typing.cast(str, results['mangled']))
@@ -413,8 +413,8 @@ class Report:
             if action.domains:
                 for domain in action.domains:
                     profiling_results.assign_metrics(
-                        accessors = domain.nvtx_domain.push_pop_ranges() + (f'{action.action.name()}-{action.index}',),
-                        data = ProfilingMetrics(results),
+                        accessors=domain.nvtx_domain.push_pop_ranges() + (f'{action.action.name()}-{action.index}',),
+                        data=ProfilingMetrics(results),
                     )
             else:
                 profiling_results.assign_metrics((f'{action.action.name()}-{action.index}',), ProfilingMetrics(results))
@@ -440,18 +440,18 @@ class Report:
                 correlations = metric_correlation.correlation_ids()
                 assert correlations.num_instances() == metric_correlation.num_instances()
                 for icor in range(metric_correlation.num_instances()):
-                    key = self.get_metric_value(metric = correlations, index = icor)
+                    key = self.get_metric_value(metric=correlations, index=icor)
                     assert isinstance(key, int | str)
                     correlated[key] = metric_correlation.value(icor)
-                value = self.get_metric_value(metric = metric_correlation)
+                value = self.get_metric_value(metric=metric_correlation)
                 assert isinstance(value, ValueType)
                 results[metric.name] = MetricCorrelationData(
-                    value = value,
-                    correlated = correlated,
+                    value=value,
+                    correlated=correlated,
                 )
             elif isinstance(metric, Metric):
                 assert metric.pretty_name is not None
-                metric_data = self.fill_metric(action = action, metric = metric)
+                metric_data = self.fill_metric(action=action, metric=metric)
                 if metric.subs is not None:
                     assert isinstance(metric_data, dict)
                     for sub, value in metric_data.items():
@@ -460,7 +460,7 @@ class Report:
                     assert metric_data is not None
                     results[metric.pretty_name] = metric_data
             elif isinstance(metric, MetricDeviceAttribute):
-                results[metric.full_name] = self.get_metric_by_name(action = action, metric = metric.full_name).value()
+                results[metric.full_name] = self.get_metric_by_name(action=action, metric=metric.full_name).value()
             else:
                 raise NotImplementedError(metric)
 
@@ -473,7 +473,7 @@ class Report:
         if hasattr(self.ncu_report, 'IMetric_kind_to_value_func'):
             converter = self.ncu_report.IMetric_kind_to_value_func[metric.kind()]
             return converter(metric, index) if index is not None else converter(metric)
-        return metric.value(idx = index)
+        return metric.value(idx=index)
 
     @classmethod
     def fill_metric(cls, action: Action, metric: Metric) -> MetricData:
@@ -481,8 +481,8 @@ class Report:
         Loop over submetrics of `metric`.
         """
         if metric.subs is not None:
-            return {sub: cls.get_metric_by_name(action = action, metric = f'{metric.name}.{sub}').value() for sub in metric.subs}
-        return cls.get_metric_by_name(action = action, metric = metric.name).value()
+            return {sub: cls.get_metric_by_name(action=action, metric=f'{metric.name}.{sub}').value() for sub in metric.subs}
+        return cls.get_metric_by_name(action=action, metric=metric.name).value()
 
     @classmethod
     def get_metric_by_name(cls, *, action: Action, metric: str):

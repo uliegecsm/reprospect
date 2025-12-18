@@ -70,7 +70,7 @@ class Parameters(typing.TypedDict):
     count: int
     size: int
 
-@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestAllocation(CMakeAwareTestCase):
     """
     Run the companion executable and make a nice visualization.
@@ -120,7 +120,7 @@ class TestAllocation(CMakeAwareTestCase):
             'size': int(match.group(5)),
         }
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def raw(self) -> dict[str, dict]:
         """
         Run the benchmark and return the raw `JSON`-based results.
@@ -141,12 +141,12 @@ class TestAllocation(CMakeAwareTestCase):
 
         logging.info(f'Running benchmark with {cmd}.')
 
-        subprocess.check_call(cmd, cwd = self.cwd)
+        subprocess.check_call(cmd, cwd=self.cwd)
 
-        with file.open(mode = 'r') as fp:
-            return json.load(fp = fp)
+        with file.open(mode='r') as fp:
+            return json.load(fp=fp)
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def results(self, raw: dict) -> pandas.DataFrame:
         """
         Processed results.
@@ -176,16 +176,16 @@ class TestAllocation(CMakeAwareTestCase):
             'ReleaseThreshold',
         )
         attributes = pandas.DataFrame(
-            data = (
+            data=(
                 tuple(int(bench_case['cudaMemPoolAttr' + attr]) for attr in COLUMNS)
                 for bench_case in raw['benchmarks']
             ),
-            columns = COLUMNS,
+            columns=COLUMNS,
         )
 
         # After the test, the current reserved/used memory is the same for everyone.
-        assert attributes['ReservedMemCurrent'].nunique(dropna = False) == 1
-        assert attributes[    'UsedMemCurrent'].nunique(dropna = False) == 1
+        assert attributes['ReservedMemCurrent'].nunique(dropna=False) == 1
+        assert attributes[    'UsedMemCurrent'].nunique(dropna=False) == 1
 
         logging.info(f"Default memory pool reserved size is always {attributes.loc[0, 'ReservedMemCurrent']}.")
         logging.info(f"Default memory pool used     size is always {attributes.loc[0,     'UsedMemCurrent']}.")
@@ -221,27 +221,27 @@ class TestAllocation(CMakeAwareTestCase):
         FONTSIZE = 22
 
         LINESTYLES: typing.Final[dict[bool, matplotlib.lines.Line2D]] = {
-            True:  matplotlib.lines.Line2D((0,), (0,), color = 'black', linestyle = 'solid',  lw = 4, label = 'async'),
-            False: matplotlib.lines.Line2D((0,), (0,), color = 'black', linestyle = 'dotted', lw = 4, label = 'sync'),
+            True:  matplotlib.lines.Line2D((0,), (0,), color='black', linestyle='solid',  lw=4, label='async'),
+            False: matplotlib.lines.Line2D((0,), (0,), color='black', linestyle='dotted', lw=4, label='sync'),
         }
 
         MARKERS: typing.Final[dict[Framework, matplotlib.lines.Line2D]] = {
-            Framework.CUDA:   matplotlib.lines.Line2D((0,), (0,), color = 'black', marker = 's', linestyle = '', markersize = 10, markerfacecolor = 'grey', label = 'CUDA'),
-            Framework.KOKKOS: matplotlib.lines.Line2D((0,), (0,), color = 'black', marker = 'o', linestyle = '', markersize = 10, markerfacecolor = 'grey', label = 'Kokkos'),
+            Framework.CUDA:   matplotlib.lines.Line2D((0,), (0,), color='black', marker='s', linestyle='', markersize=10, markerfacecolor='grey', label='CUDA'),
+            Framework.KOKKOS: matplotlib.lines.Line2D((0,), (0,), color='black', marker='o', linestyle='', markersize=10, markerfacecolor='grey', label='Kokkos'),
         }
 
         COLORS: typing.Final[dict[int, matplotlib.lines.Line2D]] = {
-            1:  matplotlib.lines.Line2D((0,), (0,), color = 'black', lw = 2, linestyle = 'solid', label = '1'),
-            4:  matplotlib.lines.Line2D((0,), (0,), color = 'red',   lw = 2, linestyle = 'solid', label = '4'),
-            8:  matplotlib.lines.Line2D((0,), (0,), color = 'green', lw = 2, linestyle = 'solid', label = '8'),
-            12: matplotlib.lines.Line2D((0,), (0,), color = 'blue',  lw = 2, linestyle = 'solid', label = '12'),
+            1:  matplotlib.lines.Line2D((0,), (0,), color='black', lw=2, linestyle='solid', label='1'),
+            4:  matplotlib.lines.Line2D((0,), (0,), color='red',   lw=2, linestyle='solid', label='4'),
+            8:  matplotlib.lines.Line2D((0,), (0,), color='green', lw=2, linestyle='solid', label='8'),
+            12: matplotlib.lines.Line2D((0,), (0,), color='blue',  lw=2, linestyle='solid', label='12'),
         }
 
         # Make a nice plot.
-        fig = matplotlib.pyplot.figure(figsize = (40, 20), layout = 'constrained')
-        ax  = fig.subplots(nrows = 1, ncols = 1)
+        fig = matplotlib.pyplot.figure(figsize=(40, 20), layout='constrained')
+        ax  = fig.subplots(nrows=1, ncols=1)
 
-        threshold = ax.axvline(self.THRESHOLD / SIZE_FACTOR, color = 'black', linestyle = 'dashed', label = 'threshold', lw = 3)
+        threshold = ax.axvline(self.THRESHOLD / SIZE_FACTOR, color='black', linestyle='dashed', label='threshold', lw=3)
 
         for framework, use_async in itertools.product(tuple(Framework), (True, False)):
             for count in counts:
@@ -252,43 +252,43 @@ class TestAllocation(CMakeAwareTestCase):
                 ].sort_values('size')
                 ax.plot(
                     filtered['size'] / SIZE_FACTOR, filtered['real_time'],
-                    marker = MARKERS[framework].get_marker(),
-                    markersize = MARKERS[framework].get_markersize(),
-                    markerfacecolor = MARKERS[framework].get_markerfacecolor(),
-                    linestyle = LINESTYLES[use_async].get_linestyle(),
-                    linewidth = LINESTYLES[use_async].get_linewidth(),
-                    color = COLORS[count].get_color(),
+                    marker=MARKERS[framework].get_marker(),
+                    markersize=MARKERS[framework].get_markersize(),
+                    markerfacecolor=MARKERS[framework].get_markerfacecolor(),
+                    linestyle=LINESTYLES[use_async].get_linestyle(),
+                    linewidth=LINESTYLES[use_async].get_linewidth(),
+                    color=COLORS[count].get_color(),
                 )
 
-        ax.set_ylabel(f'time [{self.TIME_UNIT}]',   fontsize = FONTSIZE)
-        ax.set_xlabel(f'buffer size [{SIZE_UNIT}]', fontsize = FONTSIZE)
+        ax.set_ylabel(f'time [{self.TIME_UNIT}]',   fontsize=FONTSIZE)
+        ax.set_xlabel(f'buffer size [{SIZE_UNIT}]', fontsize=FONTSIZE)
         ax.set_yscale('log')
         ax.set_xscale('log')
-        ax.tick_params(axis = 'both', which = 'major', labelsize = FONTSIZE)
-        ax.tick_params(axis = 'both', which = 'minor', labelsize = FONTSIZE)
+        ax.tick_params(axis='both', which='major', labelsize=FONTSIZE)
+        ax.tick_params(axis='both', which='minor', labelsize=FONTSIZE)
 
-        _ = fig.legend(handles = (
-                Subtitle(text = 'Framework'),
+        _ = fig.legend(handles=(
+                Subtitle(text='Framework'),
                 *MARKERS.values(),
-                Subtitle(text = ''),
+                Subtitle(text=''),
                 *LINESTYLES.values(),
-                Subtitle(text = ''),
-                Subtitle(text = 'Count'),
+                Subtitle(text=''),
+                Subtitle(text='Count'),
                 *COLORS.values(),
-                Subtitle(text = ''),
+                Subtitle(text=''),
                 threshold,
             ),
-            loc = 'outside center left',
-            frameon = False,
-            handler_map = {Subtitle: HandleSubtitle()},
-            fontsize = FONTSIZE,
+            loc='outside center left',
+            frameon=False,
+            handler_map={Subtitle: HandleSubtitle()},
+            fontsize=FONTSIZE,
         )
 
-        ax.grid(which = 'both')
+        ax.grid(which='both')
 
         fname = self.cwd / 'results.svg'
         logging.info(f'Saving results in {fname}.')
-        fig.savefig(fname = fname, bbox_inches = 'tight', transparent = False)
+        fig.savefig(fname=fname, bbox_inches='tight', transparent=False)
 
 class HandleSubtitle(matplotlib.legend_handler.HandlerBase):
     @override
@@ -303,9 +303,9 @@ class HandleSubtitle(matplotlib.legend_handler.HandlerBase):
             raise TypeError('Wrong usage.')
 
         text = matplotlib.text.Text(
-            x = xdescent, y = ydescent,
-            text = orig_handle.text,
-            fontsize = fontsize, transform = trans,
+            x=xdescent, y=ydescent,
+            text=orig_handle.text,
+            fontsize=fontsize, transform=trans,
         )
 
         return [text]

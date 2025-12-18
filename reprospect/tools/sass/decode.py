@@ -24,7 +24,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class ControlCode:
     """
     SASS control code decoding.
@@ -148,12 +148,12 @@ class ControlCode:
         }
 
         return ControlCode(
-            stall_count = stall_count,
-            yield_flag = yield_flag,
-            read = read_barrier,
-            write = write_barrier,
-            wait = wait_barriers,
-            reuse = reuse_flags,
+            stall_count=stall_count,
+            yield_flag=yield_flag,
+            read=read_barrier,
+            write=write_barrier,
+            wait=wait_barriers,
+            reuse=reuse_flags,
         )
 
 class RegisterType(StrEnum):
@@ -184,8 +184,8 @@ class RegisterType(StrEnum):
             case _:
                 raise ValueError(self)
 
-@mypy_extensions.mypyc_attr(native_class = True)
-@dataclasses.dataclass(frozen = True, slots = True)
+@mypy_extensions.mypyc_attr(native_class=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class Instruction:
     """
     Represents a single SASS instruction with its components.
@@ -195,7 +195,7 @@ class Instruction:
     hex: str             #: The hexadecimal representation of the instruction.
     control: ControlCode #: The decoded control code associated with the instruction.
 
-@mypy_extensions.mypyc_attr(native_class = True)
+@mypy_extensions.mypyc_attr(native_class=True)
 class Decoder(rich_helpers.TableMixin):
     """
     Parse the SASS assembly code extracted from a binary.
@@ -241,19 +241,19 @@ class Decoder(rich_helpers.TableMixin):
         self.code   = code
         self.instructions: list[Instruction] = [] #: The parsed instructions.
         if source or code:
-            self._parse(skip_until_headerflags = skip_until_headerflags)
+            self._parse(skip_until_headerflags=skip_until_headerflags)
 
     def _parse(self, *, skip_until_headerflags: bool = False) -> None:
         """
         Parse SASS lines.
         """
         if self.source is not None:
-            with self.source.open('r', encoding = 'utf-8') as fin:
-                return self._parse_lines(fin, skip_until_headerflags = skip_until_headerflags)
+            with self.source.open('r', encoding='utf-8') as fin:
+                return self._parse_lines(fin, skip_until_headerflags=skip_until_headerflags)
 
         if self.code is not None:
             with io.StringIO(self.code) as fin:
-                return self._parse_lines(fin, skip_until_headerflags = skip_until_headerflags)
+                return self._parse_lines(fin, skip_until_headerflags=skip_until_headerflags)
 
         raise RuntimeError('Neither code nor source was given.')
 
@@ -294,16 +294,16 @@ class Decoder(rich_helpers.TableMixin):
             control: ControlCode | None = None
 
             if next_line and (matchc := self.MATCHER_CONTROL.search(next_line)):
-                control = ControlCode.decode(code = matchc.group(1))
+                control = ControlCode.decode(code=matchc.group(1))
 
             assert control is not None
 
             # Create instruction.
             self.instructions.append(Instruction(
-                offset = int(matchl.group(1), base = 16),
-                instruction = matchl.group(2).rstrip(),
-                hex = matchl.group(3),
-                control = control,
+                offset=int(matchl.group(1), base=16),
+                instruction=matchl.group(2).rstrip(),
+                hex=matchl.group(3),
+                control=control,
             ))
 
     def to_df(self) -> pandas.DataFrame:

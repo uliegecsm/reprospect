@@ -19,7 +19,7 @@ from tests.parameters import PARAMETERS, Parameters
 from tests.test.sass.test_instruction import get_decoder
 
 
-@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+@pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestAtomicMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.AtomicMatcher`.
@@ -149,26 +149,26 @@ __global__ void atomic_exch_kernel() {
             ( 16, 'short int', 'unsigned short int'),
             ( 32, 'float',     'unsigned int'),
             ( 64, 'double',    'unsigned long long int'),
-    ], ids = str)
+    ], ids=str)
     def test_atomicCAS(self, request, workdir, word, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD_BASED_ON_CAS`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}{word[0]}.cu'
         FILE.write_text(self.CODE_ADD_BASED_ON_CAS.format(
-            size = int(word[0] / 8),
-            type = word[1],
-            integer = word[2],
+            size=int(word[0] / 8),
+            type=word[1],
+            integer=word[2],
         ))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the atomic CAS.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch,
-            operation = 'CAS', consistency = 'STRONG', scope = 'DEVICE',
-            dtype = (None, word[0]),
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='CAS', consistency='STRONG', scope='DEVICE',
+            dtype=(None, word[0]),
         )
 
         assert len(matched.additional['address']) == 1
@@ -205,10 +205,10 @@ __global__ void atomic_exch_kernel() {
 
         # Find the atomic CAS.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch,
-            operation = 'CAS', consistency = 'STRONG', scope = 'DEVICE',
-            dtype = (None, 128),
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='CAS', consistency='STRONG', scope='DEVICE',
+            dtype=(None, 128),
         )
 
         assert {'CAS', '128'}.issubset(matched.modifiers)
@@ -219,18 +219,18 @@ __global__ void atomic_exch_kernel() {
         regardless of the ``.relaxed`` qualifier shown in the PTX.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'int'))
+        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type='int'))
 
-        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
         # Find the atomic add.
         matcher, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch,
-            operation = 'ADD',
-            consistency = 'STRONG', scope = 'BLOCK',
-            memory = '',
-            dtype = ('S', 32),
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='ADD',
+            consistency='STRONG', scope='BLOCK',
+            memory='',
+            dtype=('S', 32),
         )
 
         assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
@@ -249,18 +249,18 @@ __global__ void atomic_exch_kernel() {
         Similar to :py:meth:`test_add_relaxed_block_int` for `unsigned long long int`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'unsigned long long int'))
+        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type='unsigned long long int'))
 
-        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
         # Find the atomic add.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch,
-            operation = 'ADD',
-            consistency = 'STRONG', scope = 'BLOCK',
-            memory = '',
-            dtype = ('U', 64),
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='ADD',
+            consistency='STRONG', scope='BLOCK',
+            memory='',
+            dtype=('U', 64),
         )
 
         assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
@@ -276,18 +276,18 @@ __global__ void atomic_exch_kernel() {
         Similar to :py:meth:`test_add_relaxed_block_int` for `float`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'float'))
+        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type='float'))
 
-        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
         # Find the atomic add.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch,
-            operation = 'ADD',
-            consistency = 'STRONG', scope = 'BLOCK',
-            memory = '',
-            dtype = ('F', 32),
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='ADD',
+            consistency='STRONG', scope='BLOCK',
+            memory='',
+            dtype=('F', 32),
         )
 
         assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
@@ -303,18 +303,18 @@ __global__ void atomic_exch_kernel() {
         Similar to :py:meth:`test_add_relaxed_block_int` for `double`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type = 'double'))
+        FILE.write_text(self.CODE_ADD_RELAXED_BLOCK.format(type='double'))
 
-        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
         # Find the atomic add.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch,
-            operation = 'ADD',
-            consistency = 'STRONG', scope = 'BLOCK',
-            memory = '',
-            dtype = ('F', 64),
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='ADD',
+            consistency='STRONG', scope='BLOCK',
+            memory='',
+            dtype=('F', 64),
         )
 
         assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
@@ -330,18 +330,18 @@ __global__ void atomic_exch_kernel() {
         Test with :py:attr:`CODE_MIN` for `int`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MIN.format(type = 'int'))
+        FILE.write_text(self.CODE_MIN.format(type='int'))
 
-        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
         # Find the atomic min.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch,
-            operation = 'MIN',
-            consistency = 'STRONG', scope = 'DEVICE',
-            memory = '',
-            dtype = ('S', 32),
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='MIN',
+            consistency='STRONG', scope='DEVICE',
+            memory='',
+            dtype=('S', 32),
         )
 
         assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
@@ -358,18 +358,18 @@ __global__ void atomic_exch_kernel() {
         Test with :py:attr:`CODE_MIN` for `long long int`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MIN.format(type = 'long long int'))
+        FILE.write_text(self.CODE_MIN.format(type='long long int'))
 
-        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
         # Find the atomic min.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch,
-            operation = 'MIN',
-            consistency = 'STRONG', scope = 'DEVICE',
-            memory = '',
-            dtype = ('S', 64),
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='MIN',
+            consistency='STRONG', scope='DEVICE',
+            memory='',
+            dtype=('S', 64),
         )
 
         assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
@@ -386,18 +386,18 @@ __global__ void atomic_exch_kernel() {
         Test with :py:attr:`CODE_MIN` for `unsigned long long int`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MIN.format(type = 'unsigned long long int'))
+        FILE.write_text(self.CODE_MIN.format(type='unsigned long long int'))
 
-        decoder, output = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api, ptx = True)
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
         # Find the atomic min.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch,
-            operation = 'MIN',
-            consistency = 'STRONG', scope = 'DEVICE',
-            memory = '',
-            dtype = ('U', 64),
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='MIN',
+            consistency='STRONG', scope='DEVICE',
+            memory='',
+            dtype=('U', 64),
         )
 
         assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
@@ -414,14 +414,14 @@ __global__ void atomic_exch_kernel() {
         Test with :py:attr:`CODE_EXCH` for `int`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_EXCH.format(type = 'int'))
+        FILE.write_text(self.CODE_EXCH.format(type='int'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the atomic exchange.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch, operation = 'EXCH', dtype = ('S', 32), scope = 'DEVICE', consistency = 'STRONG',
+            decoder=decoder,
+            arch=parameters.arch, operation='EXCH', dtype=('S', 32), scope='DEVICE', consistency='STRONG',
         )
 
         assert {'EXCH'}.issubset(matched.modifiers)
@@ -431,14 +431,14 @@ __global__ void atomic_exch_kernel() {
         Test with :py:attr:`CODE_EXCH` for `unsigned long long int`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_EXCH.format(type = 'unsigned long long int'))
+        FILE.write_text(self.CODE_EXCH.format(type='unsigned long long int'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the atomic exchange.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch, operation = 'EXCH', dtype = ('S', 64), scope = 'DEVICE', consistency = 'STRONG',
+            decoder=decoder,
+            arch=parameters.arch, operation='EXCH', dtype=('S', 64), scope='DEVICE', consistency='STRONG',
         )
 
         assert {'EXCH', '64'}.issubset(matched.modifiers)
@@ -448,14 +448,14 @@ __global__ void atomic_exch_kernel() {
         Test with :py:attr:`CODE_EXCH` for `float`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_EXCH.format(type = 'float'))
+        FILE.write_text(self.CODE_EXCH.format(type='float'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the atomic exchange.
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch, operation = 'EXCH', dtype = ('F', 32), scope = 'DEVICE', consistency = 'STRONG',
+            decoder=decoder,
+            arch=parameters.arch, operation='EXCH', dtype=('F', 32), scope='DEVICE', consistency='STRONG',
         )
 
         assert {'EXCH'}.issubset(matched.modifiers)
@@ -474,8 +474,8 @@ __global__ void atomic_exch_kernel() {
         FILE.write_text(self.CODE_EXCH_DEVICE_PTR)
 
         decoder, output = get_decoder(
-            cwd = workdir, arch = parameters.arch, file = FILE,
-            cmake_file_api = cmake_file_api, ptx = True,
+            cwd=workdir, arch=parameters.arch, file=FILE,
+            cmake_file_api=cmake_file_api, ptx=True,
         )
 
         # Find the atomic exchange.
@@ -489,9 +489,9 @@ __global__ void atomic_exch_kernel() {
                 raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
 
         _, _, matched = self.match_one(
-            decoder = decoder,
-            arch = parameters.arch, operation = 'EXCH', dtype = (None, 32), scope = 'DEVICE', consistency = 'STRONG',
-            memory = memory,
+            decoder=decoder,
+            arch=parameters.arch, operation='EXCH', dtype=(None, 32), scope='DEVICE', consistency='STRONG',
+            memory=memory,
         )
 
         assert {'EXCH'}.issubset(matched.modifiers)

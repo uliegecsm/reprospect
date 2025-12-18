@@ -138,6 +138,17 @@ class TestAddressMatcher:
             AddressMatcher.build_pattern(arch=ARCH, memory=MemorySpace.SHARED), Register.REG,
         )).match(inst='STS.128 [R49.X16], R16') is not None
 
+    def test_shared_ur(self) -> None:
+        ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('HOPPER90')
+        ADDRESS: typing.Final[str] = '[R32+UR10+0x1c0]'
+
+        assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED           ).match(ADDRESS) == SharedAddressMatch(reg='R32', offset='UR10+0x1c0')
+        assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED, reg='R25').match(ADDRESS) is None
+
+        assert OpcodeModsWithOperandsMatcher(opcode='LDS', modifiers=('128',), operands=(
+            Register.REG, AddressMatcher.build_pattern(arch=ARCH, memory=MemorySpace.SHARED),
+        )).match(inst=f'LDS.128 R32, {ADDRESS}') is not None
+
     def test_global_reg64_address_turing75(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('TURING75')
 
@@ -148,7 +159,7 @@ class TestAddressMatcher:
     def test_build_pattern(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('BLACKWELL120')
 
-        assert AddressMatcher.build_pattern(arch=ARCH) == r'desc\[UR[0-9]+\]\[(?:R[0-9]+|UR[0-9]+)\.64(?:\+(?:-?0x[0-9A-Fa-f]+|UR[0-9]+))?\]'
+        assert AddressMatcher.build_pattern(arch=ARCH) == r'desc\[UR[0-9]+\]\[(?:R[0-9]+|UR[0-9]+)\.64(?:\+(?:-?0x[0-9A-Fa-f]+|UR[0-9]+|UR[0-9]+\+0x[0-9A-Fa-f]+))?\]'
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test(self, parameters: Parameters) -> None:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import dataclasses
 import datetime
@@ -34,23 +36,23 @@ class Cacher(abc.ABC):
     Inspired by ``ccache``, see also https://ccache.dev/manual/4.12.1.html#_how_ccache_works.
     """
     #: Name of the table.
-    TABLE : typing.ClassVar[str]
+    TABLE: typing.ClassVar[str]
 
     @dataclasses.dataclass(frozen = True)
     class Entry:
         #: Set to `True` if the result was served from cache.
-        cached : bool
+        cached: bool
 
         #: Digest of the entry.
-        digest : str
+        digest: str
 
         #: Timestamp at which the entry was populated.
-        timestamp : datetime.datetime
+        timestamp: datetime.datetime
 
         # Directory wherein files are stored.
-        directory : pathlib.Path
+        directory: pathlib.Path
 
-    def __init__(self, directory : str | pathlib.Path) -> None:
+    def __init__(self, directory: str | pathlib.Path) -> None:
         """
         :param directory: Where the cacher stores all files.
         """
@@ -61,7 +63,7 @@ class Cacher(abc.ABC):
 
         self.file = self.directory / 'cache.db'
 
-        self.database : sqlite3.Connection | None = None
+        self.database: sqlite3.Connection | None = None
 
     def __enter__(self) -> Self:
         """
@@ -74,7 +76,7 @@ class Cacher(abc.ABC):
         assert self.database is not None
         self.database.close()
 
-    def create_db(self, file : pathlib.Path) -> sqlite3.Connection:
+    def create_db(self, file: pathlib.Path) -> sqlite3.Connection:
         """
         Create the `SQLITE` database.
         """
@@ -102,10 +104,10 @@ class Cacher(abc.ABC):
         return hasher
 
     @abc.abstractmethod
-    def populate(self, directory : pathlib.Path, **kwargs) -> None:
+    def populate(self, directory: pathlib.Path, **kwargs) -> None:
         pass
 
-    def get(self, **kwargs) -> 'Cacher.Entry':
+    def get(self, **kwargs) -> Cacher.Entry:
         """
         Serve cached entry on cache hit, populate on cache miss.
         """

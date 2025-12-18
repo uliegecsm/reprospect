@@ -29,22 +29,22 @@ class TestProfilingResults:
         results.assign_metrics(
             accessors = ('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
             data = ncu.ProfilingMetrics({
-                'smsp__inst_executed.sum' : 100.,
+                'smsp__inst_executed.sum': 100.,
                 'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.}),
-                'L1/TEX cache global load sectors.sum' : 0.,
+                'L1/TEX cache global load sectors.sum': 0.,
             }),
         )
         results.assign_metrics(
             accessors = ('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
             data = ncu.ProfilingMetrics({
-                'smsp__inst_executed.sum' : 96.,
+                'smsp__inst_executed.sum': 96.,
                 'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.}),
-                'L1/TEX cache global load sectors.sum' : 0.,
+                'L1/TEX cache global load sectors.sum': 0.,
             }),
         )
         return results
 
-    def test_query(self, results : ncu.ProfilingResults) -> None:
+    def test_query(self, results: ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query`.
         """
@@ -58,14 +58,14 @@ class TestProfilingResults:
         assert isinstance(metrics_A_kernel, ncu.ProfilingMetrics)
         assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.
 
-    def test_query_metrics(self, results : ncu.ProfilingResults) -> None:
+    def test_query_metrics(self, results: ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_metrics`.
         """
         metrics = results.query_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'))
         assert metrics['smsp__inst_executed.sum'] == 100.
 
-    def test_query_single_next(self, results : ncu.ProfilingResults) -> None:
+    def test_query_single_next(self, results: ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next`.
         """
@@ -73,7 +73,7 @@ class TestProfilingResults:
         assert key == 'kernel'
         assert metrics == results.query(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'))
 
-    def test_query_single_next_metrics(self, results : ncu.ProfilingResults) -> None:
+    def test_query_single_next_metrics(self, results: ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next_metrics`.
         """
@@ -81,7 +81,7 @@ class TestProfilingResults:
         assert key == 'kernel'
         assert metrics['smsp__inst_executed.sum'] == 100.
 
-    def test_iter_metrics(self, results : ncu.ProfilingResults) -> None:
+    def test_iter_metrics(self, results: ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.iter_metrics`.
         """
@@ -100,7 +100,7 @@ class TestProfilingResults:
 
         other_results.assign_metrics(
             accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel'),
-            data = ncu.ProfilingMetrics({'my-value' : 42}),
+            data = ncu.ProfilingMetrics({'my-value': 42}),
         )
 
         assert other_results.query_metrics(accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel'))['my-value'] == 42
@@ -112,18 +112,18 @@ class TestProfilingResults:
         other_results = ncu.ProfilingResults()
         other_results.assign_metrics(
             accessors = ('range-0', 'range-1', 'kernel-A'),
-            data = ncu.ProfilingMetrics({'my-counter-int' : 42, 'my-counter-float' : 666.}),
+            data = ncu.ProfilingMetrics({'my-counter-int': 42, 'my-counter-float': 666.}),
         )
         other_results.assign_metrics(
             accessors = ('range-0', 'range-1', 'kernel-B'),
-            data = ncu.ProfilingMetrics({'my-counter-int' : 43, 'my-counter-float' : 667.}),
+            data = ncu.ProfilingMetrics({'my-counter-int': 43, 'my-counter-float': 667.}),
         )
         other_results.assign_metrics(
             accessors = ('range-0', 'range-1', 'kernel-C'),
-            data = ncu.ProfilingMetrics({'my-counter-int' : 44, 'my-counter-float' : 668.}),
+            data = ncu.ProfilingMetrics({'my-counter-int': 44, 'my-counter-float': 668.}),
         )
 
-        aggregated = {'my-counter-int' : 42 + 43 + 44, 'my-counter-float' : 666. + 667. + 668.}
+        aggregated = {'my-counter-int': 42 + 43 + 44, 'my-counter-float': 666. + 667. + 668.}
 
         assert other_results.aggregate_metrics(accessors = ('range-0', 'range-1')) == aggregated
 
@@ -131,7 +131,7 @@ class TestProfilingResults:
 
         assert other_results.aggregate_metrics(accessors = ('range-0', 'range-1'), keys = ('my-counter-int',)) == aggregated
 
-    def test_string_representation(self, results : ncu.ProfilingResults) -> None:
+    def test_string_representation(self, results: ncu.ProfilingResults) -> None:
         """
         Test the string representation of :py:meth:`reprospect.tools.ncu.ProfilingResults`.
         """
@@ -167,7 +167,7 @@ class TestCommand:
     """
     Tests for :py:class:`reprospect.tools.ncu.Command`.
     """
-    def test_env(self, bindir : pathlib.Path) -> None:
+    def test_env(self, bindir: pathlib.Path) -> None:
         """
         Check that the environment is handled properly.
         """
@@ -181,7 +181,7 @@ class TestCommand:
             ), env = None, cwd = None)
 
         with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
-            ncu.Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever'), env = {'IT_MATTERS' : 'ON'}).run(env = {'MY_BASE_ENV' : '666'}, cwd = bindir)
+            ncu.Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever'), env = {'IT_MATTERS': 'ON'}).run(env = {'MY_BASE_ENV': '666'}, cwd = bindir)
             check_call.assert_called_with(args = (
                 'ncu', '--print-summary=per-kernel', '--warp-sampling-interval=0',
                 '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever'),
@@ -194,14 +194,14 @@ class TestSession:
     """
     Test :py:class:`reprospect.tools.ncu.Session`.
     """
-    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
-    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
+    GRAPH: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
+    SAXPY: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
     def test_collect_basic_metrics_saxpy_with_nvtx_filtering(self, bindir, workdir) -> None:
         """
         Collect a few basic metrics for the :py:attr:`SAXPY` executable and filter by NVTX.
         """
-        METRICS : tuple[ncu.Metric | ncu.MetricDeviceAttribute, ...] = (
+        METRICS: tuple[ncu.Metric | ncu.MetricDeviceAttribute, ...] = (
             # Metric with full name provided.
             ncu.Metric(name = 'launch__registers_per_thread_allocated'),
             # Metric with roll-up.
@@ -305,7 +305,7 @@ class TestSession:
         """
         Collect metrics with correlations for the :py:attr:`SAXPY` executable.
         """
-        METRICS : typing.Final[tuple[ncu.MetricCorrelation, ...]] = (
+        METRICS: typing.Final[tuple[ncu.MetricCorrelation, ...]] = (
             ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode'),
             ncu.MetricCorrelation(name = 'inst_executed'),
         )
@@ -345,7 +345,7 @@ class TestSession:
         # The metric 'inst_executed' correlates instruction addresses with how many times they were executed.
         assert all(isinstance(key, int) and isinstance(value, int) for key, value in metrics_saxpy_kernel_0['inst_executed'].correlated.items())
 
-    def test_collect_basic_metrics_graph(self, bindir, workdir, cmake_cuda_compiler : dict) -> None:
+    def test_collect_basic_metrics_graph(self, bindir, workdir, cmake_cuda_compiler: dict) -> None:
         """
         Collect a few basic metrics for the :py:attr:`GRAPH` executable.
         """
@@ -391,10 +391,10 @@ class TestSession:
 
         # Check global load/store for each node, and aggregated as well.
         SIGNATURES = {
-            'node_A' : lambda x : re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)0, |0u)>\(unsigned int\s*\*\)', x['demangled']),
-            'node_B' : lambda x : re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)1, \(unsigned int\)0|1u, 0u)>\(unsigned int\s*\*\)', x['demangled']),
-            'node_C' : lambda x : re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)2, \(unsigned int\)0|2u, 0u)>\(unsigned int\s*\*\)', x['demangled']),
-            'node_D' : lambda x : re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)3, \(unsigned int\)1, \(unsigned int\)2|3u, 1u, 2u)>\(unsigned int\s*\*\)', x['demangled']),
+            'node_A': lambda x: re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)0, |0u)>\(unsigned int\s*\*\)', x['demangled']),
+            'node_B': lambda x: re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)1, \(unsigned int\)0|1u, 0u)>\(unsigned int\s*\*\)', x['demangled']),
+            'node_C': lambda x: re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)2, \(unsigned int\)0|2u, 0u)>\(unsigned int\s*\*\)', x['demangled']),
+            'node_D': lambda x: re.match(r'void add_and_increment_kernel<(?:\(unsigned int\)3, \(unsigned int\)1, \(unsigned int\)2|3u, 1u, 2u)>\(unsigned int\s*\*\)', x['demangled']),
         }
 
         assert SIGNATURES['node_A'](metrics_node_A)
@@ -445,8 +445,8 @@ class TestCacher:
     """
     Tests for :py:class:`reprospect.tools.ncu.Cacher`.
     """
-    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
-    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
+    GRAPH: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
+    SAXPY: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
     def test_hash_same(self, bindir) -> None:
         """
@@ -468,7 +468,7 @@ class TestCacher:
             with ncu.Cacher(directory = tmpdir) as cacher:
                 hash_a = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.GRAPH, args = ('--bla=42',), output = pathlib.Path('i-dont-care')))
                 hash_b = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.SAXPY, args = ('--bla=42',), output = pathlib.Path('i-dont-care')))
-                hash_c = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.SAXPY, args = ('--bla=42',), output = pathlib.Path('i-dont-care'), env = {'ONE' : '2'}))
+                hash_c = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.SAXPY, args = ('--bla=42',), output = pathlib.Path('i-dont-care'), env = {'ONE': '2'}))
 
                 assert hash_a.digest() != hash_b.digest()
                 assert hash_b.digest() != hash_c.digest()
@@ -478,7 +478,7 @@ class TestCacher:
         """
         The cacher should hit on the second call.
         """
-        METRICS : typing.Final[tuple[ncu.Metric, ...]] = (
+        METRICS: typing.Final[tuple[ncu.Metric, ...]] = (
             # A few L1TEX cache metrics.
             ncu.L1TEXCache.GlobalLoad.Sectors.create(),
             ncu.L1TEXCache.GlobalStore.Sectors.create(),

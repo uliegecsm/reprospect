@@ -25,9 +25,9 @@ class TestGraph(CMakeAwareTestCase):
     def get_target_name(cls) -> str:
         return 'tests_assets_graph'
 
-    DEMANGLED_NODE_A : typing.Final[dict[str, str]] = {
-        'NVIDIA' : 'void add_and_increment_kernel<(unsigned int)0, >(unsigned int *)',
-        'Clang' : 'void add_and_increment_kernel<0u>(unsigned int*)',
+    DEMANGLED_NODE_A: typing.Final[dict[str, str]] = {
+        'NVIDIA': 'void add_and_increment_kernel<(unsigned int)0, >(unsigned int *)',
+        'Clang':  'void add_and_increment_kernel<0u>(unsigned int*)',
     }
 
 class TestSASS(TestGraph):
@@ -49,14 +49,14 @@ class TestSASS(TestGraph):
             demangler = self.demangler,
         )[0]
 
-    def test_kernel_count(self, cuobjdump : CuObjDump) -> None:
+    def test_kernel_count(self, cuobjdump: CuObjDump) -> None:
         """
         Count how many kernels there are (1 per graph node).
         """
         assert len(cuobjdump.functions) == 4
         logging.info(str(cuobjdump))
 
-    def test_instruction_count(self, cuobjdump : CuObjDump) -> None:
+    def test_instruction_count(self, cuobjdump: CuObjDump) -> None:
         """
         Check how many instructions there are in the first graph node kernel.
         """
@@ -68,14 +68,14 @@ class TestNCU(TestGraph):
     """
     `ncu`-focused analysis.
     """
-    METRICS : typing.Final[tuple[ncu.Metric]] = (
+    METRICS: typing.Final[tuple[ncu.Metric]] = (
         ncu.Metric(name = 'launch__registers_per_thread_allocated'),
     )
 
-    NVTX_INCLUDES : typing.Final[tuple[str]] = ('application_domain@outer_useless_range',)
+    NVTX_INCLUDES: typing.Final[tuple[str]] = ('application_domain@outer_useless_range',)
 
     @pytest.fixture(scope = 'class')
-    def report(self, workdir : pathlib.Path) -> ncu.Report:
+    def report(self, workdir: pathlib.Path) -> ncu.Report:
         with ncu.Cacher(directory = workdir) as cacher:
             command = ncu.Command(
                 output = self.cwd / 'ncu',
@@ -91,21 +91,21 @@ class TestNCU(TestGraph):
             return ncu.Report(command = command)
 
     @pytest.fixture(scope = 'class')
-    def results(self, report : ncu.Report) -> ncu.ProfilingResults:
+    def results(self, report: ncu.Report) -> ncu.ProfilingResults:
         return report.extract_results_in_range(metrics = self.METRICS, demangler = self.demangler)
 
-    def test_result_count(self, report : ncu.Report, results : ncu.ProfilingResults) -> None:
+    def test_result_count(self, report: ncu.Report, results: ncu.ProfilingResults) -> None:
         """
         Check how many ranges and results there are in the report.
         """
         assert report.report.num_ranges() == 1
         assert len(results) == 4
 
-    def test_launch_registers_per_thread_allocated_node_A(self, results : ncu.ProfilingResults) -> None:
+    def test_launch_registers_per_thread_allocated_node_A(self, results: ncu.ProfilingResults) -> None:
         """
         Check metric `launch__registers_per_thread_allocated` for graph node A.
         """
-        def matcher(value : tuple[str, ncu.ProfilingMetrics]) -> bool:
+        def matcher(value: tuple[str, ncu.ProfilingMetrics]) -> bool:
             return value[1]['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]
 
         [(key, metrics)] = filter(matcher, results.iter_metrics(accessors = ()))

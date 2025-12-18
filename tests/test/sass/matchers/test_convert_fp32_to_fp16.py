@@ -14,7 +14,7 @@ class TestConvertFp32ToFp16:
     """
     Tests for :py:class:`reprospect.test.sass.matchers.convert_fp32_to_fp16.ConvertFp32ToFp16`.
     """
-    CODE : typing.Final[str] = """#include "cuda_fp16.h"
+    CODE: typing.Final[str] = """#include "cuda_fp16.h"
 __global__ void test(__half* __restrict__ const dst, const float* __restrict__ const src) {
     dst[0] = __float2half(src[0]);
 }

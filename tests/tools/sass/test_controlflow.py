@@ -16,9 +16,9 @@ class TestGraph:
     """
     Tests for :py:class:`reprospect.tools.sass.controlflow.Graph`.
     """
-    CONTROLCODE : typing.Final[ControlCode] = ControlCode.decode(code = '0')
+    CONTROLCODE: typing.Final[ControlCode] = ControlCode.decode(code = '0')
 
-    INSTRUCTIONS : typing.Final[tuple[Instruction, ...]] = (
+    INSTRUCTIONS: typing.Final[tuple[Instruction, ...]] = (
         Instruction(offset = 0, instruction = 'DADD R4, R4, c[0x0][0x180]', hex = '0x0', control = CONTROLCODE),
         Instruction(offset = 0, instruction = 'FADD R4, R4, c[0x0][0x180]', hex = '0x0', control = CONTROLCODE),
         Instruction(offset = 0, instruction = 'DMUL R6, R6, c[0x0][0x188]', hex = '0x1', control = CONTROLCODE),
@@ -29,7 +29,7 @@ class TestGraph:
     def cfg(self) -> Graph:
         return Graph()
 
-    def test_add_block(self, cfg : Graph) -> None:
+    def test_add_block(self, cfg: Graph) -> None:
         """
         Add a block.
         """
@@ -37,7 +37,7 @@ class TestGraph:
 
         assert len(cfg.blocks) == 1
 
-    def test_add_blocks(self, cfg : Graph) -> None:
+    def test_add_blocks(self, cfg: Graph) -> None:
         """
         Add blocks.
         """
@@ -48,7 +48,7 @@ class TestGraph:
 
         assert len(cfg.blocks) == 2
 
-    def test_add_blocks_with_edges(self, cfg : Graph) -> None:
+    def test_add_blocks_with_edges(self, cfg: Graph) -> None:
         """
         Add blocks with edges.
         """
@@ -59,9 +59,9 @@ class TestGraph:
 
         cfg.add_edge(src = block_0, dst = block_1)
 
-        assert cfg.edges == {block_0 : {block_1}}
+        assert cfg.edges == {block_0: {block_1}}
 
-    def test_to_mermaid(self, cfg : Graph) -> None:
+    def test_to_mermaid(self, cfg: Graph) -> None:
         """
         Convert to mermaid.
         """
@@ -90,21 +90,21 @@ class TestControlFlow:
     Tests for :py:class:`reprospect.tools.sass.controlflow.ControlFlow`.
     """
     class TestIfs:
-        CU_IFS         : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.cu'
-        SASS_IFS_SM120 : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.sm_120.sass'
-        INSTRUCTIONS   : typing.Final[list[Instruction]] = Decoder(source = SASS_IFS_SM120).instructions
+        CU_IFS:         typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.cu'
+        SASS_IFS_SM120: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.sm_120.sass'
+        INSTRUCTIONS:   typing.Final[list[Instruction]] = Decoder(source = SASS_IFS_SM120).instructions
 
         def test_find_entry_points(self) -> None:
             assert ControlFlow.find_entry_points(instructions = self.INSTRUCTIONS) == {
-                int('0000', base = 16),
+                int('0000',  base = 16),
                 int('0x130', base = 16),
-                int('0090', base = 16),
-                int('0100', base = 16),
-                int('0130', base = 16),
-                int('0150', base = 16),
+                int('0090',  base = 16),
+                int('0100',  base = 16),
+                int('0130',  base = 16),
+                int('0150',  base = 16),
                 int('0x1a0', base = 16),
-                int('01a0', base = 16),
-                int('01b0', base = 16),
+                int('01a0',  base = 16),
+                int('01b0',  base = 16),
             }
 
         def test_create_blocks(self) -> None:
@@ -154,7 +154,7 @@ flowchart TD
 """
 
         @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-        def test(self, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CU_IFS` and build the CFG.
             """
@@ -163,7 +163,7 @@ flowchart TD
             assert len(cfg.blocks) == 6
 
     class TestAtomicAddInt64:
-        SASS_ATOM_SM120 : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'atomic_add.int64.sm_120.sass'
+        SASS_ATOM_SM120: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'atomic_add.int64.sm_120.sass'
 
         def test(self) -> None: # pylint: disable=too-many-statements
             """

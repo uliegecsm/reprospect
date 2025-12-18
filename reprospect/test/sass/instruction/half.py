@@ -23,7 +23,7 @@ class Fp16(PatternMatcher):
 
     * :cite:`ho-exploiting-2017`
     """
-    REGZ_LANE : typing.Final[str] = r'-?' + PatternBuilder.REGZ + r'\.H[01]_H[01]'
+    REGZ_LANE: typing.Final[str] = r'-?' + PatternBuilder.REGZ + r'\.H[01]_H[01]'
 
     @classmethod
     def regz_lane(cls) -> str:
@@ -88,30 +88,30 @@ class Fp16FusedMulAddMatcher(Fp16):
 
         This likely means "multiply both lanes of ``R0`` by 1 and add ``R5``".
     """
-    TEMPLATE : typing.Final[str] = f"{PatternBuilder.opcode_mods('HFMA2', modifiers = ('?MMA',))} {Fp16.dst()}, {{op1}}, {{op2}}, {{op3}}(?:, {{op4}})?"
+    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HFMA2', modifiers = ('?MMA',))} {Fp16.dst()}, {{op1}}, {{op2}}, {{op3}}(?:, {{op4}})?"
 
-    PATTERN_ANY : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = Fp16.any_operand(),
         op2 = Fp16.any_operand(),
         op3 = Fp16.any_operand(),
         op4 = Fp16.any_operand(),
     ))
 
-    PATTERN_INDIVIDUAL : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = Fp16.regz_lane(),
         op2 = Fp16.regz_lane(),
         op3 = PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, PatternBuilder.IMMEDIATE), group = 'operands'),
         op4 = PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, PatternBuilder.IMMEDIATE), group = 'operands'),
     ))
 
-    PATTERN_PACKED : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = PatternBuilder.premodregz(),
         op2 = Fp16.regz_or_immediate(),
         op3 = Fp16.regz_or_immediate(),
         op4 = Fp16.regz_or_immediate(),
     ))
 
-    def __init__(self, *, packed : bool | None = None) -> None:
+    def __init__(self, *, packed: bool | None = None) -> None:
         """
         :param packed: If it is packed or not.
         """
@@ -136,24 +136,24 @@ class Fp16MulMatcher(Fp16):
 
         HMUL2 R0, R2, R3
     """
-    TEMPLATE : typing.Final[str] = f"{PatternBuilder.opcode_mods('HMUL2')} {Fp16.dst()}, {{op1}}, {{op2}}"
+    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMUL2')} {Fp16.dst()}, {{op1}}, {{op2}}"
 
-    PATTERN_ANY : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = Fp16.any_operand(),
         op2 = Fp16.any_operand(),
     ))
 
-    PATTERN_INDIVIDUAL : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = Fp16.regz_lane(),
         op2 = Fp16.regz_lane(),
     ))
 
-    PATTERN_PACKED : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = PatternBuilder.reg(),
         op2 = PatternBuilder.reg(),
     ))
 
-    def __init__(self, *, packed : bool | None = None) -> None:
+    def __init__(self, *, packed: bool | None = None) -> None:
         """
         :param packed: If it is packed or not.
 
@@ -182,19 +182,19 @@ class Fp16AddMatcher(Fp16):
 
         HADD2 R0, R2, R3
     """
-    TEMPLATE : typing.Final[str] = f"{PatternBuilder.opcode_mods('HADD2', modifiers = ('?F32',))} {Fp16.dst()}, {{op1}}, {{op2}}"
+    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HADD2', modifiers = ('?F32',))} {Fp16.dst()}, {{op1}}, {{op2}}"
 
-    PATTERN_ANY : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = Fp16.any_operand(),
         op2 = Fp16.any_operand(),
     ))
 
-    PATTERN_PACKED : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = PatternBuilder.reg(),
         op2 = PatternBuilder.reg(),
     ))
 
-    PATTERN_INDIVIDUAL : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = Fp16.regz_lane(),
         op2 = Fp16.regz_lane(),
     ))
@@ -212,21 +212,21 @@ class Fp16MinMaxMatcher(Fp16):
     """
     Matcher for 16-bit floating-point min-max (``HMNMX2``) instruction.
     """
-    TEMPLATE : typing.Final[str] = f"{PatternBuilder.opcode_mods('HMNMX2')} {Fp16.dst()}, {{op1}}, {{op2}}, {{which}}"
+    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMNMX2')} {Fp16.dst()}, {{op1}}, {{op2}}, {{which}}"
 
-    PATTERN_ANY : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = Fp16.any_operand(),
         op2 = Fp16.any_operand(),
         which = PatternBuilder.group(r'!?PT', group = 'operands'),
     ))
 
-    PATTERN_MAX : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_MAX: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = Fp16.any_operand(),
         op2 = Fp16.any_operand(),
         which = PatternBuilder.group('!PT', group = 'operands'),
     ))
 
-    PATTERN_MIN : typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+    PATTERN_MIN: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1 = Fp16.any_operand(),
         op2 = Fp16.any_operand(),
         which = PatternBuilder.group('PT', group = 'operands'),

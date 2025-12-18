@@ -26,7 +26,7 @@ else:
 
 class Load256Matcher:
     def __init__(self, arch: NVIDIAArch) -> None:
-        self.arch : typing.Final[NVIDIAArch] = arch
+        self.arch: typing.Final[NVIDIAArch] = arch
 
     def build(self) -> SequenceMatcher:
         match Memory(arch = self.arch).max_transaction_size:
@@ -42,7 +42,7 @@ class Load256Matcher:
 
 class Store256Matcher:
     def __init__(self, arch: NVIDIAArch) -> None:
-        self.arch : typing.Final[NVIDIAArch] = arch
+        self.arch: typing.Final[NVIDIAArch] = arch
 
     def build(self) -> SequenceMatcher:
         match Memory(arch = self.arch).max_transaction_size:
@@ -60,10 +60,10 @@ class AddDouble4:
     """
     Addition of 2 :code:`double4` (whatever the alignment).
     """
-    def __init__(self, arch : NVIDIAArch) -> None:
-        self.arch : typing.Final[NVIDIAArch] = arch
+    def __init__(self, arch: NVIDIAArch) -> None:
+        self.arch: typing.Final[NVIDIAArch] = arch
 
-    def build(self, loads : typing.Collection[InstructionMatch]) -> UnorderedInSequenceMatcher:
+    def build(self, loads: typing.Collection[InstructionMatch]) -> UnorderedInSequenceMatcher:
         match Memory(arch = self.arch).max_transaction_size:
             case 16:
                 assert len(loads) == 2
@@ -74,7 +74,7 @@ class AddDouble4:
             case _:
                 raise ValueError
 
-        matchers : list[OpcodeModsWithOperandsMatcher] = []
+        matchers: list[OpcodeModsWithOperandsMatcher] = []
 
         for register in registers:
             matched = RegisterMatcher(special = False).match(register)
@@ -108,11 +108,11 @@ class TestAtomicAddDouble256(add.TestCase):
     def get_target_name(cls) -> str:
         return 'examples_kokkos_atomic_add_double256'
 
-    SIGNATURE_MATCHER : typing.ClassVar[re.Pattern[str]] = re.compile(
+    SIGNATURE_MATCHER: typing.ClassVar[re.Pattern[str]] = re.compile(
         r'AtomicAddFunctor<Kokkos::View<reprospect::examples::kokkos::atomic::Double4Aligned32\s*\*\s*, Kokkos::CudaSpace>>',
     )
 
-    def test_lock_atomic(self, decoder : Decoder) -> None:
+    def test_lock_atomic(self, decoder: Decoder) -> None:
         """
         This test proves that it uses the lock-based implementation.
         """

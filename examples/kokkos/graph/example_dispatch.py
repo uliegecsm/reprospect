@@ -34,7 +34,7 @@ class TestNSYS(TestDispatch):
     """
     `nsys`-focused analysis.
     """
-    NODE_COUNT : typing.Final[int] = 5
+    NODE_COUNT: typing.Final[int] = 5
 
     @pytest.fixture(scope = 'class')
     def report(self) -> nsys.Report:
@@ -56,7 +56,7 @@ class TestNSYS(TestDispatch):
             return nsys.Report(db = cacher.export_to_sqlite(command = command, entry = entry))
 
     @staticmethod
-    def get(*, report : nsys.Report, kernels : pandas.DataFrame, label : str) -> pandas.DataFrame:
+    def get(*, report: nsys.Report, kernels: pandas.DataFrame, label: str) -> pandas.DataFrame:
         """
         Get kernels from `kernels` table that are correlated to the :code:`cudaGraphLaunch` API call in the NVTX region `label`.
         """
@@ -66,7 +66,7 @@ class TestNSYS(TestDispatch):
 
         return report.get_correlated_rows(src = launch, dst = kernels)
 
-    def test_streams(self, report : nsys.Report) -> None:
+    def test_streams(self, report: nsys.Report) -> None:
         """
         Each kernel gets a unique stream ID.
 

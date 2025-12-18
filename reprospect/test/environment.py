@@ -15,27 +15,27 @@ class EnvironmentField(typing.Generic[T]):
     * https://docs.python.org/3/howto/descriptor.html
     * https://mypy.readthedocs.io/en/stable/generics.html#defining-generic-classes
     """
-    env : str | None = None
+    env: str | None = None
     """
     Name of the environment variable.
     """
 
-    converter : typing.Callable[[str], T] | None = None
+    converter: typing.Callable[[str], T] | None = None
     """
     Callable to convert the value of the environment variable to the target type.
     """
 
-    default : T | None = None
+    default: T | None = None
     """
     Default value if the environment variable does not exist.
     """
 
-    _cached : T | None = dataclasses.field(default = None, init = False, repr = False)
+    _cached: T | None = dataclasses.field(default = None, init = False, repr = False)
     """
     Value, cached.
     """
 
-    _attr_name : str | None = dataclasses.field(default = None, init = False, repr = False)
+    _attr_name: str | None = dataclasses.field(default = None, init = False, repr = False)
     """
     Name of the attribute.
     """
@@ -44,7 +44,7 @@ class EnvironmentField(typing.Generic[T]):
         if self.default is not None and self.converter is None:
             self.converter = type(self.default)
 
-    def __set_name__(self, owner : type, name: str) -> None:
+    def __set_name__(self, owner: type, name: str) -> None:
         """
         References:
 

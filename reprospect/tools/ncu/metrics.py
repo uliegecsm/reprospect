@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import enum
 import sys
@@ -9,10 +11,10 @@ else:
     from backports.strenum.strenum import StrEnum
 
 #: A single metric value type.
-ValueType : typing.TypeAlias = int | float
+ValueType: typing.TypeAlias = int | float
 
 #: A single metric value type or a dictionary of submetric values of such type.
-MetricData : typing.TypeAlias = ValueType | dict[str, ValueType]
+MetricData: typing.TypeAlias = ValueType | dict[str, ValueType]
 
 @dataclasses.dataclass(frozen = False, slots = True)
 class Metric:
@@ -27,13 +29,13 @@ class Metric:
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
     #: The base name of the metric.
-    name : str
+    name: str
 
     #: Human readable name.
-    pretty_name : str | None = None
+    pretty_name: str | None = None
 
     #: Optional sub-metric names.
-    subs : tuple[str, ...] | None = None
+    subs: tuple[str, ...] | None = None
 
     def __post_init__(self) -> None:
         self.pretty_name = self.pretty_name or self.name
@@ -100,7 +102,7 @@ class MetricDeviceAttribute:
 
             ncu --query-metrics-collection=device
     """
-    name : str
+    name: str
 
     @property
     def full_name(self) -> str:
@@ -109,7 +111,7 @@ class MetricDeviceAttribute:
     def gather(self) -> tuple[str]:
         return (self.full_name,)
 
-MetricCorrelationDataType : typing.TypeAlias = dict[str | int, ValueType]
+MetricCorrelationDataType: typing.TypeAlias = dict[str | int, ValueType]
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class MetricCorrelationData:
@@ -120,8 +122,8 @@ class MetricCorrelationData:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
-    correlated : MetricCorrelationDataType
-    value : ValueType | None = None
+    correlated: MetricCorrelationDataType
+    value: ValueType | None = None
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class MetricCorrelation:
@@ -132,7 +134,7 @@ class MetricCorrelation:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
-    name : str
+    name: str
 
     def gather(self) -> tuple[str]:
         return (self.name,)
@@ -145,10 +147,10 @@ class XYZBase:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/#metrics-reference
     """
-    prefix : typing.ClassVar[str]
+    prefix: typing.ClassVar[str]
 
     @classmethod
-    def create(cls, dims : typing.Iterable[str] | None = None) -> typing.Iterable[Metric]:
+    def create(cls, dims: typing.Iterable[str] | None = None) -> typing.Iterable[Metric]:
         if not dims:
             dims = ('x', 'y', 'z')
         return (Metric(name = cls.prefix + dim) for dim in dims)
@@ -157,13 +159,13 @@ class LaunchBlock(XYZBase):
     """
     Factory of metrics ``launch__block_dim_x``, ``launch__block_dim_y`` and ``launch__block_dim_z``.
     """
-    prefix : typing.ClassVar[str] = 'launch__block_dim_'
+    prefix: typing.ClassVar[str] = 'launch__block_dim_'
 
 class LaunchGrid(XYZBase):
     """
     Factory of metrics ``launch__grid_dim_x``, ``launch__grid_dim_y`` and ``launch__grid_dim_z``.
     """
-    prefix : typing.ClassVar[str] = 'launch__grid_dim_'
+    prefix: typing.ClassVar[str] = 'launch__grid_dim_'
 
 class Unit(StrEnum):
     """
@@ -203,10 +205,10 @@ class Quantity(StrEnum):
 
 def counter_name_from(
     *,
-    unit : Unit,
-    pipestage : PipeStage | None = None,
-    quantity : Quantity | str,
-    qualifier : str | None = None,
+    unit: Unit,
+    pipestage: PipeStage | None = None,
+    quantity: Quantity | str,
+    qualifier: str | None = None,
 ) -> str:
     """
     Based on ``ncu`` metrics naming convention:
@@ -231,10 +233,10 @@ class L1TEXCacheGlobalLoadInstructions:
     """
     @staticmethod
     def create(*,
-        unit : Unit = Unit.SMSP,
-        mode : typing.Literal['sass'] | None = 'sass',
-        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+        unit: Unit = Unit.SMSP,
+        mode: typing.Literal['sass'] | None = 'sass',
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = unit,
             quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
@@ -251,8 +253,8 @@ class L1TEXCacheGlobalLoadRequests:
     """
     @staticmethod
     def create(*,
-        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = Unit.L1TEX,
             pipestage = PipeStage.TAG,
@@ -270,9 +272,9 @@ class L1TEXCacheGlobalLoadSectors:
     """
     @staticmethod
     def create(*,
-        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-        suffix : typing.Literal['hit', 'miss'] | None = None,
-    ) -> 'MetricCounter':
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+        suffix: typing.Literal['hit', 'miss'] | None = None,
+    ) -> MetricCounter:
         qualifier = f'pipe_lsu_mem_global_op_ld_lookup_{suffix}' if suffix else 'pipe_lsu_mem_global_op_ld'
 
         name = counter_name_from(
@@ -292,8 +294,8 @@ class L1TEXCacheGlobalLoadSectorHits:
     """
     @staticmethod
     def create(*,
-        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+    ) -> MetricCounter:
         return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'hit')
 
 class L1TEXCacheGlobalLoadSectorMisses:
@@ -302,8 +304,8 @@ class L1TEXCacheGlobalLoadSectorMisses:
     """
     @staticmethod
     def create(*,
-        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+    ) -> MetricCounter:
         return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'miss')
 
 class L1TEXCacheGlobalLoadWavefronts:
@@ -312,8 +314,8 @@ class L1TEXCacheGlobalLoadWavefronts:
     """
     @staticmethod
     def create(*,
-        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = Unit.L1TEX,
             pipestage = PipeStage.TAG_OUTPUT,
@@ -327,19 +329,19 @@ class L1TEXCacheGlobalLoadWavefronts:
 
 class L1TEXCacheGlobalLoad:
 
-    NAME : typing.Final[str] = 'global load'
+    NAME: typing.Final[str] = 'global load'
 
-    Instructions : typing.Final[type[L1TEXCacheGlobalLoadInstructions]] = L1TEXCacheGlobalLoadInstructions # pylint: disable=invalid-name
+    Instructions: typing.Final[type[L1TEXCacheGlobalLoadInstructions]] = L1TEXCacheGlobalLoadInstructions # pylint: disable=invalid-name
 
-    Requests : typing.Final[type[L1TEXCacheGlobalLoadRequests]] = L1TEXCacheGlobalLoadRequests # pylint: disable=invalid-name
+    Requests: typing.Final[type[L1TEXCacheGlobalLoadRequests]] = L1TEXCacheGlobalLoadRequests # pylint: disable=invalid-name
 
-    Sectors : typing.Final[type[L1TEXCacheGlobalLoadSectors]] = L1TEXCacheGlobalLoadSectors # pylint: disable=invalid-name
+    Sectors: typing.Final[type[L1TEXCacheGlobalLoadSectors]] = L1TEXCacheGlobalLoadSectors # pylint: disable=invalid-name
 
-    SectorHits : typing.Final[type[L1TEXCacheGlobalLoadSectorHits]] = L1TEXCacheGlobalLoadSectorHits # pylint: disable=invalid-name
+    SectorHits: typing.Final[type[L1TEXCacheGlobalLoadSectorHits]] = L1TEXCacheGlobalLoadSectorHits # pylint: disable=invalid-name
 
-    SectorMisses : typing.Final[type[L1TEXCacheGlobalLoadSectorMisses]] = L1TEXCacheGlobalLoadSectorMisses # pylint: disable=invalid-name
+    SectorMisses: typing.Final[type[L1TEXCacheGlobalLoadSectorMisses]] = L1TEXCacheGlobalLoadSectorMisses # pylint: disable=invalid-name
 
-    Wavefronts : typing.Final[type[L1TEXCacheGlobalLoadWavefronts]] = L1TEXCacheGlobalLoadWavefronts # pylint: disable=invalid-name
+    Wavefronts: typing.Final[type[L1TEXCacheGlobalLoadWavefronts]] = L1TEXCacheGlobalLoadWavefronts # pylint: disable=invalid-name
 
 class L1TEXCacheGlobalStoreInstructions:
     """
@@ -347,10 +349,10 @@ class L1TEXCacheGlobalStoreInstructions:
     """
     @staticmethod
     def create(*,
-        unit : Unit = Unit.SMSP,
-        mode : typing.Literal['sass'] | None = 'sass',
-        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+        unit: Unit = Unit.SMSP,
+        mode: typing.Literal['sass'] | None = 'sass',
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = unit,
             quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
@@ -367,8 +369,8 @@ class L1TEXCacheGlobalStoreSectors:
     """
     @staticmethod
     def create(*,
-        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = Unit.L1TEX,
             pipestage = PipeStage.TAG,
@@ -382,11 +384,11 @@ class L1TEXCacheGlobalStoreSectors:
 
 class L1TEXCacheGlobalStore:
 
-    NAME : typing.Final[str] = 'global store'
+    NAME: typing.Final[str] = 'global store'
 
-    Instructions : typing.Final[type[L1TEXCacheGlobalStoreInstructions]] = L1TEXCacheGlobalStoreInstructions # pylint: disable=invalid-name
+    Instructions: typing.Final[type[L1TEXCacheGlobalStoreInstructions]] = L1TEXCacheGlobalStoreInstructions # pylint: disable=invalid-name
 
-    Sectors : typing.Final[type[L1TEXCacheGlobalStoreSectors]] = L1TEXCacheGlobalStoreSectors # pylint: disable=invalid-name
+    Sectors: typing.Final[type[L1TEXCacheGlobalStoreSectors]] = L1TEXCacheGlobalStoreSectors # pylint: disable=invalid-name
 
 class L1TEXCacheLocalStoreInstructions:
     """
@@ -394,10 +396,10 @@ class L1TEXCacheLocalStoreInstructions:
     """
     @staticmethod
     def create(*,
-        unit : Unit = Unit.SMSP,
-        mode : typing.Literal['sass'] | None = 'sass',
-        subs : tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+        unit: Unit = Unit.SMSP,
+        mode: typing.Literal['sass'] | None = 'sass',
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = unit,
             quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
@@ -410,9 +412,9 @@ class L1TEXCacheLocalStoreInstructions:
 
 class L1TEXCacheLocalStore:
 
-    NAME : typing.Final[str] = 'local store'
+    NAME: typing.Final[str] = 'local store'
 
-    Instructions : typing.Final[type[L1TEXCacheLocalStoreInstructions]] = L1TEXCacheLocalStoreInstructions # pylint: disable=invalid-name
+    Instructions: typing.Final[type[L1TEXCacheLocalStoreInstructions]] = L1TEXCacheLocalStoreInstructions # pylint: disable=invalid-name
 
 class L1TEXCache:
     """
@@ -420,17 +422,17 @@ class L1TEXCache:
 
     See :cite:`nvidia-ncu-requests-wavefronts-sectors`.
     """
-    NAME : typing.Final[str] = 'L1/TEX cache'
+    NAME: typing.Final[str] = 'L1/TEX cache'
 
-    GlobalLoad : typing.Final[type[L1TEXCacheGlobalLoad]] = L1TEXCacheGlobalLoad # pylint: disable=invalid-name
+    GlobalLoad: typing.Final[type[L1TEXCacheGlobalLoad]] = L1TEXCacheGlobalLoad # pylint: disable=invalid-name
 
-    GlobalStore : typing.Final[type[L1TEXCacheGlobalStore]] = L1TEXCacheGlobalStore # pylint: disable=invalid-name
+    GlobalStore: typing.Final[type[L1TEXCacheGlobalStore]] = L1TEXCacheGlobalStore # pylint: disable=invalid-name
 
-    LocalStore : typing.Final[type[L1TEXCacheLocalStore]] = L1TEXCacheLocalStore # pylint: disable=invalid-name
+    LocalStore: typing.Final[type[L1TEXCacheLocalStore]] = L1TEXCacheLocalStore # pylint: disable=invalid-name
 
-MetricKind : typing.TypeAlias = Metric | MetricCorrelation | MetricDeviceAttribute
+MetricKind: typing.TypeAlias = Metric | MetricCorrelation | MetricDeviceAttribute
 
-def gather(metrics : typing.Iterable[MetricKind]) -> tuple[str, ...]:
+def gather(metrics: typing.Iterable[MetricKind]) -> tuple[str, ...]:
     """
     Retrieve all sub-metric names, e.g. to pass them to ``ncu``.
     """

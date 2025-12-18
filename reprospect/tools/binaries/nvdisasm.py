@@ -24,7 +24,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-DetailedRegisterUsage : typing.TypeAlias = dict[RegisterType, tuple[int, int]]
+DetailedRegisterUsage: typing.TypeAlias = dict[RegisterType, tuple[int, int]]
 
 class Function(rich_helpers.TableMixin):
     """
@@ -46,8 +46,8 @@ class Function(rich_helpers.TableMixin):
     """
     __slots__ = ('registers',)
 
-    def __init__(self, registers : DetailedRegisterUsage | None = None) -> None:
-        self.registers : DetailedRegisterUsage | None = registers
+    def __init__(self, registers: DetailedRegisterUsage | None = None) -> None:
+        self.registers: DetailedRegisterUsage | None = registers
 
     @override
     def to_table(self) -> rich.table.Table:
@@ -131,15 +131,15 @@ class NVDisasm:
 
     * https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html#nvdisasm
     """
-    HEADER_SEP      : typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \+[\-\+]+\+$')
-    HEADER_COLS     : typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \|(?:([A-Z ]+\|)+),?$')
-    TABLE_CUT       : typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\.]+')
-    TABLE_BEGIN_END : typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\-\+]+\+$')
+    HEADER_SEP:      typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \+[\-\+]+\+$')
+    HEADER_COLS:     typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \|(?:([A-Z ]+\|)+),?$')
+    TABLE_CUT:       typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\.]+')
+    TABLE_BEGIN_END: typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\-\+]+\+$')
 
     def __init__(self,
-        file : pathlib.Path,
-        arch : NVIDIAArch | None = None,
-        demangler : type[CuppFilt | LlvmCppFilt] = CuppFilt,
+        file: pathlib.Path,
+        arch: NVIDIAArch | None = None,
+        demangler: type[CuppFilt | LlvmCppFilt] = CuppFilt,
     ) -> None:
         """
         :param arch: Optionally check that `file` is a CUDA binary file for that `arch`.
@@ -156,9 +156,9 @@ class NVDisasm:
 
         self.symtab = get_symbol_table(file = self.file)
 
-        self.functions : dict[str, Function] = {}
+        self.functions: dict[str, Function] = {}
 
-    def extract_register_usage_from_liveness_range_info(self, mangled : typing.Iterable[str]) -> None:
+    def extract_register_usage_from_liveness_range_info(self, mangled: typing.Iterable[str]) -> None:
         """
         Extract register usage from liveness range information.
 
@@ -175,7 +175,7 @@ class NVDisasm:
                 raise RuntimeError(f'The function {function_mangled} does not appear or appears more than once in the symbol table.')
             function_idx = matches.iloc[0]['index']
 
-            cmd : tuple[str | pathlib.Path, ...] = (
+            cmd: tuple[str | pathlib.Path, ...] = (
                 'nvdisasm',
                 '--life-range-mode=wide',
                 '--separate-functions',
@@ -189,7 +189,7 @@ class NVDisasm:
             self.functions[function_mangled] = self.parse_sass_with_liveness_range_info(function_mangled, popen_stream(args = cmd))
 
     @classmethod
-    def parse_sass_with_liveness_range_info(cls, function_mangled : str, sass : typing.Iterator[str]) -> Function: # pylint: disable=too-many-branches
+    def parse_sass_with_liveness_range_info(cls, function_mangled: str, sass: typing.Iterator[str]) -> Function: # pylint: disable=too-many-branches
         """
         Parse the SASS with the liveness range information to extract the resource usage.
 
@@ -207,9 +207,9 @@ class NVDisasm:
             // +--------------------+--------+----------------+
         """
         found_function = False
-        reg_types : tuple[RegisterType, ...] | None = None
-        positions : dict[RegisterType, tuple[tuple[int, int], ...]] | None = None
-        used : dict[RegisterType, tuple[bool, ...]] = {}
+        reg_types: tuple[RegisterType, ...] | None = None
+        positions: dict[RegisterType, tuple[tuple[int, int], ...]] | None = None
+        used: dict[RegisterType, tuple[bool, ...]] = {}
 
         for line in sass: # pylint: disable=too-many-nested-blocks
             # Find the line that looks like:
@@ -252,7 +252,7 @@ class NVDisasm:
                                 if matches is None:
                                     raise RuntimeError(f'No register positions found for {reg_type} in section "{section}"')
                                 positions[reg_type] = tuple(matched.span() for matched in matches)
-                            used = {reg_type : (False,) * len(positions[reg_type]) for reg_type in reg_types}
+                            used = {reg_type: (False,) * len(positions[reg_type]) for reg_type in reg_types}
                         else:
                             raise RuntimeError('unexpected format')
                     else:
@@ -284,8 +284,8 @@ class NVDisasm:
                             raise RuntimeError('unexpected format')
 
         # Extract how many registers are used.
-        registers : DetailedRegisterUsage = {
-            reg_type : (len(vals), sum(vals)) for reg_type, vals in used.items()
+        registers: DetailedRegisterUsage = {
+            reg_type: (len(vals), sum(vals)) for reg_type, vals in used.items()
         }
 
         return Function(registers = registers)
@@ -294,7 +294,7 @@ class NVDisasm:
         """
         Rich representation.
         """
-        def to_table(name : str, function : Function) -> rich.table.Table:
+        def to_table(name: str, function: Function) -> rich.table.Table:
             rt = rich.table.Table(show_header = False)
             rt.add_column(width = 130, overflow = "ellipsis", no_wrap = True)
             rt.add_row(self.demangler.demangle(name))

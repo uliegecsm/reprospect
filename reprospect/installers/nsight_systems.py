@@ -12,7 +12,7 @@ import system_helpers.apt.install
 
 from reprospect.utils import nvcc
 
-PACKAGE : typing.Final[str] = 'cuda-nsight-systems'
+PACKAGE: typing.Final[str] = 'cuda-nsight-systems'
 
 def parse_args() -> argparse.Namespace:
     """
@@ -27,7 +27,7 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
-def install(*, args : argparse.Namespace) -> None:
+def install(*, args: argparse.Namespace) -> None:
     """
     Install `Nsight Systems` through `apt`.
     """

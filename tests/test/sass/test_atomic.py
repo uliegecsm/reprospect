@@ -116,7 +116,7 @@ __global__ void cas(My128Struct* __restrict__ const dst, const My128Struct* __re
 }
 """
 
-    CODE_EXCH_DEVICE_PTR : typing.Final[str] = """\
+    CODE_EXCH_DEVICE_PTR: typing.Final[str] = """\
 __device__ __constant__ int32_t* ptr;
 
 __global__ void atomic_exch_kernel() {
@@ -145,7 +145,7 @@ __global__ void atomic_exch_kernel() {
             ( 32, 'float',     'unsigned int'),
             ( 64, 'double',    'unsigned long long int'),
     ], ids = str)
-    def test_atomicCAS(self, request, workdir, word, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_atomicCAS(self, request, workdir, word, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD_BASED_ON_CAS`.
         """
@@ -170,7 +170,7 @@ __global__ void atomic_exch_kernel() {
         assert len(matched.operands) == 5
         assert matched.operands[0] == 'PT'
 
-    def test_atomicCAS_128(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_atomicCAS_128(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Supported from compute capability 9.x.
         """
@@ -190,7 +190,7 @@ __global__ void atomic_exch_kernel() {
             case _:
                 raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
 
-        kwargs = {'cwd' : workdir, 'arch' : parameters.arch, 'file' : FILE, 'cmake_file_api' : cmake_file_api}
+        kwargs = {'cwd': workdir, 'arch': parameters.arch, 'file': FILE, 'cmake_file_api': cmake_file_api}
 
         if expecting_failure:
             with pytest.raises(subprocess.CalledProcessError):
@@ -208,7 +208,7 @@ __global__ void atomic_exch_kernel() {
 
         assert {'CAS', '128'}.issubset(matched.modifiers)
 
-    def test_add_relaxed_block_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_relaxed_block_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         As of CUDA 13.0.0, the generated code still applies the ``.STRONG`` modifier,
         regardless of the ``.relaxed`` qualifier shown in the PTX.
@@ -239,7 +239,7 @@ __global__ void atomic_exch_kernel() {
         else:
             assert 'atom.add.relaxed.cta.s32' in result
 
-    def test_add_relaxed_block_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_relaxed_block_unsigned_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Similar to :py:meth:`test_add_relaxed_block_int` for `unsigned long long int`.
         """
@@ -266,7 +266,7 @@ __global__ void atomic_exch_kernel() {
 
         assert 'atom.add.relaxed.cta.u64' in result, result
 
-    def test_add_relaxed_block_float(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_relaxed_block_float(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Similar to :py:meth:`test_add_relaxed_block_int` for `float`.
         """
@@ -293,7 +293,7 @@ __global__ void atomic_exch_kernel() {
 
         assert 'atom.add.relaxed.cta.f32' in result
 
-    def test_add_relaxed_block_double(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_relaxed_block_double(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Similar to :py:meth:`test_add_relaxed_block_int` for `double`.
         """
@@ -320,7 +320,7 @@ __global__ void atomic_exch_kernel() {
 
         assert 'atom.add.relaxed.cta.f64' in result
 
-    def test_min_relaxed_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_min_relaxed_device_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MIN` for `int`.
         """
@@ -348,7 +348,7 @@ __global__ void atomic_exch_kernel() {
 
         assert 'atom.min.relaxed.gpu.s32' in result
 
-    def test_min_relaxed_device_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_min_relaxed_device_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MIN` for `long long int`.
         """
@@ -376,7 +376,7 @@ __global__ void atomic_exch_kernel() {
 
         assert 'atom.min.relaxed.gpu.s64' in result
 
-    def test_min_relaxed_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_min_relaxed_device_unsigned_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MIN` for `unsigned long long int`.
         """
@@ -404,7 +404,7 @@ __global__ void atomic_exch_kernel() {
 
         assert 'atom.min.relaxed.gpu.u64' in result
 
-    def test_exch_strong_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_exch_strong_device_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_EXCH` for `int`.
         """
@@ -421,7 +421,7 @@ __global__ void atomic_exch_kernel() {
 
         assert {'EXCH'}.issubset(matched.modifiers)
 
-    def test_exch_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_exch_strong_device_unsigned_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_EXCH` for `unsigned long long int`.
         """
@@ -438,7 +438,7 @@ __global__ void atomic_exch_kernel() {
 
         assert {'EXCH', '64'}.issubset(matched.modifiers)
 
-    def test_exch_strong_device_float(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_exch_strong_device_float(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_EXCH` for `float`.
         """
@@ -455,7 +455,7 @@ __global__ void atomic_exch_kernel() {
 
         assert {'EXCH'}.issubset(matched.modifiers)
 
-    def test_exch_device_ptr(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_exch_device_ptr(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         This test demonstrates that while ``nvcc`` emits an ``ATOMG`` instruction for an atomic exchange using a device pointer marked with
         :code:`__constant__`, ``clang`` (as of 21.1.5) is not able to infer that the referenced memory resides in global memory and therefore falls back
@@ -474,7 +474,7 @@ __global__ void atomic_exch_kernel() {
         )
 
         # Find the atomic exchange.
-        memory : str
+        memory: str
         match cmake_file_api.toolchains['CUDA']['compiler']['id']:
             case 'NVIDIA':
                 memory = 'G'

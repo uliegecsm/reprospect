@@ -4,7 +4,7 @@ import subprocess
 import typing
 
 def popen_stream(*,
-    args : typing.Sequence[str | pathlib.Path],
+    args: typing.Sequence[str | pathlib.Path],
     **kwargs,
 ) -> typing.Generator[str, None, None]:
     """

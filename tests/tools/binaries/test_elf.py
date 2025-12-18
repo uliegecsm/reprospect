@@ -41,18 +41,18 @@ def check_version(version: int|str) -> None:
         assert f'{ver.major}.{expt_minor}' in version
 
 class TestGetComputeCapabilityFromEFlags:
-    CC_E_FLAGS : typing.Final[dict[int, int]] = {
-        70  : 0b10001100000010101000110,     # 0x460546
-        75  : 0b10010110000010101001011,     # 0x4b054b
-        80  : 0b10100000000010101010000,     # 0x500550
-        86  : 0b10101100000010101010110,     # 0x560556
-        89  : 0b10110010000010101011001,     # 0x590559
-        90  : 0b10110100000010101011010,     # 0x5a055a
-        100 : 0b110000000000110010000000010, # 0x6006402
-        103 : 0b110000000000110011100000010, # 0x6006702
-        110 : 0b110000000000110111000000010, # 0x6006e02
-        120 : 0b110000000000111100000000010, # 0x6007802
-        121 : 0b110000000000111100100000010, # 0x6007902
+    CC_E_FLAGS: typing.Final[dict[int, int]] = {
+        70: 0b10001100000010101000110,      # 0x460546
+        75: 0b10010110000010101001011,      # 0x4b054b
+        80: 0b10100000000010101010000,      # 0x500550
+        86: 0b10101100000010101010110,      # 0x560556
+        89: 0b10110010000010101011001,      # 0x590559
+        90: 0b10110100000010101011010,      # 0x5a055a
+        100: 0b110000000000110010000000010, # 0x6006402
+        103: 0b110000000000110011100000010, # 0x6006702
+        110: 0b110000000000110111000000010, # 0x6006e02
+        120: 0b110000000000111100000000010, # 0x6007802
+        121: 0b110000000000111100100000010, # 0x6007902
     }
     """
     Values of `e_flags` obtained by calling ``cuobjdump --dump-elf`` on a cubin
@@ -60,7 +60,7 @@ class TestGetComputeCapabilityFromEFlags:
     """
 
     @pytest.mark.parametrize(('cc', 'e_flags'), CC_E_FLAGS.items())
-    def test(self, cc : int, e_flags : int) -> None:
+    def test(self, cc: int, e_flags: int) -> None:
         b0 = e_flags         & 0xFF
         b1 = (e_flags >> 8)  & 0xFF
         b2 = (e_flags >> 16) & 0xFF
@@ -76,7 +76,7 @@ class TestGetComputeCapabilityFromEFlags:
         logging.info(f'For cc {cc}, the e_flags {e_flags} are composed of {b0}, {b1}, {b2} and {b3}.')
 
     @pytest.mark.parametrize(('cc', 'e_flags'), CC_E_FLAGS.items())
-    def test_get_compute_capability_from_e_flags(self, cc : int, e_flags : int) -> None:
+    def test_get_compute_capability_from_e_flags(self, cc: int, e_flags: int) -> None:
         assert ELF.compute_capability(e_flags).as_int == cc
 
 class TestCUDART:
@@ -84,12 +84,12 @@ class TestCUDART:
     Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using the CUDA runtime shared library.
     """
     @pytest.fixture(scope = 'class')
-    def cudart(self, cmake_file_api : cmake.FileAPI) -> pathlib.Path:
+    def cudart(self, cmake_file_api: cmake.FileAPI) -> pathlib.Path:
         cudart = pathlib.Path(cmake_file_api.cache['CUDA_CUDART']['value'])
         assert cudart.is_file()
         return cudart
 
-    def test_shared_library(self, cudart : pathlib.Path) -> None:
+    def test_shared_library(self, cudart: pathlib.Path) -> None:
         """
         The CUDA runtime shared library is a shared library and not itself a cubin.
         """
@@ -99,7 +99,7 @@ class TestCUDART:
             assert elf.header['e_type'] == 'ET_DYN'
             assert not elf.is_cuda
 
-    def test_embedded_cubin(self, cudart : pathlib.Path) -> None:
+    def test_embedded_cubin(self, cudart: pathlib.Path) -> None:
         """
         The CUDA runtime shared library does not contain embedded cubins.
         """
@@ -107,7 +107,7 @@ class TestCUDART:
             tuple(CuObjDump.list_elf(file = cudart))
         assert 'does not contain device code' in exc.value.stderr
 
-def get_cubin(arch : NVIDIAArch, cublas : CuBLAS, workdir : pathlib.Path) -> pathlib.Path:
+def get_cubin(arch: NVIDIAArch, cublas: CuBLAS, workdir: pathlib.Path) -> pathlib.Path:
     try:
         [cubin] = cublas.extract(arch = arch, cwd = workdir, randomly = True)
     except IndexError:
@@ -115,7 +115,7 @@ def get_cubin(arch : NVIDIAArch, cublas : CuBLAS, workdir : pathlib.Path) -> pat
     assert cubin.is_file()
     return cubin
 
-def get_cuinfo_and_tkinfo(*, arch : NVIDIAArch, file : pathlib.Path, version : semantic_version.Version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> tuple[CuInfo | None, TkInfo | None]:
+def get_cuinfo_and_tkinfo(*, arch: NVIDIAArch, file: pathlib.Path, version: semantic_version.Version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> tuple[CuInfo | None, TkInfo | None]:
     """
     Extract `cuinfo` and `tkinfo` note sections.
 
@@ -123,18 +123,18 @@ def get_cuinfo_and_tkinfo(*, arch : NVIDIAArch, file : pathlib.Path, version : s
     """
     with ELF(file = file) as elf:
 
-        def has(*, name : str) -> bool:
+        def has(*, name: str) -> bool:
             return elf.elf.has_section(section_name = '.note.nv.' + name)
 
-        def get(*, name : str) -> elftools.elf.sections.NoteSection:
+        def get(*, name: str) -> elftools.elf.sections.NoteSection:
             section = elf.elf.get_section_by_name(name = '.note.nv.' + name)
             assert isinstance(section, elftools.elf.sections.NoteSection)
             return section
 
-        cuinfos : tuple[CuInfo, ...] | None = tuple(note for note in CuInfo.decode(note = get(name = 'cuinfo'))) if has(name = 'cuinfo') else None
-        tkinfos : tuple[TkInfo, ...] | None = tuple(note for note in TkInfo.decode(note = get(name = 'tkinfo'))) if has(name = 'tkinfo') else None
+        cuinfos: tuple[CuInfo, ...] | None = tuple(note for note in CuInfo.decode(note = get(name = 'cuinfo'))) if has(name = 'cuinfo') else None
+        tkinfos: tuple[TkInfo, ...] | None = tuple(note for note in TkInfo.decode(note = get(name = 'tkinfo'))) if has(name = 'tkinfo') else None
 
-        cuinfo : CuInfo | None = None
+        cuinfo: CuInfo | None = None
         if version in semantic_version.SimpleSpec('<13.0.0'):
             assert cuinfos is None
         else:
@@ -144,7 +144,7 @@ def get_cuinfo_and_tkinfo(*, arch : NVIDIAArch, file : pathlib.Path, version : s
             cuinfo = cuinfos[0]
             assert cuinfo.virtual_sm == arch.compute_capability.as_int
 
-        tkinfo : TkInfo | None = None
+        tkinfo: TkInfo | None = None
         if version in semantic_version.SimpleSpec('<13.0.0') \
             and arch.compute_capability <= 90:
             assert tkinfos is None
@@ -164,10 +164,10 @@ class TestCuBLAS:
     Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using the cuBLAS shared library.
     """
     @pytest.fixture(scope = 'class')
-    def cublas(self, cmake_file_api : cmake.FileAPI) -> CuBLAS:
+    def cublas(self, cmake_file_api: cmake.FileAPI) -> CuBLAS:
         return CuBLAS(cmake_file_api = cmake_file_api)
 
-    def test_shared_library(self, cublas : CuBLAS) -> None:
+    def test_shared_library(self, cublas: CuBLAS) -> None:
         """
         The cuBLAS shared library is a shared library and not itself a cubin.
         """
@@ -178,7 +178,7 @@ class TestCuBLAS:
             assert not elf.is_cuda
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_embedded_cubin(self, parameters : Parameters, cublas : CuBLAS, workdir : pathlib.Path) -> None:
+    def test_embedded_cubin(self, parameters: Parameters, cublas: CuBLAS, workdir: pathlib.Path) -> None:
         """
         The cuBLAS shared library contains embedded cubins for many, but not all, architectures.
         """
@@ -191,7 +191,7 @@ class TestCuBLAS:
             assert elf.arch == parameters.arch
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_embedded_cubin_cuinfo_and_tkinfo(self, parameters : Parameters, cublas : CuBLAS, workdir : pathlib.Path) -> None:
+    def test_embedded_cubin_cuinfo_and_tkinfo(self, parameters: Parameters, cublas: CuBLAS, workdir: pathlib.Path) -> None:
         """
         Retrieve the `cuinfo` and `tkinfo` note sections from a cuBLAS cubin.
         """
@@ -213,10 +213,10 @@ class TestSaxpy:
     """
     Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using an object file.
     """
-    FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
+    FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
 
     @pytest.fixture
-    def object_file(self, parameters : Parameters, cmake_file_api : cmake.FileAPI, workdir : pathlib.Path) -> pathlib.Path:
+    def object_file(self, parameters: Parameters, cmake_file_api: cmake.FileAPI, workdir: pathlib.Path) -> pathlib.Path:
         """
         Compile into object file.
         """
@@ -231,7 +231,7 @@ class TestSaxpy:
         assert object_file.is_file()
         return object_file
 
-    def test_object_file_and_embedded_cubin(self, parameters : Parameters, object_file : pathlib.Path, workdir : pathlib.Path) -> None:
+    def test_object_file_and_embedded_cubin(self, parameters: Parameters, object_file: pathlib.Path, workdir: pathlib.Path) -> None:
         """
         Check that the object file:
 
@@ -255,7 +255,7 @@ class TestSaxpy:
             assert elf.is_cuda
             assert elf.arch == parameters.arch
 
-    def test_embedded_cubin_cuinfo_and_tkinfo(self, parameters : Parameters, object_file : pathlib.Path, workdir : pathlib.Path, cmake_file_api : cmake.FileAPI) -> None:
+    def test_embedded_cubin_cuinfo_and_tkinfo(self, parameters: Parameters, object_file: pathlib.Path, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI) -> None:
         """
         Retrieve the `cuinfo` and `tkinfo` note sections from a compiled output.
         """
@@ -290,10 +290,10 @@ class TestNvInfo:
     """
     Tests for :py:class:`reprospect.tools.binaries.elf.NvInfo`.
     """
-    DATA_0 : typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\t\x00\x00\x00`\x018\x00\x03\x198\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x00\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x08\x00`\x00\x00\x00p\x01\x00\x00\x04\x05\x0c\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x04\x1e\x04\x00\x00\x00\x00\x00'
-    DATA_1 : typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\x0c\x00\x00\x00`\x01x\x00\x03\x19x\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x04\x00\x10\x00\x00\x00'
-    DATA_2 : typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\x0f\x00\x00\x00`\x01x\x00\x03\x19x\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x04\x00\x10\x00\x00\x00'
-    DATA_3 : typing.Final[bytes] = b'\x046\x04\x00\x01\x00\x00\x00\x047\x04\x00\x80\x00\x00\x00\x04\n\x08\x00\x02\x00\x00\x00`\x01\x1c\x00\x03\x19\x1c\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x03\x00\x18\x00\x00\xf0\x11\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x02\x00\x10\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x01\x00\x08\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\x11\x00\x03\x1b\xff\x00\x041\x04\x00\x10\x00\x00\x00\x04\x1c\x08\x00`\x00\x00\x00\xe0\x00\x00\x00'
+    DATA_0: typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\t\x00\x00\x00`\x018\x00\x03\x198\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x00\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x08\x00`\x00\x00\x00p\x01\x00\x00\x04\x05\x0c\x00\x01\x00\x00\x00\x01\x00\x00\x00\x01\x00\x00\x00\x04\x1e\x04\x00\x00\x00\x00\x00'
+    DATA_1: typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\x0c\x00\x00\x00`\x01x\x00\x03\x19x\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x04\x00\x10\x00\x00\x00'
+    DATA_2: typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\x0f\x00\x00\x00`\x01x\x00\x03\x19x\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x04\x00\x10\x00\x00\x00'
+    DATA_3: typing.Final[bytes] = b'\x046\x04\x00\x01\x00\x00\x00\x047\x04\x00\x80\x00\x00\x00\x04\n\x08\x00\x02\x00\x00\x00`\x01\x1c\x00\x03\x19\x1c\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x03\x00\x18\x00\x00\xf0\x11\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x02\x00\x10\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x01\x00\x08\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\x11\x00\x03\x1b\xff\x00\x041\x04\x00\x10\x00\x00\x00\x04\x1c\x08\x00`\x00\x00\x00\xe0\x00\x00\x00'
 
     def test_parse_data_0(self) -> None:
         """
@@ -417,11 +417,11 @@ class TestNvInfo:
         return nvcc.get_version()
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test(self, version, parameters : Parameters, cmake_file_api : cmake.FileAPI, workdir : pathlib.Path) -> None:
+    def test(self, version, parameters: Parameters, cmake_file_api: cmake.FileAPI, workdir: pathlib.Path) -> None:
         """
         Extract the `.nv.info.<mangled>` section of the kernel.
         """
-        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
+        FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
 
         output, _ = get_compilation_output(
             source = FILE,

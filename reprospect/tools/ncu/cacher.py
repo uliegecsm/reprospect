@@ -41,12 +41,12 @@ class Cacher(cacher.Cacher):
         The cache should not be shared between machines, since there may be differences between machines
         that influence the results but are not included in the hashing.
     """
-    TABLE : typing.ClassVar[str] = 'ncu'
+    TABLE: typing.ClassVar[str] = 'ncu'
 
-    def __init__(self, *, directory : str | pathlib.Path | None = None):
+    def __init__(self, *, directory: str | pathlib.Path | None = None):
         super().__init__(directory = directory or (pathlib.Path(os.environ['HOME']) / '.ncu-cache'))
 
-    def hash_impl(self, *, command : Command) -> blake3.blake3:
+    def hash_impl(self, *, command: Command) -> blake3.blake3:
         """
         Hash based on:
 
@@ -82,7 +82,7 @@ class Cacher(cacher.Cacher):
         return self.hash_impl(command = kwargs['command'])
 
     @override
-    def populate(self, directory : pathlib.Path, **kwargs) -> None:
+    def populate(self, directory: pathlib.Path, **kwargs) -> None:
         """
         When there is a cache miss, call :py:meth:`reprospect.tools.ncu.Session.run`.
         Fill the `directory` with the artifacts.
@@ -95,7 +95,7 @@ class Cacher(cacher.Cacher):
         shutil.copy(dst = directory, src = command.log)
 
     def run(self,
-        command : Command,
+        command: Command,
         **kwargs,
     ) -> cacher.Cacher.Entry:
         """

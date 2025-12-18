@@ -23,10 +23,10 @@ class TestSASS:
     """
     Tests that combine different half-precision SASS instructions.
     """
-    FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'test_half.cu'
+    FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'test_half.cu'
 
     @pytest.fixture(scope = 'class')
-    def cuobjdump(self, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> CuObjDump:
+    def cuobjdump(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> CuObjDump:
         output, _ = get_compilation_output(
             source = self.FILE,
             cwd = workdir,
@@ -43,7 +43,7 @@ class TestSASS:
 
         return cuobjdump
 
-    def test_individual(self, parameters : Parameters, cuobjdump : CuObjDump) -> None:
+    def test_individual(self, parameters: Parameters, cuobjdump: CuObjDump) -> None:
         """
         Analyse the individual implementation.
 
@@ -64,7 +64,7 @@ class TestSASS:
         matcher_store = instructions_contain(StoreGlobalMatcher(arch = parameters.arch, size = 16, extend = 'U'))
         matcher_store.assert_matches(instructions = decoder.instructions[matcher_hmul.next_index:])
 
-    def test_packed(self, parameters : Parameters, cuobjdump : CuObjDump) -> None:
+    def test_packed(self, parameters: Parameters, cuobjdump: CuObjDump) -> None:
         """
         Analyse the packed implementation.
 
@@ -102,7 +102,7 @@ class TestSASS:
         matcher_load_32 = instructions_contain(LoadGlobalMatcher(arch = parameters.arch, size = 32, readonly = True))
 
         block_individual, _ = BasicBlockMatcher(matcher_load_16).assert_matches(cfg=cfg)
-        block_packed    , _ = BasicBlockMatcher(matcher_load_32).assert_matches(cfg=cfg)
+        block_packed, _ = BasicBlockMatcher(matcher_load_32).assert_matches(cfg=cfg)
 
         instructions_contain(Fp16MulMatcher(packed = False)).assert_matches(instructions = block_individual.instructions[matcher_load_16.next_index:])
 
@@ -121,9 +121,9 @@ class TestNCU:
     """
     `ncu`-based analysis of the individual *vs* packed implementation.
     """
-    HALF : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_half'
+    HALF: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_half'
 
-    METRICS : typing.Final[tuple[ncu.metrics.MetricKind, ...]] = (
+    METRICS: typing.Final[tuple[ncu.metrics.MetricKind, ...]] = (
         ncu.MetricDeviceAttribute(name = 'display_name'),
         ncu.L1TEXCacheGlobalLoadInstructions.create(),
         ncu.L1TEXCacheGlobalLoadRequests.create(),
@@ -132,21 +132,21 @@ class TestNCU:
         *ncu.LaunchBlock.create(),
     )
 
-    WARP_SIZE : typing.Final[int] = 32
+    WARP_SIZE: typing.Final[int] = 32
 
-    SIZE : typing.Final[int] = 129
+    SIZE: typing.Final[int] = 129
     """Buffer size."""
 
-    SIZEOF : typing.Final[int] = 2
+    SIZEOF: typing.Final[int] = 2
     """Size of :code:`__half` in bytes."""
 
-    BLOCK_DIM_X : typing.Final[dict[str, int]] = {
-        'individual' : SIZE,
-        'packed' : 65,
+    BLOCK_DIM_X: typing.Final[dict[str, int]] = {
+        'individual': SIZE,
+        'packed': 65,
     }
 
     @pytest.fixture(scope = 'class')
-    def results(self, workdir : pathlib.Path, bindir : pathlib.Path) -> ncu.ProfilingResults:
+    def results(self, workdir: pathlib.Path, bindir: pathlib.Path) -> ncu.ProfilingResults:
         with ncu.Cacher(directory = workdir) as cacher:
             command = ncu.Command(
                 output = workdir / 'report-half',
@@ -160,7 +160,7 @@ class TestNCU:
 
             return report.extract_results_in_range(metrics = self.METRICS)
 
-    def test_memory(self, results : ncu.ProfilingResults) -> None:
+    def test_memory(self, results: ncu.ProfilingResults) -> None:
         """
         Compare the memory traffic.
         """

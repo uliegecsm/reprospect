@@ -69,7 +69,7 @@ class ResourceUsage: # pylint: disable=too-many-instance-attributes
         return f'REG: {self.register}, STACK: {self.stack}, SHARED: {self.shared}, LOCAL: {self.local}, CONSTANT: {self.constant}, TEXTURE: {self.texture}, SURFACE: {self.surface}, SAMPLER: {self.sampler}'
 
     @classmethod
-    def parse(cls, line : str) -> ResourceUsage:
+    def parse(cls, line: str) -> ResourceUsage:
         """
         Parse a resource usage line, such as produced by ``cuobjdump`` with ``--dump-resource-usage``.
         """
@@ -93,11 +93,11 @@ class Function:
     """
     Data structure holding the SASS code and resource usage of a kernel, as extracted from a binary file.
     """
-    symbol : str #: The symbol name.
-    code : str #: The SASS code.
-    ru : ResourceUsage #: The resource usage.
+    symbol: str #: The symbol name.
+    code: str #: The SASS code.
+    ru: ResourceUsage #: The resource usage.
 
-    def to_table(self, *, max_code_length : int = 130, descriptors : dict[str, str] | None = None) -> rich.table.Table:
+    def to_table(self, *, max_code_length: int = 130, descriptors: dict[str, str] | None = None) -> rich.table.Table:
         """
         Convert to a :py:class:`rich.table.Table`.
 
@@ -140,28 +140,28 @@ class CuObjDump:
     """
     def __init__(
         self,
-        file : pathlib.Path,
-        arch : NVIDIAArch,
+        file: pathlib.Path,
+        arch: NVIDIAArch,
         *,
-        sass : bool = True,
-        demangler : type[CuppFilt | LlvmCppFilt] | None = CuppFilt,
-        keep : typing.Iterable[str] | None = None,
+        sass: bool = True,
+        demangler: type[CuppFilt | LlvmCppFilt] | None = CuppFilt,
+        keep: typing.Iterable[str] | None = None,
     ) -> None:
         """
         :param file: Either a host binary file containing one or more embedded CUDA binary files, or itself a CUDA binary file.
         :param keep: Optionally filter the functions to be kept.
         """
-        self.file : typing.Final[pathlib.Path] = file #: The binary file.
-        self.arch : typing.Final[NVIDIAArch] = arch #: The NVIDIA architecture.
-        self.functions : dict[str, Function] = {}
+        self.file: typing.Final[pathlib.Path] = file #: The binary file.
+        self.arch: typing.Final[NVIDIAArch] = arch #: The NVIDIA architecture.
+        self.functions: dict[str, Function] = {}
         if sass:
             self.parse_sass(demangler = demangler, keep = keep)
 
-    def parse_sass(self, demangler : type[CuppFilt | LlvmCppFilt] | None = None, keep : typing.Iterable[str] | None = None) -> None:
+    def parse_sass(self, demangler: type[CuppFilt | LlvmCppFilt] | None = None, keep: typing.Iterable[str] | None = None) -> None:
         """
         Parse SASS from :py:attr:`file`.
         """
-        cmd : tuple[str | pathlib.Path, ...] = (
+        cmd: tuple[str | pathlib.Path, ...] = (
             'cuobjdump',
             '--gpu-architecture', self.arch.as_sm,
             '--dump-sass', '--dump-resource-usage',
@@ -174,12 +174,12 @@ class CuObjDump:
         START = '\t\tFunction : ' # pylint: disable=invalid-name
         STOP = '\t\t.....' # pylint: disable=invalid-name
 
-        current_function_symbol_code : str | None = None
-        current_function_code : str | None = None
-        current_code : list[str] = []
+        current_function_symbol_code: str | None = None
+        current_function_code: str | None = None
+        current_code: list[str] = []
 
         current_function_ru: str | None = None
-        current_ru : dict[str, ResourceUsage] = {}
+        current_ru: dict[str, ResourceUsage] = {}
 
         # Read the stream as it comes.
         # The cuobjdump output starts with the resource usage for all functions.
@@ -222,10 +222,10 @@ class CuObjDump:
 
     @classmethod
     def extract(cls, *,
-        file : pathlib.Path,
-        arch : NVIDIAArch,
-        cwd : pathlib.Path,
-        cubin : str,
+        file: pathlib.Path,
+        arch: NVIDIAArch,
+        cwd: pathlib.Path,
+        cubin: str,
         **kwargs,
     ) -> tuple[CuObjDump, pathlib.Path]:
         """
@@ -251,10 +251,10 @@ class CuObjDump:
 
     @staticmethod
     def extract_elf(*,
-        file : pathlib.Path,
-        cwd : pathlib.Path | None = None,
-        arch : NVIDIAArch | None = None,
-        name : str | None = None,
+        file: pathlib.Path,
+        cwd: pathlib.Path | None = None,
+        arch: NVIDIAArch | None = None,
+        name: str | None = None,
     ) -> typing.Generator[str, None, None]:
         """
         Extract ELF files from `file`.
@@ -262,7 +262,7 @@ class CuObjDump:
         :param arch: Optionally filter for a given architecture.
         :param name: Optionally filter by name.
         """
-        cmd : list[str | pathlib.Path] = [
+        cmd: list[str | pathlib.Path] = [
             'cuobjdump',
             '--extract-elf',
         ]
@@ -287,7 +287,7 @@ class CuObjDump:
         with rich.console.Console(width = 200) as console, console.capture() as capture:
             console.print(f'CuObjDump of {self.file} for architecture {self.arch}:')
             for name, function in self.functions.items():
-                console.print(function.to_table(descriptors = {'Function' : name}), no_wrap = True)
+                console.print(function.to_table(descriptors = {'Function': name}), no_wrap = True)
         return capture.get()
 
     @functools.cached_property
@@ -298,13 +298,13 @@ class CuObjDump:
         return tuple(self.list_elf(arch = self.arch, file = self.file))
 
     @staticmethod
-    def list_elf(*, file : pathlib.Path, arch : NVIDIAArch | None = None) -> typing.Generator[str, None, None]:
+    def list_elf(*, file: pathlib.Path, arch: NVIDIAArch | None = None) -> typing.Generator[str, None, None]:
         """
         List ELF files in `file`.
 
         :param arch: Optionally filter for a given architecture.
         """
-        cmd : list[str | pathlib.Path] = [
+        cmd: list[str | pathlib.Path] = [
             'cuobjdump',
             '--list-elf',
         ]

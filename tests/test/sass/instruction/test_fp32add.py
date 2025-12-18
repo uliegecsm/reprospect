@@ -38,7 +38,7 @@ class TestFp32AddMatcher:
         assert matched.operands == ('R9', '-R7', '1.5707963705062866211')
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_elementwise_add_restrict_wide(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:const:`tests.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE`.
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import io
 import logging
@@ -108,14 +110,14 @@ class ControlCode:
     * :cite:`maxas-wiki-control-codes`
     """
     stall_count: int       #: Stall count.
-    yield_flag : bool      #: Yield flag.
-    read : int             #: Index of the read barrier that is set (7 if no read barrier is set).
+    yield_flag: bool       #: Yield flag.
+    read: int              #: Index of the read barrier that is set (7 if no read barrier is set).
     write: int             #: Index of the write barrier that is set (7 if no write barrier is set).
-    wait : list[bool]      #: Wait barrier mask (one bit per barrier 0-5).
+    wait: list[bool]       #: Wait barrier mask (one bit per barrier 0-5).
     reuse: dict[str, bool] #: Reuse flags.
 
     @staticmethod
-    def decode(*, code : str) -> 'ControlCode':
+    def decode(*, code: str) -> ControlCode:
         """
         Decode 64-bit word including a control code.
         """
@@ -188,10 +190,10 @@ class Instruction:
     """
     Represents a single SASS instruction with its components.
     """
-    offset : int          #: Offset of the instruction in the SASS code.
-    instruction : str     #: The disassembled SASS instruction including opcode, modifiers and operands.
-    hex : str             #: The hexadecimal representation of the instruction.
-    control : ControlCode #: The decoded control code associated with the instruction.
+    offset: int          #: Offset of the instruction in the SASS code.
+    instruction: str     #: The disassembled SASS instruction including opcode, modifiers and operands.
+    hex: str             #: The hexadecimal representation of the instruction.
+    control: ControlCode #: The decoded control code associated with the instruction.
 
 @mypy_extensions.mypyc_attr(native_class = True)
 class Decoder(rich_helpers.TableMixin):
@@ -200,16 +202,16 @@ class Decoder(rich_helpers.TableMixin):
 
     The disassembled :py:attr:`instructions` are collected, and the associated control codes are decoded.
     """
-    OFFSET : typing.Final[str] = r'[a-f0-9]+'
+    OFFSET: typing.Final[str] = r'[a-f0-9]+'
 
-    HEX : typing.Final[str] = r'0x[a-f0-9]+'
+    HEX: typing.Final[str] = r'0x[a-f0-9]+'
     """
     Matcher for an hex-like string, such as `0x00000a0000017a02`.
     """
 
-    MATCHER_CONTROL : typing.Final[re.Pattern[str]] = re.compile(rf'\/\* ({HEX}) \*\/')
+    MATCHER_CONTROL: typing.Final[re.Pattern[str]] = re.compile(rf'\/\* ({HEX}) \*\/')
 
-    MATCHER : typing.Final[re.Pattern[str]] = re.compile(
+    MATCHER: typing.Final[re.Pattern[str]] = re.compile(
         rf'/\*({OFFSET})\*/'
         r'\s+'
         r'(.*?)(?=\s{2,}|[;?&])'
@@ -231,7 +233,7 @@ class Decoder(rich_helpers.TableMixin):
     These strings are ignored.
     """
 
-    def __init__(self, *, source : pathlib.Path | None = None, code : str | None = None, skip_until_headerflags : bool = True) -> None:
+    def __init__(self, *, source: pathlib.Path | None = None, code: str | None = None, skip_until_headerflags: bool = True) -> None:
         """
         Initialize the decoder with the SASS contained in `source` or `code`.
         """
@@ -241,7 +243,7 @@ class Decoder(rich_helpers.TableMixin):
         if source or code:
             self._parse(skip_until_headerflags = skip_until_headerflags)
 
-    def _parse(self, *, skip_until_headerflags : bool = False) -> None:
+    def _parse(self, *, skip_until_headerflags: bool = False) -> None:
         """
         Parse SASS lines.
         """
@@ -255,10 +257,10 @@ class Decoder(rich_helpers.TableMixin):
 
         raise RuntimeError('Neither code nor source was given.')
 
-    def _parse_lines(self, lines : typing.Iterable[str], *, skip_until_headerflags : bool = False) -> None:
+    def _parse_lines(self, lines: typing.Iterable[str], *, skip_until_headerflags: bool = False) -> None:
         headerflags = False
 
-        iterator : typing.Iterator[str] = iter(lines)
+        iterator: typing.Iterator[str] = iter(lines)
 
         for line in iterator:
             line = line.strip()
@@ -289,7 +291,7 @@ class Decoder(rich_helpers.TableMixin):
             except StopIteration:
                 next_line = None
 
-            control : ControlCode | None = None
+            control: ControlCode | None = None
 
             if next_line and (matchc := self.MATCHER_CONTROL.search(next_line)):
                 control = ControlCode.decode(code = matchc.group(1))
@@ -308,17 +310,17 @@ class Decoder(rich_helpers.TableMixin):
         """
         Convert the decoded SASS to a :py:class:`pandas.DataFrame`.
         """
-        data : dict[str, list[int | str]] = {
-            'offset' : [],
-            'instruction' : [],
-            'stall' : [],
-            'yield' : [],
-            'b0' : [],
-            'b1' : [],
-            'b2' : [],
-            'b3' : [],
-            'b4' : [],
-            'b5' : [],
+        data: dict[str, list[int | str]] = {
+            'offset': [],
+            'instruction': [],
+            'stall': [],
+            'yield': [],
+            'b0': [],
+            'b1': [],
+            'b2': [],
+            'b3': [],
+            'b4': [],
+            'b5': [],
         }
 
         for instruction in self.instructions:

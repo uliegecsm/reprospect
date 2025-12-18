@@ -29,17 +29,17 @@ class RegisterMatchValidator(SequenceMatcher):
     """
     __slots__ = ('load_register', 'matcher', 'start_register_matcher')
 
-    def __init__(self, matcher : add_int128.AddInt128, load : InstructionMatch) -> None:
-        self.matcher : typing.Final[add_int128.AddInt128] = matcher
+    def __init__(self, matcher: add_int128.AddInt128, load: InstructionMatch) -> None:
+        self.matcher: typing.Final[add_int128.AddInt128] = matcher
         """Inner matcher."""
         matched = RegisterMatcher().match(load.operands[0])
         assert matched is not None
-        self.load_register : typing.Final[RegisterMatch] = matched
+        self.load_register: typing.Final[RegisterMatch] = matched
         """The register that must be used by :py:attr:`matcher`."""
-        self.start_register_matcher : typing.Final[RegisterMatcher] = RegisterMatcher(rtype = self.load_register.rtype, index = self.load_register.index)
+        self.start_register_matcher: typing.Final[RegisterMatcher] = RegisterMatcher(rtype = self.load_register.rtype, index = self.load_register.index)
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         if (matched := self.matcher.match(instructions)) is not None:
             if self.start_register_matcher.match(matched[0].additional['start'][0]) is not None:
                 return matched
@@ -54,7 +54,7 @@ class AddInt128:
     """
     Addition of 2 :code:`__int128` that uses a specific set of registers.
     """
-    def build(self, loads : typing.Collection[InstructionMatch]) -> OrderedInSequenceMatcher:
+    def build(self, loads: typing.Collection[InstructionMatch]) -> OrderedInSequenceMatcher:
         if len(loads) != 1:
             raise RuntimeError(self)
         return instructions_are(RegisterMatchValidator(matcher = add_int128.AddInt128(), load = loads[0]))
@@ -68,11 +68,11 @@ class TestAtomicAddInt128(add.TestCase):
     def get_target_name(cls) -> str:
         return 'examples_kokkos_atomic_add_int128'
 
-    SIGNATURE_MATCHER : typing.ClassVar[re.Pattern[str]] = re.compile(
+    SIGNATURE_MATCHER: typing.ClassVar[re.Pattern[str]] = re.compile(
         r'AtomicAddFunctor<Kokkos::View<__int128\s*\*\s*, Kokkos::CudaSpace>>',
     )
 
-    def test_lock_atomic_before_hopper90(self, decoder : Decoder) -> None:
+    def test_lock_atomic_before_hopper90(self, decoder: Decoder) -> None:
         """
         This test proves that it uses the lock-based implementation.
         """

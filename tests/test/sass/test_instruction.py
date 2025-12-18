@@ -57,7 +57,7 @@ __global__ void elementwise_add_restrict_256_wide(Tester* __restrict__ const dst
 """Element-wise add with 256-bit aligned elements."""
 
 @functools.lru_cache(maxsize = 128)
-def get_decoder(*, cwd : pathlib.Path, arch : NVIDIAArch, file : pathlib.Path, cmake_file_api : cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:
+def get_decoder(*, cwd: pathlib.Path, arch: NVIDIAArch, file: pathlib.Path, cmake_file_api: cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:
     """
     Compile the code in `file` for `arch` and return a :py:class:`reprospect.tools.sass.Decoder`.
     """
@@ -136,7 +136,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 }}
 """
 
-    def test_add_strong_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `int`.
         """
@@ -162,7 +162,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'WEAK', dtype = ('S', 32))
         assert not any(matcher.match(inst) for inst in decoder.instructions)
 
-    def test_add_strong_device_unsigned_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_unsigned_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `unsigned int`.
         """
@@ -179,7 +179,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
 
-    def test_add_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_unsigned_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `unsigned long long int`.
         """
@@ -202,7 +202,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
 
-    def test_add_strong_device_float(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_float(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `float`.
         """
@@ -219,7 +219,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
 
-    def test_add_strong_device_double(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_add_strong_device_double(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_ADD` for `double`.
         """
@@ -236,7 +236,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 2
 
-    def test_sub_strong_device(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_sub_strong_device(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_SUB`.
         """
@@ -252,7 +252,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
             instructions=decoder.instructions,
         ))
 
-    def test_max_strong_device_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_max_strong_device_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MAX` for `long long int`. The modifier is ``MAX.S64``.
         """
@@ -262,7 +262,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
-        matcher_type : type[AtomicMatcher | ReductionMatcher]
+        matcher_type: type[AtomicMatcher | ReductionMatcher]
         if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<12.8'):
             matcher_type = AtomicMatcher
         else:
@@ -272,7 +272,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         assert {'MAX', 'S64'}.issubset(matched.modifiers)
 
-    def test_max_strong_device_unsigned_long_long_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_max_strong_device_unsigned_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MAX` for `unsigned long long int`. The modifier is ``MAX.64``.
         """
@@ -282,7 +282,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the reduction.
-        matcher_type : type[AtomicMatcher | ReductionMatcher]
+        matcher_type: type[AtomicMatcher | ReductionMatcher]
         if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<12.8'):
             matcher_type = AtomicMatcher
         else:
@@ -292,7 +292,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         assert {'MAX', '64'}.issubset(matched.modifiers)
 
-    def test_max_strong_device_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_max_strong_device_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MAX` for `int`. The modifier is ``MAX.S32``.
         """
@@ -307,7 +307,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
         assert {'MAX', 'S32'}.issubset(matched.modifiers)
 
-    def test_max_strong_device_unsigned_int(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_max_strong_device_unsigned_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_MAX` for `unsigned int`. The modifier is ``MAX``.
         """

@@ -4,7 +4,7 @@ import pandas
 
 from reprospect.tools.binaries.elf import ELF
 
-def get_symbol_table(*, file : pathlib.Path) -> pandas.DataFrame:
+def get_symbol_table(*, file: pathlib.Path) -> pandas.DataFrame:
     """
     Extract the symbol table from `file`.
     """

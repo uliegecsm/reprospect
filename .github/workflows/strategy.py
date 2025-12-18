@@ -8,16 +8,16 @@ import typing
 
 from reprospect.tools.architecture import NVIDIAArch
 
-AVAILABLE_RUNNER_ARCHES : typing.Final[tuple[NVIDIAArch, ...]] = (
+AVAILABLE_RUNNER_ARCHES: typing.Final[tuple[NVIDIAArch, ...]] = (
     NVIDIAArch.from_str('VOLTA70'),
     NVIDIAArch.from_str('BLACKWELL120'),
 )
 
 KOKKOS_SHA: typing.Final[str] = '5.0.0'
 
-JobDict : typing.TypeAlias = dict[str, typing.Any]
+JobDict: typing.TypeAlias = dict[str, typing.Any]
 
-def get_base_name_tag_digest(cuda_version : str, ubuntu_version : str) -> tuple[str, str, str]:
+def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[str, str, str]:
     """
     Get `Docker` base image name, tag and digest.
     """
@@ -43,11 +43,11 @@ def get_base_name_tag_digest(cuda_version : str, ubuntu_version : str) -> tuple[
 
 @dataclasses.dataclass(frozen = False, slots = True)
 class Compiler:
-    ID : str
-    version : str | None = None
-    path : str | None = None
+    ID: str
+    version: str | None = None
+    path: str | None = None
 
-def full_image(*, name : str, tag : str, platform : str, args : argparse.Namespace) -> str:
+def full_image(*, name: str, tag: str, platform: str, args: argparse.Namespace) -> str:
     """
     Full image from its `name` and `tag`, with remote.
 
@@ -62,7 +62,7 @@ def full_image(*, name : str, tag : str, platform : str, args : argparse.Namespa
         case _:
             raise ValueError(f'unsupported platform {platform!r}')
 
-def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDict:
+def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     """
     Add fields to a job.
     """
@@ -121,19 +121,19 @@ def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDic
         partial['compilers'][lang] = dataclasses.asdict(partial['compilers'][lang])
 
     # Environment of the job.
-    partial['environment'] = {'REGISTRY' : args.registry}
+    partial['environment'] = {'REGISTRY': args.registry}
 
     # Specifics to the 'tests' and 'examples' jobs.
     # Testing is opt-out.
     # We only test for 'linux/amd64'.
     if ('tests' not in partial or partial['tests']) and partial['platform'] == 'linux/amd64':
-        partial['tests'   ] = {'container' : {'image' : partial['image']}}
-        partial['examples'] = {'container' : {'image' : partial['kokkos']}}
+        partial['tests'   ] = {'container': {'image': partial['image']}}
+        partial['examples'] = {'container': {'image': partial['kokkos']}}
 
         if arch in AVAILABLE_RUNNER_ARCHES:
             # Enforce GPU compute capability. See also
             # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-require-constraints.
-            env = {'NVIDIA_REQUIRE_ARCH' : f'arch={arch.compute_capability.major}.{arch.compute_capability.minor}'}
+            env = {'NVIDIA_REQUIRE_ARCH': f'arch={arch.compute_capability.major}.{arch.compute_capability.minor}'}
             partial['tests'   ]['container']['env'] = env
             partial['examples']['container']['env'] = env
         else:
@@ -158,11 +158,11 @@ def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDic
 
     return partial
 
-def complete_job(partial : JobDict, args : argparse.Namespace) -> list[JobDict]:
+def complete_job(partial: JobDict, args: argparse.Namespace) -> list[JobDict]:
     """
     Each platform is a separate job, because multi-arch builds are too slow due to emulation.
     """
-    jobs : list[JobDict] = []
+    jobs: list[JobDict] = []
 
     for platform in partial.pop('platforms'):
         job = copy.deepcopy(partial)
@@ -170,81 +170,81 @@ def complete_job(partial : JobDict, args : argparse.Namespace) -> list[JobDict]:
 
         job = complete_job_impl(partial = job, args = args)
         job['build-images'] = {
-            'runs-on' : ['self-hosted', 'linux', 'docker', platform.split('/')[1]],
+            'runs-on': ['self-hosted', 'linux', 'docker', platform.split('/')[1]],
         }
 
         jobs.append(job)
 
     return jobs
 
-def main(*, args : argparse.Namespace) -> None:
+def main(*, args: argparse.Namespace) -> None:
     """
     Generate the strategy matrix.
     """
     matrix = []
 
     matrix.extend(complete_job({
-        'cuda_version' : '12.8.1',
-        'ubuntu_version' : '24.04',
-        'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '13'), 'CUDA' : Compiler(ID = 'nvidia')},
-        'nvidia_compute_capability' : 70,
-        'platforms' : ['linux/amd64', 'linux/arm64'],
+        'cuda_version': '12.8.1',
+        'ubuntu_version': '24.04',
+        'compilers': {'CXX': Compiler(ID = 'gnu', version = '13'), 'CUDA': Compiler(ID = 'nvidia')},
+        'nvidia_compute_capability': 70,
+        'platforms': ['linux/amd64', 'linux/arm64'],
     }, args = args))
 
     matrix.extend(complete_job({
-        'cuda_version' : '13.1.0',
-        'ubuntu_version' : '24.04',
-        'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
-        'nvidia_compute_capability' : 120,
-        'platforms' : ['linux/amd64', 'linux/arm64'],
+        'cuda_version': '13.1.0',
+        'ubuntu_version': '24.04',
+        'compilers': {'CXX': Compiler(ID = 'gnu', version = '14'), 'CUDA': Compiler(ID = 'nvidia')},
+        'nvidia_compute_capability': 120,
+        'platforms': ['linux/amd64', 'linux/arm64'],
     }, args = args))
 
     matrix.extend(complete_job({
-        'cuda_version' : '12.6.3',
-        'ubuntu_version' : '22.04',
-        'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '12'), 'CUDA' : Compiler(ID = 'nvidia')},
-        'nvidia_compute_capability' : 75,
-        'platforms' : ['linux/amd64'],
+        'cuda_version': '12.6.3',
+        'ubuntu_version': '22.04',
+        'compilers': {'CXX': Compiler(ID = 'gnu', version = '12'), 'CUDA': Compiler(ID = 'nvidia')},
+        'nvidia_compute_capability': 75,
+        'platforms': ['linux/amd64'],
     }, args = args))
 
     matrix.extend(complete_job({
-        'cuda_version' : '12.6.3',
-        'ubuntu_version' : '24.04',
-        'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '13'), 'CUDA' : Compiler(ID = 'nvidia')},
-        'nvidia_compute_capability' : 89,
-        'platforms' : ['linux/amd64'],
+        'cuda_version': '12.6.3',
+        'ubuntu_version': '24.04',
+        'compilers': {'CXX': Compiler(ID = 'gnu', version = '13'), 'CUDA': Compiler(ID = 'nvidia')},
+        'nvidia_compute_capability': 89,
+        'platforms': ['linux/amd64'],
     }, args = args))
 
     matrix.extend(complete_job({
-        'cuda_version' : '13.0.0',
-        'ubuntu_version' : '24.04',
-        'compilers' : {'CXX' : Compiler(ID = 'gnu', version = '14'), 'CUDA' : Compiler(ID = 'nvidia')},
-        'nvidia_compute_capability' : 86,
-        'platforms' : ['linux/amd64'],
+        'cuda_version': '13.0.0',
+        'ubuntu_version': '24.04',
+        'compilers': {'CXX': Compiler(ID = 'gnu', version = '14'), 'CUDA': Compiler(ID = 'nvidia')},
+        'nvidia_compute_capability': 86,
+        'platforms': ['linux/amd64'],
     }, args = args))
 
     matrix.extend(complete_job({
-        'cuda_version' : '12.8.1',
-        'ubuntu_version' : '24.04',
-        'compilers' : {'CXX' : Compiler(ID = 'clang', version = '19'), 'CUDA' : Compiler(ID = 'nvidia')},
-        'nvidia_compute_capability' : 70,
-        'platforms' : ['linux/amd64'],
+        'cuda_version': '12.8.1',
+        'ubuntu_version': '24.04',
+        'compilers': {'CXX': Compiler(ID = 'clang', version = '19'), 'CUDA': Compiler(ID = 'nvidia')},
+        'nvidia_compute_capability': 70,
+        'platforms': ['linux/amd64'],
     }, args = args))
 
     matrix.extend(complete_job({
-        'cuda_version' : '13.0.0',
-        'ubuntu_version' : '24.04',
-        'compilers' : {'CXX' : Compiler(ID = 'clang', version = '20'), 'CUDA' : Compiler(ID = 'nvidia')},
-        'nvidia_compute_capability' : 120,
-        'platforms' : ['linux/amd64'],
+        'cuda_version': '13.0.0',
+        'ubuntu_version': '24.04',
+        'compilers': {'CXX': Compiler(ID = 'clang', version = '20'), 'CUDA': Compiler(ID = 'nvidia')},
+        'nvidia_compute_capability': 120,
+        'platforms': ['linux/amd64'],
     }, args = args))
 
     matrix.extend(complete_job({
-        'cuda_version' : '12.8.1',
-        'ubuntu_version' : '24.04',
-        'compilers' : {'CXX' : Compiler(ID = 'clang', version = '21')},
-        'nvidia_compute_capability' : 120,
-        'platforms' : ['linux/amd64'],
+        'cuda_version': '12.8.1',
+        'ubuntu_version': '24.04',
+        'compilers': {'CXX': Compiler(ID = 'clang', version = '21')},
+        'nvidia_compute_capability': 120,
+        'platforms': ['linux/amd64'],
     }, args = args))
 
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')

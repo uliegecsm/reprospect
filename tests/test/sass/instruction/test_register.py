@@ -7,8 +7,8 @@ class TestRegisterMatcher:
     Tests for :py:class:`reprospect.test.sass.instruction.register.RegisterMatcher`.
     """
     def test_reg(self) -> None:
-        REG : typing.Final[str] = 'R42'
-        RES : typing.Final[RegisterMatch] = RegisterMatch(rtype = RegisterType.GPR, index = 42, reuse = False)
+        REG: typing.Final[str] = 'R42'
+        RES: typing.Final[RegisterMatch] = RegisterMatch(rtype = RegisterType.GPR, index = 42, reuse = False)
 
         assert RegisterMatcher().match(REG) == RES
 
@@ -17,8 +17,8 @@ class TestRegisterMatcher:
         assert matcher.match(REG) == RES
 
     def test_regz(self) -> None:
-        REG : typing.Final[str] = 'RZ'
-        RES : typing.Final[RegisterMatch] = RegisterMatch(rtype = RegisterType.GPR, index = None, reuse = False)
+        REG: typing.Final[str] = 'RZ'
+        RES: typing.Final[RegisterMatch] = RegisterMatch(rtype = RegisterType.GPR, index = None, reuse = False)
 
         assert RegisterMatcher().match(REG) == RES
 
@@ -27,8 +27,8 @@ class TestRegisterMatcher:
         assert matcher.match(REG) == RES
 
     def test_ureg(self) -> None:
-        REG : typing.Final[str] = 'UR42'
-        RES : typing.Final[RegisterMatch] = RegisterMatch(rtype = RegisterType.UGPR, index = 42, reuse = False)
+        REG: typing.Final[str] = 'UR42'
+        RES: typing.Final[RegisterMatch] = RegisterMatch(rtype = RegisterType.UGPR, index = 42, reuse = False)
 
         assert RegisterMatcher().match(REG) == RES
 
@@ -43,8 +43,8 @@ class TestRegisterMatcher:
         assert RegisterMatcher().match('P3') == RegisterMatch(rtype = RegisterType.PRED, index = 3, reuse = False)
 
     def test_predt(self) -> None:
-        REG : typing.Final[str] = 'PT'
-        RES : typing.Final[RegisterMatch] = RegisterMatch(rtype = RegisterType.PRED, index = None, reuse = False)
+        REG: typing.Final[str] = 'PT'
+        RES: typing.Final[RegisterMatch] = RegisterMatch(rtype = RegisterType.PRED, index = None, reuse = False)
 
         assert RegisterMatcher().match(REG) == RES
 

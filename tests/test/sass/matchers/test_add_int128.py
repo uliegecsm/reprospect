@@ -19,7 +19,7 @@ class TestAddInt128:
     """
     Tests for :py:class:`reprospect.test.sass.matchers.add_int128.AddInt128`.
     """
-    CODE_ADD_INT128 : typing.Final[str] = """\
+    CODE_ADD_INT128: typing.Final[str] = """\
 __global__ void add_int128(__int128_t* __restrict__ const dst, const __int128_t* __restrict__ const src)
 {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -27,13 +27,13 @@ __global__ void add_int128(__int128_t* __restrict__ const dst, const __int128_t*
 }
 """
 
-    EXPECTED_PTX : typing.Final[re.Pattern[str]] = re.compile(r"""\
+    EXPECTED_PTX: typing.Final[re.Pattern[str]] = re.compile(r"""\
 add\.cc\.s64 %rd\d+, %rd\d+, %rd\d+;
 addc\.cc\.s64 %rd\d+, %rd\d+, %rd\d+;
 st\.global\.v2\.(u|b)64 \[%rd\d+\], {%rd\d+, %rd\d+};
 """)
 
-    def test(self, request, parameters : Parameters, workdir : pathlib.Path, cmake_file_api : cmake.FileAPI) -> None:
+    def test(self, request, parameters: Parameters, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI) -> None:
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD_INT128)
 

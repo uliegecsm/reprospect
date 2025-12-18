@@ -39,7 +39,7 @@ class AtomicCAS:
         self.size: typing.Final[int] = size
 
     def match(self, cfg: Graph) -> list[InstructionMatch] | None:
-        matches : list[InstructionMatch] = []
+        matches: list[InstructionMatch] = []
 
         # First, find the global load from memory.
         matcher_ldg = LoadGlobalMatcher(arch=self.arch, size=self.size, readonly=False)

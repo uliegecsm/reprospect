@@ -85,13 +85,13 @@ class TestAlignment(CMakeAwareTestCase):
     The threads work on consecutive elements of the arrays, in such a way that each
     thread reads a total of 3 elements and writes 1 element.
     """
-    LOAD_COUNT : typing.Final[int] = 3
-    STORE_COUNT : typing.Final[int] = 1
-    ELEMENT_COUNT : typing.Final[int] = 1024
-    WARP_SIZE : typing.Final[int] = 32
-    WARP_COUNT : typing.Final[int] = ELEMENT_COUNT // WARP_SIZE
-    COMPLEX_DOUBLE_SIZE : typing.Final[int] = 16
-    SECTOR_SIZE : typing.Final[int] = 32
+    LOAD_COUNT: typing.Final[int] = 3
+    STORE_COUNT: typing.Final[int] = 1
+    ELEMENT_COUNT: typing.Final[int] = 1024
+    WARP_SIZE: typing.Final[int] = 32
+    WARP_COUNT: typing.Final[int] = ELEMENT_COUNT // WARP_SIZE
+    COMPLEX_DOUBLE_SIZE: typing.Final[int] = 16
+    SECTOR_SIZE: typing.Final[int] = 32
 
     KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter = pathlib.Path)
     """Used in :py:meth:`TestNCU.report`."""
@@ -105,9 +105,9 @@ class TestSASS(TestAlignment):
     """
     Binary analysis.
     """
-    SIGNATURE : typing.Final[dict[Alignment, re.Pattern[str]]] = {
-        Alignment.DEFAULT   : re.compile(r'MulAddFunctor<Kokkos::View<reprospect::examples::kokkos::complex::Complex<double>\s*\*, Kokkos::CudaSpace>>'),
-        Alignment.SPECIFIED : re.compile(r'MulAddFunctor<Kokkos::View<Kokkos::complex<double>\s*\*, Kokkos::CudaSpace>>'),
+    SIGNATURE: typing.Final[dict[Alignment, re.Pattern[str]]] = {
+        Alignment.DEFAULT:   re.compile(r'MulAddFunctor<Kokkos::View<reprospect::examples::kokkos::complex::Complex<double>\s*\*, Kokkos::CudaSpace>>'),
+        Alignment.SPECIFIED: re.compile(r'MulAddFunctor<Kokkos::View<Kokkos::complex<double>\s*\*, Kokkos::CudaSpace>>'),
     }
 
     @property
@@ -119,17 +119,17 @@ class TestSASS(TestAlignment):
         return CuObjDump.extract(file = self.executable, arch = self.arch, sass = True, cwd = self.cwd, cubin = self.cubin.name, demangler = self.demangler)[0]
 
     @pytest.fixture(scope = 'class')
-    def decoder(self, cuobjdump : CuObjDump) -> dict[Alignment, Decoder]:
-        def get_decoder(alignment : Alignment) -> Decoder:
+    def decoder(self, cuobjdump: CuObjDump) -> dict[Alignment, Decoder]:
+        def get_decoder(alignment: Alignment) -> Decoder:
             pattern = self.SIGNATURE[alignment]
             fctn = cuobjdump.functions[next(sig for sig in cuobjdump.functions if pattern.search(sig) is not None)]
             logging.info(f'SASS code and resource usage from CuObjDump for {alignment} alignment:\n{fctn}')
             decoder = Decoder(code = fctn.code)
             logging.info(f'Decoded SASS code for {alignment} alignment:\n{decoder}')
             return decoder
-        return {alignment : get_decoder(alignment) for alignment in Alignment}
+        return {alignment: get_decoder(alignment) for alignment in Alignment}
 
-    def test_global_memory_instructions(self, decoder : dict[Alignment, Decoder]) -> None:
+    def test_global_memory_instructions(self, decoder: dict[Alignment, Decoder]) -> None:
         """
         Check the type and count of global load and store instructions used.
 
@@ -156,7 +156,7 @@ class TestNCU(TestAlignment):
     """
     Kernel profiling.
     """
-    METRICS : tuple[Metric | MetricCorrelation, ...] = (
+    METRICS: tuple[Metric | MetricCorrelation, ...] = (
         # Overall instruction count.
         MetricCounter(name = 'smsp__inst_executed', subs = (MetricCounterRollUp.SUM,)),
         # Specific instruction counts (LDG and STG and others).
@@ -170,7 +170,7 @@ class TestNCU(TestAlignment):
         MetricCounter(name = 'lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs = (MetricCounterRollUp.SUM,)),
     )
 
-    NVTX_INCLUDES : typing.Final[tuple[str, ...]] = ('Alignment',)
+    NVTX_INCLUDES: typing.Final[tuple[str, ...]] = ('Alignment',)
 
     @pytest.fixture(scope = 'class')
     def report(self) -> Report:
@@ -192,21 +192,21 @@ class TestNCU(TestAlignment):
         return Report(command = command)
 
     @pytest.fixture(scope = 'class')
-    def metrics(self, report : Report) -> dict[Alignment, ProfilingMetrics]:
+    def metrics(self, report: Report) -> dict[Alignment, ProfilingMetrics]:
         results_in_range = report.extract_results_in_range(
             metrics = self.METRICS,
             includes = self.NVTX_INCLUDES,
         )
 
-        def get_metrics(alignment : Alignment) -> ProfilingMetrics:
+        def get_metrics(alignment: Alignment) -> ProfilingMetrics:
             results = results_in_range.query(accessors = (alignment.value, 'multiply and add view elements'))
             _, metrics = results.query_single_next_metrics(accessors = ())
             logging.info(f'Kernel profiling results for {alignment} alignment:\n{results}')
             return metrics
 
-        return {alignment : get_metrics(alignment) for alignment in Alignment}
+        return {alignment: get_metrics(alignment) for alignment in Alignment}
 
-    def test_instruction_count(self, metrics : dict[Alignment, ProfilingMetrics]) -> None:
+    def test_instruction_count(self, metrics: dict[Alignment, ProfilingMetrics]) -> None:
         """
         With specified alignment, half the load/store instructions are executed.
         Other instruction counts remain unchanged.
@@ -225,7 +225,7 @@ class TestNCU(TestAlignment):
                 assert metrics[Alignment.DEFAULT  ]['sass__inst_executed_per_opcode'].correlated[opcode] \
                     == metrics[Alignment.SPECIFIED]['sass__inst_executed_per_opcode'].correlated[opcode]
 
-    def test_l1tex_memory_traffic_instruction_count(self, metrics : dict[Alignment, ProfilingMetrics]) -> None:
+    def test_l1tex_memory_traffic_instruction_count(self, metrics: dict[Alignment, ProfilingMetrics]) -> None:
         """
         Runtime behavior corresponding to :py:meth:`TestSASS.test_global_memory_instructions`.
         """
@@ -244,7 +244,7 @@ class TestNCU(TestAlignment):
         assert metrics[Alignment.DEFAULT  ]['L1/TEX cache local store instructions sass.sum'] == 0
         assert metrics[Alignment.SPECIFIED]['L1/TEX cache local store instructions sass.sum'] == 0
 
-    def test_l1tex_memory_traffic_sector_count(self, metrics : dict[Alignment, ProfilingMetrics]) -> None:
+    def test_l1tex_memory_traffic_sector_count(self, metrics: dict[Alignment, ProfilingMetrics]) -> None:
         """
         +-----------+-------------------------------------------------------------------------------------------+
         | default   | The real parts are read first, and then the imaginary parts,                              |
@@ -260,7 +260,7 @@ class TestNCU(TestAlignment):
         assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global load sectors.sum'] == sector_count * 2
         assert metrics[Alignment.SPECIFIED]['L1/TEX cache global load sectors.sum'] == sector_count
 
-    def test_l2_memory_traffic_sector_count(self, metrics : dict[Alignment, ProfilingMetrics]) -> None:
+    def test_l2_memory_traffic_sector_count(self, metrics: dict[Alignment, ProfilingMetrics]) -> None:
         """
         The traffic out to L2 and out to DRAM is the same with both default and specialized alignments.
 

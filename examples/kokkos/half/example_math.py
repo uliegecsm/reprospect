@@ -76,7 +76,7 @@ class TestMax(CMakeAwareTestCase):
     def get_target_name(cls) -> str:
         return 'examples_kokkos_half_math'
 
-    SIGNATURE_TEMPLATE : typing.Final[str] = (
+    SIGNATURE_TEMPLATE: typing.Final[str] = (
         r'void Kokkos::Impl::cuda_parallel_launch_local_memory<'
         r'Kokkos::Impl::ParallelFor<'
         r'reprospect::examples::kokkos::half::FunctorMax<'
@@ -99,15 +99,15 @@ class TestMax(CMakeAwareTestCase):
         )[0]
 
     @pytest.fixture(scope = 'class')
-    def decoder(self, cuobjdump : CuObjDump) -> dict[Method, Decoder]:
-        decoder : dict[Method, Decoder] = {}
+    def decoder(self, cuobjdump: CuObjDump) -> dict[Method, Decoder]:
+        decoder: dict[Method, Decoder] = {}
         for method in Method:
             matcher = re.compile(self.SIGNATURE_TEMPLATE.format(method=method.value))
             [sig] = (sig for sig in cuobjdump.functions if matcher.search(sig) is not None)
             decoder[method] = Decoder(code = cuobjdump.functions[sig].code)
         return decoder
 
-    def test_cuda_hmax(self, decoder : dict[Method, Decoder]) -> None:
+    def test_cuda_hmax(self, decoder: dict[Method, Decoder]) -> None:
         """
         Check SASS code for :py:attr:`Method.CUDA_HMAX`.
 
@@ -120,7 +120,7 @@ class TestMax(CMakeAwareTestCase):
         else:
             self.match_fp32(instructions=decoder[Method.CUDA_HMAX].instructions)
 
-    def test_kokkos_fmax(self, decoder : dict[Method, Decoder]) -> None:
+    def test_kokkos_fmax(self, decoder: dict[Method, Decoder]) -> None:
         """
         Check SASS code for :py:attr:`Method.KOKKOS_FMAX`.
 
@@ -131,7 +131,7 @@ class TestMax(CMakeAwareTestCase):
         """
         assert decoder[Method.KOKKOS_FMAX].instructions == decoder[Method.CUDA_HMAX].instructions
 
-    def test_fmax(self, decoder : dict[Method, Decoder]) -> None:
+    def test_fmax(self, decoder: dict[Method, Decoder]) -> None:
         """
         Check SASS code for :py:attr:`Method.FMAX`.
         """
@@ -139,7 +139,7 @@ class TestMax(CMakeAwareTestCase):
 
 
     def match_block_and_loads(self, *,
-        instructions : typing.Sequence[Instruction],
+        instructions: typing.Sequence[Instruction],
     ) -> tuple[BasicBlock, int, InstructionMatch, InstructionMatch]:
         """
         Find the block with two 16-bit loads, such as::
@@ -157,14 +157,14 @@ class TestMax(CMakeAwareTestCase):
 
         return block, matcher_ldg.next_index, matched_ldg[0], matched_ldg[1]
 
-    def match_store(self, src : str, instructions : typing.Sequence[Instruction]) -> None:
+    def match_store(self, src: str, instructions: typing.Sequence[Instruction]) -> None:
         instructions_contain(instruction_is(StoreGlobalMatcher(
             arch = self.arch, size = 16, extend = 'U',
         )).with_operand(index = -1, operand = src)).assert_matches(instructions=instructions)
 
     def match_fp16_to_fp32(self, *,
-        src_a : str, src_b : str,
-        instructions : typing.Sequence[Instruction],
+        src_a: str, src_b: str,
+        instructions: typing.Sequence[Instruction],
     ) -> tuple[int, InstructionMatch, InstructionMatch]:
         """
         Conversion from FP16 to FP32.
@@ -182,7 +182,7 @@ class TestMax(CMakeAwareTestCase):
         return offset, matched_hadd2_a, matched_hadd2_b
 
     def match_fp32_to_fp16(self, *,
-        src : str, instructions : typing.Sequence[Instruction],
+        src: str, instructions: typing.Sequence[Instruction],
     ) -> tuple[int, InstructionMatch]:
         """
         Convert from FP32 to FP16.
@@ -193,7 +193,7 @@ class TestMax(CMakeAwareTestCase):
 
         return matcher.next_index, matched
 
-    def match_fp16(self, instructions : typing.Sequence[Instruction]) -> None:
+    def match_fp16(self, instructions: typing.Sequence[Instruction]) -> None:
         """
         Typically::
 
@@ -216,7 +216,7 @@ class TestMax(CMakeAwareTestCase):
 
         self.match_store(src=matched_hmnmx2.operands[0], instructions=block.instructions[offset:])
 
-    def match_fp32(self, instructions : typing.Sequence[Instruction]) -> None:
+    def match_fp32(self, instructions: typing.Sequence[Instruction]) -> None:
         """
         Typically::
 

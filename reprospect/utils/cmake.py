@@ -7,7 +7,7 @@ import cmake_file_api.kinds
 import cmake_file_api.reply.v1
 import ijson
 
-CacheDict : typing.TypeAlias = dict[str, dict[str, typing.Any]]
+CacheDict: typing.TypeAlias = dict[str, dict[str, typing.Any]]
 """
 The CMake cache is a nested dictionary.
 
@@ -16,7 +16,7 @@ References:
 * https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#object-kind-cache
 """
 
-ToolchainDict : typing.TypeAlias = dict[str, dict[str, typing.Any]]
+ToolchainDict: typing.TypeAlias = dict[str, dict[str, typing.Any]]
 """
 The CMake toolchain is a nested dictionary.
 
@@ -25,7 +25,7 @@ References:
 * https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#object-kind-toolchains
 """
 
-CodemodelDict : typing.TypeAlias = dict[str, list[typing.Any]]
+CodemodelDict: typing.TypeAlias = dict[str, list[typing.Any]]
 """
 The CMake code model is a dictionary.
 
@@ -34,7 +34,7 @@ References:
 * https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#object-kind-codemodel
 """
 
-TargetDict : typing.TypeAlias = dict[str, typing.Any]
+TargetDict: typing.TypeAlias = dict[str, typing.Any]
 """
 The CMake target is a dictionary.
 
@@ -56,7 +56,7 @@ class FileAPI:
     TOOLCHAINS_VERSION = 1
     CODEMODEL_VERSION = 2
 
-    def __init__(self, cmake_build_directory : pathlib.Path) -> None:
+    def __init__(self, cmake_build_directory: pathlib.Path) -> None:
         self.reader = cmake_file_api.reply.v1.api.CMakeFileApiV1(build_path = cmake_build_directory)
         self.cmake_reply_path = cmake_build_directory / '.cmake' / 'api' / 'v1' / 'reply'
 
@@ -105,7 +105,7 @@ class FileAPI:
         return configurations[0]
 
     @functools.lru_cache(maxsize = 128)
-    def target(self, name : str) -> TargetDict:
+    def target(self, name: str) -> TargetDict:
         """
         Retrieve the information available for the target `name`.
         """

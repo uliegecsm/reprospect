@@ -18,17 +18,17 @@ class TestTracingResults:
     """
     Test string representation of tracing results.
     """
-    CUDA_API_TRACE : typing.Final[pandas.DataFrame] = pandas.DataFrame(
+    CUDA_API_TRACE: typing.Final[pandas.DataFrame] = pandas.DataFrame(
         {
-            'Start (us)'    : (176741.213, 176855.658, 266224.028),
-            'Duration (us)' : (0.942, 87265.752, 1.753),
-            'Name'          : ('cuModuleGetLoadingMode', 'cudaStreamCreate', 'cudaStreamCreate'),
-            'Result'        : (0, 0, 0),
-            'CorrID'        : (1, 233, 234),
-            'Pid'           : (52655, 52655, 52655),
-            'Tid'           : (52655, 52655, 52655),
-            'T-Pri'         : (20, 20, 20),
-            'Thread Name'   : ('tests_assets_', 'tests_assets_', 'tests_assets_'),
+            'Start (us)': (176741.213, 176855.658, 266224.028),
+            'Duration (us)': (0.942, 87265.752, 1.753),
+            'Name': ('cuModuleGetLoadingMode', 'cudaStreamCreate', 'cudaStreamCreate'),
+            'Result': (0, 0, 0),
+            'CorrID': (1, 233, 234),
+            'Pid': (52655, 52655, 52655),
+            'Tid': (52655, 52655, 52655),
+            'T-Pri': (20, 20, 20),
+            'Thread Name': ('tests_assets_', 'tests_assets_', 'tests_assets_'),
         },
     )
 
@@ -59,7 +59,7 @@ class TestCommand:
     """
     Tests for :py:class:`reprospect.tools.nsys.Command`.
     """
-    def test_env(self, bindir : pathlib.Path) -> None:
+    def test_env(self, bindir: pathlib.Path) -> None:
         """
         Check that the environment is handled properly.
         """
@@ -73,7 +73,7 @@ class TestCommand:
             ), env = None, cwd = None)
 
         with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
-            Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever'), env = {'IT_MATTERS' : 'ON'}).run(env = {'MY_BASE_ENV' : '666'}, cwd = bindir)
+            Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever'), env = {'IT_MATTERS': 'ON'}).run(env = {'MY_BASE_ENV': '666'}, cwd = bindir)
             check_call.assert_called_with(args = (
                 'nsys', 'profile',
                 '--sample=none', '--backtrace=none', '--cpuctxsw=none',
@@ -86,9 +86,9 @@ class TestSession:
     """
     Test :py:class:`reprospect.tools.nsys.Session`.
     """
-    EXECUTABLE : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
+    EXECUTABLE: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
-    def run(self, bindir : pathlib.Path, cwd : pathlib.Path, nvtx_capture : str | None = None) -> Session:
+    def run(self, bindir: pathlib.Path, cwd: pathlib.Path, nvtx_capture: str | None = None) -> Session:
         ns = Session(
             command = Command(
                 executable = bindir / self.EXECUTABLE,
@@ -215,8 +215,8 @@ class TestCacher:
     """
     Tests for :py:class:`reprospect.tools.nsys.Cacher`.
     """
-    GRAPH : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
-    SAXPY : typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
+    GRAPH: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
+    SAXPY: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
     def test_hash_same(self, bindir) -> None:
         """
@@ -243,7 +243,7 @@ class TestCacher:
             with Cacher(directory = tmpdir) as cacher:
                 hash_a = cacher.hash(command = Command(executable = bindir / self.GRAPH, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',)))
                 hash_b = cacher.hash(command = Command(executable = bindir / self.SAXPY, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',)))
-                hash_c = cacher.hash(command = Command(executable = bindir / self.SAXPY, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',), env = {'HELLO' : 'WORLD'}))
+                hash_c = cacher.hash(command = Command(executable = bindir / self.SAXPY, output = pathlib.Path('I-dont-care') / 'osef', opts = ('--nvtx',), args = ('--bla=42',), env = {'HELLO': 'WORLD'}))
 
                 assert hash_a.digest() != hash_b.digest()
                 assert hash_b.digest() != hash_c.digest()
@@ -253,7 +253,7 @@ class TestCacher:
         """
         The cacher should hit on the second call.
         """
-        FILES : typing.Final[tuple[str]] = ('report-cached.nsys-rep',)
+        FILES: typing.Final[tuple[str]] = ('report-cached.nsys-rep',)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             with Cacher(directory = tmpdir) as cacher:
@@ -289,7 +289,7 @@ class TestReport:
     Test :py:class:`reprospect.tools.nsys.Report`.
     """
     @pytest.fixture(scope = 'class')
-    def report(self, bindir, workdir : pathlib.Path) -> Report:
+    def report(self, bindir, workdir: pathlib.Path) -> Report:
         with Cacher(directory = workdir) as cacher:
             command = Command(
                 executable = bindir / 'tests' / 'assets' / 'tests_assets_saxpy',
@@ -311,9 +311,9 @@ class TestReport:
             logging.info(events)
 
             TOP_LEVEL = {
-                'application_domain' : 'NvtxDomainCreate',
-                'Starting my application.' : 'NvtxMark',
-                'outer_useless_range' : 'NvtxStartEndRange',
+                'application_domain': 'NvtxDomainCreate',
+                'Starting my application.': 'NvtxMark',
+                'outer_useless_range': 'NvtxStartEndRange',
             }
 
             roots = events.events[events.events['level'] == 0]

@@ -14,24 +14,24 @@ class AddressMatch:
     """
     Result of matching an address operand.
     """
-    reg : str #: Register.
-    offset : str | None = None #: Offset.
-    ureg : str | None = None #: Uniform register holding the cache policy descriptor in a descriptor-based address.
+    reg: str #: Register.
+    offset: str | None = None #: Offset.
+    ureg: str | None = None #: Uniform register holding the cache policy descriptor in a descriptor-based address.
 
     @classmethod
-    def parse(cls, bits : regex.Match[str]) -> AddressMatch:
+    def parse(cls, bits: regex.Match[str]) -> AddressMatch:
         captured = bits.capturesdict()
 
         if not (value := captured.get('reg')):
             raise ValueError(bits)
         reg = value[0]
 
-        offset : str | None = None
+        offset: str | None = None
         if value := captured.get('offset'):
             if len(value) == 1:
                 offset = value[0]
 
-        ureg : str | None = None
+        ureg: str | None = None
         if value := captured.get('ureg'):
             if len(value) == 1:
                 ureg = value[0]
@@ -42,21 +42,21 @@ class AddressMatch:
             ureg = ureg,
         )
 
-TEMPLATE_ADDRESS : typing.Final[str] = r'\[{reg}{offset}\]'
-TEMPLATE_REG64_ADDRESS : typing.Final[str] = r'\[{reg}\.64{offset}\]'
-TEMPLATE_DESC_REG64_ADDRESS : typing.Final[str] = r'desc\[{ureg}\]\[{reg}\.64{offset}\]'
+TEMPLATE_ADDRESS: typing.Final[str] = r'\[{reg}{offset}\]'
+TEMPLATE_REG64_ADDRESS: typing.Final[str] = r'\[{reg}\.64{offset}\]'
+TEMPLATE_DESC_REG64_ADDRESS: typing.Final[str] = r'desc\[{ureg}\]\[{reg}\.64{offset}\]'
 
 @attrs.define(frozen = True, slots = True, kw_only = True)
 class AddressMatcher:
     """
     Matcher for an address.
     """
-    arch : NVIDIAArch
-    ureg : str | None = None
-    reg : str | None = None
-    offset : str | bool | None = None
+    arch: NVIDIAArch
+    ureg: str | None = None
+    reg: str | None = None
+    offset: str | bool | None = None
 
-    pattern : regex.Pattern[str] = attrs.field(init = False)
+    pattern: regex.Pattern[str] = attrs.field(init = False)
 
     def __attrs_post_init__(self) -> None:
         object.__setattr__(self, 'pattern', regex.compile(self.build_pattern(
@@ -66,12 +66,12 @@ class AddressMatcher:
         )))
 
     @classmethod
-    def build_pattern_reg(cls, *, reg : str | None = None, captured : bool = True) -> str:
+    def build_pattern_reg(cls, *, reg: str | None = None, captured: bool = True) -> str:
         pattern_reg = reg or rf'(?:{PatternBuilder.REG}|{PatternBuilder.UREG})'
         return PatternBuilder.group(pattern_reg, 'reg') if captured else pattern_reg
 
     @classmethod
-    def build_pattern_offset(cls, *, offset : str | bool | None = None, captured : bool = True) -> str:
+    def build_pattern_offset(cls, *, offset: str | bool | None = None, captured: bool = True) -> str:
         if offset is None:
             return PatternBuilder.zero_or_one(r'\+' + (PatternBuilder.group(PatternBuilder.HEX, group = 'offset') if captured else PatternBuilder.HEX))
         if offset is False:
@@ -81,17 +81,17 @@ class AddressMatcher:
         return rf'\+{PatternBuilder.group(offset, "offset") if captured else offset}'
 
     @classmethod
-    def build_pattern_ureg(cls, *, ureg : str | None = None, captured : bool = True) -> str:
+    def build_pattern_ureg(cls, *, ureg: str | None = None, captured: bool = True) -> str:
         pattern_ureg = ureg or PatternBuilder.UREG
         return PatternBuilder.group(pattern_ureg, 'ureg') if captured else pattern_ureg
 
     @classmethod
     def build_pattern(cls, *,
-        arch : NVIDIAArch,
-        ureg : str | None = None,
-        reg : str | None = None,
-        offset : str | bool | None = None,
-        captured : bool = False,
+        arch: NVIDIAArch,
+        ureg: str | None = None,
+        reg: str | None = None,
+        offset: str | bool | None = None,
+        captured: bool = False,
     ) -> str:
         match arch.compute_capability.as_int:
             case 70 | 75:
@@ -104,7 +104,7 @@ class AddressMatcher:
                 raise ValueError(f'unsupported architecture {arch}')
 
     @classmethod
-    def build_address(cls, *, reg : str | None = None, offset : str | bool | None = None, captured : bool = False) -> str:
+    def build_address(cls, *, reg: str | None = None, offset: str | bool | None = None, captured: bool = False) -> str:
         """
         Basic address operand, such as::
 
@@ -116,7 +116,7 @@ class AddressMatcher:
         return TEMPLATE_ADDRESS.format(reg = reg, offset = offset)
 
     @classmethod
-    def build_reg64_address(cls, *, reg : str | None = None, offset : str | bool | None = None, captured : bool = False) -> str:
+    def build_reg64_address(cls, *, reg: str | None = None, offset: str | bool | None = None, captured: bool = False) -> str:
         """
         Address operand with ``.64`` modifier appended to the register, such as::
 
@@ -128,7 +128,7 @@ class AddressMatcher:
         return TEMPLATE_REG64_ADDRESS.format(reg = reg, offset = offset)
 
     @classmethod
-    def build_desc_reg64_address(cls, *, ureg : str | None = None, reg : str | None = None, offset : str | bool | None = None, captured : bool = False) -> str:
+    def build_desc_reg64_address(cls, *, ureg: str | None = None, reg: str | None = None, offset: str | bool | None = None, captured: bool = False) -> str:
         """
         Address operand with cache policy descriptor, such as::
 
@@ -139,10 +139,10 @@ class AddressMatcher:
         ureg = cls.build_pattern_ureg(ureg = ureg, captured = captured)
         return TEMPLATE_DESC_REG64_ADDRESS.format(reg = reg, offset = offset, ureg = ureg)
 
-    def match(self, address : str) -> AddressMatch | None:
+    def match(self, address: str) -> AddressMatch | None:
         if (matched := self.pattern.match(address)) is not None:
             return AddressMatch.parse(bits = matched)
         return None
 
-    def __call__(self, address : str) -> AddressMatch | None:
+    def __call__(self, address: str) -> AddressMatch | None:
         return self.match(address = address)

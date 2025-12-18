@@ -12,10 +12,10 @@ else:
     from typing_extensions import override
 
 class DummyImplementation(Cacher):
-    TABLE : typing.ClassVar[str] = 'dummy'
+    TABLE: typing.ClassVar[str] = 'dummy'
 
     @override
-    def populate(self, directory : pathlib.Path, **kwargs) -> typing.Any:
+    def populate(self, directory: pathlib.Path, **kwargs) -> typing.Any:
         logging.info(f'Populating within {directory} with {kwargs}.')
 
 class TestCacher:
@@ -52,8 +52,8 @@ class TestCacher:
                 assert hash_a.digest() != hash_b.digest()
 
                 # Different 'env'.
-                hash_a = cacher.hash(opts = ['--nvtx'], exe = pathlib.Path('my-exec'), args = ['42'], env = {'my' : 'env-1'})
-                hash_b = cacher.hash(opts = ['--nvtx'], exe = pathlib.Path('my-exec'), args = ['42'], env = {'my' : 'env-2'})
+                hash_a = cacher.hash(opts = ['--nvtx'], exe = pathlib.Path('my-exec'), args = ['42'], env = {'my': 'env-1'})
+                hash_b = cacher.hash(opts = ['--nvtx'], exe = pathlib.Path('my-exec'), args = ['42'], env = {'my': 'env-2'})
 
                 assert hash_a.digest() != hash_b.digest()
 
@@ -73,11 +73,11 @@ class TestCacher:
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             with DummyImplementation(directory = tmpdir) as cacher:
-                results_first = cacher.get(opts = ['--nvtx'], exe = 'exec-666', args = ['--bla=42'], env = {'my' : 'env'}, anything_you_want = {4: 2})
+                results_first = cacher.get(opts = ['--nvtx'], exe = 'exec-666', args = ['--bla=42'], env = {'my': 'env'}, anything_you_want = {4: 2})
 
                 assert results_first.cached is False
 
-                results_second = cacher.get(opts = ['--nvtx'], exe = 'exec-666', args = ['--bla=42'], env = {'my' : 'env'}, anything_you_want = {4: 2})
+                results_second = cacher.get(opts = ['--nvtx'], exe = 'exec-666', args = ['--bla=42'], env = {'my': 'env'}, anything_you_want = {4: 2})
 
                 assert results_second.cached is True
                 assert results_second.digest == results_first.digest

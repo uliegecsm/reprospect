@@ -43,7 +43,7 @@ class AddInt128(SequenceMatcher):
     def __init__(self) -> None:
         self._index: int = 0
 
-    def pattern_3IADD(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
+    def pattern_3IADD(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
         """
         Typically::
 
@@ -51,7 +51,7 @@ class AddInt128(SequenceMatcher):
             IADD.64 R4, R4, UR12
             IADD.64.X R6, R6, UR14, P0
         """
-        matched : list[InstructionMatch] = []
+        matched: list[InstructionMatch] = []
 
         offset = 0
 
@@ -109,7 +109,7 @@ class AddInt128(SequenceMatcher):
 
         return matched
 
-    def pattern_4IADD3(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
+    def pattern_4IADD3(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
         """
         Typically::
 
@@ -127,7 +127,7 @@ class AddInt128(SequenceMatcher):
 
         That is, there may be one additional argument.
         """
-        matched : list[InstructionMatch] = []
+        matched: list[InstructionMatch] = []
 
         offset = 0
 
@@ -214,7 +214,7 @@ class AddInt128(SequenceMatcher):
         return matched
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         instruction = instructions[0].instruction if isinstance(instructions[0], Instruction) else instructions[0]
         if instruction.startswith('IADD.64'):
             return self.pattern_3IADD(instructions = instructions)

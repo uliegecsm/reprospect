@@ -14,7 +14,7 @@ class TestCase(CMakeAwareTestCase):
     """
     Derived type must to define :py:attr:`SIGNATURE_MATCHER`.
     """
-    SIGNATURE_MATCHER : typing.ClassVar[re.Pattern[str]]
+    SIGNATURE_MATCHER: typing.ClassVar[re.Pattern[str]]
 
     @property
     def cubin(self) -> pathlib.Path:
@@ -31,7 +31,7 @@ class TestCase(CMakeAwareTestCase):
         )[0]
 
     @pytest.fixture(scope = 'class')
-    def decoder(self, cuobjdump : CuObjDump) -> Decoder:
+    def decoder(self, cuobjdump: CuObjDump) -> Decoder:
         [sig] = [sig for sig in cuobjdump.functions if self.SIGNATURE_MATCHER.search(sig) is not None]
         return Decoder(code = cuobjdump.functions[sig].code)
 

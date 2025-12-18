@@ -36,19 +36,19 @@ index, uuid, name, compute_cap
                 assert detect.GPUDetector.count() == 2
 
                 pandas.testing.assert_series_equal(result.iloc[0], pandas.Series({
-                    'index' : 0,
-                    'uuid' : 'GPU-12345678-1234-1234-1234-123456789012',
-                    'name' : 'NVIDIA GeForce RTX 3090',
-                    'compute_cap' : '8.6',
-                    'architecture' : architecture.NVIDIAArch.from_str('AMPERE86'),
+                    'index': 0,
+                    'uuid': 'GPU-12345678-1234-1234-1234-123456789012',
+                    'name': 'NVIDIA GeForce RTX 3090',
+                    'compute_cap': '8.6',
+                    'architecture': architecture.NVIDIAArch.from_str('AMPERE86'),
                 }), check_names = False)
 
                 pandas.testing.assert_series_equal(result.iloc[1], pandas.Series({
-                    'index' : 1,
-                    'uuid' : 'GPU-87654321-4321-4321-4321-210987654321',
-                    'name' : 'NVIDIA A100-SXM4-40GB',
-                    'compute_cap' : '8.0',
-                    'architecture' : architecture.NVIDIAArch.from_str('AMPERE80'),
+                    'index': 1,
+                    'uuid': 'GPU-87654321-4321-4321-4321-210987654321',
+                    'name': 'NVIDIA A100-SXM4-40GB',
+                    'compute_cap': '8.0',
+                    'architecture': architecture.NVIDIAArch.from_str('AMPERE80'),
                 }), check_names = False)
 
                 mock_shutil.assert_called_once()
@@ -103,7 +103,7 @@ class TestGPUDetectorAsScript:
     """
     Tests for :py:mod:`reprospect.utils.detect` in script mode.
     """
-    SCRIPT : typing.Final[str] = inspect.getfile(detect)
+    SCRIPT: typing.Final[str] = inspect.getfile(detect)
 
     def test(self, capsys) -> None:
         """

@@ -33,33 +33,33 @@ class TestLoadConstantMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.LoadConstantMatcher`.
     """
-    INSTRUCTIONS : typing.Final[dict[str, tuple[LoadConstantMatcher, InstructionMatch]]] = {
-        'LDC R1, c[0x0][0x37c]' : (
+    INSTRUCTIONS: typing.Final[dict[str, tuple[LoadConstantMatcher, InstructionMatch]]] = {
+        'LDC R1, c[0x0][0x37c]': (
             LoadConstantMatcher(),
-            InstructionMatch(opcode = 'LDC', modifiers = (), operands = ('R1', 'c[0x0][0x37c]'), additional = {'bank' : ['0x0'], 'offset' : ['0x37c']}),
+            InstructionMatch(opcode = 'LDC', modifiers = (), operands = ('R1', 'c[0x0][0x37c]'), additional = {'bank': ['0x0'], 'offset': ['0x37c']}),
         ),
-        'LDCU UR4, c[0x2][0x364]' : (
+        'LDCU UR4, c[0x2][0x364]': (
             LoadConstantMatcher(uniform = True),
-            InstructionMatch(opcode = 'LDCU', modifiers = (), operands = ('UR4', 'c[0x2][0x364]'), additional = {'bank' : ['0x2'], 'offset' : ['0x364']}),
+            InstructionMatch(opcode = 'LDCU', modifiers = (), operands = ('UR4', 'c[0x2][0x364]'), additional = {'bank': ['0x2'], 'offset': ['0x364']}),
         ),
-        'LDC.64 R6, c[0x1][0x398]' : (
+        'LDC.64 R6, c[0x1][0x398]': (
             LoadConstantMatcher(size = 64),
-            InstructionMatch(opcode = 'LDC', modifiers = ('64',), operands = ('R6', 'c[0x1][0x398]'), additional = {'bank' : ['0x1'], 'offset' : ['0x398']}),
+            InstructionMatch(opcode = 'LDC', modifiers = ('64',), operands = ('R6', 'c[0x1][0x398]'), additional = {'bank': ['0x1'], 'offset': ['0x398']}),
         ),
-        'LDCU.64 UR6, c[0x3][0x358]' : (
+        'LDCU.64 UR6, c[0x3][0x358]': (
             LoadConstantMatcher(uniform = True, size = 64),
-            InstructionMatch(opcode = 'LDCU', modifiers = ('64',), operands = ('UR6', 'c[0x3][0x358]'), additional = {'bank' : ['0x3'], 'offset' : ['0x358']}),
+            InstructionMatch(opcode = 'LDCU', modifiers = ('64',), operands = ('UR6', 'c[0x3][0x358]'), additional = {'bank': ['0x3'], 'offset': ['0x358']}),
         ),
-        'LDCU UR4, c[0x3][UR0]' : (
+        'LDCU UR4, c[0x3][UR0]': (
             LoadConstantMatcher(uniform = True),
-            InstructionMatch(opcode = 'LDCU', modifiers = (), operands = ('UR4', 'c[0x3][UR0]'), additional = {'bank' : ['0x3'], 'offset' : ['UR0']}),
+            InstructionMatch(opcode = 'LDCU', modifiers = (), operands = ('UR4', 'c[0x3][UR0]'), additional = {'bank': ['0x3'], 'offset': ['UR0']}),
         ),
     }
     """
     Zoo of real SASS instructions.
     """
 
-    CODE_CONSTANT_ARRAY : typing.Final[str] = """\
+    CODE_CONSTANT_ARRAY: typing.Final[str] = """\
 __constant__ {type} data[128];
 __global__ __launch_bounds__(128, 1) void ldc({type}* __restrict__ const out)
 {{
@@ -69,12 +69,12 @@ __global__ __launch_bounds__(128, 1) void ldc({type}* __restrict__ const out)
 """
 
     @pytest.mark.parametrize(('instruction', 'matcher', 'expected'), ((instr, *vals) for instr, vals in INSTRUCTIONS.items()))
-    def test(self, instruction : str, matcher : LoadConstantMatcher, expected : InstructionMatch) -> None:
+    def test(self, instruction: str, matcher: LoadConstantMatcher, expected: InstructionMatch) -> None:
         assert (matched := matcher.match(inst = instruction)) is not None
         assert matched == expected
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_array_of_64bit_elements(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_array_of_64bit_elements(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Loads of size 64 with :py:attr:`CODE_CONSTANT_ARRAY`.
         """
@@ -146,7 +146,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         assert matcher.match(inst = 'LDG.E.S16.CONSTANT R3, [R2.64]') is not None
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Test loads with :py:const:`tests.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT`.
         """
@@ -189,7 +189,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         assert len(load) == 2
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict_128_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict_128_wide(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Test 128-bit wide loads with
         :py:const:`tests.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE`.
@@ -210,7 +210,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         assert load_ro != load
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict_256_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict_256_wide(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Test 256-bit wide loads with
         :py:const:`tests.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_256_WIDE`.
@@ -220,7 +220,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
 
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
-        aligned_16 : typing.Final[bool] = features.Memory(arch = parameters.arch).max_transaction_size == 16
+        aligned_16: typing.Final[bool] = features.Memory(arch = parameters.arch).max_transaction_size == 16
 
         # Find the read-only wide load(s).
         matcher_lro_128 = LoadGlobalMatcher(arch = parameters.arch, size = 128, readonly = True)
@@ -243,15 +243,15 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
             assert len(l_128) == 0 and len(l_256) == 1
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_constant(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_constant(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         If `src` is declared ``const __restrict__``, the compiler is able to use the ``.CONSTANT`` modifier.
         Otherwise, we need to explicitly use ``__ldg`` to end up using ``.CONSTANT``.
         """
         ITEMS = {
-            'restrict'    : CODE_ELEMENTWISE_ADD_RESTRICT,
-            'no_restrict' : self.CODE_ELEMENTWISE_ADD,
-            'ldg'         : self.CODE_ELEMENTWISE_ADD_LDG,
+            'restrict': CODE_ELEMENTWISE_ADD_RESTRICT,
+            'no_restrict': self.CODE_ELEMENTWISE_ADD,
+            'ldg': self.CODE_ELEMENTWISE_ADD_LDG,
         }
         decoders = {}
         for name, code in ITEMS.items():
@@ -265,7 +265,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         assert len(findall(LoadGlobalMatcher(arch = parameters.arch, readonly = True), decoders['ldg'        ].instructions)) == 1
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_zero_extend_u16(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_zero_extend_u16(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Use :py:attr:`CODE_EXTEND` to enforce zero extension.
         """
@@ -283,7 +283,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         ).assert_matches(decoder.instructions)
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_sign_extend_s16(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_sign_extend_s16(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Check when :py:attr:`CODE_EXTEND` leads to sign extension.
 

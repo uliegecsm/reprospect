@@ -156,7 +156,7 @@ class TestOrderedInSequenceMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.composite_impl.OrderedInSequenceMatcher`.
     """
-    MATCHER : typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = (
+    MATCHER: typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers = (
         MATCHER_DADD,
         ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
         MATCHER_DMUL,
@@ -203,7 +203,7 @@ class TestUnorderedInSequenceMatcher:
         """
         Matches the sequence :py:const:`DADD_NOP_DMUL`.
         """
-        inners : list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
+        inners: list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             MATCHER_DMUL,
             MATCHER_DADD,
@@ -220,7 +220,7 @@ class TestUnorderedInSequenceMatcher:
         """
         Matches the sequence :py:const:`DADD_DMUL`.
         """
-        inners : list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
+        inners: list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             MATCHER_DMUL,
             MATCHER_DADD,
@@ -237,7 +237,7 @@ class TestUnorderedInSequenceMatcher:
         """
         Matches the sequence :py:const:`NOP_DMUL_NOP_DADD`.
         """
-        inners : list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
+        inners: list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             MATCHER_DMUL,
@@ -255,7 +255,7 @@ class TestUnorderedInSequenceMatcher:
         """
         All permutations fail on sequence :py:const:`NOP_DMUL_NOP_DADD`.
         """
-        inners : list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
+        inners: list[ZeroOrMoreInSequenceMatcher | instruction.OpcodeModsWithOperandsMatcher] = [
             ZeroOrMoreInSequenceMatcher(matcher = MATCHER_NOP),
             MATCHER_DMUL,
             MATCHER_DADD,
@@ -322,7 +322,7 @@ class TestOrderedInterleavedInSequenceMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.composite_impl.OrderedInterleavedInSequenceMatcher`.
     """
-    INSTRUCTIONS_DADD : typing.Final[tuple[str, ...]] = (
+    INSTRUCTIONS_DADD: typing.Final[tuple[str, ...]] = (
         'LDG.E.ENL2.256 R8, R4, desc[UR6][R2.64]',
         'DADD R4, R4, UR12',
         'NOP',
@@ -343,19 +343,19 @@ class TestOrderedInterleavedInSequenceMatcher:
         'STG.E.ENL2.256 desc[UR6][R2.64], R4, R8',
     )
 
-    MATCHERS_DADD : typing.Final[tuple[instruction.OpcodeModsWithOperandsMatcher, ...]] = (
+    MATCHERS_DADD: typing.Final[tuple[instruction.OpcodeModsWithOperandsMatcher, ...]] = (
         instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R4',  'R4',  instruction.PatternBuilder.UREG)),
         instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R6',  'R6',  instruction.PatternBuilder.UREG)),
         instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R8',  'R8',  instruction.PatternBuilder.UREG)),
         instruction.OpcodeModsWithOperandsMatcher(opcode = 'DADD', modifiers = (), operands = ('R10', 'R10', instruction.PatternBuilder.UREG)),
     )
 
-    INSTRUCTIONS_LDG : typing.Final[tuple[str, ...]] = (
+    INSTRUCTIONS_LDG: typing.Final[tuple[str, ...]] = (
         'LDG.E.U16.SYS R2, [R2]',
         'LDG.E.U16.SYS R4, [R4]',
     )
 
-    MATCHERS_LDG : typing.Final[tuple[instruction.LoadGlobalMatcher, ...]] = (
+    MATCHERS_LDG: typing.Final[tuple[instruction.LoadGlobalMatcher, ...]] = (
         instruction.LoadGlobalMatcher(arch=NVIDIAArch.from_compute_capability(70), size=16, extend='U', readonly=False),
         instruction.LoadGlobalMatcher(arch=NVIDIAArch.from_compute_capability(70), size=16, extend='U', readonly=False),
     )

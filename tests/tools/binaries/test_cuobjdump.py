@@ -38,10 +38,10 @@ class TestResourceUsage:
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     class TestSharedMemory:
-        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'shared_memory.cu'
+        FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'shared_memory.cu'
         SIGNATURE: typing.Final[str] = '_Z20shared_memory_kernelPfj'
 
-        def test(self, workdir: pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             output, compilation = get_compilation_output(
                 source=self.FILE,
                 cwd=workdir,
@@ -67,10 +67,10 @@ class TestResourceUsage:
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     class TestWideLoadStore:
-        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'wide_load_store.cu'
+        FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'wide_load_store.cu'
         SIGNATURE: typing.Final[str] = '_Z22wide_load_store_kernelP15MyAlignedStructIdEPKS0_'
 
-        def test(self, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             output, compilation = get_compilation_output(
                 source=self.FILE,
                 cwd=workdir,
@@ -100,10 +100,10 @@ class TestResourceUsage:
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     class TestSaxpy:
-        FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'tools' / 'assets' / 'saxpy.cu'
+        FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'tools' / 'assets' / 'saxpy.cu'
         SIGNATURE: typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
 
-        def test(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             output, compilation = get_compilation_output(
                 source=self.FILE,
                 cwd=workdir,
@@ -131,9 +131,9 @@ class TestFunction:
     """
     Tests related to :py:class:`reprospect.tools.binaries.Function`.
     """
-    SYMBOL : typing.Final[str] = '_Z9my_kernelfPKfPfj'
+    SYMBOL: typing.Final[str] = '_Z9my_kernelfPKfPfj'
 
-    CODE : typing.Final[str] = """\
+    CODE: typing.Final[str] = """\
         .headerflags    @"EF_CUDA_SM120 EF_CUDA_VIRTUAL_SM(EF_CUDA_SM120)"
         /*0000*/                   LDC R1, c[0x0][0x37c]                &wr=0x0          ?trans1;           /* 0x0000df00ff017b82 */
                                                                                                             /* 0x000e220000000800 */
@@ -141,7 +141,7 @@ class TestFunction:
                                                                                                             /* 0x000e6e0000002100 */
 """
 
-    RU : typing.Final[ResourceUsage] = ResourceUsage(
+    RU: typing.Final[ResourceUsage] = ResourceUsage(
         register=10,
         constant={0: 924},
     )
@@ -188,7 +188,7 @@ class TestCuObjDump:
     Tests related to :py:class:`reprospect.tools.binaries.CuObjDump`.
     """
     @staticmethod
-    def dump(*, file : pathlib.Path, cuobjdump : CuObjDump) -> None:
+    def dump(*, file: pathlib.Path, cuobjdump: CuObjDump) -> None:
         logging.info(f'Writing parsed SASS to {file}.')
         file.write_text(str(cuobjdump))
 
@@ -197,12 +197,12 @@ class TestCuObjDump:
         """
         When the kernel performs a `saxpy`.
         """
-        CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
-        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
-        SYMBOL    : typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
-        SIGNATURE : typing.Final[str] = CuppFilt.demangle(SYMBOL)
+        CPP_FILE:  typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
+        CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
+        SYMBOL:    typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
+        SIGNATURE: typing.Final[str] = CuppFilt.demangle(SYMBOL)
 
-        def test_sass_from_object(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_sass_from_object(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CUDA_FILE` as object, extract SASS and analyse resource usage.
             """
@@ -239,7 +239,7 @@ class TestCuObjDump:
 
             assert cuobjdump.functions[self.SIGNATURE].symbol == self.SYMBOL
 
-        def test_extract_cubin_from_file(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_extract_cubin_from_file(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
             """
@@ -270,7 +270,7 @@ class TestCuObjDump:
             assert len(cuobjdump.functions) == 1
             assert self.SIGNATURE in cuobjdump.functions
 
-        def test_extract_symbol_table(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_extract_symbol_table(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.
             """
@@ -315,15 +315,15 @@ class TestCuObjDump:
 
             ``__device__`` functions have been inlined.
         """
-        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cu'
-        CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
+        CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cu'
+        CPP_FILE:  typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
 
-        FUNCTIONS : typing.Final[dict[str, str]] = {
-            '_Z6say_hiv' : 'say_hi()',
-            '_Z20vector_atomic_add_42PKfS0_Pfj' : 'vector_atomic_add_42(const float *, const float *, float *, unsigned int)',
+        FUNCTIONS: typing.Final[dict[str, str]] = {
+            '_Z6say_hiv': 'say_hi()',
+            '_Z20vector_atomic_add_42PKfS0_Pfj': 'vector_atomic_add_42(const float *, const float *, float *, unsigned int)',
         }
 
-        def test_sass_from_object(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_sass_from_object(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CUDA_FILE` as object, extract SASS.
             """
@@ -346,7 +346,7 @@ class TestCuObjDump:
 
             assert all(cuobjdump.functions[signature].symbol == symbol for symbol, signature in self.FUNCTIONS.items())
 
-        def test_extract_cubin_from_file(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_extract_cubin_from_file(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
             """
@@ -374,7 +374,7 @@ class TestCuObjDump:
 
             assert set(cuobjdump.functions.keys()) == set(self.FUNCTIONS.values())
 
-        def test_extract_symbol_table(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_extract_symbol_table(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.
             """
@@ -406,7 +406,7 @@ class TestCuObjDump:
         """
         Play with the cuBLAS shared library.
         """
-        def test_extract_functions(self, parameters : Parameters, workdir : pathlib.Path, cmake_file_api : cmake.FileAPI) -> None:
+        def test_extract_functions(self, parameters: Parameters, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI) -> None:
             """
             Extract a subset of all functions from a randomly picked cubin.
 
@@ -458,12 +458,12 @@ class TestCuObjDump:
             sass = False,
         )
         cuobjdump.functions = {
-            'my_kernel(float, const float *, float *, unsigned int)' : Function(
+            'my_kernel(float, const float *, float *, unsigned int)': Function(
                 symbol = TestFunction.SYMBOL,
                 code = TestFunction.CODE,
                 ru = TestFunction.RU,
             ),
-            'my_other_kernel(float, const float *, float *, unsigned int)' : Function(
+            'my_other_kernel(float, const float *, float *, unsigned int)': Function(
                 symbol = '_Z15my_other_kernelfPKfPfj',
                 code = TestFunction.CODE,
                 ru = TestFunction.RU,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 
 import attrs
@@ -11,18 +13,18 @@ class RegisterMatch:
     If :py:attr:`index` is :py:obj:`None`, it is a special register (*e.g.*
     ``RZ`` if :py:attr:`rtype` is :py:const:`reprospect.tools.sass.decode.RegisterType.GPR`).
     """
-    rtype : RegisterType
-    index : int | None = None
-    reuse : bool = False
+    rtype: RegisterType
+    index: int | None = None
+    reuse: bool = False
 
     @classmethod
-    def parse(cls, bits : regex.Match[str]) -> 'RegisterMatch':
+    def parse(cls, bits: regex.Match[str]) -> RegisterMatch:
         captured = bits.capturesdict()
 
         if len(rtype := captured['rtype']) != 1:
             raise ValueError(bits)
 
-        index : int | None = None
+        index: int | None = None
         if (value := captured.get('index')) is not None:
             if len(value) == 1:
                 index = int(value[0])
@@ -38,12 +40,12 @@ class RegisterMatcher:
     """
     Matcher for a register.
     """
-    rtype : RegisterType | None = None
-    special : bool | None = None
-    index : int | None = None
-    reuse : bool | None = None
+    rtype: RegisterType | None = None
+    special: bool | None = None
+    index: int | None = None
+    reuse: bool | None = None
 
-    pattern : regex.Pattern[str] = attrs.field(init = False)
+    pattern: regex.Pattern[str] = attrs.field(init = False)
 
     def __attrs_post_init__(self) -> None:
         if self.special is not None and self.index is not None:
@@ -56,12 +58,12 @@ class RegisterMatcher:
             self._build_reuse(),
         )))))
 
-    def match(self, reg : str) -> RegisterMatch | None:
+    def match(self, reg: str) -> RegisterMatch | None:
         if (matched := self.pattern.match(reg)) is not None:
             return RegisterMatch.parse(bits = matched)
         return None
 
-    def __call__(self, reg : str) -> RegisterMatch | None:
+    def __call__(self, reg: str) -> RegisterMatch | None:
         return self.match(reg = reg)
 
     def _build_special(self) -> str | None:

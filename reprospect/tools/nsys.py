@@ -40,18 +40,18 @@ class Command: # pylint: disable=too-many-instance-attributes, duplicate-code
     """Executable to run."""
     output: pathlib.Path
     """Report file."""
-    opts : tuple[str, ...] = ()
+    opts: tuple[str, ...] = ()
     """Options that do not involve paths."""
-    nvtx_capture : str | None = None
+    nvtx_capture: str | None = None
     """NVTX capture string."""
-    capture_range_end : str = 'stop'
+    capture_range_end: str = 'stop'
     """NVTX capture range end."""
     args: tuple[str | pathlib.Path, ...] | None = None
     """Arguments to pass to the executable."""
-    env : typing.Mapping[str, str] | None = None
+    env: typing.Mapping[str, str] | None = None
     """Mapping used to update the environment before running, see :py:meth:`run`."""
 
-    cmd : tuple[str | pathlib.Path, ...] = attrs.field(init = False)
+    cmd: tuple[str | pathlib.Path, ...] = attrs.field(init = False)
 
     def __attrs_post_init__(self) -> None:
         """
@@ -61,7 +61,7 @@ class Command: # pylint: disable=too-many-instance-attributes, duplicate-code
             object.__setattr__(self, 'output', self.output.parent / f'{self.output.name}.nsys-rep')
 
         # Disable collecting CPU samples.
-        opts : tuple[str, ...] = self.opts + (
+        opts: tuple[str, ...] = self.opts + (
             '--sample=none',
             '--backtrace=none',
             '--cpuctxsw=none',
@@ -95,8 +95,8 @@ class Command: # pylint: disable=too-many-instance-attributes, duplicate-code
         ))
 
     def run(self, *,
-        cwd : pathlib.Path | None = None,
-        env : typing.MutableMapping[str, str] | None = None,
+        cwd: pathlib.Path | None = None,
+        env: typing.MutableMapping[str, str] | None = None,
     ) -> int:
         if (self.nvtx_capture is not None or self.env is not None) and env is None:
             env = os.environ.copy()
@@ -120,12 +120,12 @@ class Session:
     """
     `Nsight Systems` session interface.
     """
-    command : Command
+    command: Command
 
     def run(
         self,
-        cwd : pathlib.Path | None = None,
-        env : typing.MutableMapping[str, str] | None = None,
+        cwd: pathlib.Path | None = None,
+        env: typing.MutableMapping[str, str] | None = None,
     ) -> None:
         """
         Run ``nsys`` using :py:attr:`command`.
@@ -135,14 +135,14 @@ class Session:
 
     def export_to_sqlite(
         self,
-        cwd : pathlib.Path | None = None,
+        cwd: pathlib.Path | None = None,
     ) -> pathlib.Path:
         """
         Export report to ``.sqlite``.
         """
         output_file_sqlite = self.command.output.with_suffix('.sqlite')
 
-        cmd : tuple[str | pathlib.Path, ...] = (
+        cmd: tuple[str | pathlib.Path, ...] = (
             'nsys', 'export',
             '--type', 'sqlite',
             f'--output={output_file_sqlite}',
@@ -157,16 +157,16 @@ class Session:
 
     def extract_statistical_report(
         self,
-        report : str = 'cuda_api_sum',
-        filter_nvtx : str | None = None,
-        cwd : pathlib.Path | None = None,
+        report: str = 'cuda_api_sum',
+        filter_nvtx: str | None = None,
+        cwd: pathlib.Path | None = None,
     ) -> pandas.DataFrame:
         """
         Extract `report`, filtering the database with `filter_nvtx`.
         """
         output_file_sqlite = self.command.output.with_suffix('.sqlite')
 
-        cmd : tuple[str | pathlib.Path, ...] = (
+        cmd: tuple[str | pathlib.Path, ...] = (
             'nsys', 'stats',
             f'--output={self.command.output.parent / self.command.output.stem}',
             f'--report={report}',
@@ -194,17 +194,17 @@ class ReportPatternSelector:
     A :py:class:`pandas.DataFrame` selector that returns which rows match a regex pattern
     in a specific column.
     """
-    pattern : str | re.Pattern[str]
-    column : str = 'Name'
+    pattern: str | re.Pattern[str]
+    column: str = 'Name'
 
-    def __call__(self, table : pandas.DataFrame) -> pandas.Series:
+    def __call__(self, table: pandas.DataFrame) -> pandas.Series:
         return table[self.column].astype(str).str.contains(self.pattern, regex = True)
 
 class ReportNvtxEvents(rich_helpers.TreeMixin):
-    def __init__(self, events : pandas.DataFrame) -> None:
+    def __init__(self, events: pandas.DataFrame) -> None:
         self.events = events
 
-    def get(self, accessors : typing.Sequence[str]) -> pandas.DataFrame:
+    def get(self, accessors: typing.Sequence[str]) -> pandas.DataFrame:
         """
         Find all nested NVTX events matching `accessors`.
         """
@@ -227,7 +227,7 @@ class ReportNvtxEvents(rich_helpers.TreeMixin):
 
     @override
     def to_tree(self) -> rich.tree.Tree:
-        def add_branch(*, tree : rich.tree.Tree, nodes : pandas.DataFrame) -> None:
+        def add_branch(*, tree: rich.tree.Tree, nodes: pandas.DataFrame) -> None:
             for _, node in nodes.iterrows():
                 branch = tree.add(f"{node['text']} ({node['eventTypeName']})")
                 if node['children'].any():
@@ -242,9 +242,9 @@ class Report:
     """
     Helper for reading the `SQLite` export of a ``nsys`` report.
     """
-    def __init__(self, *, db : pathlib.Path) -> None:
+    def __init__(self, *, db: pathlib.Path) -> None:
         self.db = db
-        self.conn : sqlite3.Connection | None = None
+        self.conn: sqlite3.Connection | None = None
 
     def __enter__(self) -> Self:
         logging.info(f'Connecting to {self.db}.')
@@ -267,7 +267,7 @@ class Report:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         return [row[0] for row in cursor.fetchall()]
 
-    def table(self, *, name : str, **kwargs) -> pandas.DataFrame:
+    def table(self, *, name: str, **kwargs) -> pandas.DataFrame:
         """
         Get a table from the report.
         """
@@ -275,7 +275,7 @@ class Report:
         return pandas.read_sql_query(f"SELECT * FROM {name};", self.conn, **kwargs)
 
     @staticmethod
-    def single_row(*, data : pandas.DataFrame) -> pandas.Series:
+    def single_row(*, data: pandas.DataFrame) -> pandas.Series:
         """
         Check that `data` has one row, and squeeze it.
         """
@@ -285,11 +285,11 @@ class Report:
 
     @classmethod
     def get_correlated_row(cls, *,
-        src : pandas.DataFrame | pandas.Series,
-        dst : pandas.DataFrame,
-        selector : typing.Callable[[pandas.DataFrame], pandas.Series] | None = None,
-        correlation_src : str = 'correlationId',
-        correlation_dst : str = 'correlationId',
+        src: pandas.DataFrame | pandas.Series,
+        dst: pandas.DataFrame,
+        selector: typing.Callable[[pandas.DataFrame], pandas.Series] | None = None,
+        correlation_src: str = 'correlationId',
+        correlation_dst: str = 'correlationId',
     ) -> pandas.Series:
         """
         Select a row from `src`, and return the row from `dst` that matches by correlation ID.
@@ -302,11 +302,11 @@ class Report:
 
     @classmethod
     def get_correlated_rows(cls, *,
-        src : pandas.DataFrame | pandas.Series,
-        dst : pandas.DataFrame,
-        selector : typing.Callable[[pandas.DataFrame], pandas.Series] | None = None,
-        correlation_src : str = 'correlationId',
-        correlation_dst : str = 'correlationId',
+        src: pandas.DataFrame | pandas.Series,
+        dst: pandas.DataFrame,
+        selector: typing.Callable[[pandas.DataFrame], pandas.Series] | None = None,
+        correlation_src: str = 'correlationId',
+        correlation_dst: str = 'correlationId',
     ) -> pandas.DataFrame:
         """
         Similar to :py:meth:`get_correlated_row`, but *may* match more than one row.
@@ -364,8 +364,8 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
         events['level'] = -1
 
         # We'll build parent-child relationships using a stack.
-        stack : list[typing.Hashable] = []
-        child_map : dict[typing.Hashable, list[typing.Hashable]] = {i: [] for i in events.index}
+        stack: list[typing.Hashable] = []
+        child_map: dict[typing.Hashable, list[typing.Hashable]] = {i: [] for i in events.index}
 
         for idx, event in events.iterrows():
             # Pop any finished parents.
@@ -387,7 +387,7 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
 
         return ReportNvtxEvents(events = events)
 
-    def get_events(self, table : str, accessors : typing.Sequence[str], stringids : str | None = 'nameId') -> pandas.DataFrame:
+    def get_events(self, table: str, accessors: typing.Sequence[str], stringids: str | None = 'nameId') -> pandas.DataFrame:
         """
         Query all rows in `table` that happen between the `start`/`end` time points
         of the nested NVTX range matching `accessors`.
@@ -425,7 +425,7 @@ ORDER BY {table}.start ASC
 """
         return pandas.read_sql_query(query, self.conn)
 
-def strip_cuda_api_suffix(call : str) -> str:
+def strip_cuda_api_suffix(call: str) -> str:
     """
     Strip suffix like `_v10000` or `_ptsz` from a CUDA API `call`.
     """
@@ -453,12 +453,12 @@ class Cacher(cacher.Cacher):
         The cache should not be shared between machines, since there may be differences between machines
         that influence the results but are not included in the hashing.
     """
-    TABLE : typing.ClassVar[str] = 'nsys'
+    TABLE: typing.ClassVar[str] = 'nsys'
 
-    def __init__(self, *, directory : str | pathlib.Path | None = None):
+    def __init__(self, *, directory: str | pathlib.Path | None = None):
         super().__init__(directory = directory or (pathlib.Path(os.environ['HOME']) / '.nsys-cache'))
 
-    def hash_impl(self, *, command : Command) -> blake3.blake3:
+    def hash_impl(self, *, command: Command) -> blake3.blake3:
         """
         Hash based on:
 
@@ -494,7 +494,7 @@ class Cacher(cacher.Cacher):
         return self.hash_impl(command = kwargs['command'])
 
     @override
-    def populate(self, directory : pathlib.Path, **kwargs) -> None:
+    def populate(self, directory: pathlib.Path, **kwargs) -> None:
         """
         When there is a cache miss, call :py:meth:`reprospect.tools.nsys.Session.run`.
         Fill the `directory` with the artifacts.
@@ -505,7 +505,7 @@ class Cacher(cacher.Cacher):
 
         shutil.copy(dst = directory, src = command.output)
 
-    def run(self, command : Command, **kwargs) -> cacher.Cacher.Entry:
+    def run(self, command: Command, **kwargs) -> cacher.Cacher.Entry:
         """
         On a cache hit, copy files from the cache entry.
         """
@@ -518,8 +518,8 @@ class Cacher(cacher.Cacher):
 
     @staticmethod
     def export_to_sqlite(
-        command : Command,
-        entry : cacher.Cacher.Entry,
+        command: Command,
+        entry: cacher.Cacher.Entry,
         **kwargs,
     ) -> pathlib.Path:
         """

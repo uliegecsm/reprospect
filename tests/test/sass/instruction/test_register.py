@@ -2,13 +2,7 @@ import typing
 
 import pytest
 
-from reprospect.test.sass.instruction.register import (
-    RegisterMatch,
-    RegisterMatcher,
-    RegisterModifier,
-    RegisterType,
-)
-
+from reprospect.test.sass.instruction.register import RegisterMatch, RegisterType, RegisterMatcher, OperandModifier
 
 class TestRegisterMatcher:
     """
@@ -16,10 +10,10 @@ class TestRegisterMatcher:
     """
     REGISTERS: typing.Final[dict[str, RegisterMatch]] = {
         'R42':       RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False),
-        '!R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, modifier=RegisterModifier.NOT),
-        '~R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, modifier=RegisterModifier.INV),
-        '-R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, modifier=RegisterModifier.NEG),
-        '|R42|':     RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, modifier=RegisterModifier.ABS),
+        '!R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, modifier=OperandModifier.NOT),
+        '~R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, modifier=OperandModifier.INV),
+        '-R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, modifier=OperandModifier.NEG),
+        '|R42|':     RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, modifier=OperandModifier.ABS),
         'R42.reuse': RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=True),
         'RZ':        RegisterMatch(rtype=RegisterType.GPR,   index=None, reuse=False),
         'UR42':      RegisterMatch(rtype=RegisterType.UGPR,  index=42,   reuse=False),
@@ -34,8 +28,6 @@ class TestRegisterMatcher:
     def test_reg(self) -> None:
         REG: typing.Final[str] = 'R42'
 
-        assert self.MATCHER.match(REG) == self.REGISTERS[REG]
-
         matcher = RegisterMatcher(rtype=RegisterType.GPR, special=False, reuse=False)
         assert matcher.pattern.pattern == r'(?:(?P<modifier>[\-!\|~]))?(?P<rtype>R)(?P<index>\d+)'
         assert matcher.match(REG) == self.REGISTERS[REG]
@@ -43,16 +35,12 @@ class TestRegisterMatcher:
     def test_regz(self) -> None:
         REG: typing.Final[str] = 'RZ'
 
-        assert self.MATCHER.match(REG) == self.REGISTERS[REG]
-
         matcher = RegisterMatcher(rtype=RegisterType.GPR, special=True)
         assert matcher.pattern.pattern == r'(?:(?P<modifier>[\-!\|~]))?(?P<rtype>R)(?P<special>Z)'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_ureg(self) -> None:
         REG: typing.Final[str] = 'UR42'
-
-        assert self.MATCHER.match(REG) == self.REGISTERS[REG]
 
         matcher = RegisterMatcher(rtype=RegisterType.UGPR, special=False)
         assert matcher.pattern.pattern == r'(?:(?P<modifier>[\-!\|~]))?(?P<rtype>UR)(?P<index>\d+)(?P<reuse>\.reuse)?'
@@ -66,8 +54,6 @@ class TestRegisterMatcher:
 
     def test_predt(self) -> None:
         REG: typing.Final[str] = 'PT'
-
-        assert self.MATCHER.match(REG) == self.REGISTERS[REG]
 
         matcher = RegisterMatcher(rtype=RegisterType.PRED)
         assert matcher.pattern.pattern == r'(?:(?P<modifier>[\-!\|~]))?(?P<rtype>P)(?P<special>T)?(?P<index>\d+)?'

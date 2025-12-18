@@ -1,34 +1,16 @@
 from __future__ import annotations
 
 import dataclasses
-import sys
 import typing
 
 import attrs
 import regex
 
+from reprospect.test.sass.instruction.operand import OperandModifier, OPERAND_MODIFIER
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.sass.decode import RegisterType
 
-if sys.version_info >= (3, 11):
-    from enum import StrEnum
-else:
-    from backports.strenum.strenum import StrEnum
-
-class RegisterModifier(StrEnum):
-    """
-    Allowed register value modifier.
-
-    References:
-
-    * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L67
-    """
-    NOT = '!'
-    NEG = '-'
-    ABS = '|'
-    INV = '~'
-
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen = True, slots = True)
 class RegisterMatch:
     """
     If :py:attr:`index` is :py:obj:`None`, it is a special register (*e.g.*
@@ -37,7 +19,7 @@ class RegisterMatch:
     rtype: RegisterType
     index: int | None = None
     reuse: bool = False
-    modifier: RegisterModifier | None = None
+    modifier: OperandModifier | None = None
 
     @classmethod
     def parse(cls, bits: regex.Match[str]) -> RegisterMatch:
@@ -51,10 +33,10 @@ class RegisterMatch:
             if len(value) == 1:
                 index = int(value[0])
 
-        modifier: RegisterModifier | None = None
+        modifier: OperandModifier | None = None
         if (value := captured.get('modifier')) is not None:
             if len(value) == 1:
-                modifier = RegisterModifier(value[0])
+                modifier = OperandModifier(value[0])
 
         return cls(
             rtype=RegisterType(rtype[0]),
@@ -63,7 +45,7 @@ class RegisterMatch:
             modifier=modifier,
         )
 
-REGISTER_MATCHER_MOD_PRE: typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.group(PatternBuilder.PRE_OPERAND_MOD, group='modifier'))
+REGISTER_MATCHER_MOD_PRE: typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.group(OPERAND_MODIFIER, group='modifier'))
 
 @attrs.define(frozen=True, slots=True, kw_only=True)
 class RegisterMatcher:
@@ -74,7 +56,7 @@ class RegisterMatcher:
     special: bool | None = None
     index: int | None = None
     reuse: bool | None = None
-    modifier: RegisterModifier | None = None
+    modifier: OperandModifier | None = None
 
     pattern: regex.Pattern[str] = attrs.field(init=False)
 

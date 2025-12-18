@@ -1,6 +1,8 @@
 import functools
 import typing
 
+from reprospect.test.sass.instruction.operand import OPERAND_MODIFIER
+
 
 class PatternBuilder:
     """
@@ -54,15 +56,6 @@ class PatternBuilder:
     PREDICATE: typing.Final[str] = r'@!?U?P(?:T|\d+)'
     """
     Predicate for the whole instruction (comes before the opcode).
-    """
-
-    PRE_OPERAND_MOD: typing.Final[str] = r'[\-!\|~]'
-    """
-    Allowed pre-modifiers for operands.
-
-    References:
-
-    * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L67
     """
 
     @staticmethod
@@ -119,9 +112,9 @@ class PatternBuilder:
     @classmethod
     def premodregz(cls) -> str:
         """
-        :py:attr:`REGZ` with `operands` group and optional :py:attr:`PRE_OPERAND_MOD` modifier.
+        :py:attr:`REGZ` with `operands` group and optional :py:const:`reprospect.test.sass.instruction.operand.OPERAND_MODIFIER` modifier.
         """
-        return cls.group(cls.zero_or_one(cls.PRE_OPERAND_MOD) + cls.REGZ, group='operands')
+        return cls.group(cls.zero_or_one(OPERAND_MODIFIER) + cls.REGZ, group='operands')
 
     @classmethod
     def regz(cls) -> str:

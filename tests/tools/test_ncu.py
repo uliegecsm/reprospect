@@ -15,7 +15,7 @@ from reprospect.tools.ncu.metrics import MetricCorrelationData
 from reprospect.utils import detect
 
 
-@pytest.fixture(scope = 'session')
+@pytest.fixture(scope='session')
 def cmake_cuda_compiler(cmake_file_api) -> dict:
     return cmake_file_api.toolchains['CUDA']['compiler']
 
@@ -23,22 +23,22 @@ class TestProfilingResults:
     """
     Tests for :py:class:`reprospect.tools.ncu.ProfilingResults`.
     """
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def results(self) -> ncu.ProfilingResults:
         results = ncu.ProfilingResults()
         results.assign_metrics(
-            accessors = ('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
-            data = ncu.ProfilingMetrics({
+            accessors=('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'),
+            data=ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum': 100.,
-                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.}),
+                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated={'LDCU': 16., 'LDC': 16.}),
                 'L1/TEX cache global load sectors.sum': 0.,
             }),
         )
         results.assign_metrics(
-            accessors = ('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
-            data = ncu.ProfilingMetrics({
+            accessors=('nvtx_range_name', 'nvtx_push_region_B', 'nvtx_push_region_other_kernel', 'other_kernel'),
+            data=ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum': 96.,
-                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated = {'LDCU': 16., 'LDC': 16.}),
+                'sass__inst_executed_per_opcode': MetricCorrelationData(correlated={'LDCU': 16., 'LDC': 16.}),
                 'L1/TEX cache global load sectors.sum': 0.,
             }),
         )
@@ -48,7 +48,7 @@ class TestProfilingResults:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query`.
         """
-        with pytest.raises(KeyError, match = "'nvtx_range_not_in_results'"):
+        with pytest.raises(KeyError, match="'nvtx_range_not_in_results'"):
             results.query(('nvtx_range_not_in_results',))
 
         results_A = results.query(('nvtx_range_name', 'nvtx_push_region_A'))
@@ -89,7 +89,7 @@ class TestProfilingResults:
         assert key == 'kernel'
         assert metrics['smsp__inst_executed.sum'] == 100.
 
-        with pytest.raises(TypeError, match = r"Expecting entry 'nvtx_push_region_kernel' to be a leaf node with profiling metrics at ()."):
+        with pytest.raises(TypeError, match=r"Expecting entry 'nvtx_push_region_kernel' to be a leaf node with profiling metrics at ()."):
             next(results.query(('nvtx_range_name', 'nvtx_push_region_A')).iter_metrics())
 
     def test_assign_metrics(self) -> None:
@@ -99,11 +99,11 @@ class TestProfilingResults:
         other_results = ncu.ProfilingResults()
 
         other_results.assign_metrics(
-            accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel'),
-            data = ncu.ProfilingMetrics({'my-value': 42}),
+            accessors=('nvtx_range_name', 'push_region_XS', 'nice-kernel'),
+            data=ncu.ProfilingMetrics({'my-value': 42}),
         )
 
-        assert other_results.query_metrics(accessors = ('nvtx_range_name', 'push_region_XS', 'nice-kernel'))['my-value'] == 42
+        assert other_results.query_metrics(accessors=('nvtx_range_name', 'push_region_XS', 'nice-kernel'))['my-value'] == 42
 
     def test_aggregate_metrics(self) -> None:
         """
@@ -111,25 +111,25 @@ class TestProfilingResults:
         """
         other_results = ncu.ProfilingResults()
         other_results.assign_metrics(
-            accessors = ('range-0', 'range-1', 'kernel-A'),
-            data = ncu.ProfilingMetrics({'my-counter-int': 42, 'my-counter-float': 666.}),
+            accessors=('range-0', 'range-1', 'kernel-A'),
+            data=ncu.ProfilingMetrics({'my-counter-int': 42, 'my-counter-float': 666.}),
         )
         other_results.assign_metrics(
-            accessors = ('range-0', 'range-1', 'kernel-B'),
-            data = ncu.ProfilingMetrics({'my-counter-int': 43, 'my-counter-float': 667.}),
+            accessors=('range-0', 'range-1', 'kernel-B'),
+            data=ncu.ProfilingMetrics({'my-counter-int': 43, 'my-counter-float': 667.}),
         )
         other_results.assign_metrics(
-            accessors = ('range-0', 'range-1', 'kernel-C'),
-            data = ncu.ProfilingMetrics({'my-counter-int': 44, 'my-counter-float': 668.}),
+            accessors=('range-0', 'range-1', 'kernel-C'),
+            data=ncu.ProfilingMetrics({'my-counter-int': 44, 'my-counter-float': 668.}),
         )
 
         aggregated = {'my-counter-int': 42 + 43 + 44, 'my-counter-float': 666. + 667. + 668.}
 
-        assert other_results.aggregate_metrics(accessors = ('range-0', 'range-1')) == aggregated
+        assert other_results.aggregate_metrics(accessors=('range-0', 'range-1')) == aggregated
 
         aggregated.pop('my-counter-float')
 
-        assert other_results.aggregate_metrics(accessors = ('range-0', 'range-1'), keys = ('my-counter-int',)) == aggregated
+        assert other_results.aggregate_metrics(accessors=('range-0', 'range-1'), keys=('my-counter-int',)) == aggregated
 
     def test_string_representation(self, results: ncu.ProfilingResults) -> None:
         """
@@ -171,25 +171,25 @@ class TestCommand:
         """
         Check that the environment is handled properly.
         """
-        with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
-            ncu.Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever')).run()
-            check_call.assert_called_with(args = (
+        with unittest.mock.patch('subprocess.check_call', return_value=0) as check_call:
+            ncu.Command(executable='my-executable', output=pathlib.Path('my-output-path.whatever')).run()
+            check_call.assert_called_with(args=(
                 'ncu', '--print-summary=per-kernel', '--warp-sampling-interval=0',
                 '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever'),
                 '--log-file', pathlib.Path('my-output-path.log'),
                 'my-executable',
-            ), env = None, cwd = None)
+            ), env=None, cwd=None)
 
-        with unittest.mock.patch('subprocess.check_call', return_value = 0) as check_call:
-            ncu.Command(executable = 'my-executable', output = pathlib.Path('my-output-path.whatever'), env = {'IT_MATTERS': 'ON'}).run(env = {'MY_BASE_ENV': '666'}, cwd = bindir)
-            check_call.assert_called_with(args = (
+        with unittest.mock.patch('subprocess.check_call', return_value=0) as check_call:
+            ncu.Command(executable='my-executable', output=pathlib.Path('my-output-path.whatever'), env={'IT_MATTERS': 'ON'}).run(env={'MY_BASE_ENV': '666'}, cwd=bindir)
+            check_call.assert_called_with(args=(
                 'ncu', '--print-summary=per-kernel', '--warp-sampling-interval=0',
                 '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever'),
                 '--log-file', pathlib.Path('my-output-path.log'),
                 'my-executable',
-            ), env = {'MY_BASE_ENV': '666', 'IT_MATTERS': 'ON'}, cwd = bindir)
+            ), env={'MY_BASE_ENV': '666', 'IT_MATTERS': 'ON'}, cwd=bindir)
 
-@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestSession:
     """
     Test :py:class:`reprospect.tools.ncu.Session`.
@@ -203,9 +203,9 @@ class TestSession:
         """
         METRICS: tuple[ncu.Metric | ncu.MetricDeviceAttribute, ...] = (
             # Metric with full name provided.
-            ncu.Metric(name = 'launch__registers_per_thread_allocated'),
+            ncu.Metric(name='launch__registers_per_thread_allocated'),
             # Metric with roll-up.
-            ncu.MetricCounter(name = 'smsp__inst_executed', subs = (ncu.MetricCounterRollUp.SUM,)),
+            ncu.MetricCounter(name='smsp__inst_executed', subs=(ncu.MetricCounterRollUp.SUM,)),
             # Launch grid and block.
             *ncu.LaunchBlock.create(),
             *ncu.LaunchGrid.create(),
@@ -213,13 +213,13 @@ class TestSession:
             ncu.L1TEXCache.GlobalLoad.Instructions.create(),
             ncu.L1TEXCache.GlobalLoad.Sectors.create(),
             # A few device attributes.
-            ncu.MetricDeviceAttribute(name = 'display_name'),
-            ncu.MetricDeviceAttribute(name = 'architecture'),
-            ncu.MetricDeviceAttribute(name = 'can_map_host_memory'),
-            ncu.MetricDeviceAttribute(name = 'clock_rate'),
-            ncu.MetricDeviceAttribute(name = 'gpu_overlap'),
-            ncu.MetricDeviceAttribute(name = 'sass_level'),
-            ncu.MetricDeviceAttribute(name = 'numa_config'),
+            ncu.MetricDeviceAttribute(name='display_name'),
+            ncu.MetricDeviceAttribute(name='architecture'),
+            ncu.MetricDeviceAttribute(name='can_map_host_memory'),
+            ncu.MetricDeviceAttribute(name='clock_rate'),
+            ncu.MetricDeviceAttribute(name='gpu_overlap'),
+            ncu.MetricDeviceAttribute(name='sass_level'),
+            ncu.MetricDeviceAttribute(name='numa_config'),
         )
 
         EXPT_METRICS_AND_METADATA = (
@@ -242,24 +242,24 @@ class TestSession:
             'device__attribute_gpu_overlap',
         )
 
-        ncu.Session(command = ncu.Command(
-            output = workdir / 'report-saxpy-basics',
-            executable = bindir / self.SAXPY,
-            metrics = METRICS,
-            nvtx_includes = tuple(
+        ncu.Session(command=ncu.Command(
+            output=workdir / 'report-saxpy-basics',
+            executable=bindir / self.SAXPY,
+            metrics=METRICS,
+            nvtx_includes=tuple(
                 f'application_domain@{x}/'
                 for x in ('launch_saxpy_kernel_first_time', 'launch_saxpy_kernel_second_time')
             ),
         )).run(
-            retries = 5,
+            retries=5,
         )
 
-        report = ncu.Report(path = workdir, name = 'report-saxpy-basics')
+        report = ncu.Report(path=workdir, name='report-saxpy-basics')
 
         assert report.report.num_ranges() == 1
 
         # Extract results without NVTX filtering.
-        results = report.extract_results_in_range(metrics = METRICS)
+        results = report.extract_results_in_range(metrics=METRICS)
 
         logging.info(results)
 
@@ -268,10 +268,10 @@ class TestSession:
         assert all(x in metrics_saxpy_kernel_0 for x in EXPT_METRICS_AND_METADATA)
         assert all(x in metrics_saxpy_kernel_1 for x in EXPT_METRICS_AND_METADATA)
         # Extract results with NVTX filtering. Request only the 2 first metrics.
-        with pytest.raises(RuntimeError, match = 'no action found'):
-            results_filtered = report.extract_results_in_range(metrics = METRICS[:2], includes = ('outer_useless_range',))
+        with pytest.raises(RuntimeError, match='no action found'):
+            results_filtered = report.extract_results_in_range(metrics=METRICS[:2], includes=('outer_useless_range',))
 
-        results_filtered = report.extract_results_in_range(metrics = METRICS[:2], includes = ('application_domain@outer_useless_range',))
+        results_filtered = report.extract_results_in_range(metrics=METRICS[:2], includes=('application_domain@outer_useless_range',))
 
         logging.info(results_filtered)
 
@@ -306,23 +306,23 @@ class TestSession:
         Collect metrics with correlations for the :py:attr:`SAXPY` executable.
         """
         METRICS: typing.Final[tuple[ncu.MetricCorrelation, ...]] = (
-            ncu.MetricCorrelation(name = 'sass__inst_executed_per_opcode'),
-            ncu.MetricCorrelation(name = 'inst_executed'),
+            ncu.MetricCorrelation(name='sass__inst_executed_per_opcode'),
+            ncu.MetricCorrelation(name='inst_executed'),
         )
 
-        session = ncu.Session(command = ncu.Command(
-            opts = ('--launch-skip-before-match', '1'),
-            output = workdir / 'report-saxpy-correlated',
-            executable = bindir / self.SAXPY,
-            metrics = METRICS,
+        session = ncu.Session(command=ncu.Command(
+            opts=('--launch-skip-before-match', '1'),
+            output=workdir / 'report-saxpy-correlated',
+            executable=bindir / self.SAXPY,
+            metrics=METRICS,
         ))
-        session.run(retries = 5)
+        session.run(retries=5)
 
-        report = ncu.Report(command = session.command)
+        report = ncu.Report(command=session.command)
 
         assert report.report.num_ranges() == 1
 
-        results = report.extract_results_in_range(metrics = METRICS)
+        results = report.extract_results_in_range(metrics=METRICS)
 
         logging.info(results)
 
@@ -355,19 +355,19 @@ class TestSession:
             ncu.L1TEXCache.GlobalStore.Sectors.create(),
         )
 
-        session = ncu.Session(command = ncu.Command(
-            output = workdir / 'report-graph-basics',
-            executable = bindir / self.GRAPH,
-            metrics = METRICS,
+        session = ncu.Session(command=ncu.Command(
+            output=workdir / 'report-graph-basics',
+            executable=bindir / self.GRAPH,
+            metrics=METRICS,
         ))
-        session.run(retries = 5)
+        session.run(retries=5)
 
-        report = ncu.Report(command = session.command)
+        report = ncu.Report(command=session.command)
 
         assert report.report.num_ranges() == 1
 
         # Extract results.
-        results = report.extract_results_in_range(metrics = METRICS, demangler = get_demangler_for_compiler(cmake_cuda_compiler['id']))
+        results = report.extract_results_in_range(metrics=METRICS, demangler=get_demangler_for_compiler(cmake_cuda_compiler['id']))
 
         logging.info(results)
 
@@ -377,17 +377,17 @@ class TestSession:
         match cmake_cuda_compiler['id']:
             case 'NVIDIA':
                 NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0EJEEvPj'
-                metrics_node_A = results.query_metrics(accessors = ('add_and_increment_kernel-0',))
+                metrics_node_A = results.query_metrics(accessors=('add_and_increment_kernel-0',))
             case 'Clang':
                 # For some reason, ncu cannot demangle the signature of node A when compiling with clang 21.1.3.
                 NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0ETpTnjJEEvPj'
-                metrics_node_A = results.query_metrics(accessors = (f'{NODE_A_MANGLED}-0',))
+                metrics_node_A = results.query_metrics(accessors=(f'{NODE_A_MANGLED}-0',))
             case _:
                 raise ValueError(f"unsupported compiler ID {cmake_cuda_compiler['id']}")
 
-        metrics_node_B = results.query_metrics(accessors = ('add_and_increment_kernel-1',))
-        metrics_node_C = results.query_metrics(accessors = ('add_and_increment_kernel-2',))
-        metrics_node_D = results.query_metrics(accessors = ('add_and_increment_kernel-3',))
+        metrics_node_B = results.query_metrics(accessors=('add_and_increment_kernel-1',))
+        metrics_node_C = results.query_metrics(accessors=('add_and_increment_kernel-2',))
+        metrics_node_D = results.query_metrics(accessors=('add_and_increment_kernel-3',))
 
         # Check global load/store for each node, and aggregated as well.
         SIGNATURES = {
@@ -402,7 +402,7 @@ class TestSession:
         assert SIGNATURES['node_C'](metrics_node_C)
         assert SIGNATURES['node_D'](metrics_node_D)
 
-        metrics_aggregate = results.aggregate_metrics(accessors = (), keys = (
+        metrics_aggregate = results.aggregate_metrics(accessors=(), keys=(
             'L1/TEX cache global store sectors.sum',
             'L1/TEX cache global load sectors.sum',
         ))
@@ -430,15 +430,15 @@ class TestSession:
         """
         When `retries` is given, but `ncu` fails for a good reason, it should not retry, *i.e.* it should not sleep.
         """
-        session = ncu.Session(command = ncu.Command(
-            output = workdir / 'report-failure',
-            executable = bindir / self.GRAPH,
-            opts = ('--something-ncu-does-not-know',),
+        session = ncu.Session(command=ncu.Command(
+            output=workdir / 'report-failure',
+            executable=bindir / self.GRAPH,
+            opts=('--something-ncu-does-not-know',),
         ))
 
         with unittest.mock.patch('time.sleep') as mock_sleep:
             with pytest.raises(subprocess.CalledProcessError):
-                session.run(retries = 5)
+                session.run(retries=5)
             mock_sleep.assert_not_called()
 
 class TestCacher:
@@ -453,10 +453,10 @@ class TestCacher:
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory = tmpdir) as cacher:
-                command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.GRAPH, args = ('--bla=42',), output = pathlib.Path('I-dont-care'))
-                hash_a = cacher.hash(command = command)
-                hash_b = cacher.hash(command = command)
+            with ncu.Cacher(directory=tmpdir) as cacher:
+                command = ncu.Command(opts=('--nvtx',), executable=bindir / self.GRAPH, args=('--bla=42',), output=pathlib.Path('I-dont-care'))
+                hash_a = cacher.hash(command=command)
+                hash_b = cacher.hash(command=command)
 
                 assert hash_a.digest() == hash_b.digest()
 
@@ -465,15 +465,15 @@ class TestCacher:
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory = tmpdir) as cacher:
-                hash_a = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.GRAPH, args = ('--bla=42',), output = pathlib.Path('i-dont-care')))
-                hash_b = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.SAXPY, args = ('--bla=42',), output = pathlib.Path('i-dont-care')))
-                hash_c = cacher.hash(command = ncu.Command(opts = ('--nvtx',), executable = bindir / self.SAXPY, args = ('--bla=42',), output = pathlib.Path('i-dont-care'), env = {'ONE': '2'}))
+            with ncu.Cacher(directory=tmpdir) as cacher:
+                hash_a = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.GRAPH, args=('--bla=42',), output=pathlib.Path('i-dont-care')))
+                hash_b = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.SAXPY, args=('--bla=42',), output=pathlib.Path('i-dont-care')))
+                hash_c = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.SAXPY, args=('--bla=42',), output=pathlib.Path('i-dont-care'), env={'ONE': '2'}))
 
                 assert hash_a.digest() != hash_b.digest()
                 assert hash_b.digest() != hash_c.digest()
 
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_cache_hit(self, bindir, workdir) -> None:
         """
         The cacher should hit on the second call.
@@ -487,18 +487,18 @@ class TestCacher:
         FILES = ('report-cached.log', 'report-cached.ncu-rep')
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory = tmpdir) as cacher:
+            with ncu.Cacher(directory=tmpdir) as cacher:
                 assert os.listdir(cacher.directory) == ['cache.db']
 
                 command = ncu.Command(
-                    opts = ('--launch-skip-before-match', '3'),
-                    executable = bindir / self.GRAPH,
-                    args = ('--who-cares',),
-                    metrics = METRICS,
-                    output = workdir / 'report-cached',
+                    opts=('--launch-skip-before-match', '3'),
+                    executable=bindir / self.GRAPH,
+                    args=('--who-cares',),
+                    metrics=METRICS,
+                    output=workdir / 'report-cached',
                 )
 
-                results_first = cacher.run(command = command, retries = 5)
+                results_first = cacher.run(command=command, retries=5)
 
                 assert results_first.cached is False
 
@@ -510,7 +510,7 @@ class TestCacher:
                 assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
                 assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
 
-                results_second = cacher.run(command = command, retries = 5)
+                results_second = cacher.run(command=command, retries=5)
 
                 assert results_second.cached is True
 

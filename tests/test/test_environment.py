@@ -14,7 +14,7 @@ class TestEnvironmentField:
         """
         Raises if neither an attribute name nor an environment key is given.
         """
-        with pytest.raises(AttributeError, match = r'Descriptor not initialized properly.'):
+        with pytest.raises(AttributeError, match=r'Descriptor not initialized properly.'):
             EnvironmentField().read(None, None)
 
     def test_read_str_converter(self, monkeypatch) -> None:
@@ -22,7 +22,7 @@ class TestEnvironmentField:
         Environment variable read as `str`.
         """
         class Config:
-            test_var = EnvironmentField(converter = str)
+            test_var = EnvironmentField(converter=str)
 
         monkeypatch.setenv('test_var', 'hello')
 
@@ -36,7 +36,7 @@ class TestEnvironmentField:
         Environment variable read as `int`.
         """
         class Config:
-            count = EnvironmentField(converter = int)
+            count = EnvironmentField(converter=int)
 
         monkeypatch.setenv('count', '42')
 
@@ -50,8 +50,8 @@ class TestEnvironmentField:
         The value is initialized to the given default value.
         """
         class DefaultValue:
-            var: typing.ClassVar[EnvironmentField[float]] = EnvironmentField(default = 6.66)
-            other = EnvironmentField(default = pathlib.Path('my-default-path'))
+            var: typing.ClassVar[EnvironmentField[float]] = EnvironmentField(default=6.66)
+            other = EnvironmentField(default=pathlib.Path('my-default-path'))
 
         default_value = DefaultValue()
 
@@ -69,10 +69,10 @@ class TestEnvironmentField:
             var = EnvironmentField[float]()
             other = EnvironmentField[float]()
 
-        with pytest.raises(RuntimeError, match = "Missing required environment variable 'var' or converter or default value for <class"):
+        with pytest.raises(RuntimeError, match="Missing required environment variable 'var' or converter or default value for <class"):
             assert Raises().var
 
-        with pytest.raises(RuntimeError, match = "Missing required environment variable 'other' or converter or default value for <class"):
+        with pytest.raises(RuntimeError, match="Missing required environment variable 'other' or converter or default value for <class"):
             assert Raises().other
 
     def test_in_environment_converted_with_env_key(self, monkeypatch) -> None:
@@ -80,8 +80,8 @@ class TestEnvironmentField:
         The value is correctly initialized from the environment (given a key), and converted.
         """
         class ReadAndConvertValue:
-            var: EnvironmentField[pathlib.Path] = EnvironmentField(env = 'my_Weird_NAME', converter = pathlib.Path)
-            other = EnvironmentField(env = 'MY_OTHER_weird', converter = pathlib.Path)
+            var: EnvironmentField[pathlib.Path] = EnvironmentField(env='my_Weird_NAME', converter=pathlib.Path)
+            other = EnvironmentField(env='MY_OTHER_weird', converter=pathlib.Path)
 
         monkeypatch.setenv('my_Weird_NAME', 'my-nice/path.rst')
 
@@ -104,7 +104,7 @@ class TestEnvironmentField:
                 self.computed: int = hash(value)
 
         class ReadAndConvertValue:
-            var = EnvironmentField(converter = WeirdType)
+            var = EnvironmentField(converter=WeirdType)
 
         monkeypatch.setenv('var', 'my-nice/path.rst')
 
@@ -118,7 +118,7 @@ class TestEnvironmentField:
         The value is shared among all instances.
         """
         class Config:
-            value = EnvironmentField(converter = str)
+            value = EnvironmentField(converter=str)
 
         monkeypatch.setenv('value', 'first')
 
@@ -139,7 +139,7 @@ class TestEnvironmentField:
         If no converter was provided, infer it from the type of the default value.
         """
         class Config:
-            var = EnvironmentField(default = float(42.666))
+            var = EnvironmentField(default=float(42.666))
 
         config = Config()
 
@@ -150,7 +150,7 @@ class TestEnvironmentField:
 
     def test_reset(self, monkeypatch) -> None:
         class Config:
-            value = EnvironmentField(converter = float)
+            value = EnvironmentField(converter=float)
 
         config = Config()
 

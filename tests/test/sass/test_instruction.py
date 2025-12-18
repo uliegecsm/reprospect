@@ -56,26 +56,26 @@ __global__ void elementwise_add_restrict_256_wide(Tester* __restrict__ const dst
 """
 """Element-wise add with 256-bit aligned elements."""
 
-@functools.lru_cache(maxsize = 128)
+@functools.lru_cache(maxsize=128)
 def get_decoder(*, cwd: pathlib.Path, arch: NVIDIAArch, file: pathlib.Path, cmake_file_api: cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:
     """
     Compile the code in `file` for `arch` and return a :py:class:`reprospect.tools.sass.Decoder`.
     """
     output, _ = get_compilation_output(
-        source = file,
-        cwd = cwd,
-        arch = arch,
-        object_file = True,
-        resource_usage = False,
-        cmake_file_api = cmake_file_api,
+        source=file,
+        cwd=cwd,
+        arch=arch,
+        object_file=True,
+        resource_usage=False,
+        cmake_file_api=cmake_file_api,
         **kwargs,
     )
 
-    cuobjdump = CuObjDump(file = output, arch = arch, sass = True)
+    cuobjdump = CuObjDump(file=output, arch=arch, sass=True)
 
     assert len(cuobjdump.functions) == 1
 
-    return Decoder(code = next(iter(cuobjdump.functions.values())).code), output
+    return Decoder(code=next(iter(cuobjdump.functions.values())).code), output
 
 class TestPatternBuilder:
     """
@@ -101,13 +101,13 @@ class TestPatternBuilder:
         """
         Test :py:meth:`reprospect.test.sass.instruction.PatternBuilder.anygpreg`.
         """
-        assert regex.match(PatternBuilder.anygpreg(reuse = None, group = 'mygroup'),  'R42').captures('mygroup') == ['R42']
-        assert regex.match(PatternBuilder.anygpreg(reuse = None, group = 'mygroup'), 'UR42').captures('mygroup') == ['UR42']
+        assert regex.match(PatternBuilder.anygpreg(reuse=None, group='mygroup'),  'R42').captures('mygroup') == ['R42']
+        assert regex.match(PatternBuilder.anygpreg(reuse=None, group='mygroup'), 'UR42').captures('mygroup') == ['UR42']
 
-        assert regex.match(PatternBuilder.anygpreg(reuse = False), 'R66.reuse').group() == 'R66'
-        assert regex.match(PatternBuilder.anygpreg(reuse = True),  'R66.reuse').group() == 'R66.reuse'
+        assert regex.match(PatternBuilder.anygpreg(reuse=False), 'R66.reuse').group() == 'R66'
+        assert regex.match(PatternBuilder.anygpreg(reuse=True),  'R66.reuse').group() == 'R66.reuse'
 
-@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+@pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestReductionMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.ReductionMatcher`.
@@ -141,12 +141,12 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         Test with :py:attr:`CODE_ADD` for `int`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_ADD.format(type = 'int'))
+        FILE.write_text(self.CODE_ADD.format(type='int'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'STRONG', dtype = ('S', 32))
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='STRONG', dtype=('S', 32))
         red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1
 
@@ -159,7 +159,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.operands) == 2
 
         # Another consistency would fail.
-        matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'WEAK', dtype = ('S', 32))
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='WEAK', dtype=('S', 32))
         assert not any(matcher.match(inst) for inst in decoder.instructions)
 
     def test_add_strong_device_unsigned_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
@@ -167,12 +167,12 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         Test with :py:attr:`CODE_ADD` for `unsigned int`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_ADD.format(type = 'unsigned int'))
+        FILE.write_text(self.CODE_ADD.format(type='unsigned int'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'STRONG', dtype = ('U', 32))
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='STRONG', dtype=('U', 32))
         matched = findunique(matcher, decoder.instructions)
 
         assert {'ADD'}.issubset(matched.modifiers)
@@ -184,17 +184,17 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         Test with :py:attr:`CODE_ADD` for `unsigned long long int`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_ADD.format(type = 'unsigned long long int'))
+        FILE.write_text(self.CODE_ADD.format(type='unsigned long long int'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
         matcher = ReductionMatcher(
-            arch = parameters.arch,
-            operation = 'ADD',
-            scope = 'DEVICE',
-            consistency = 'STRONG',
-            dtype = ('U', 64),
+            arch=parameters.arch,
+            operation='ADD',
+            scope='DEVICE',
+            consistency='STRONG',
+            dtype=('U', 64),
         )
         matched = findunique(matcher, decoder.instructions)
 
@@ -207,12 +207,12 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         Test with :py:attr:`CODE_ADD` for `float`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_ADD.format(type = 'float'))
+        FILE.write_text(self.CODE_ADD.format(type='float'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', dtype = ('F', 32), scope = 'DEVICE', consistency = 'STRONG')
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', dtype=('F', 32), scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'F32', 'FTZ', 'RN'}.issubset(matched.modifiers)
@@ -224,12 +224,12 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         Test with :py:attr:`CODE_ADD` for `double`.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_ADD.format(type = 'double'))
+        FILE.write_text(self.CODE_ADD.format(type='double'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch = parameters.arch, operation = 'ADD', dtype = ('F', 64), scope = 'DEVICE', consistency = 'STRONG')
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', dtype=('F', 64), scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'F64', 'RN'}.issubset(matched.modifiers)
@@ -243,12 +243,12 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_SUB)
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
         # Note that the source is negated in another instruction.
         logging.info(findunique(
-            matcher=ReductionMatcher(arch = parameters.arch, operation = 'ADD', scope = 'DEVICE', consistency = 'STRONG'),
+            matcher=ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='STRONG'),
             instructions=decoder.instructions,
         ))
 
@@ -257,9 +257,9 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         Test with :py:attr:`CODE_MAX` for `long long int`. The modifier is ``MAX.S64``.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MAX.format(type = 'long long int'))
+        FILE.write_text(self.CODE_MAX.format(type='long long int'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
         matcher_type: type[AtomicMatcher | ReductionMatcher]
@@ -267,7 +267,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
             matcher_type = AtomicMatcher
         else:
             matcher_type = ReductionMatcher
-        matcher = matcher_type(arch = parameters.arch, operation = 'MAX', dtype = ('S', 64), scope = 'DEVICE', consistency = 'STRONG')
+        matcher = matcher_type(arch=parameters.arch, operation='MAX', dtype=('S', 64), scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX', 'S64'}.issubset(matched.modifiers)
@@ -277,9 +277,9 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         Test with :py:attr:`CODE_MAX` for `unsigned long long int`. The modifier is ``MAX.64``.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MAX.format(type = 'unsigned long long int'))
+        FILE.write_text(self.CODE_MAX.format(type='unsigned long long int'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
         matcher_type: type[AtomicMatcher | ReductionMatcher]
@@ -287,7 +287,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
             matcher_type = AtomicMatcher
         else:
             matcher_type = ReductionMatcher
-        matcher = matcher_type(arch = parameters.arch, operation = 'MAX', dtype = ('U', 64), scope = 'DEVICE', consistency = 'STRONG')
+        matcher = matcher_type(arch=parameters.arch, operation='MAX', dtype=('U', 64), scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX', '64'}.issubset(matched.modifiers)
@@ -297,12 +297,12 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         Test with :py:attr:`CODE_MAX` for `int`. The modifier is ``MAX.S32``.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MAX.format(type = 'int'))
+        FILE.write_text(self.CODE_MAX.format(type='int'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('S', 32), scope = 'DEVICE', consistency = 'STRONG')
+        matcher = ReductionMatcher(arch=parameters.arch, operation='MAX', dtype=('S', 32), scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX', 'S32'}.issubset(matched.modifiers)
@@ -312,12 +312,12 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         Test with :py:attr:`CODE_MAX` for `unsigned int`. The modifier is ``MAX``.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MAX.format(type = 'unsigned int'))
+        FILE.write_text(self.CODE_MAX.format(type='unsigned int'))
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch = parameters.arch, operation = 'MAX', dtype = ('U', 32), scope = 'DEVICE', consistency = 'STRONG')
+        matcher = ReductionMatcher(arch=parameters.arch, operation='MAX', dtype=('U', 32), scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX'}.issubset(matched.modifiers)
@@ -329,7 +329,7 @@ class TestOpcodeModsMatcher:
     def test_with_square_brackets(self):
         instruction = 'IMAD R4, R4, c[0x0][0x0], R3'
 
-        matched = OpcodeModsMatcher(opcode = 'IMAD').match(instruction)
+        matched = OpcodeModsMatcher(opcode='IMAD').match(instruction)
 
         assert matched is not None
         assert matched.operands == ('R4', 'R4', 'c[0x0][0x0]', 'R3')
@@ -337,7 +337,7 @@ class TestOpcodeModsMatcher:
     def test_with_minus_sign(self):
         instruction = 'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ'
 
-        matched = OpcodeModsMatcher(opcode = 'UIADD3').match(instruction)
+        matched = OpcodeModsMatcher(opcode='UIADD3').match(instruction)
 
         assert matched is not None
         assert matched.operands == ('UR5', 'UPT', 'UPT', '-UR4', 'UR9', 'URZ')
@@ -345,7 +345,7 @@ class TestOpcodeModsMatcher:
     def test_with_reuse(self):
         instruction = 'ISETP.GE.U32.AND P0, PT, R0.reuse, UR5, PT'
 
-        matched = OpcodeModsMatcher(opcode = 'ISETP', modifiers = ('GE', 'U32', 'AND')).match(instruction)
+        matched = OpcodeModsMatcher(opcode='ISETP', modifiers=('GE', 'U32', 'AND')).match(instruction)
 
         assert matched is not None
         assert matched.operands == ('P0', 'PT', 'R0.reuse', 'UR5', 'PT')
@@ -353,7 +353,7 @@ class TestOpcodeModsMatcher:
     def test_with_descr(self):
         instruction = 'LDG.E R2, desc[UR6][R2.64]'
 
-        matched = OpcodeModsMatcher(opcode = 'LDG', modifiers = ('E',)).match(instruction)
+        matched = OpcodeModsMatcher(opcode='LDG', modifiers=('E',)).match(instruction)
 
         assert matched is not None
         assert matched.operands == ('R2', 'desc[UR6][R2.64]')
@@ -365,7 +365,7 @@ class TestOpcodeModsWithOperandsMatcher:
     def test(self):
         instruction = 'ISETP.NE.AND P2, PT, R4, RZ, PT'
 
-        matcher = OpcodeModsWithOperandsMatcher(opcode = 'ISETP', modifiers = ('NE', 'AND'), operands = (
+        matcher = OpcodeModsWithOperandsMatcher(opcode='ISETP', modifiers=('NE', 'AND'), operands=(
             PatternBuilder.PRED,
             PatternBuilder.PREDT,
             'R4',

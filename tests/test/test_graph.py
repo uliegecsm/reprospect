@@ -38,15 +38,15 @@ class TestSASS(TestGraph):
     def cubin(self) -> str:
         return f'graph.1.{self.arch.as_sm}.cubin'
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def cuobjdump(self) -> CuObjDump:
         return CuObjDump.extract(
-            file = self.executable,
-            arch = self.arch,
-            sass = True,
-            cwd = self.cwd,
-            cubin = self.cubin,
-            demangler = self.demangler,
+            file=self.executable,
+            arch=self.arch,
+            sass=True,
+            cwd=self.cwd,
+            cubin=self.cubin,
+            demangler=self.demangler,
         )[0]
 
     def test_kernel_count(self, cuobjdump: CuObjDump) -> None:
@@ -60,39 +60,39 @@ class TestSASS(TestGraph):
         """
         Check how many instructions there are in the first graph node kernel.
         """
-        decoder = Decoder(code = cuobjdump.functions[self.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]].code)
+        decoder = Decoder(code=cuobjdump.functions[self.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]].code)
         assert len(decoder.instructions) >= 8
 
-@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+@pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestNCU(TestGraph):
     """
     `ncu`-focused analysis.
     """
     METRICS: typing.Final[tuple[ncu.Metric]] = (
-        ncu.Metric(name = 'launch__registers_per_thread_allocated'),
+        ncu.Metric(name='launch__registers_per_thread_allocated'),
     )
 
     NVTX_INCLUDES: typing.Final[tuple[str]] = ('application_domain@outer_useless_range',)
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def report(self, workdir: pathlib.Path) -> ncu.Report:
-        with ncu.Cacher(directory = workdir) as cacher:
+        with ncu.Cacher(directory=workdir) as cacher:
             command = ncu.Command(
-                output = self.cwd / 'ncu',
-                executable = self.executable,
-                nvtx_includes = self.NVTX_INCLUDES,
-                metrics = self.METRICS,
+                output=self.cwd / 'ncu',
+                executable=self.executable,
+                nvtx_includes=self.NVTX_INCLUDES,
+                metrics=self.METRICS,
             )
             cacher.run(
-                command = command,
-                cwd = self.cwd,
-                retries = 5,
+                command=command,
+                cwd=self.cwd,
+                retries=5,
             )
-            return ncu.Report(command = command)
+            return ncu.Report(command=command)
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def results(self, report: ncu.Report) -> ncu.ProfilingResults:
-        return report.extract_results_in_range(metrics = self.METRICS, demangler = self.demangler)
+        return report.extract_results_in_range(metrics=self.METRICS, demangler=self.demangler)
 
     def test_result_count(self, report: ncu.Report, results: ncu.ProfilingResults) -> None:
         """
@@ -108,7 +108,7 @@ class TestNCU(TestGraph):
         def matcher(value: tuple[str, ncu.ProfilingMetrics]) -> bool:
             return value[1]['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]
 
-        [(key, metrics)] = filter(matcher, results.iter_metrics(accessors = ()))
+        [(key, metrics)] = filter(matcher, results.iter_metrics(accessors=()))
 
         logging.info(f'Kernel {key!r} matched. Its metrics are {metrics}.')
 

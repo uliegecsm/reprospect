@@ -32,21 +32,21 @@ class AddComplex128:
             raise RuntimeError(self)
         load_register = loads[0].operands[0]
 
-        parsed = RegisterMatcher(special = False).match(load_register)
+        parsed = RegisterMatcher(special=False).match(load_register)
         assert parsed is not None
         assert parsed.index is not None
 
         dadd_real_reg = load_register
         dadd_imag_reg = f'{parsed.rtype}{parsed.index + 2}'
 
-        matcher_dadd_real = OpcodeModsWithOperandsMatcher(opcode = 'DADD',
-            operands = (
+        matcher_dadd_real = OpcodeModsWithOperandsMatcher(opcode='DADD',
+            operands=(
                 PatternBuilder.REG, dadd_real_reg,
                 PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
             ),
         )
-        matcher_dadd_imag = OpcodeModsWithOperandsMatcher(opcode = 'DADD',
-            operands = (
+        matcher_dadd_imag = OpcodeModsWithOperandsMatcher(opcode='DADD',
+            operands=(
                 PatternBuilder.REG, dadd_imag_reg,
                 PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
             ),
@@ -72,10 +72,10 @@ class TestAtomicAddComplex128(add.TestCase):
         This test proves that it uses the lock-based implementation.
         """
         matched = desul.LockBasedAtomicMatcher(
-            arch = self.arch,
+            arch=self.arch,
             operation=AddComplex128(),
-            compiler_id = self.toolchains['CUDA']['compiler']['id'],
-        ).match(instructions = decoder.instructions)
+            compiler_id=self.toolchains['CUDA']['compiler']['id'],
+        ).match(instructions=decoder.instructions)
 
         if self.arch.compute_capability.as_int >= 90:
             assert matched is None

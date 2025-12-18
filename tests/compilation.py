@@ -93,9 +93,9 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
     logging.info(f'Compiling {source} with {cmd} in {cwd}.')
 
     return (output, subprocess.check_output(
-        args = cmd,
-        cwd = cwd,
-        stderr = subprocess.STDOUT,
+        args=cmd,
+        cwd=cwd,
+        stderr=subprocess.STDOUT,
     ).decode())
 
 def get_cubin_name(*, compiler_id: str, file: pathlib.Path, arch: NVIDIAArch, object_file: bool = False) -> str:

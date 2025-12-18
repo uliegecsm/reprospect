@@ -35,7 +35,7 @@ class GPUDetector:
         if cache and cls._cache is not None:
             return cls._cache
 
-        results = cls.detect(enrich = enrich)
+        results = cls.detect(enrich=enrich)
 
         if cache:
             cls._cache = results
@@ -52,9 +52,9 @@ class GPUDetector:
         if shutil.which('nvidia-smi') is not None:
             gpus = pandas.read_csv(
                 io.StringIO(subprocess.check_output(CMD).decode()),
-                sep = ',',
-                skipinitialspace = True,
-                dtype = cls.COLUMNS, # type: ignore[arg-type]
+                sep=',',
+                skipinitialspace=True,
+                dtype=cls.COLUMNS, # type: ignore[arg-type]
             )
             if not set(cls.COLUMNS.keys()).issubset(gpus.columns):
                 raise RuntimeError(gpus.columns)
@@ -64,34 +64,34 @@ class GPUDetector:
                 )
             return gpus
         logging.warning("'nvidia-smi' not found.")
-        return pandas.DataFrame(columns = cls.COLUMNS.keys()) # type: ignore[arg-type]
+        return pandas.DataFrame(columns=cls.COLUMNS.keys()) # type: ignore[arg-type]
 
     @classmethod
     def count(cls, *, cache: bool = True) -> int:
         """
         Get the number of available GPUs.
         """
-        return len(cls.get(cache = cache))
+        return len(cls.get(cache=cache))
 
 def main() -> None:
 
     parser = argparse.ArgumentParser(
-        description = 'Print the list of detected GPUs.',
-        formatter_class = argparse.ArgumentDefaultsHelpFormatter,
+        description='Print the list of detected GPUs.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    parser.add_argument('--sep', type = str, required = False, default = ';', help = 'Separator between GPUs.')
+    parser.add_argument('--sep', type=str, required=False, default=';', help='Separator between GPUs.')
 
-    parser.add_argument('--cc', action = 'store_true', help = 'Return the compute capability as an integer.')
+    parser.add_argument('--cc', action='store_true', help='Return the compute capability as an integer.')
 
     args = parser.parse_args()
 
     if args.cc:
-        gpus = (x.replace('.', '') for x in map(str, GPUDetector.get(enrich = False)['compute_cap']))
+        gpus = (x.replace('.', '') for x in map(str, GPUDetector.get(enrich=False)['compute_cap']))
     else:
-        gpus = (str(x) for x in GPUDetector.get(enrich = True)['architecture'])
+        gpus = (str(x) for x in GPUDetector.get(enrich=True)['architecture'])
 
-    print(args.sep.join(gpus), end = '')
+    print(args.sep.join(gpus), end='')
 
 if __name__ == "__main__":
 

@@ -128,7 +128,7 @@ def get_last_commit(*, file: pathlib.Path, cwd: pathlib.Path) -> str:
     Get the last commit hash that modified `file`.
     """
     cmd = ('git', 'log', '-n', '1', '--pretty=format:%H', '--', file)
-    return subprocess.check_output(args = cmd, cwd = cwd, text = True).strip()
+    return subprocess.check_output(args=cmd, cwd=cwd, text=True).strip()
 
 def lastcommit(name: str, rawtext: str, text: str, lineno: int, inliner: docutils.parsers.rst.states.Inliner, **kwargs) -> tuple[list[docutils.nodes.Node], list[docutils.nodes.system_message]]:
     """
@@ -136,12 +136,12 @@ def lastcommit(name: str, rawtext: str, text: str, lineno: int, inliner: docutil
 
     * https://www.sphinx-doc.org/en/master/development/tutorials/extending_syntax.html#writing-the-extension
     """
-    commit_hash = get_last_commit(file = pathlib.Path(text), cwd = PROJECT_DIR)
+    commit_hash = get_last_commit(file=pathlib.Path(text), cwd=PROJECT_DIR)
     url = f'{linkcode_url}/commit/{commit_hash}'
     node = docutils.nodes.reference(
-        rawsource = rawtext,
-        text = project.lower() + '@' + commit_hash[:7],
-        refuri = url,
+        rawsource=rawtext,
+        text=project.lower() + '@' + commit_hash[:7],
+        refuri=url,
         **kwargs,
     )
     return [node], []

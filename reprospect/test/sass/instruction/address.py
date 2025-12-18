@@ -10,7 +10,7 @@ from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.architecture import NVIDIAArch
 
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class AddressMatch:
     """
     Result of matching an address operand.
@@ -38,16 +38,16 @@ class AddressMatch:
                 ureg = value[0]
 
         return cls(
-            reg = reg,
-            offset = offset,
-            ureg = ureg,
+            reg=reg,
+            offset=offset,
+            ureg=ureg,
         )
 
 TEMPLATE_ADDRESS: typing.Final[str] = r'\[{reg}{offset}\]'
 TEMPLATE_REG64_ADDRESS: typing.Final[str] = r'\[{reg}\.64{offset}\]'
 TEMPLATE_DESC_REG64_ADDRESS: typing.Final[str] = r'desc\[{ureg}\]\[{reg}\.64{offset}\]'
 
-@attrs.define(frozen = True, slots = True, kw_only = True)
+@attrs.define(frozen=True, slots=True, kw_only=True)
 class AddressMatcher:
     """
     Matcher for an address.
@@ -57,13 +57,13 @@ class AddressMatcher:
     reg: str | None = None
     offset: str | bool | None = None
 
-    pattern: regex.Pattern[str] = attrs.field(init = False)
+    pattern: regex.Pattern[str] = attrs.field(init=False)
 
     def __attrs_post_init__(self) -> None:
         object.__setattr__(self, 'pattern', regex.compile(self.build_pattern(
-            arch = self.arch, ureg = self.ureg,
-            reg = self.reg, offset = self.offset,
-            captured = True,
+            arch=self.arch, ureg=self.ureg,
+            reg=self.reg, offset=self.offset,
+            captured=True,
         )))
 
     @classmethod
@@ -74,7 +74,7 @@ class AddressMatcher:
     @classmethod
     def build_pattern_offset(cls, *, offset: str | bool | None = None, captured: bool = True) -> str:
         if offset is None:
-            return PatternBuilder.zero_or_one(r'\+' + (PatternBuilder.group(PatternBuilder.HEX, group = 'offset') if captured else PatternBuilder.HEX))
+            return PatternBuilder.zero_or_one(r'\+' + (PatternBuilder.group(PatternBuilder.HEX, group='offset') if captured else PatternBuilder.HEX))
         if offset is False:
             return ''
         if offset is True:
@@ -96,11 +96,11 @@ class AddressMatcher:
     ) -> str:
         match arch.compute_capability.as_int:
             case 70 | 75:
-                return cls.build_address(reg = reg, offset = offset, captured = captured)
+                return cls.build_address(reg=reg, offset=offset, captured=captured)
             case 80 | 86 | 89:
-                return cls.build_reg64_address(reg = reg, offset = offset, captured = captured)
+                return cls.build_reg64_address(reg=reg, offset=offset, captured=captured)
             case 90 | 100 | 103 | 120:
-                return cls.build_desc_reg64_address(reg = reg, ureg = ureg, offset = offset, captured = captured)
+                return cls.build_desc_reg64_address(reg=reg, ureg=ureg, offset=offset, captured=captured)
             case _:
                 raise ValueError(f'unsupported architecture {arch}')
 
@@ -112,9 +112,9 @@ class AddressMatcher:
             [R4]
             [R2+0x10]
         """
-        reg = cls.build_pattern_reg(reg = reg, captured = captured)
-        offset = cls.build_pattern_offset(offset = offset, captured = captured)
-        return TEMPLATE_ADDRESS.format(reg = reg, offset = offset)
+        reg = cls.build_pattern_reg(reg=reg, captured=captured)
+        offset = cls.build_pattern_offset(offset=offset, captured=captured)
+        return TEMPLATE_ADDRESS.format(reg=reg, offset=offset)
 
     @classmethod
     def build_reg64_address(cls, *, reg: str | None = None, offset: str | bool | None = None, captured: bool = False) -> str:
@@ -124,9 +124,9 @@ class AddressMatcher:
             [R1.64]
             [R2.64+0x10]
         """
-        reg = cls.build_pattern_reg(reg = reg, captured = captured)
-        offset = cls.build_pattern_offset(offset = offset, captured = captured)
-        return TEMPLATE_REG64_ADDRESS.format(reg = reg, offset = offset)
+        reg = cls.build_pattern_reg(reg=reg, captured=captured)
+        offset = cls.build_pattern_offset(offset=offset, captured=captured)
+        return TEMPLATE_REG64_ADDRESS.format(reg=reg, offset=offset)
 
     @classmethod
     def build_desc_reg64_address(cls, *, ureg: str | None = None, reg: str | None = None, offset: str | bool | None = None, captured: bool = False) -> str:
@@ -135,15 +135,15 @@ class AddressMatcher:
 
             desc[UR0][R0.64+0x10]
         """
-        reg = cls.build_pattern_reg(reg = reg, captured = captured)
-        offset = cls.build_pattern_offset(offset = offset, captured = captured)
-        ureg = cls.build_pattern_ureg(ureg = ureg, captured = captured)
-        return TEMPLATE_DESC_REG64_ADDRESS.format(reg = reg, offset = offset, ureg = ureg)
+        reg = cls.build_pattern_reg(reg=reg, captured=captured)
+        offset = cls.build_pattern_offset(offset=offset, captured=captured)
+        ureg = cls.build_pattern_ureg(ureg=ureg, captured=captured)
+        return TEMPLATE_DESC_REG64_ADDRESS.format(reg=reg, offset=offset, ureg=ureg)
 
     def match(self, address: str) -> AddressMatch | None:
         if (matched := self.pattern.match(address)) is not None:
-            return AddressMatch.parse(bits = matched)
+            return AddressMatch.parse(bits=matched)
         return None
 
     def __call__(self, address: str) -> AddressMatch | None:
-        return self.match(address = address)
+        return self.match(address=address)

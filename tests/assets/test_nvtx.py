@@ -6,7 +6,7 @@ import nvtx
 
 @contextlib.contextmanager
 def push_pop_range(domain: nvtx.Domain, **kwargs):
-    domain.push_range(attributes = domain.get_event_attributes(**kwargs))
+    domain.push_range(attributes=domain.get_event_attributes(**kwargs))
     try:
         yield
     finally:
@@ -14,7 +14,7 @@ def push_pop_range(domain: nvtx.Domain, **kwargs):
 
 @contextlib.contextmanager
 def start_end_range(domain: nvtx.Domain, **kwargs):
-    range_id = domain.start_range(attributes = domain.get_event_attributes(**kwargs))
+    range_id = domain.start_range(attributes=domain.get_event_attributes(**kwargs))
     try:
         yield
     finally:
@@ -39,30 +39,30 @@ class TestNVTX:
         """
         Context-managed annotation.
         """
-        with nvtx.annotate(message = request.node.name, color = 'green'):
+        with nvtx.annotate(message=request.node.name, color='green'):
             self.function()
 
     def test_push_pop_range_in_domain(self, request) -> None:
         """
         Push/pop range in a domain.
         """
-        with push_pop_range(domain = nvtx.get_domain(name = request.node.name), message = 'osef'):
+        with push_pop_range(domain=nvtx.get_domain(name=request.node.name), message='osef'):
             self.function()
 
     def test_start_end_range_in_domain(self, request) -> None:
         """
         Start/end range in a domain.
         """
-        with start_end_range(domain = nvtx.get_domain(name = request.node.name), message = 'osef'):
+        with start_end_range(domain=nvtx.get_domain(name=request.node.name), message='osef'):
             self.function()
 
     def test_registered_string(self, request) -> None:
         """
         Registered string.
         """
-        domain = nvtx.get_domain(name = request.node.name)
+        domain = nvtx.get_domain(name=request.node.name)
 
-        reg = domain.get_registered_string(string = 'my very long string that is better made a registered string')
+        reg = domain.get_registered_string(string='my very long string that is better made a registered string')
 
         assert reg is not None
 
@@ -71,21 +71,21 @@ class TestNVTX:
         """
         Build a situation with many intricated ranges.
         """
-        with start_end_range(domain = domain, message = 'start-end-level-0'):
-            with push_pop_range(domain = domain, message = 'push-pop-level-1'):
-                with push_pop_range(domain = domain, message = 'push-pop-level-2'):
+        with start_end_range(domain=domain, message='start-end-level-0'):
+            with push_pop_range(domain=domain, message='push-pop-level-1'):
+                with push_pop_range(domain=domain, message='push-pop-level-2'):
                     for _ in range(3):
-                        with push_pop_range(domain = domain, message = 'push-pop-level-3'):
+                        with push_pop_range(domain=domain, message='push-pop-level-3'):
                             cls.function()
 
     def test_intricated(self, request) -> None:
         """
         Build a situation with many intricated ranges.
         """
-        self.intricated(domain = nvtx.get_domain(name = request.node.name))
+        self.intricated(domain=nvtx.get_domain(name=request.node.name))
 
 if __name__ == '__main__':
 
-    logging.basicConfig(level = logging.INFO)
+    logging.basicConfig(level=logging.INFO)
 
-    TestNVTX.intricated(domain = nvtx.get_domain('intricated'))
+    TestNVTX.intricated(domain=nvtx.get_domain('intricated'))

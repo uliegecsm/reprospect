@@ -16,13 +16,13 @@ class TestGraph:
     """
     Tests for :py:class:`reprospect.tools.sass.controlflow.Graph`.
     """
-    CONTROLCODE: typing.Final[ControlCode] = ControlCode.decode(code = '0')
+    CONTROLCODE: typing.Final[ControlCode] = ControlCode.decode(code='0')
 
     INSTRUCTIONS: typing.Final[tuple[Instruction, ...]] = (
-        Instruction(offset = 0, instruction = 'DADD R4, R4, c[0x0][0x180]', hex = '0x0', control = CONTROLCODE),
-        Instruction(offset = 0, instruction = 'FADD R4, R4, c[0x0][0x180]', hex = '0x0', control = CONTROLCODE),
-        Instruction(offset = 0, instruction = 'DMUL R6, R6, c[0x0][0x188]', hex = '0x1', control = CONTROLCODE),
-        Instruction(offset = 0, instruction = 'NOP',                        hex = '0x2', control = CONTROLCODE),
+        Instruction(offset=0, instruction='DADD R4, R4, c[0x0][0x180]', hex='0x0', control=CONTROLCODE),
+        Instruction(offset=0, instruction='FADD R4, R4, c[0x0][0x180]', hex='0x0', control=CONTROLCODE),
+        Instruction(offset=0, instruction='DMUL R6, R6, c[0x0][0x188]', hex='0x1', control=CONTROLCODE),
+        Instruction(offset=0, instruction='NOP',                        hex='0x2', control=CONTROLCODE),
     )
 
     @pytest.fixture
@@ -33,7 +33,7 @@ class TestGraph:
         """
         Add a block.
         """
-        cfg.add_block(block = BasicBlock(self.INSTRUCTIONS))
+        cfg.add_block(block=BasicBlock(self.INSTRUCTIONS))
 
         assert len(cfg.blocks) == 1
 
@@ -44,7 +44,7 @@ class TestGraph:
         block_0 = BasicBlock(self.INSTRUCTIONS[0:2])
         block_1 = BasicBlock(self.INSTRUCTIONS[2:4])
 
-        cfg.add_blocks(blocks = (block_0, block_1))
+        cfg.add_blocks(blocks=(block_0, block_1))
 
         assert len(cfg.blocks) == 2
 
@@ -55,9 +55,9 @@ class TestGraph:
         block_0 = BasicBlock(self.INSTRUCTIONS[0:2])
         block_1 = BasicBlock(self.INSTRUCTIONS[2:4])
 
-        cfg.add_blocks(blocks = (block_0, block_1))
+        cfg.add_blocks(blocks=(block_0, block_1))
 
-        cfg.add_edge(src = block_0, dst = block_1)
+        cfg.add_edge(src=block_0, dst=block_1)
 
         assert cfg.edges == {block_0: {block_1}}
 
@@ -68,10 +68,10 @@ class TestGraph:
         block_0 = BasicBlock(self.INSTRUCTIONS[0:2])
         block_1 = BasicBlock(self.INSTRUCTIONS[2:4])
 
-        cfg.add_blocks(blocks = (block_0, block_1))
+        cfg.add_blocks(blocks=(block_0, block_1))
 
-        cfg.add_edge(src = block_0, dst = block_1)
-        cfg.add_edge(src = block_1, dst = block_0)
+        cfg.add_edge(src=block_0, dst=block_1)
+        cfg.add_edge(src=block_1, dst=block_0)
 
         assert cfg.to_mermaid() == f"""\
 ---
@@ -92,24 +92,24 @@ class TestControlFlow:
     class TestIfs:
         CU_IFS:         typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.cu'
         SASS_IFS_SM120: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.sm_120.sass'
-        INSTRUCTIONS:   typing.Final[list[Instruction]] = Decoder(source = SASS_IFS_SM120).instructions
+        INSTRUCTIONS:   typing.Final[list[Instruction]] = Decoder(source=SASS_IFS_SM120).instructions
 
         def test_find_entry_points(self) -> None:
-            assert ControlFlow.find_entry_points(instructions = self.INSTRUCTIONS) == {
-                int('0000',  base = 16),
-                int('0x130', base = 16),
-                int('0090',  base = 16),
-                int('0100',  base = 16),
-                int('0130',  base = 16),
-                int('0150',  base = 16),
-                int('0x1a0', base = 16),
-                int('01a0',  base = 16),
-                int('01b0',  base = 16),
+            assert ControlFlow.find_entry_points(instructions=self.INSTRUCTIONS) == {
+                int('0000',  base=16),
+                int('0x130', base=16),
+                int('0090',  base=16),
+                int('0100',  base=16),
+                int('0130',  base=16),
+                int('0150',  base=16),
+                int('0x1a0', base=16),
+                int('01a0',  base=16),
+                int('01b0',  base=16),
             }
 
         def test_create_blocks(self) -> None:
-            entry_points = ControlFlow.find_entry_points(instructions = self.INSTRUCTIONS)
-            blocks = ControlFlow.create_blocks(instructions = self.INSTRUCTIONS, entry_points = entry_points)
+            entry_points = ControlFlow.find_entry_points(instructions=self.INSTRUCTIONS)
+            blocks = ControlFlow.create_blocks(instructions=self.INSTRUCTIONS, entry_points=entry_points)
 
             assert len(blocks) == 6
 
@@ -132,7 +132,7 @@ class TestControlFlow:
             assert blocks[5].instructions == tuple(self.INSTRUCTIONS[26:27])
 
         def test_analyse(self) -> None:
-            cfg = ControlFlow.analyze(instructions = self.INSTRUCTIONS)
+            cfg = ControlFlow.analyze(instructions=self.INSTRUCTIONS)
 
             assert cfg.to_mermaid() == f"""\
 ---
@@ -153,13 +153,13 @@ flowchart TD
 \tclassDef myblock text-align:left\
 """
 
-        @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+        @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
         def test(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CU_IFS` and build the CFG.
             """
-            decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = self.CU_IFS, cmake_file_api = cmake_file_api)
-            cfg = ControlFlow.analyze(instructions = decoder.instructions)
+            decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=self.CU_IFS, cmake_file_api=cmake_file_api)
+            cfg = ControlFlow.analyze(instructions=decoder.instructions)
             assert len(cfg.blocks) == 6
 
     class TestAtomicAddInt64:
@@ -169,11 +169,11 @@ flowchart TD
             """
             Parse :py:attr:`SASS_ATOM_SM120`.
             """
-            decoder = Decoder(source = self.SASS_ATOM_SM120)
-            cfg = ControlFlow.analyze(instructions = decoder.instructions)
+            decoder = Decoder(source=self.SASS_ATOM_SM120)
+            cfg = ControlFlow.analyze(instructions=decoder.instructions)
 
             ARTIFACT_DIR = pathlib.Path(os.environ['ARTIFACT_DIR'])
-            ARTIFACT_DIR.mkdir(parents = True, exist_ok = True)
+            ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
 
             (ARTIFACT_DIR / 'test_atomic_add_int64.mmd').write_text(cfg.to_mermaid())
 

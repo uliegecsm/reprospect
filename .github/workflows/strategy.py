@@ -41,7 +41,7 @@ def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[st
             raise ValueError((cuda_version, ubuntu_version))
     return ('nvidia/cuda', tag, digest)
 
-@dataclasses.dataclass(frozen = False, slots = True)
+@dataclasses.dataclass(frozen=False, slots=True)
 class Compiler:
     ID: str
     version: str | None = None
@@ -107,14 +107,14 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     # Name and tag of the image.
     name = 'cuda-' + '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CXX'].version, partial['compilers']['CUDA'].ID])))
 
-    base_name, base_tag, base_digest = get_base_name_tag_digest(cuda_version = partial['cuda_version'], ubuntu_version = partial['ubuntu_version'])
+    base_name, base_tag, base_digest = get_base_name_tag_digest(cuda_version=partial['cuda_version'], ubuntu_version=partial['ubuntu_version'])
 
-    arch = NVIDIAArch.from_compute_capability(cc = partial.pop('nvidia_compute_capability'))
+    arch = NVIDIAArch.from_compute_capability(cc=partial.pop('nvidia_compute_capability'))
     partial['nvidia_arch'] = str(arch)
 
     partial['base_image'] = f'{base_name}:{base_tag}@{base_digest}'
-    partial[     'image'] = full_image(platform = partial['platform'], args = args, name = name,                          tag = base_tag)
-    partial[    'kokkos'] = full_image(platform = partial['platform'], args = args, name = f'{name}-kokkos-{KOKKOS_SHA}', tag = f'{base_tag}-{arch}'.lower())
+    partial[     'image'] = full_image(platform=partial['platform'], args=args, name=name,                          tag=base_tag)
+    partial[    'kokkos'] = full_image(platform=partial['platform'], args=args, name=f'{name}-kokkos-{KOKKOS_SHA}', tag=f'{base_tag}-{arch}'.lower())
 
     # Write compilers as dictionaries.
     for lang in partial['compilers']:
@@ -168,7 +168,7 @@ def complete_job(partial: JobDict, args: argparse.Namespace) -> list[JobDict]:
         job = copy.deepcopy(partial)
         job['platform'] = platform
 
-        job = complete_job_impl(partial = job, args = args)
+        job = complete_job_impl(partial=job, args=args)
         job['build-images'] = {
             'runs-on': ['self-hosted', 'linux', 'docker', platform.split('/')[1]],
         }
@@ -186,66 +186,66 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(complete_job({
         'cuda_version': '12.8.1',
         'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID = 'gnu', version = '13'), 'CUDA': Compiler(ID = 'nvidia')},
+        'compilers': {'CXX': Compiler(ID='gnu', version='13'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 70,
         'platforms': ['linux/amd64', 'linux/arm64'],
-    }, args = args))
+    }, args=args))
 
     matrix.extend(complete_job({
         'cuda_version': '13.1.0',
         'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID = 'gnu', version = '14'), 'CUDA': Compiler(ID = 'nvidia')},
+        'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 120,
         'platforms': ['linux/amd64', 'linux/arm64'],
-    }, args = args))
+    }, args=args))
 
     matrix.extend(complete_job({
         'cuda_version': '12.6.3',
         'ubuntu_version': '22.04',
-        'compilers': {'CXX': Compiler(ID = 'gnu', version = '12'), 'CUDA': Compiler(ID = 'nvidia')},
+        'compilers': {'CXX': Compiler(ID='gnu', version='12'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 75,
         'platforms': ['linux/amd64'],
-    }, args = args))
+    }, args=args))
 
     matrix.extend(complete_job({
         'cuda_version': '12.6.3',
         'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID = 'gnu', version = '13'), 'CUDA': Compiler(ID = 'nvidia')},
+        'compilers': {'CXX': Compiler(ID='gnu', version='13'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 89,
         'platforms': ['linux/amd64'],
-    }, args = args))
+    }, args=args))
 
     matrix.extend(complete_job({
         'cuda_version': '13.0.0',
         'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID = 'gnu', version = '14'), 'CUDA': Compiler(ID = 'nvidia')},
+        'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 86,
         'platforms': ['linux/amd64'],
-    }, args = args))
+    }, args=args))
 
     matrix.extend(complete_job({
         'cuda_version': '12.8.1',
         'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID = 'clang', version = '19'), 'CUDA': Compiler(ID = 'nvidia')},
+        'compilers': {'CXX': Compiler(ID='clang', version='19'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 70,
         'platforms': ['linux/amd64'],
-    }, args = args))
+    }, args=args))
 
     matrix.extend(complete_job({
         'cuda_version': '13.0.0',
         'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID = 'clang', version = '20'), 'CUDA': Compiler(ID = 'nvidia')},
+        'compilers': {'CXX': Compiler(ID='clang', version='20'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 120,
         'platforms': ['linux/amd64'],
-    }, args = args))
+    }, args=args))
 
     matrix.extend(complete_job({
         'cuda_version': '12.8.1',
         'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID = 'clang', version = '21')},
+        'compilers': {'CXX': Compiler(ID='clang', version='21')},
         'nvidia_compute_capability': 120,
         'platforms': ['linux/amd64'],
-    }, args = args))
+    }, args=args))
 
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')
 
@@ -260,11 +260,11 @@ def main(*, args: argparse.Namespace) -> None:
 
 if __name__ == '__main__':
 
-    logging.basicConfig(level = logging.INFO)
+    logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--registry', type = str, required = True)
-    parser.add_argument('--repository', type = str, required = True)
+    parser.add_argument('--registry', type=str, required=True)
+    parser.add_argument('--repository', type=str, required=True)
 
-    main(args = parser.parse_args())
+    main(args=parser.parse_args())

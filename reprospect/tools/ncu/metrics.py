@@ -16,7 +16,7 @@ ValueType: typing.TypeAlias = int | float
 #: A single metric value type or a dictionary of submetric values of such type.
 MetricData: typing.TypeAlias = ValueType | dict[str, ValueType]
 
-@dataclasses.dataclass(frozen = False, slots = True)
+@dataclasses.dataclass(frozen=False, slots=True)
 class Metric:
     """
     Used to represent a ``ncu`` metric.
@@ -57,7 +57,7 @@ class MetricCounterRollUp(StrEnum):
     MIN = enum.auto()
     MAX = enum.auto()
 
-@dataclasses.dataclass(slots = True, frozen = False)
+@dataclasses.dataclass(slots=True, frozen=False)
 class MetricCounter(Metric):
     """
     A counter metric.
@@ -77,7 +77,7 @@ class MetricRatioRollUp(StrEnum):
     RATIO = enum.auto()
     MAX_RATE = enum.auto()
 
-@dataclasses.dataclass(slots = True, frozen = False)
+@dataclasses.dataclass(slots=True, frozen=False)
 class MetricRatio(Metric):
     """
     A ratio metric.
@@ -89,7 +89,7 @@ class MetricRatio(Metric):
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class MetricDeviceAttribute:
     """
     ``ncu`` device attribute metric, such as::
@@ -113,7 +113,7 @@ class MetricDeviceAttribute:
 
 MetricCorrelationDataType: typing.TypeAlias = dict[str | int, ValueType]
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class MetricCorrelationData:
     """
     Data for :py:class:`MetricCorrelation`.
@@ -125,7 +125,7 @@ class MetricCorrelationData:
     correlated: MetricCorrelationDataType
     value: ValueType | None = None
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class MetricCorrelation:
     """
     A metric with correlations, like ``sass__inst_executed_per_opcode``.
@@ -153,7 +153,7 @@ class XYZBase:
     def create(cls, dims: typing.Iterable[str] | None = None) -> typing.Iterable[Metric]:
         if not dims:
             dims = ('x', 'y', 'z')
-        return (Metric(name = cls.prefix + dim) for dim in dims)
+        return (Metric(name=cls.prefix + dim) for dim in dims)
 
 class LaunchBlock(XYZBase):
     """
@@ -238,14 +238,14 @@ class L1TEXCacheGlobalLoadInstructions:
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> MetricCounter:
         name = counter_name_from(
-            unit = unit,
-            quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
-            qualifier = 'executed_op_global_ld',
+            unit=unit,
+            quantity=f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
+            qualifier='executed_op_global_ld',
         )
 
         pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'instructions', mode or ''))
 
-        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+        return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
 class L1TEXCacheGlobalLoadRequests:
     """
@@ -256,15 +256,15 @@ class L1TEXCacheGlobalLoadRequests:
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> MetricCounter:
         name = counter_name_from(
-            unit = Unit.L1TEX,
-            pipestage = PipeStage.TAG,
-            quantity = Quantity.REQUEST,
-            qualifier = 'pipe_lsu_mem_global_op_ld',
+            unit=Unit.L1TEX,
+            pipestage=PipeStage.TAG,
+            quantity=Quantity.REQUEST,
+            qualifier='pipe_lsu_mem_global_op_ld',
         )
 
         pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'requests'))
 
-        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+        return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
 class L1TEXCacheGlobalLoadSectors:
     """
@@ -278,15 +278,15 @@ class L1TEXCacheGlobalLoadSectors:
         qualifier = f'pipe_lsu_mem_global_op_ld_lookup_{suffix}' if suffix else 'pipe_lsu_mem_global_op_ld'
 
         name = counter_name_from(
-            unit = Unit.L1TEX,
-            pipestage = PipeStage.TAG,
-            quantity = Quantity.SECTOR,
-            qualifier = qualifier,
+            unit=Unit.L1TEX,
+            pipestage=PipeStage.TAG,
+            quantity=Quantity.SECTOR,
+            qualifier=qualifier,
         )
 
         pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, f'sectors {suffix}' if suffix else 'sectors'))
 
-        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+        return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
 class L1TEXCacheGlobalLoadSectorHits:
     """
@@ -296,7 +296,7 @@ class L1TEXCacheGlobalLoadSectorHits:
     def create(*,
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> MetricCounter:
-        return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'hit')
+        return L1TEXCacheGlobalLoadSectors.create(subs=subs, suffix='hit')
 
 class L1TEXCacheGlobalLoadSectorMisses:
     """
@@ -306,7 +306,7 @@ class L1TEXCacheGlobalLoadSectorMisses:
     def create(*,
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> MetricCounter:
-        return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'miss')
+        return L1TEXCacheGlobalLoadSectors.create(subs=subs, suffix='miss')
 
 class L1TEXCacheGlobalLoadWavefronts:
     """
@@ -317,15 +317,15 @@ class L1TEXCacheGlobalLoadWavefronts:
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> MetricCounter:
         name = counter_name_from(
-            unit = Unit.L1TEX,
-            pipestage = PipeStage.TAG_OUTPUT,
-            quantity = Quantity.WAVEFRONT,
-            qualifier = 'pipe_lsu_mem_global_op_ld',
+            unit=Unit.L1TEX,
+            pipestage=PipeStage.TAG_OUTPUT,
+            quantity=Quantity.WAVEFRONT,
+            qualifier='pipe_lsu_mem_global_op_ld',
         )
 
         pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'wavefronts'))
 
-        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+        return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
 class L1TEXCacheGlobalLoad:
 
@@ -354,14 +354,14 @@ class L1TEXCacheGlobalStoreInstructions:
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> MetricCounter:
         name = counter_name_from(
-            unit = unit,
-            quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
-            qualifier = 'executed_op_global_st',
+            unit=unit,
+            quantity=f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
+            qualifier='executed_op_global_st',
         )
 
         pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'instructions', mode or ''))
 
-        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+        return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
 class L1TEXCacheGlobalStoreSectors:
     """
@@ -372,15 +372,15 @@ class L1TEXCacheGlobalStoreSectors:
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> MetricCounter:
         name = counter_name_from(
-            unit = Unit.L1TEX,
-            pipestage = PipeStage.TAG,
-            quantity = Quantity.SECTOR,
-            qualifier = 'pipe_lsu_mem_global_op_st',
+            unit=Unit.L1TEX,
+            pipestage=PipeStage.TAG,
+            quantity=Quantity.SECTOR,
+            qualifier='pipe_lsu_mem_global_op_st',
         )
 
         pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'sectors'))
 
-        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+        return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
 class L1TEXCacheGlobalStore:
 
@@ -401,14 +401,14 @@ class L1TEXCacheLocalStoreInstructions:
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> MetricCounter:
         name = counter_name_from(
-            unit = unit,
-            quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
-            qualifier = 'executed_op_local_st',
+            unit=unit,
+            quantity=f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
+            qualifier='executed_op_local_st',
         )
 
         pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, 'instructions', mode or ''))
 
-        return MetricCounter(name = name, pretty_name = pretty_name, subs = subs)
+        return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
 class L1TEXCacheLocalStore:
 

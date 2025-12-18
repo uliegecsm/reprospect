@@ -5,7 +5,7 @@ import typing
 from reprospect.tools.sass.decode import Decoder, Instruction
 
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class BasicBlock:
     """
     Basic block in the control flow graph.
@@ -24,16 +24,16 @@ class BasicBlock:
         """
         return hash(self.instructions[0].offset + self.instructions[-1].offset)
 
-@dataclasses.dataclass(slots = True)
+@dataclasses.dataclass(slots=True)
 class Graph:
     """
     Control Flow Graph (CFG) representation of SASS code.
 
     Blocks are :py:class:`reprospect.tools.sass.controlflow.BasicBlock`, edges represent control flow between blocks.
     """
-    blocks: list[BasicBlock] = dataclasses.field(default_factory = list)
+    blocks: list[BasicBlock] = dataclasses.field(default_factory=list)
 
-    edges: dict[BasicBlock, set[BasicBlock]] = dataclasses.field(default_factory = dict)
+    edges: dict[BasicBlock, set[BasicBlock]] = dataclasses.field(default_factory=dict)
     """
     Adjacency list of where control flow may go for each block.
     """
@@ -180,13 +180,13 @@ class ControlFlow:
             # Determine end of this block.
             if iep + 1 < len(sorted_entry_points):
                 next_entry_point = sorted_entry_points[iep + 1]
-                block = BasicBlock(instructions = tuple(
+                block = BasicBlock(instructions=tuple(
                     instr for instr in instructions
                     if entry_point <= instr.offset < next_entry_point
                 ))
             # Last block goes to end.
             else:
-                block = BasicBlock(instructions = tuple(
+                block = BasicBlock(instructions=tuple(
                     instr for instr in instructions
                     if instr.offset >= entry_point
                 ))

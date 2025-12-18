@@ -86,50 +86,50 @@ class TestDecoder:
         """
         instructions = {
             IMAD: sass.Instruction(
-                offset = int('0040', base = 16),
-                instruction = 'IMAD R4, R4, c[0x0][0x0], R3',
-                hex = '0x0000000004047a24',
-                control = sass.ControlCode(stall_count = 5, yield_flag = False, read = 7, write = 7, wait = [True, False, False, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False}),
+                offset=int('0040', base=16),
+                instruction='IMAD R4, R4, c[0x0][0x0], R3',
+                hex='0x0000000004047a24',
+                control=sass.ControlCode(stall_count=5, yield_flag=False, read=7, write=7, wait=[True, False, False, False, False, False], reuse={'A': False, 'B': False, 'C': False, 'D': False}),
             ),
             IMAD_WIDE_U32: sass.Instruction(
-                offset = int('0090', base = 16),
-                instruction = 'IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170]',
-                hex = '0x00005c0004047625',
-                control = sass.ControlCode(stall_count = 4, yield_flag = False, read = 7, write = 7, wait = [False] * 6, reuse = {'A': False, 'B': False, 'C': False, 'D': False}),
+                offset=int('0090', base=16),
+                instruction='IMAD.WIDE.U32 R4, R4, R5, c[0x0][0x170]',
+                hex='0x00005c0004047625',
+                control=sass.ControlCode(stall_count=4, yield_flag=False, read=7, write=7, wait=[False] * 6, reuse={'A': False, 'B': False, 'C': False, 'D': False}),
             ),
         }
 
         for raw, expt in instructions.items():
-            decoder = sass.Decoder(code = raw, skip_until_headerflags = False)
+            decoder = sass.Decoder(code=raw, skip_until_headerflags=False)
 
             assert decoder.instructions == [expt], decoder.instructions
 
         fused = '\n'.join(instructions.keys())
-        decoder = sass.Decoder(code = fused, skip_until_headerflags = False)
+        decoder = sass.Decoder(code=fused, skip_until_headerflags=False)
         assert decoder.instructions == list(instructions.values()), decoder.instructions
 
     def test_FFMA(self) -> None:
         """
         Check that it can decode `FFMA`.
         """
-        decoder = sass.Decoder(code = FFMA, skip_until_headerflags = False)
+        decoder = sass.Decoder(code=FFMA, skip_until_headerflags=False)
         assert decoder.instructions == [
             sass.Instruction(
-                offset = int('00c0', base = 16), instruction = 'FFMA R7, R2, c[0x0][0x160], R7',
-                hex = '0x0000580002077a23',
-                control = sass.ControlCode(stall_count = 8, yield_flag = False, read = 7, write = 7, wait = [False, False, True, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False})),
+                offset=int('00c0', base=16), instruction='FFMA R7, R2, c[0x0][0x160], R7',
+                hex='0x0000580002077a23',
+                control=sass.ControlCode(stall_count=8, yield_flag=False, read=7, write=7, wait=[False, False, True, False, False, False], reuse={'A': False, 'B': False, 'C': False, 'D': False})),
         ], decoder.instructions
 
     def test_ISETP(self) -> None:
         """
         Check that it can decode `ISETP`.
         """
-        decoder = sass.Decoder(code = ISETP_NE_U32_AND, skip_until_headerflags = False)
+        decoder = sass.Decoder(code=ISETP_NE_U32_AND, skip_until_headerflags=False)
         assert decoder.instructions == [
             sass.Instruction(
-                offset = int('00c0', base = 16), instruction = 'ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT',
-                hex = '0x000000ff0000720c',
-                control = sass.ControlCode(stall_count = 2, yield_flag = True, read = 7, write = 7, wait = [False] * 6, reuse = {'A': True, 'B': False, 'C': False, 'D': False}),
+                offset=int('00c0', base=16), instruction='ISETP.NE.U32.AND P0, PT, R0.reuse, RZ, PT',
+                hex='0x000000ff0000720c',
+                control=sass.ControlCode(stall_count=2, yield_flag=True, read=7, write=7, wait=[False] * 6, reuse={'A': True, 'B': False, 'C': False, 'D': False}),
             ),
         ], decoder.instructions
 
@@ -139,29 +139,29 @@ class TestDecoder:
         """
         SOURCE = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass'
 
-        decoder = sass.Decoder(source = SOURCE)
+        decoder = sass.Decoder(source=SOURCE)
 
         assert len(decoder.instructions) == 32, len(decoder.instructions)
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test_from_cuobjdump(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Read SASS dumped from ``cuobjdump``.
         """
         CUDA_FILE = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
         output, _ = get_compilation_output(
-            source = CUDA_FILE,
-            cwd = workdir,
-            arch = parameters.arch,
-            object_file = True,
-            cmake_file_api = cmake_file_api,
+            source=CUDA_FILE,
+            cwd=workdir,
+            arch=parameters.arch,
+            object_file=True,
+            cmake_file_api=cmake_file_api,
         )
 
-        cuobjdump = binaries.CuObjDump(file = output, arch = parameters.arch, sass = True)
+        cuobjdump = binaries.CuObjDump(file=output, arch=parameters.arch, sass=True)
 
         assert len(cuobjdump.functions) == 1
 
-        decoder = sass.Decoder(code = next(iter(cuobjdump.functions.values())).code)
+        decoder = sass.Decoder(code=next(iter(cuobjdump.functions.values())).code)
 
         match parameters.arch.compute_capability.as_int:
             case 70:
@@ -189,22 +189,22 @@ class TestDecoder:
 
         decoder.instructions = [
             sass.Instruction(
-                offset = int('00f0', base = 16),
-                instruction = 'LDC R1, c[0x0][0x37c]',
-                hex = '0x0000df00ff017b82',
-                control = sass.ControlCode(stall_count = 1, yield_flag = True, read = 7, write = 0, wait = [True, False, False, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False}),
+                offset=int('00f0', base=16),
+                instruction='LDC R1, c[0x0][0x37c]',
+                hex='0x0000df00ff017b82',
+                control=sass.ControlCode(stall_count=1, yield_flag=True, read=7, write=0, wait=[True, False, False, False, False, False], reuse={'A': False, 'B': False, 'C': False, 'D': False}),
             ),
             sass.Instruction(
-                offset = int('0190', base = 16),
-                instruction = 'S2R R0, SR_TID.X',
-                hex = '0x0000000000007919',
-                control = sass.ControlCode(stall_count = 7, yield_flag = False, read = 7, write = 1, wait = [False, False, False, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False}),
+                offset=int('0190', base=16),
+                instruction='S2R R0, SR_TID.X',
+                hex='0x0000000000007919',
+                control=sass.ControlCode(stall_count=7, yield_flag=False, read=7, write=1, wait=[False, False, False, False, False, False], reuse={'A': False, 'B': False, 'C': False, 'D': False}),
             ),
             sass.Instruction(
-                offset = int('01a0', base = 16),
-                instruction = '@P0 EXIT',
-                hex = '0x000000000000094d',
-                control = sass.ControlCode(stall_count = 5, yield_flag = True, read = 2, write = 7, wait = [True, False, False, False, False, False], reuse = {'A': False, 'B': False, 'C': False, 'D': False}),
+                offset=int('01a0', base=16),
+                instruction='@P0 EXIT',
+                hex='0x000000000000094d',
+                control=sass.ControlCode(stall_count=5, yield_flag=True, read=2, write=7, wait=[True, False, False, False, False, False], reuse={'A': False, 'B': False, 'C': False, 'D': False}),
             ),
         ]
 
@@ -223,11 +223,11 @@ class TestDecoder:
         Test :py:meth:`reprospect.tools.sass.Decoder.to_html`.
         """
         ARTIFACT_DIR = pathlib.Path(os.environ['ARTIFACT_DIR'])
-        ARTIFACT_DIR.mkdir(parents = True, exist_ok = True)
+        ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
 
         SOURCE = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass'
 
-        decoder = sass.Decoder(source = SOURCE)
+        decoder = sass.Decoder(source=SOURCE)
 
         file = ARTIFACT_DIR / 'saxpy.html'
 
@@ -244,14 +244,14 @@ class TestDecoder:
         """
         cfd = pathlib.Path(__file__).parent
 
-        d1281 = sass.Decoder(source = cfd / 'assets' / '12.8.1.sass')
-        d1300 = sass.Decoder(source = cfd / 'assets' / '13.0.0.sass')
+        d1281 = sass.Decoder(source=cfd / 'assets' / '12.8.1.sass')
+        d1300 = sass.Decoder(source=cfd / 'assets' / '13.0.0.sass')
 
         assert len(d1281.instructions) == len(d1300.instructions)
 
         current = True
 
-        for d1281i, d1300i in zip(d1281.instructions, d1300.instructions, strict = True):
+        for d1281i, d1300i in zip(d1281.instructions, d1300.instructions, strict=True):
             assert d1281i.instruction == d1300i.instruction
             assert d1281i.control.stall_count == d1300i.control.stall_count
             assert d1281i.control.yield_flag == d1300i.control.yield_flag
@@ -261,20 +261,20 @@ class TestDecoder:
 
         assert current is False
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test_cuBLAS(self, parameters: Parameters, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI) -> None:
-        cublas = CuBLAS(cmake_file_api = cmake_file_api)
+        cublas = CuBLAS(cmake_file_api=cmake_file_api)
 
         try:
-            [cubin] = cublas.extract(arch = parameters.arch, cwd = workdir, randomly = True)
+            [cubin] = cublas.extract(arch=parameters.arch, cwd=workdir, randomly=True)
         except IndexError:
             pytest.skip(f'The library {cublas.libcublas} does not contain any CUDA binary file for {parameters.arch}.')
 
         assert cubin.is_file()
 
-        cuobjdump = binaries.CuObjDump(file = cubin, arch = parameters.arch, sass = True)
+        cuobjdump = binaries.CuObjDump(file=cubin, arch=parameters.arch, sass=True)
 
         for name, function in cuobjdump.functions.items():
-            decoder = sass.Decoder(code = function.code)
+            decoder = sass.Decoder(code=function.code)
             assert len(decoder.instructions) > 1
             logging.info(f'Function {name} in {cublas.libcublas} has {len(decoder.instructions)} SASS instructions.')

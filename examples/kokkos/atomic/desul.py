@@ -96,20 +96,20 @@ class AtomicAcquireMatcher:
             # Storing 1 in a register can be done in different ways.
             any_of(
                 OpcodeModsWithOperandsMatcher(
-                    opcode = 'MOV',
-                    operands = (PatternBuilder.REG, '0x1'),
+                    opcode='MOV',
+                    operands=(PatternBuilder.REG, '0x1'),
                 ),
                 OpcodeModsWithOperandsMatcher(
-                    opcode = 'IMAD', modifiers = ('MOV', 'U32'),
-                    operands = (PatternBuilder.REG, PatternBuilder.REGZ, PatternBuilder.REGZ, '0x1'),
+                    opcode='IMAD', modifiers=('MOV', 'U32'),
+                    operands=(PatternBuilder.REG, PatternBuilder.REGZ, PatternBuilder.REGZ, '0x1'),
                 ),
             ),
             AtomicMatcher(
-                memory = get_atomic_memory_suffix(compiler_id = compiler_id),
-                arch = arch,
-                operation = 'EXCH',
-                scope = 'DEVICE',
-                consistency = 'STRONG',
+                memory=get_atomic_memory_suffix(compiler_id=compiler_id),
+                arch=arch,
+                operation='EXCH',
+                scope='DEVICE',
+                consistency='STRONG',
             ),
         )
 
@@ -125,12 +125,12 @@ class AtomicReleaseMatcher:
     @classmethod
     def build(cls, arch: NVIDIAArch, compiler_id: str) -> InstructionMatcher:
         return instruction_is(AtomicMatcher(
-            memory = get_atomic_memory_suffix(compiler_id = compiler_id),
-            arch = arch,
-            operation = 'EXCH',
-            scope = 'DEVICE',
-            consistency = 'STRONG',
-        )).with_operand(index = -1, operand = 'RZ')
+            memory=get_atomic_memory_suffix(compiler_id=compiler_id),
+            arch=arch,
+            operation='EXCH',
+            scope='DEVICE',
+            consistency='STRONG',
+        )).with_operand(index=-1, operand='RZ')
 
 class DeviceAtomicThreadFenceMatcher:
     """
@@ -145,12 +145,12 @@ class DeviceAtomicThreadFenceMatcher:
     @classmethod
     def build(cls, arch: NVIDIAArch) -> OrderedInSequenceMatcher:
         matchers = [
-            OpcodeModsMatcher(opcode = 'MEMBAR', modifiers = ('SC', 'GPU'), operands = False),
-            OpcodeModsMatcher(opcode = 'ERRBAR', operands = False),
+            OpcodeModsMatcher(opcode='MEMBAR', modifiers=('SC', 'GPU'), operands=False),
+            OpcodeModsMatcher(opcode='ERRBAR', operands=False),
         ]
         if arch.compute_capability >= 90:
-            matchers.append(OpcodeModsMatcher(opcode = 'CGAERRBAR', operands = False))
-        matchers.append(OpcodeModsMatcher(opcode = 'CCTL', modifiers = ('IVALL',), operands = False))
+            matchers.append(OpcodeModsMatcher(opcode='CGAERRBAR', operands=False))
+        matchers.append(OpcodeModsMatcher(opcode='CCTL', modifiers=('IVALL',), operands=False))
         return instructions_are(*matchers)
 
 class Operation(typing.Protocol):
@@ -178,8 +178,8 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         self.operation: typing.Final[Operation] = operation
         self.compiler_id: typing.Final[str] = compiler_id
         self.level: typing.Final[int] = level
-        self.load: typing.Final[SequenceMatcher] = load or InSequenceAtMatcher(matcher = LoadGlobalMatcher(arch = self.arch, size = size, readonly = False))
-        self.store: typing.Final[SequenceMatcher] = store or InSequenceAtMatcher(matcher = StoreGlobalMatcher(arch = self.arch, size = size))
+        self.load:  typing.Final[SequenceMatcher] = load  or InSequenceAtMatcher(matcher=LoadGlobalMatcher (arch=self.arch, size=size, readonly=False))
+        self.store: typing.Final[SequenceMatcher] = store or InSequenceAtMatcher(matcher=StoreGlobalMatcher(arch=self.arch, size=size))
         self._index: int = 0
 
     def collect(self, matched: list[InstructionMatch], new: InstructionMatch | list[InstructionMatch]) -> int:
@@ -204,23 +204,23 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         matched: list[InstructionMatch] = []
 
         # First, try to atomically acquire a lock.
-        matcher_start = instructions_contain(matcher = AtomicAcquireMatcher.build(arch = self.arch, compiler_id = self.compiler_id))
-        matched_atomic_acquire = matcher_start.match(instructions = instructions)
+        matcher_start = instructions_contain(matcher=AtomicAcquireMatcher.build(arch=self.arch, compiler_id=self.compiler_id))
+        matched_atomic_acquire = matcher_start.match(instructions=instructions)
 
         if matched_atomic_acquire is None:
             return None
-        self.collect(matched = matched, new = matched_atomic_acquire)
+        self.collect(matched=matched, new=matched_atomic_acquire)
         offset = matcher_start.next_index
 
         # Then, one or two PLOP3.LUT instructions.
         matched_plop3_lut = instruction_is(
-            OpcodeModsMatcher(opcode = 'PLOP3', modifiers = ('LUT',)),
+            OpcodeModsMatcher(opcode='PLOP3', modifiers=('LUT',)),
         ).one_or_more_times().match(instructions[offset:])
 
         if matched_plop3_lut is None:
             return None
 
-        offset += self.collect(matched = matched, new = matched_plop3_lut)
+        offset += self.collect(matched=matched, new=matched_plop3_lut)
 
         # Then, ISETP.NE.AND that reuses the register in which the atomic acquire put its result.
         modifiers: tuple[str, ...]
@@ -232,8 +232,8 @@ class LockBasedAtomicMatcher(SequenceMatcher):
             case _:
                 raise ValueError(f'unsupported compiler ID {self.compiler_id}')
         matcher_isetp_enter = OpcodeModsWithOperandsMatcher(
-            opcode = 'ISETP', modifiers = modifiers,
-            operands = (
+            opcode='ISETP', modifiers=modifiers,
+            operands=(
                 PatternBuilder.PRED,
                 PatternBuilder.PREDT,
                 matched_atomic_acquire[-1].operands[1],
@@ -247,69 +247,69 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         if matched_isetp_enter is None:
             return None
 
-        offset += self.collect(matched = matched, new = matched_isetp_enter)
+        offset += self.collect(matched=matched, new=matched_isetp_enter)
 
         # Next, it enters the branching. It looks like:
         #   @P[0-9]+ BRA offset
         outer_branch_p = matched_isetp_enter.operands[0]
-        matcher_outer_branch = BranchMatcher(predicate = rf'@{outer_branch_p}')
+        matcher_outer_branch = BranchMatcher(predicate=rf'@{outer_branch_p}')
         matched_outer_branch = matcher_outer_branch.match(instructions[offset])
 
         if matched_outer_branch is None:
             return None
 
-        offset += self.collect(matched = matched, new = matched_outer_branch)
+        offset += self.collect(matched=matched, new=matched_outer_branch)
 
         # The device atomic thread fence block.
-        matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch = self.arch).match(instructions = instructions[offset:])
+        matched_thread_fence = DeviceAtomicThreadFenceMatcher.build(arch=self.arch).match(instructions=instructions[offset:])
 
         if matched_thread_fence is None:
             return None
 
-        offset += self.collect(matched = matched, new = matched_thread_fence)
+        offset += self.collect(matched=matched, new=matched_thread_fence)
 
         offset_fence_enter = offset
 
         # The device atomic thread fence block (again).
-        matcher_thread_fence = instructions_contain(DeviceAtomicThreadFenceMatcher.build(arch = self.arch))
-        matched_thread_fence = matcher_thread_fence.match(instructions = instructions[offset:])
+        matcher_thread_fence = instructions_contain(DeviceAtomicThreadFenceMatcher.build(arch=self.arch))
+        matched_thread_fence = matcher_thread_fence.match(instructions=instructions[offset:])
 
         if matched_thread_fence is None:
             return None
 
         offset_fence_exit = offset + matcher_thread_fence.next_index - len(matched_thread_fence)
         offset += matcher_thread_fence.next_index
-        self.collect(matched = matched, new = matched_thread_fence)
+        self.collect(matched=matched, new=matched_thread_fence)
 
         # The load corresponds to the dereferencing line at
         # https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L41.
-        matched_load = instructions_contain(self.load).match(instructions = instructions[offset_fence_enter:offset_fence_exit])
+        matched_load = instructions_contain(self.load).match(instructions=instructions[offset_fence_enter:offset_fence_exit])
 
         if matched_load is None:
             return None
 
-        self.collect(matched = matched, new = matched_load)
+        self.collect(matched=matched, new=matched_load)
 
         # Operation.
-        matcher_operation = instructions_contain(matcher = self.operation.build(loads = matched_load))
-        matched_operation = matcher_operation.match(instructions = instructions[offset_fence_enter:offset_fence_exit])
+        matcher_operation = instructions_contain(matcher=self.operation.build(loads=matched_load))
+        matched_operation = matcher_operation.match(instructions=instructions[offset_fence_enter:offset_fence_exit])
 
         if matched_operation is None:
             return None
 
-        self.collect(matched = matched, new = matched_operation)
+        self.collect(matched=matched, new=matched_operation)
 
         # Store the value.
-        matched_store = instructions_contain(self.store).match(instructions = instructions[offset_fence_enter:offset_fence_exit])
+        matched_store = instructions_contain(self.store).match(instructions=instructions[offset_fence_enter:offset_fence_exit])
 
         if matched_store is None:
             return None
 
-        self.collect(matched = matched, new = matched_store)
+        self.collect(matched=matched, new=matched_store)
 
         # Loads and stores use the same registers.
         assert len(matched_store) == len(matched_load)
-        assert all(len(x.operands) == len(y.operands) for x, y in zip(matched_store, matched_load, strict = True))
+        assert all(len(x.operands) == len(y.operands) for x, y in zip(matched_store, matched_load, strict=True))
         match len(matched_store[0].operands):
             case 2:
                 if matched_store[0].operands[1] != matched_load[0].operands[0]:
@@ -323,12 +323,12 @@ class LockBasedAtomicMatcher(SequenceMatcher):
                 raise ValueError
 
         # Atomic release.
-        matched_atomic_release = AtomicReleaseMatcher.build(arch = self.arch, compiler_id = self.compiler_id).match(inst = instructions[offset])
+        matched_atomic_release = AtomicReleaseMatcher.build(arch=self.arch, compiler_id=self.compiler_id).match(inst=instructions[offset])
 
         if matched_atomic_release is None:
             return None
 
-        self.collect(matched = matched, new = matched_atomic_release)
+        self.collect(matched=matched, new=matched_atomic_release)
 
         self._index = offset + 1
 

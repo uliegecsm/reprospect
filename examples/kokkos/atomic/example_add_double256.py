@@ -36,14 +36,14 @@ class Load256Matcher:
         self.arch: typing.Final[NVIDIAArch] = arch
 
     def build(self) -> SequenceMatcher:
-        match Memory(arch = self.arch).max_transaction_size:
+        match Memory(arch=self.arch).max_transaction_size:
             case 16:
                 return interleaved_instructions_are(
                     LoadGlobalMatcher(arch=self.arch, size=128, readonly=False),
                     LoadGlobalMatcher(arch=self.arch, size=128, readonly=False),
                 )
             case 32:
-                return instruction_is(LoadGlobalMatcher(arch = self.arch, size = 256, readonly = False)).times(num=1)
+                return instruction_is(LoadGlobalMatcher(arch=self.arch, size=256, readonly=False)).times(num=1)
             case _:
                 raise ValueError
 
@@ -52,14 +52,14 @@ class Store256Matcher:
         self.arch: typing.Final[NVIDIAArch] = arch
 
     def build(self) -> SequenceMatcher:
-        match Memory(arch = self.arch).max_transaction_size:
+        match Memory(arch=self.arch).max_transaction_size:
             case 16:
                 return interleaved_instructions_are(
-                    StoreGlobalMatcher(arch = self.arch, size = 128),
-                    StoreGlobalMatcher(arch = self.arch, size = 128),
+                    StoreGlobalMatcher(arch=self.arch, size=128),
+                    StoreGlobalMatcher(arch=self.arch, size=128),
                 )
             case 32:
-                return instruction_is(StoreGlobalMatcher(arch = self.arch, size = 256)).times(num=1)
+                return instruction_is(StoreGlobalMatcher(arch=self.arch, size=256)).times(num=1)
             case _:
                 raise ValueError
 
@@ -71,7 +71,7 @@ class AddDouble4:
         self.arch: typing.Final[NVIDIAArch] = arch
 
     def build(self, loads: typing.Collection[InstructionMatch]) -> UnorderedInSequenceMatcher:
-        match Memory(arch = self.arch).max_transaction_size:
+        match Memory(arch=self.arch).max_transaction_size:
             case 16:
                 assert len(loads) == 2
                 registers = (loads[0].operands[0], loads[1].operands[0])
@@ -84,19 +84,19 @@ class AddDouble4:
         matchers: list[OpcodeModsWithOperandsMatcher] = []
 
         for register in registers:
-            matched = RegisterMatcher(special = False).match(register)
+            matched = RegisterMatcher(special=False).match(register)
             assert matched is not None and matched.index is not None
 
             logging.info(f'Load register {matched}.')
 
-            matchers.append(OpcodeModsWithOperandsMatcher(opcode = 'DADD',
-                operands = (
+            matchers.append(OpcodeModsWithOperandsMatcher(opcode='DADD',
+                operands=(
                     register, register,
                     PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
                 ),
             ))
-            matchers.append(OpcodeModsWithOperandsMatcher(opcode = 'DADD',
-                operands = (
+            matchers.append(OpcodeModsWithOperandsMatcher(opcode='DADD',
+                operands=(
                     f'{matched.rtype}{matched.index + 2}',
                     f'{matched.rtype}{matched.index + 2}',
                     PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
@@ -124,9 +124,9 @@ class TestAtomicAddDouble256(add.TestCase):
         This test proves that it uses the lock-based implementation.
         """
         desul.LockBasedAtomicMatcher(
-            arch = self.arch,
-            load = Load256Matcher(arch = self.arch).build(),
-            operation = AddDouble4(arch = self.arch),
-            store = Store256Matcher(arch = self.arch).build(),
-            compiler_id = self.toolchains['CUDA']['compiler']['id'],
-        ).assert_matches(instructions = decoder.instructions)
+            arch=self.arch,
+            load=Load256Matcher(arch=self.arch).build(),
+            operation=AddDouble4(arch=self.arch),
+            store=Store256Matcher(arch=self.arch).build(),
+            compiler_id=self.toolchains['CUDA']['compiler']['id'],
+        ).assert_matches(instructions=decoder.instructions)

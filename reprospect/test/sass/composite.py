@@ -39,20 +39,20 @@ class Fluentizer(instruction.InstructionMatcher):
         if num == 0:
             raise NotImplementedError
         if num == 1:
-            return composite_impl.InSequenceAtMatcher(matcher = self.matcher)
-        return composite_impl.OrderedInSequenceMatcher(matchers = (self.matcher,) * num)
+            return composite_impl.InSequenceAtMatcher(matcher=self.matcher)
+        return composite_impl.OrderedInSequenceMatcher(matchers=(self.matcher,) * num)
 
     def one_or_more_times(self) -> composite_impl.OneOrMoreInSequenceMatcher:
         """
         Match :py:attr:`matcher` one or more times (consecutively).
         """
-        return composite_impl.OneOrMoreInSequenceMatcher(matcher = self.matcher)
+        return composite_impl.OneOrMoreInSequenceMatcher(matcher=self.matcher)
 
     def zero_or_more_times(self) -> composite_impl.ZeroOrMoreInSequenceMatcher:
         """
         Match :py:attr:`matcher` zero or more times (consecutively).
         """
-        return composite_impl.ZeroOrMoreInSequenceMatcher(matcher = self.matcher)
+        return composite_impl.ZeroOrMoreInSequenceMatcher(matcher=self.matcher)
 
     def with_modifier(self, modifier: str, index: int | None = None) -> Fluentizer:
         """
@@ -62,9 +62,9 @@ class Fluentizer(instruction.InstructionMatcher):
         >>> matcher.match(inst='IMAD.WIDE.U32 R4, R7, 0x4, R4')
         InstructionMatch(opcode='IMAD', modifiers=('WIDE', 'U32'), operands=('R4', 'R7', '0x4', 'R4'), predicate=None, additional=None)
         """
-        return Fluentizer(matcher = composite_impl.ModifierValidator(
-            matcher = self.matcher,
-            index = index, modifier = modifier,
+        return Fluentizer(matcher=composite_impl.ModifierValidator(
+            matcher=self.matcher,
+            index=index, modifier=modifier,
         ))
 
     def with_operand(self, operand: OperandMatcher, index: int | None = None) -> Fluentizer:
@@ -77,9 +77,9 @@ class Fluentizer(instruction.InstructionMatcher):
         >>> matcher.match(inst = 'FADD R5, R8, R9')
         InstructionMatch(opcode='FADD', modifiers=(), operands=('R5', 'R8', 'R9'), predicate=None, additional={'dst': ['R5']})
         """
-        return Fluentizer(matcher = composite_impl.OperandValidator(
-            matcher = self.matcher,
-            index = index, operand = operand,
+        return Fluentizer(matcher=composite_impl.OperandValidator(
+            matcher=self.matcher,
+            index=index, operand=operand,
         ))
 
     def with_operands(self, operands: typing.Collection[tuple[int, OperandMatcher]]) -> Fluentizer:
@@ -95,15 +95,15 @@ class Fluentizer(instruction.InstructionMatcher):
         >>> matcher.match(inst = 'FADD R5, R8, R9')
         InstructionMatch(opcode='FADD', modifiers=(), operands=('R5', 'R8', 'R9'), predicate=None, additional={'dst': ['R5']})
         """
-        return Fluentizer(matcher = composite_impl.OperandsValidator(
-            matcher = self,
-            operands = operands,
+        return Fluentizer(matcher=composite_impl.OperandsValidator(
+            matcher=self,
+            operands=operands,
         ))
 
     @override
     @typing.final
     def match(self, inst: Instruction | str) -> instruction.InstructionMatch | None:
-        return self.matcher.match(inst = inst)
+        return self.matcher.match(inst=inst)
 
 def instruction_is(matcher: instruction.InstructionMatcher) -> Fluentizer:
     """
@@ -130,7 +130,7 @@ def instructions_are(*matchers: instruction.InstructionMatcher | composite_impl.
     ... ).match(instructions = ('YIELD', 'NOP', 'NOP'))
     [InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None)]
     """
-    return composite_impl.OrderedInSequenceMatcher(matchers = matchers)
+    return composite_impl.OrderedInSequenceMatcher(matchers=matchers)
 
 def unordered_instructions_are(*matchers: instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.UnorderedInSequenceMatcher:
     """
@@ -144,7 +144,7 @@ def unordered_instructions_are(*matchers: instruction.InstructionMatcher | compo
     ... ).match(instructions = ('NOP', 'YIELD'))
     [InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None)]
     """
-    return composite_impl.UnorderedInSequenceMatcher(matchers = matchers)
+    return composite_impl.UnorderedInSequenceMatcher(matchers=matchers)
 
 def instructions_contain(matcher: instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.InSequenceMatcher:
     """

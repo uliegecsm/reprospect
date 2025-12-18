@@ -99,7 +99,7 @@ class PatternBuilder:
         Wrap a pattern in named capture groups.
         """
         for g in groups:
-            s = PatternBuilder.group(s, group = g)
+            s = PatternBuilder.group(s, group=g)
         return str(s)
 
     @classmethod
@@ -107,35 +107,35 @@ class PatternBuilder:
         """
         :py:attr:`HEX` with `operands` group.
         """
-        return cls.group(PatternBuilder.HEX, group = 'operands')
+        return cls.group(PatternBuilder.HEX, group='operands')
 
     @classmethod
     def reg(cls) -> str:
         """
         :py:attr:`REG` with `operands` group.
         """
-        return cls.group(cls.REG, group = 'operands')
+        return cls.group(cls.REG, group='operands')
 
     @classmethod
     def premodregz(cls) -> str:
         """
         :py:attr:`REGZ` with `operands` group and optional :py:attr:`PRE_OPERAND_MOD` modifier.
         """
-        return cls.group(cls.zero_or_one(cls.PRE_OPERAND_MOD) + cls.REGZ, group = 'operands')
+        return cls.group(cls.zero_or_one(cls.PRE_OPERAND_MOD) + cls.REGZ, group='operands')
 
     @classmethod
     def regz(cls) -> str:
         """
         :py:attr:`REGZ` with `operands` group.
         """
-        return cls.group(cls.REGZ, group = 'operands')
+        return cls.group(cls.REGZ, group='operands')
 
     @classmethod
     def ureg(cls) -> str:
         """
         :py:attr:`UREG` with `operands` group.
         """
-        return cls.group(cls.UREG, group = 'operands')
+        return cls.group(cls.UREG, group='operands')
 
     @classmethod
     def anygpreg(cls, *, reuse: bool | None = None, group: str | None = None) -> str:
@@ -148,7 +148,7 @@ class PatternBuilder:
         elif reuse is True:
             pattern += r'\.reuse'
         if group is not None:
-            pattern = cls.group(pattern, group = group)
+            pattern = cls.group(pattern, group=group)
         return pattern
 
     @classmethod
@@ -156,21 +156,21 @@ class PatternBuilder:
         """
         :py:attr:`PREDT` with `operands` group.
         """
-        return cls.group(cls.PREDT, group = 'operands')
+        return cls.group(cls.PREDT, group='operands')
 
     @classmethod
     def immediate(cls) -> str:
         """
         :py:attr:`IMMEDIATE` with `operands` group.
         """
-        return cls.group(cls.IMMEDIATE, group = 'operands')
+        return cls.group(cls.IMMEDIATE, group='operands')
 
     @classmethod
     def predicate(cls) -> str:
         """
         :py:attr:`PREDICATE` with `predicate` group.
         """
-        return cls.group(s = cls.PREDICATE, group = 'predicate')
+        return cls.group(s=cls.PREDICATE, group='predicate')
 
     @staticmethod
     def opcode_mods(opcode: str, modifiers: typing.Iterable[int | str | None] | None = None) -> str:
@@ -179,7 +179,7 @@ class PatternBuilder:
 
         Note that the modifiers starting with a `?` are matched optionally.
         """
-        opcode = PatternBuilder.group(opcode, group = 'opcode')
+        opcode = PatternBuilder.group(opcode, group='opcode')
         if modifiers is None:
             return opcode
 
@@ -189,9 +189,9 @@ class PatternBuilder:
             if not modifier:
                 continue
             if isinstance(modifier, str) and modifier[0] == '?':
-                parts.append(PatternBuilder.zero_or_one(r'\.' + PatternBuilder.group(modifier[1:], group = 'modifiers')))
+                parts.append(PatternBuilder.zero_or_one(r'\.' + PatternBuilder.group(modifier[1:], group='modifiers')))
             else:
-                parts.append(r'\.' + PatternBuilder.group(modifier, group = 'modifiers'))
+                parts.append(r'\.' + PatternBuilder.group(modifier, group='modifiers'))
 
         return ''.join(parts)
 
@@ -201,5 +201,5 @@ class PatternBuilder:
         """
         Many operands, with the `operands` named capture group.
         """
-        op = PatternBuilder.group(cls.OPERAND, group = 'operands')
+        op = PatternBuilder.group(cls.OPERAND, group='operands')
         return rf'{op}(?:\s*,\s*{op})*'

@@ -144,7 +144,7 @@ class NVDisasm:
         """
         :param arch: Optionally check that `file` is a CUDA binary file for that `arch`.
         """
-        with ELF(file = file) as elf:
+        with ELF(file=file) as elf:
             if not elf.is_cuda:
                 raise ValueError(f'{file} is not a CUDA binary file')
             if arch is not None and elf.arch != arch:
@@ -154,7 +154,7 @@ class NVDisasm:
         self.arch = arch or elf.arch
         self.demangler = demangler
 
-        self.symtab = get_symbol_table(file = self.file)
+        self.symtab = get_symbol_table(file=self.file)
 
         self.functions: dict[str, Function] = {}
 
@@ -186,7 +186,7 @@ class NVDisasm:
 
             logging.info(f'Disassembling function {function_mangled} from {self.file} using {cmd}.')
 
-            self.functions[function_mangled] = self.parse_sass_with_liveness_range_info(function_mangled, popen_stream(args = cmd))
+            self.functions[function_mangled] = self.parse_sass_with_liveness_range_info(function_mangled, popen_stream(args=cmd))
 
     @classmethod
     def parse_sass_with_liveness_range_info(cls, function_mangled: str, sass: typing.Iterator[str]) -> Function: # pylint: disable=too-many-branches
@@ -229,7 +229,7 @@ class NVDisasm:
                     #   .sectionflags
                     #   .sectioninfo
                     #   .align
-                    elif re.match(pattern = r'^\t\.(section|sectionflags|sectioninfo|align)', string = line) is not None:
+                    elif re.match(pattern=r'^\t\.(section|sectionflags|sectioninfo|align)', string=line) is not None:
                         continue
                     # Skip empty lines.
                     elif len(line.strip()) == 0:
@@ -243,11 +243,11 @@ class NVDisasm:
                         # Extract the register positions for each register type.
                         if (
                             (start := line.find('// |')) != -1
-                            and (matched := re.match(pattern = r'^\/\/ \| (?:[0-9]+)?', string = line[start:])) is not None
+                            and (matched := re.match(pattern=r'^\/\/ \| (?:[0-9]+)?', string=line[start:])) is not None
                         ):
                             sections = tuple(x.strip() for x in line[start + matched.span()[1] - 1::].strip().rstrip('|').split('|'))
                             positions = {}
-                            for reg_type, section in zip(reg_types, sections, strict = True):
+                            for reg_type, section in zip(reg_types, sections, strict=True):
                                 matches = re.finditer(r'\d+', section)
                                 if matches is None:
                                     raise RuntimeError(f'No register positions found for {reg_type} in section "{section}"')
@@ -259,10 +259,10 @@ class NVDisasm:
                         # Parse the register usage for each line.
                         if (
                             (start := line.find('// |')) != -1
-                            and (matched := re.match(pattern = r'^\/\/ \| (?:[0-9]+)?', string = line[start:])) is not None
+                            and (matched := re.match(pattern=r'^\/\/ \| (?:[0-9]+)?', string=line[start:])) is not None
                         ):
                             sections = tuple(x.strip() for x in line[start + matched.span()[1] - 1::].strip().rstrip('|').split('|'))
-                            for reg_type, section in zip(reg_types, sections, strict = True):
+                            for reg_type, section in zip(reg_types, sections, strict=True):
                                 offset = len(section) - len(section.lstrip('0123456789')) - 1
                                 statuses_as_str = tuple(
                                     section[pos[0] + offset:pos[1] + offset].strip()
@@ -271,7 +271,7 @@ class NVDisasm:
                                 statuses = tuple(RegisterState(s) if s else RegisterState.NOT_IN_USE for s in statuses_as_str)
                                 used[reg_type] = tuple(
                                     already_used or status.used
-                                    for already_used, status in zip(used[reg_type], statuses, strict = True)
+                                    for already_used, status in zip(used[reg_type], statuses, strict=True)
                                 )
                         elif re.match(cls.TABLE_CUT, line) is not None:
                             continue
@@ -288,15 +288,15 @@ class NVDisasm:
             reg_type: (len(vals), sum(vals)) for reg_type, vals in used.items()
         }
 
-        return Function(registers = registers)
+        return Function(registers=registers)
 
     def __str__(self) -> str:
         """
         Rich representation.
         """
         def to_table(name: str, function: Function) -> rich.table.Table:
-            rt = rich.table.Table(show_header = False)
-            rt.add_column(width = 130, overflow = "ellipsis", no_wrap = True)
+            rt = rich.table.Table(show_header=False)
+            rt.add_column(width=130, overflow="ellipsis", no_wrap=True)
             rt.add_row(self.demangler.demangle(name))
             rt.add_row(function.to_table())
             return rt

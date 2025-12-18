@@ -43,7 +43,7 @@ References:
 """
 
 @functools.total_ordering
-@dataclasses.dataclass(frozen = True, slots = True, kw_only = True)
+@dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
 class ComputeCapability:
     """
     Compute capability.
@@ -89,7 +89,7 @@ class ComputeCapability:
         ComputeCapability(major=8, minor=6)
         """
         major, minor = divmod(value, 10)
-        return ComputeCapability(major = major, minor = minor)
+        return ComputeCapability(major=major, minor=minor)
 
     def supported(self, version: semantic_version.Version) -> bool:
         """
@@ -137,7 +137,7 @@ class NVIDIAFamily(StrEnum):
             case _:
                 raise ValueError(f"unsupported compute capability {cc}")
 
-@dataclasses.dataclass(frozen = True, eq = True, match_args = True, slots = True)
+@dataclasses.dataclass(frozen=True, eq=True, match_args=True, slots=True)
 class NVIDIAArch:
     """
     NVIDIA architecture.
@@ -179,7 +179,7 @@ class NVIDIAArch:
 
     @staticmethod
     def from_compute_capability(cc: str | int) -> NVIDIAArch:
-        return NVIDIAArch(family = NVIDIAFamily.from_compute_capability(cc = int(cc)), compute_capability = ComputeCapability.from_int(int(cc)))
+        return NVIDIAArch(family=NVIDIAFamily.from_compute_capability(cc=int(cc)), compute_capability=ComputeCapability.from_int(int(cc)))
 
     @staticmethod
     def from_str(arch: str) -> NVIDIAArch:
@@ -190,4 +190,4 @@ class NVIDIAArch:
         """
         if (matched := re.match(r'^([A-Za-z]+)([0-9]+)$', arch)) is None:
             raise ValueError(f'unsupported architecture {arch}')
-        return NVIDIAArch(family = NVIDIAFamily(matched.group(1).upper()), compute_capability = ComputeCapability.from_int(int(matched.group(2))))
+        return NVIDIAArch(family=NVIDIAFamily(matched.group(1).upper()), compute_capability=ComputeCapability.from_int(int(matched.group(2))))

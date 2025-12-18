@@ -87,8 +87,8 @@ class ResourceUsage: # pylint: disable=too-many-instance-attributes
             sampler=int(matched.group('sampler')),
         )
 
-@mypy_extensions.mypyc_attr(native_class = True)
-@dataclasses.dataclass(slots = True)
+@mypy_extensions.mypyc_attr(native_class=True)
+@dataclasses.dataclass(slots=True)
 class Function:
     """
     Data structure holding the SASS code and resource usage of a kernel, as extracted from a binary file.
@@ -103,20 +103,20 @@ class Function:
 
         :param descriptors: Key-value pairs added as descriptor rows at the top of the table, optional.
         """
-        table = rich.table.Table(width = 15 + max_code_length + 7, show_header = False, padding = (0, 1))
-        table.add_column(width = 15)
-        table.add_column(width = max_code_length, overflow = "ellipsis", no_wrap = True)
+        table = rich.table.Table(width=15 + max_code_length + 7, show_header=False, padding=(0, 1))
+        table.add_column(width=15)
+        table.add_column(width=max_code_length, overflow="ellipsis", no_wrap=True)
 
         # Additional rows.
         if descriptors:
             for k, v in descriptors.items():
-                table.add_row(k, v, end_section = True)
+                table.add_row(k, v, end_section=True)
 
         # Symbol.
-        table.add_row("Symbol", self.symbol, end_section = True)
+        table.add_row("Symbol", self.symbol, end_section=True)
 
         # Code.
-        table.add_row("Code", rich.text.Text(textwrap.dedent(self.code.expandtabs()).rstrip()), end_section = True)
+        table.add_row("Code", rich.text.Text(textwrap.dedent(self.code.expandtabs()).rstrip()), end_section=True)
 
         # Resource usage.
         table.add_row("Resource usage", str(self.ru))
@@ -129,7 +129,7 @@ class Function:
         """
         return rich_helpers.to_string(self.to_table())
 
-@mypy_extensions.mypyc_attr(native_class = True)
+@mypy_extensions.mypyc_attr(native_class=True)
 class CuObjDump:
     """
     Use ``cuobjdump`` for extracting SASS, symbol table, and so on.
@@ -155,7 +155,7 @@ class CuObjDump:
         self.arch: typing.Final[NVIDIAArch] = arch #: The NVIDIA architecture.
         self.functions: dict[str, Function] = {}
         if sass:
-            self.parse_sass(demangler = demangler, keep = keep)
+            self.parse_sass(demangler=demangler, keep=keep)
 
     def parse_sass(self, demangler: type[CuppFilt | LlvmCppFilt] | None = None, keep: typing.Iterable[str] | None = None) -> None:
         """
@@ -184,16 +184,16 @@ class CuObjDump:
         # Read the stream as it comes.
         # The cuobjdump output starts with the resource usage for all functions.
         # Then, it gives the SASS code for each function.
-        for line in popen_stream(args = cmd):
+        for line in popen_stream(args=cmd):
 
             # End of function block.
             if line.startswith(STOP):
                 assert len(current_code) > 0 and current_function_symbol_code is not None and current_function_code is not None
 
                 self.functions[current_function_code] = Function(
-                    symbol = current_function_symbol_code,
-                    code = ''.join(current_code),
-                    ru = current_ru.pop(current_function_code),
+                    symbol=current_function_symbol_code,
+                    code=''.join(current_code),
+                    ru=current_ru.pop(current_function_code),
                 )
 
                 current_function_code = None
@@ -210,7 +210,7 @@ class CuObjDump:
 
             # If previous line indicated resource usage.
             elif current_function_ru is not None:
-                current_ru[current_function_ru] = ResourceUsage.parse(line = line)
+                current_ru[current_function_ru] = ResourceUsage.parse(line=line)
                 current_function_ru = None
 
             # Start of function block.
@@ -240,14 +240,14 @@ class CuObjDump:
         subset of the SASS can be significantly faster than extracting all the SASS straightforwardly
         from the whole `file`.
         """
-        files = tuple(cls.extract_elf(file = file, arch = arch, name = cubin, cwd = cwd))
+        files = tuple(cls.extract_elf(file=file, arch=arch, name=cubin, cwd=cwd))
 
         if len(files) != 1:
             raise RuntimeError(files)
 
         file = cwd / files[0]
 
-        return CuObjDump(file = file, arch = arch, **kwargs), file
+        return CuObjDump(file=file, arch=arch, **kwargs), file
 
     @staticmethod
     def extract_elf(*,
@@ -277,17 +277,17 @@ class CuObjDump:
 
         return (
             m.group(1)
-            for f in popen_stream(args = cmd, cwd = cwd) if (m := re.match(r'Extracting ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+\.cubin)', f)) is not None
+            for f in popen_stream(args=cmd, cwd=cwd) if (m := re.match(r'Extracting ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+\.cubin)', f)) is not None
         )
 
     def __str__(self) -> str:
         """
         Rich representation.
         """
-        with rich.console.Console(width = 200) as console, console.capture() as capture:
+        with rich.console.Console(width=200) as console, console.capture() as capture:
             console.print(f'CuObjDump of {self.file} for architecture {self.arch}:')
             for name, function in self.functions.items():
-                console.print(function.to_table(descriptors = {'Function': name}), no_wrap = True)
+                console.print(function.to_table(descriptors={'Function': name}), no_wrap=True)
         return capture.get()
 
     @functools.cached_property
@@ -295,7 +295,7 @@ class CuObjDump:
         """
         Get the names of the embedded CUDA binary files contained in :py:attr:`file`.
         """
-        return tuple(self.list_elf(arch = self.arch, file = self.file))
+        return tuple(self.list_elf(arch=self.arch, file=self.file))
 
     @staticmethod
     def list_elf(*, file: pathlib.Path, arch: NVIDIAArch | None = None) -> typing.Generator[str, None, None]:
@@ -316,7 +316,7 @@ class CuObjDump:
 
         return (
             m.group(1)
-            for f in popen_stream(args = cmd) if (m := re.match(r'ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+\.cubin)', f)) is not None
+            for f in popen_stream(args=cmd) if (m := re.match(r'ELF file [ ]+ [0-9]+: ([A-Za-z0-9_.]+\.cubin)', f)) is not None
         )
 
     @functools.cached_property
@@ -330,12 +330,12 @@ class CuObjDump:
         if not self.file_is_cubin:
             if len(self.embedded_cubins) != 1:
                 raise RuntimeError('The host binary file contains more than one embedded CUDA binary file.')
-        return get_symbol_table(file = self.file)
+        return get_symbol_table(file=self.file)
 
     @functools.cached_property
     def file_is_cubin(self) -> bool:
         """
         Whether :py:attr:`file` is a CUDA binary file.
         """
-        with ELF(file = self.file) as elf:
+        with ELF(file=self.file) as elf:
             return elf.is_cuda

@@ -88,23 +88,23 @@ class TestMax(CMakeAwareTestCase):
     def cubin(self) -> pathlib.Path:
         return self.cwd / f'{self.get_target_name()}.1.{self.arch.as_sm}.cubin'
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def cuobjdump(self) -> CuObjDump:
         return CuObjDump.extract(
-            file = self.executable,
-            arch = self.arch,
-            sass = True, cwd = self.cwd,
-            cubin = self.cubin.name,
-            demangler = self.demangler,
+            file=self.executable,
+            arch=self.arch,
+            sass=True, cwd=self.cwd,
+            cubin=self.cubin.name,
+            demangler=self.demangler,
         )[0]
 
-    @pytest.fixture(scope = 'class')
+    @pytest.fixture(scope='class')
     def decoder(self, cuobjdump: CuObjDump) -> dict[Method, Decoder]:
         decoder: dict[Method, Decoder] = {}
         for method in Method:
             matcher = re.compile(self.SIGNATURE_TEMPLATE.format(method=method.value))
             [sig] = (sig for sig in cuobjdump.functions if matcher.search(sig) is not None)
-            decoder[method] = Decoder(code = cuobjdump.functions[sig].code)
+            decoder[method] = Decoder(code=cuobjdump.functions[sig].code)
         return decoder
 
     def test_cuda_hmax(self, decoder: dict[Method, Decoder]) -> None:
@@ -148,8 +148,8 @@ class TestMax(CMakeAwareTestCase):
             LDG.E.U16 R5, [R4.64]
         """
         matcher_ldg = instructions_contain(instructions_are(
-            LoadGlobalMatcher(arch = self.arch, size = 16, extend = 'U', readonly = False),
-            LoadGlobalMatcher(arch = self.arch, size = 16, extend = 'U', readonly = False),
+            LoadGlobalMatcher(arch=self.arch, size=16, extend='U', readonly=False),
+            LoadGlobalMatcher(arch=self.arch, size=16, extend='U', readonly=False),
         ))
         block, matched_ldg = BasicBlockMatcher(matcher_ldg).assert_matches(cfg=ControlFlow.analyze(instructions=instructions))
         logging.info(matched_ldg)
@@ -159,8 +159,8 @@ class TestMax(CMakeAwareTestCase):
 
     def match_store(self, src: str, instructions: typing.Sequence[Instruction]) -> None:
         instructions_contain(instruction_is(StoreGlobalMatcher(
-            arch = self.arch, size = 16, extend = 'U',
-        )).with_operand(index = -1, operand = src)).assert_matches(instructions=instructions)
+            arch=self.arch, size=16, extend='U',
+        )).with_operand(index=-1, operand=src)).assert_matches(instructions=instructions)
 
     def match_fp16_to_fp32(self, *,
         src_a: str, src_b: str,

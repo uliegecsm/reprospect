@@ -66,7 +66,7 @@ class NvInfoEIFMT(enum.IntEnum):
     HVAL = 3
     SVAL = 4
 
-@dataclasses.dataclass(slots = True, frozen = True, unsafe_hash = True)
+@dataclasses.dataclass(slots=True, frozen=True, unsafe_hash=True)
 class NvInfoEntry:
     """
     A single entry in a `.nv.info.<mangled>` section.
@@ -75,7 +75,7 @@ class NvInfoEntry:
     eiattr: NvInfoEIATTR
     value: bytes | int | tuple[int, ...] | None = None
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class NvInfo:
     """
     Specialized decoder for a `.nv.info.<mangled>` section.
@@ -139,7 +139,7 @@ class NvInfo:
 
     @classmethod
     def decode(cls, *, section: elftools.elf.sections.Section) -> NvInfo:
-        return cls.parse(data = section.data())
+        return cls.parse(data=section.data())
 
     @classmethod
     def parse(cls, *, data: bytes) -> NvInfo:
@@ -183,11 +183,11 @@ class NvInfo:
                 case _:
                     raise ValueError(f'unsupported {eifmt}')
 
-            attrs.append(NvInfoEntry(eifmt = eifmt, eiattr = eiattr, value = value))
+            attrs.append(NvInfoEntry(eifmt=eifmt, eiattr=eiattr, value=value))
 
-        return NvInfo(attributes = tuple(attrs))
+        return NvInfo(attributes=tuple(attrs))
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class TkInfo:
     """
     Specialized decoder for `.note.nv.tkinfo` section.
@@ -243,15 +243,15 @@ class TkInfo:
             ) = struct.unpack('<6I', entry['n_desc'][:24])
 
             yield TkInfo(
-                note_version    = toolkit_version,
-                object_filename = cls.extract(arr = entry['n_desc'], offset = object_filename),
-                tool_name       = cls.extract(arr = entry['n_desc'], offset = tool_name),
-                tool_version    = cls.extract(arr = entry['n_desc'], offset = tool_version),
-                tool_branch     = cls.extract(arr = entry['n_desc'], offset = tool_branch),
-                tool_options    = cls.extract(arr = entry['n_desc'], offset = tool_options),
+                note_version=toolkit_version,
+                object_filename=cls.extract(arr=entry['n_desc'], offset=object_filename),
+                tool_name=      cls.extract(arr=entry['n_desc'], offset=tool_name),  # noqa: E251
+                tool_version=   cls.extract(arr=entry['n_desc'], offset=tool_version),  # noqa: E251
+                tool_branch=    cls.extract(arr=entry['n_desc'], offset=tool_branch),  # noqa: E251
+                tool_options=   cls.extract(arr=entry['n_desc'], offset=tool_options),  # noqa: E251
             )
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class CuInfo:
     """
     Specialized decoder for `.note.nv.cuinfo` section.
@@ -290,9 +290,9 @@ class CuInfo:
                 raise RuntimeError(f'{entry!r} is not a valid .note.nv.cuinfo.')
 
             yield CuInfo(
-                note_version    = struct.unpack('<H', entry['n_desc'][0:2])[0],
-                virtual_sm      = struct.unpack('<H', entry['n_desc'][2:4])[0],
-                toolkit_version = struct.unpack('<I', entry['n_desc'][4:8])[0],
+                note_version=   struct.unpack('<H', entry['n_desc'][0:2])[0],  # noqa: E251
+                virtual_sm=     struct.unpack('<H', entry['n_desc'][2:4])[0],  # noqa: E251
+                toolkit_version=struct.unpack('<I', entry['n_desc'][4:8])[0],
             )
 
 class ELF:
@@ -338,7 +338,7 @@ class ELF:
         self.elf: elftools.elf.elffile.ELFFile | None = None
 
     def __enter__(self) -> Self:
-        self.elf = elftools.elf.elffile.ELFFile(stream = self.file.open('rb'))
+        self.elf = elftools.elf.elffile.ELFFile(stream=self.file.open('rb'))
         return self
 
     def __exit__(self, *args, **kwargs) -> None:
@@ -357,7 +357,7 @@ class ELF:
         """
         Return :py:obj:`True` if :py:attr:`file` is a valid CUDA binary file.
         """
-        return self.is_cuda_impl(header = self.header)
+        return self.is_cuda_impl(header=self.header)
 
     @property
     def header(self) -> elftools.construct.lib.container.Container:
@@ -378,14 +378,14 @@ class ELF:
         if misc != 0 or cc not in range(70, 100):
             cc = (value & cls.EF_CUDA_SM_POST_BLACKWELL) >> cls.EF_CUDA_SM_OFFSET_POST_BLACKWELL
 
-        return ComputeCapability.from_int(value = cc)
+        return ComputeCapability.from_int(value=cc)
 
     @property
     def arch(self) -> NVIDIAArch:
         """
         Get compute capability encoded in `header` as NVIDIA architecture.
         """
-        return NVIDIAArch.from_compute_capability(cc = self.compute_capability(value = self.header['e_flags']).as_int)
+        return NVIDIAArch.from_compute_capability(cc=self.compute_capability(value=self.header['e_flags']).as_int)
 
     def nvinfo(self, mangled: str) -> NvInfo:
         """
@@ -395,6 +395,6 @@ class ELF:
 
         name: str = f'.nv.info.{mangled}'
 
-        if (section := self.elf.get_section_by_name(name = name)) is not None:
-            return NvInfo.decode(section = section)
+        if (section := self.elf.get_section_by_name(name=name)) is not None:
+            return NvInfo.decode(section=section)
         raise ValueError(f'There is no {name!r} section.')

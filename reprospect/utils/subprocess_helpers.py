@@ -25,9 +25,9 @@ def popen_stream(*,
         b. If termination fails (within 2 seconds), the process is forcibly killed.
     """
     with subprocess.Popen(
-        args = args,
-        stdout = subprocess.PIPE, stderr = subprocess.PIPE,
-        text = True,
+        args=args,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True,
         **kwargs,
     ) as process:
         try:
@@ -38,9 +38,9 @@ def popen_stream(*,
             if (returncode := process.wait()) != 0:
                 assert process.stderr is not None
                 raise subprocess.CalledProcessError(
-                    returncode = returncode,
-                    cmd = args,
-                    stderr = process.stderr.read(),
+                    returncode=returncode,
+                    cmd=args,
+                    stderr=process.stderr.read(),
                 )
 
         finally:
@@ -48,7 +48,7 @@ def popen_stream(*,
                 logging.warning(f'Terminating {process!r}.')
                 process.terminate()
                 try:
-                    process.wait(timeout = 2)
+                    process.wait(timeout=2)
                 except (subprocess.TimeoutExpired, KeyboardInterrupt):
                     logging.warning(f'Killing process {process!r}.')
                     process.kill()

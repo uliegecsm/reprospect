@@ -150,10 +150,10 @@ class TestFunction:
         """
         Test :py:meth:`reprospect.tools.binaries.Function.__str__`.
         """
-        function = Function(symbol = self.SYMBOL, code = self.CODE, ru = self.RU)
+        function = Function(symbol=self.SYMBOL, code=self.CODE, ru=self.RU)
 
         # Check that the conversion to a table with truncation of long lines works as expected.
-        rt = function.to_table(max_code_length = 120)
+        rt = function.to_table(max_code_length=120)
         assert rich_helpers.to_string(rt) == """\
 ┌─────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ Symbol          │ _Z9my_kernelfPKfPfj                                                                                                      │
@@ -192,7 +192,7 @@ class TestCuObjDump:
         logging.info(f'Writing parsed SASS to {file}.')
         file.write_text(str(cuobjdump))
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     class TestSaxpy:
         """
         When the kernel performs a `saxpy`.
@@ -207,20 +207,20 @@ class TestCuObjDump:
             Compile :py:attr:`CUDA_FILE` as object, extract SASS and analyse resource usage.
             """
             output, _ = get_compilation_output(
-                source = self.CUDA_FILE,
-                cwd = workdir,
-                arch = parameters.arch,
-                object_file = True,
-                cmake_file_api = cmake_file_api,
+                source=self.CUDA_FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=True,
+                cmake_file_api=cmake_file_api,
             )
 
-            cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = True)
+            cuobjdump = CuObjDump(file=output, arch=parameters.arch, sass=True)
 
             assert not cuobjdump.file_is_cubin
 
             TestCuObjDump.dump(
-                file = output.with_suffix(f'.{parameters.arch.compute_capability}.sass'),
-                cuobjdump = cuobjdump,
+                file=output.with_suffix(f'.{parameters.arch.compute_capability}.sass'),
+                cuobjdump=cuobjdump,
             )
 
             assert len(cuobjdump.functions) == 1
@@ -244,23 +244,23 @@ class TestCuObjDump:
             Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
             """
             output, _ = get_compilation_output(
-                source = self.CPP_FILE,
-                cwd = workdir,
-                arch = parameters.arch,
-                object_file = False,
-                cmake_file_api = cmake_file_api,
+                source=self.CPP_FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=False,
+                cmake_file_api=cmake_file_api,
             )
 
             # Extract the embedded CUDA binary file and check that it contains the expected function.
             cuobjdump, cubin = CuObjDump.extract(
-                file = output,
-                arch = parameters.arch,
-                cwd = workdir,
-                cubin = get_cubin_name(
-                    compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
-                    file = output,
-                    arch = parameters.arch,
-                    object_file = False,
+                file=output,
+                arch=parameters.arch,
+                cwd=workdir,
+                cubin=get_cubin_name(
+                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    file=output,
+                    arch=parameters.arch,
+                    object_file=False,
                 ),
             )
 
@@ -275,38 +275,38 @@ class TestCuObjDump:
             Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.
             """
             output, _ = get_compilation_output(
-                source = self.CPP_FILE,
-                cwd = workdir,
-                arch = parameters.arch,
-                object_file = False,
-                cmake_file_api = cmake_file_api,
+                source=self.CPP_FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=False,
+                cmake_file_api=cmake_file_api,
             )
 
-            cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = False)
+            cuobjdump = CuObjDump(file=output, arch=parameters.arch, sass=False)
 
             # This binary is not compiled to an object file. With `nvcc` as the compiler, the binary then contains
             # more than one embedded CUDA binary file. Hence, check that calling symtab raises.
             if cmake_file_api.toolchains['CUDA']['compiler']['id'] == 'NVIDIA':
-                with pytest.raises(RuntimeError, match = r'The host binary file contains more than one embedded CUDA binary file.'):
+                with pytest.raises(RuntimeError, match=r'The host binary file contains more than one embedded CUDA binary file.'):
                     cuobjdump.symtab # pylint: disable=pointless-statement
 
             # Extract the embedded CUDA binary file and check that calling its symtab works.
             cuobjdump, _ = CuObjDump.extract(
-                file = output,
-                arch = parameters.arch,
-                cwd = workdir,
-                cubin = get_cubin_name(
-                    compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
-                    file = output,
-                    arch = parameters.arch,
-                    object_file = False,
+                file=output,
+                arch=parameters.arch,
+                cwd=workdir,
+                cubin=get_cubin_name(
+                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    file=output,
+                    arch=parameters.arch,
+                    object_file=False,
                 ),
-                sass = False,
+                sass=False,
             )
 
             assert self.SYMBOL in cuobjdump.symtab['name'].values
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     class TestMany:
         """
         When there are many kernels.
@@ -328,18 +328,18 @@ class TestCuObjDump:
             Compile :py:attr:`CUDA_FILE` as object, extract SASS.
             """
             output, _ = get_compilation_output(
-                source = self.CUDA_FILE,
-                cwd = workdir,
-                arch = parameters.arch,
-                object_file = True,
-                cmake_file_api = cmake_file_api,
+                source=self.CUDA_FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=True,
+                cmake_file_api=cmake_file_api,
             )
 
-            cuobjdump = CuObjDump(file = output, arch = parameters.arch, sass = True)
+            cuobjdump = CuObjDump(file=output, arch=parameters.arch, sass=True)
 
             TestCuObjDump.dump(
-                file = output.with_suffix(f'.{parameters.arch.compute_capability}.sass'),
-                cuobjdump = cuobjdump,
+                file=output.with_suffix(f'.{parameters.arch.compute_capability}.sass'),
+                cuobjdump=cuobjdump,
             )
 
             assert len(cuobjdump.functions) == len(self.FUNCTIONS)
@@ -351,22 +351,22 @@ class TestCuObjDump:
             Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
             """
             output, _ = get_compilation_output(
-                source = self.CPP_FILE,
-                cwd = workdir,
-                arch = parameters.arch,
-                object_file = False,
-                cmake_file_api = cmake_file_api,
+                source=self.CPP_FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=False,
+                cmake_file_api=cmake_file_api,
             )
 
             cuobjdump, cubin = CuObjDump.extract(
-                file = output,
-                arch = parameters.arch,
-                cwd = workdir,
-                cubin = get_cubin_name(
-                    compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
-                    file = output,
-                    arch = parameters.arch,
-                    object_file = False,
+                file=output,
+                arch=parameters.arch,
+                cwd=workdir,
+                cubin=get_cubin_name(
+                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    file=output,
+                    arch=parameters.arch,
+                    object_file=False,
                 ),
             )
 
@@ -379,29 +379,29 @@ class TestCuObjDump:
             Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.
             """
             output, _ = get_compilation_output(
-                source = self.CPP_FILE,
-                cwd = workdir,
-                arch = parameters.arch,
-                object_file = False,
-                cmake_file_api = cmake_file_api,
+                source=self.CPP_FILE,
+                cwd=workdir,
+                arch=parameters.arch,
+                object_file=False,
+                cmake_file_api=cmake_file_api,
             )
 
             cuobjdump, _ = CuObjDump.extract(
-                file = output,
-                arch = parameters.arch,
-                cwd = workdir,
-                cubin = get_cubin_name(
-                    compiler_id = cmake_file_api.toolchains['CUDA']['compiler']['id'],
-                    file = output,
-                    arch = parameters.arch,
-                    object_file = False,
+                file=output,
+                arch=parameters.arch,
+                cwd=workdir,
+                cubin=get_cubin_name(
+                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    file=output,
+                    arch=parameters.arch,
+                    object_file=False,
                 ),
-                sass = False,
+                sass=False,
             )
 
             assert all(symbol in cuobjdump.symtab['name'].values for symbol in self.FUNCTIONS)
 
-    @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     class TestCuBLAS:
         """
         Play with the cuBLAS shared library.
@@ -426,13 +426,13 @@ class TestCuObjDump:
 
                 This test therefore filters out any function whose name starts with `$__internal`.
             """
-            cublas = CuBLAS(cmake_file_api = cmake_file_api)
+            cublas = CuBLAS(cmake_file_api=cmake_file_api)
             try:
-                [cubin] = cublas.extract(arch = parameters.arch, cwd = workdir, randomly = True)
+                [cubin] = cublas.extract(arch=parameters.arch, cwd=workdir, randomly=True)
             except IndexError:
                 pytest.skip(f'{cublas} does not contain an embedded cubin for {parameters.arch}.')
 
-            symbols = CuObjDump(file = cubin, arch = parameters.arch, sass = False).symtab
+            symbols = CuObjDump(file=cubin, arch=parameters.arch, sass=False).symtab
 
             functions = symbols[
                 (symbols['type'] == 'STT_FUNC') &
@@ -444,7 +444,7 @@ class TestCuObjDump:
 
             chosen = random.sample(functions['name'].values.tolist(), min(functions['name'].shape[0], 3))
 
-            cuobjdump = CuObjDump(file = cubin, arch = parameters.arch, sass = True, keep = chosen)
+            cuobjdump = CuObjDump(file=cubin, arch=parameters.arch, sass=True, keep=chosen)
 
             assert len(chosen) <= len(cuobjdump.functions.keys()) < symbols.shape[0]
 
@@ -453,20 +453,20 @@ class TestCuObjDump:
         Test :py:meth:`reprospect.tools.binaries.CuObjDump.__str__`.
         """
         cuobjdump = CuObjDump(
-            file = pathlib.Path('code_object.o'),
-            arch = NVIDIAArch.from_str('BLACKWELL120'),
-            sass = False,
+            file=pathlib.Path('code_object.o'),
+            arch=NVIDIAArch.from_str('BLACKWELL120'),
+            sass=False,
         )
         cuobjdump.functions = {
             'my_kernel(float, const float *, float *, unsigned int)': Function(
-                symbol = TestFunction.SYMBOL,
-                code = TestFunction.CODE,
-                ru = TestFunction.RU,
+                symbol=TestFunction.SYMBOL,
+                code=TestFunction.CODE,
+                ru=TestFunction.RU,
             ),
             'my_other_kernel(float, const float *, float *, unsigned int)': Function(
-                symbol = '_Z15my_other_kernelfPKfPfj',
-                code = TestFunction.CODE,
-                ru = TestFunction.RU,
+                symbol='_Z15my_other_kernelfPKfPfj',
+                code=TestFunction.CODE,
+                ru=TestFunction.RU,
             ),
         }
 

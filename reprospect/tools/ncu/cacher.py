@@ -44,7 +44,7 @@ class Cacher(cacher.Cacher):
     TABLE: typing.ClassVar[str] = 'ncu'
 
     def __init__(self, *, directory: str | pathlib.Path | None = None):
-        super().__init__(directory = directory or (pathlib.Path(os.environ['HOME']) / '.ncu-cache'))
+        super().__init__(directory=directory or (pathlib.Path(os.environ['HOME']) / '.ncu-cache'))
 
     def hash_impl(self, *, command: Command) -> blake3.blake3:
         """
@@ -72,14 +72,14 @@ class Cacher(cacher.Cacher):
         if command.env:
             hasher.update(json.dumps(command.env).encode())
 
-        for lib in sorted(ldd.get_shared_dependencies(file = command.executable)):
+        for lib in sorted(ldd.get_shared_dependencies(file=command.executable)):
             hasher.update_mmap(lib)
 
         return hasher
 
     @override
     def hash(self, **kwargs) -> blake3.blake3:
-        return self.hash_impl(command = kwargs['command'])
+        return self.hash_impl(command=kwargs['command'])
 
     @override
     def populate(self, directory: pathlib.Path, **kwargs) -> None:
@@ -89,10 +89,10 @@ class Cacher(cacher.Cacher):
         """
         command = kwargs.pop('command')
 
-        Session(command = command).run(**kwargs)
+        Session(command=command).run(**kwargs)
 
-        shutil.copy(dst = directory, src = command.output.with_suffix('.ncu-rep'))
-        shutil.copy(dst = directory, src = command.log)
+        shutil.copy(dst=directory, src=command.output.with_suffix('.ncu-rep'))
+        shutil.copy(dst=directory, src=command.log)
 
     def run(self,
         command: Command,
@@ -101,9 +101,9 @@ class Cacher(cacher.Cacher):
         """
         On a cache hit, copy files from the cache entry.
         """
-        entry = self.get(command = command, **kwargs)
+        entry = self.get(command=command, **kwargs)
 
         if entry.cached:
-            shutil.copytree(entry.directory, command.output.parent, dirs_exist_ok = True)
+            shutil.copytree(entry.directory, command.output.parent, dirs_exist_ok=True)
 
         return entry

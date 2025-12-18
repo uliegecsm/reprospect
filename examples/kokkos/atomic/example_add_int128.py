@@ -39,7 +39,7 @@ class RegisterMatchValidator(SequenceMatcher):
         assert matched is not None
         self.load_register: typing.Final[RegisterMatch] = matched
         """The register that must be used by :py:attr:`matcher`."""
-        self.start_register_matcher: typing.Final[RegisterMatcher] = RegisterMatcher(rtype = self.load_register.rtype, index = self.load_register.index)
+        self.start_register_matcher: typing.Final[RegisterMatcher] = RegisterMatcher(rtype=self.load_register.rtype, index=self.load_register.index)
 
     @override
     def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
@@ -60,7 +60,7 @@ class AddInt128:
     def build(self, loads: typing.Collection[InstructionMatch]) -> OrderedInSequenceMatcher:
         if len(loads) != 1:
             raise RuntimeError(self)
-        return instructions_are(RegisterMatchValidator(matcher = add_int128.AddInt128(), load = loads[0]))
+        return instructions_are(RegisterMatchValidator(matcher=add_int128.AddInt128(), load=loads[0]))
 
 class TestAtomicAddInt128(add.TestCase):
     """
@@ -80,10 +80,10 @@ class TestAtomicAddInt128(add.TestCase):
         This test proves that it uses the lock-based implementation.
         """
         matched = desul.LockBasedAtomicMatcher(
-            arch = self.arch,
-            operation = AddInt128(),
-            compiler_id = self.toolchains['CUDA']['compiler']['id'],
-        ).match(instructions = decoder.instructions)
+            arch=self.arch,
+            operation=AddInt128(),
+            compiler_id=self.toolchains['CUDA']['compiler']['id'],
+        ).match(instructions=decoder.instructions)
 
         if self.arch.compute_capability.as_int >= 90:
             assert matched is None

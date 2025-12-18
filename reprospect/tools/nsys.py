@@ -30,7 +30,7 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
-@attrs.define(frozen = True, slots = True, kw_only = True)
+@attrs.define(frozen=True, slots=True, kw_only=True)
 class Command: # pylint: disable=too-many-instance-attributes, duplicate-code
     """
     Run a ``nsys`` command line.
@@ -50,7 +50,7 @@ class Command: # pylint: disable=too-many-instance-attributes, duplicate-code
     env: typing.Mapping[str, str] | None = None
     """Mapping used to update the environment before running, see :py:meth:`run`."""
 
-    cmd: tuple[str | pathlib.Path, ...] = attrs.field(init = False)
+    cmd: tuple[str | pathlib.Path, ...] = attrs.field(init=False)
 
     def __attrs_post_init__(self) -> None:
         """
@@ -111,10 +111,10 @@ class Command: # pylint: disable=too-many-instance-attributes, duplicate-code
             assert env is not None
             env.update(self.env)
 
-        self.output.unlink(missing_ok = True)
-        return subprocess.check_call(args = self.cmd, env = env, cwd = cwd)
+        self.output.unlink(missing_ok=True)
+        return subprocess.check_call(args=self.cmd, env=env, cwd=cwd)
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class Session:
     """
     `Nsight Systems` session interface.
@@ -130,7 +130,7 @@ class Session:
         Run ``nsys`` using :py:attr:`command`.
         """
         logging.info(f"Launching 'nsys' with {self.command.cmd}.")
-        self.command.run(cwd = cwd, env = env)
+        self.command.run(cwd=cwd, env=env)
 
     def export_to_sqlite(
         self,
@@ -149,8 +149,8 @@ class Session:
         )
 
         logging.info(f"Exporting to 'sqlite' with {cmd}.")
-        output_file_sqlite.unlink(missing_ok = True)
-        subprocess.check_call(cmd, cwd = cwd)
+        output_file_sqlite.unlink(missing_ok=True)
+        subprocess.check_call(cmd, cwd=cwd)
 
         return output_file_sqlite
 
@@ -181,13 +181,13 @@ class Session:
         output_file_csv = self.command.output.parent / f'{self.command.output.stem}_{report}{suffix}.csv'
 
         logging.info(f'Extracting statistical report \'{report}\' from {output_file_sqlite} with {cmd}.')
-        output_file_csv.unlink(missing_ok = True)
-        subprocess.check_call(cmd, cwd = cwd)
+        output_file_csv.unlink(missing_ok=True)
+        subprocess.check_call(cmd, cwd=cwd)
         assert output_file_csv.is_file()
 
         return pandas.read_csv(output_file_csv)
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class ReportPatternSelector:
     """
     A :py:class:`pandas.DataFrame` selector that returns which rows match a regex pattern
@@ -197,7 +197,7 @@ class ReportPatternSelector:
     column: str = 'Name'
 
     def __call__(self, table: pandas.DataFrame) -> pandas.Series:
-        return table[self.column].astype(str).str.contains(self.pattern, regex = True)
+        return table[self.column].astype(str).str.contains(self.pattern, regex=True)
 
 class ReportNvtxEvents(rich_helpers.TreeMixin):
     def __init__(self, events: pandas.DataFrame) -> None:
@@ -230,10 +230,10 @@ class ReportNvtxEvents(rich_helpers.TreeMixin):
             for _, node in nodes.iterrows():
                 branch = tree.add(f"{node['text']} ({node['eventTypeName']})")
                 if node['children'].any():
-                    add_branch(tree = branch, nodes = self.events.loc[node['children']])
+                    add_branch(tree=branch, nodes=self.events.loc[node['children']])
 
         tree = rich.tree.Tree('NVTX events')
-        add_branch(tree = tree, nodes = self.events[self.events['level'] == 0])
+        add_branch(tree=tree, nodes=self.events[self.events['level'] == 0])
 
         return tree
 
@@ -294,9 +294,9 @@ class Report:
         Select a row from `src`, and return the row from `dst` that matches by correlation ID.
         """
         if isinstance(src, pandas.Series) and selector is None:
-            return cls.single_row(data = dst[dst[correlation_dst] == src[correlation_src]])
+            return cls.single_row(data=dst[dst[correlation_dst] == src[correlation_src]])
         if isinstance(src, pandas.DataFrame) and selector is not None:
-            return cls.single_row(data = dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
+            return cls.single_row(data=dst[dst[correlation_dst] == src[selector(src)].squeeze()[correlation_src]])
         raise RuntimeError
 
     @classmethod
@@ -382,9 +382,9 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
 
             stack.append(idx)
 
-        events['children'] = [pandas.Series(children, dtype = int) for children in child_map.values()]
+        events['children'] = [pandas.Series(children, dtype=int) for children in child_map.values()]
 
-        return ReportNvtxEvents(events = events)
+        return ReportNvtxEvents(events=events)
 
     def get_events(self, table: str, accessors: typing.Sequence[str], stringids: str | None = 'nameId') -> pandas.DataFrame:
         """
@@ -399,7 +399,7 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
         """
         logging.info(f'Retrieving events in {table} happening within the nested NVTX range {accessors}.')
 
-        filtered = self.nvtx_events.get(accessors = accessors)
+        filtered = self.nvtx_events.get(accessors=accessors)
 
         if len(filtered) != 1:
             raise RuntimeError(f'Expecting exactly one NVTX event, got {len(filtered)}.')
@@ -428,7 +428,7 @@ def strip_cuda_api_suffix(call: str) -> str:
     """
     Strip suffix like `_v10000` or `_ptsz` from a CUDA API `call`.
     """
-    return call.split('_', maxsplit = 1)[0]
+    return call.split('_', maxsplit=1)[0]
 
 class Cacher(cacher.Cacher):
     """
@@ -455,7 +455,7 @@ class Cacher(cacher.Cacher):
     TABLE: typing.ClassVar[str] = 'nsys'
 
     def __init__(self, *, directory: str | pathlib.Path | None = None):
-        super().__init__(directory = directory or (pathlib.Path(os.environ['HOME']) / '.nsys-cache'))
+        super().__init__(directory=directory or (pathlib.Path(os.environ['HOME']) / '.nsys-cache'))
 
     def hash_impl(self, *, command: Command) -> blake3.blake3:
         """
@@ -483,14 +483,14 @@ class Cacher(cacher.Cacher):
         if command.env:
             hasher.update(json.dumps(command.env).encode())
 
-        for lib in sorted(ldd.get_shared_dependencies(file = command.executable)):
+        for lib in sorted(ldd.get_shared_dependencies(file=command.executable)):
             hasher.update_mmap(lib)
 
         return hasher
 
     @override
     def hash(self, **kwargs) -> blake3.blake3:
-        return self.hash_impl(command = kwargs['command'])
+        return self.hash_impl(command=kwargs['command'])
 
     @override
     def populate(self, directory: pathlib.Path, **kwargs) -> None:
@@ -500,18 +500,18 @@ class Cacher(cacher.Cacher):
         """
         command = kwargs.pop('command')
 
-        Session(command = command).run(**kwargs)
+        Session(command=command).run(**kwargs)
 
-        shutil.copy(dst = directory, src = command.output)
+        shutil.copy(dst=directory, src=command.output)
 
     def run(self, command: Command, **kwargs) -> cacher.Cacher.Entry:
         """
         On a cache hit, copy files from the cache entry.
         """
-        entry = self.get(command = command, **kwargs)
+        entry = self.get(command=command, **kwargs)
 
         if entry.cached:
-            shutil.copytree(entry.directory, command.output.parent, dirs_exist_ok = True)
+            shutil.copytree(entry.directory, command.output.parent, dirs_exist_ok=True)
 
         return entry
 
@@ -530,10 +530,10 @@ class Cacher(cacher.Cacher):
 
         if cached.is_file():
             logging.info(f'Serving {output_file_sqlite} from the cache entry {entry}.')
-            shutil.copyfile(src = cached, dst = output_file_sqlite)
+            shutil.copyfile(src=cached, dst=output_file_sqlite)
         else:
             logging.info(f'Populating the cache entry {entry} with {output_file_sqlite} from the cache entry {entry}.')
-            Session(command = command).export_to_sqlite(**kwargs)
-            shutil.copyfile(src = output_file_sqlite, dst = cached)
+            Session(command=command).export_to_sqlite(**kwargs)
+            shutil.copyfile(src=output_file_sqlite, dst=cached)
 
         return output_file_sqlite

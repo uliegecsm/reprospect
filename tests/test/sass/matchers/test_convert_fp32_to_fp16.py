@@ -10,7 +10,7 @@ from tests.parameters import PARAMETERS, Parameters
 from tests.test.sass.test_instruction import get_decoder
 
 
-@pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
+@pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestConvertFp32ToFp16:
     """
     Tests for :py:class:`reprospect.test.sass.matchers.convert_fp32_to_fp16.ConvertFp32ToFp16`.
@@ -25,6 +25,6 @@ __global__ void test(__half* __restrict__ const dst, const float* __restrict__ c
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE)
 
-        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         instructions_contain(ConvertFp32ToFp16(arch=parameters.arch)).assert_matches(decoder.instructions)

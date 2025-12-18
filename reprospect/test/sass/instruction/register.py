@@ -28,7 +28,7 @@ class RegisterModifier(StrEnum):
     ABS = '|'
     INV = '~'
 
-@dataclasses.dataclass(frozen = True, slots = True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class RegisterMatch:
     """
     If :py:attr:`index` is :py:obj:`None`, it is a special register (*e.g.*
@@ -57,15 +57,15 @@ class RegisterMatch:
                 modifier = RegisterModifier(value[0])
 
         return cls(
-            rtype = RegisterType(rtype[0]),
-            index = index,
-            reuse = bool(captured.get('reuse')),
+            rtype=RegisterType(rtype[0]),
+            index=index,
+            reuse=bool(captured.get('reuse')),
             modifier=modifier,
         )
 
 REGISTER_MATCHER_MOD_PRE: typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.group(PatternBuilder.PRE_OPERAND_MOD, group='modifier'))
 
-@attrs.define(frozen = True, slots = True, kw_only = True)
+@attrs.define(frozen=True, slots=True, kw_only=True)
 class RegisterMatcher:
     """
     Matcher for a register.
@@ -76,7 +76,7 @@ class RegisterMatcher:
     reuse: bool | None = None
     modifier: RegisterModifier | None = None
 
-    pattern: regex.Pattern[str] = attrs.field(init = False)
+    pattern: regex.Pattern[str] = attrs.field(init=False)
 
     def __attrs_post_init__(self) -> None:
         if self.special is not None and self.index is not None:
@@ -92,11 +92,11 @@ class RegisterMatcher:
 
     def match(self, reg: str) -> RegisterMatch | None:
         if (matched := self.pattern.match(reg)) is not None:
-            return RegisterMatch.parse(bits = matched)
+            return RegisterMatch.parse(bits=matched)
         return None
 
     def __call__(self, reg: str) -> RegisterMatch | None:
-        return self.match(reg = reg)
+        return self.match(reg=reg)
 
     def _build_modifier(self) -> str | None:
         if self.modifier is None:

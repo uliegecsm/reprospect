@@ -5,7 +5,7 @@ import typing
 T = typing.TypeVar('T')
 """Type variable for :py:class:`~EnvironmentField` and related generics."""
 
-@dataclasses.dataclass(slots = True)
+@dataclasses.dataclass(slots=True)
 class EnvironmentField(typing.Generic[T]):
     """
     Descriptor that returns a value lazily read from an environment variable.
@@ -30,12 +30,12 @@ class EnvironmentField(typing.Generic[T]):
     Default value if the environment variable does not exist.
     """
 
-    _cached: T | None = dataclasses.field(default = None, init = False, repr = False)
+    _cached: T | None = dataclasses.field(default=None, init=False, repr=False)
     """
     Value, cached.
     """
 
-    _attr_name: str | None = dataclasses.field(default = None, init = False, repr = False)
+    _attr_name: str | None = dataclasses.field(default=None, init=False, repr=False)
     """
     Name of the attribute.
     """
@@ -58,7 +58,7 @@ class EnvironmentField(typing.Generic[T]):
     @typing.overload
     def __get__(self, instance: object, owner: type) -> T: ...
 
-    def __get__(self, instance, owner = None):
+    def __get__(self, instance, owner=None):
         """
         References:
 
@@ -67,7 +67,7 @@ class EnvironmentField(typing.Generic[T]):
         if instance is None:
             return self
 
-        return self.read(instance = instance, owner = owner)
+        return self.read(instance=instance, owner=owner)
 
     def read(self, instance, owner) -> T:
         """

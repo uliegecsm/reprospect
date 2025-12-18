@@ -14,7 +14,7 @@ class TestCuda(unittest.TestCase):
     """
     Test for :py:class:`reprospect.tools.device_properties.Cuda`.
     """
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_initialize(self) -> None:
         """
         Test it can be successfully loaded.
@@ -24,34 +24,34 @@ class TestCuda(unittest.TestCase):
         assert isinstance(device_properties.Cuda.libcuda,   ctypes.CDLL)
         assert isinstance(device_properties.Cuda.libcudart, ctypes.CDLL)
 
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_check_driver_status(self) -> None:
         """
         Check the proper handling of CUDA driver API error codes.
         """
         device_properties.Cuda.load()
 
-        with pytest.raises(RuntimeError, match = re.escape("My random information string. failed with error code CudaDriverError(value=100) (CUDA_ERROR_NO_DEVICE): no CUDA-capable device is detected")):
-            device_properties.Cuda.check_driver_status(status = device_properties.CudaDriverError(value = 100), info = 'My random information string.')
+        with pytest.raises(RuntimeError, match=re.escape("My random information string. failed with error code CudaDriverError(value=100) (CUDA_ERROR_NO_DEVICE): no CUDA-capable device is detected")):
+            device_properties.Cuda.check_driver_status(status=device_properties.CudaDriverError(value=100), info='My random information string.')
 
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_check_runtime_status(self) -> None:
         """
         Check the proper handling of CUDA runtime API error codes.
         """
         device_properties.Cuda.load()
 
-        with pytest.raises(RuntimeError, match = re.escape("My random information string. failed with error code CudaRuntimeError(value=201) (cudaErrorDeviceUninitialized): invalid device context")):
-            device_properties.Cuda.check_runtime_status(status = device_properties.CudaRuntimeError(value = 201), info = 'My random information string.')
+        with pytest.raises(RuntimeError, match=re.escape("My random information string. failed with error code CudaRuntimeError(value=201) (cudaErrorDeviceUninitialized): invalid device context")):
+            device_properties.Cuda.check_runtime_status(status=device_properties.CudaRuntimeError(value=201), info='My random information string.')
 
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_device_count(self) -> None:
         """
         There must be at least one device.
         """
         assert device_properties.Cuda().device_count > 0
 
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_get_device_attribute(self) -> None:
         """
         Retrieve a few device attributes.
@@ -61,10 +61,10 @@ class TestCuda(unittest.TestCase):
         for device in range(instance.device_count):
             logging.info(f'Looking at attributes of device {device}.')
             # For now, all CUDA devices have a 32 warp size.
-            assert instance.get_device_attribute(value_type = ctypes.c_int, attribute = cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_WARP_SIZE, device = device) == 32
+            assert instance.get_device_attribute(value_type=ctypes.c_int, attribute=cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_WARP_SIZE, device=device) == 32
 
             # For now, all CUDA devices have a 1024 max threads per block.
-            assert instance.get_device_attribute(value_type = ctypes.c_int, attribute = cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK, device = device) == 1024
+            assert instance.get_device_attribute(value_type=ctypes.c_int, attribute=cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK, device=device) == 1024
 
             # Get a few interesting attributes.
             attributes = [
@@ -75,7 +75,7 @@ class TestCuda(unittest.TestCase):
             for attribute in attributes:
                 logging.info(f'{attribute.name}: {instance.get_device_attribute(value_type = ctypes.c_int, attribute = cuda.bindings.driver.CUdevice_attribute.CU_DEVICE_ATTRIBUTE_TOTAL_CONSTANT_MEMORY, device = device)}')
 
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_get_device_compute_capability(self) -> None:
         """
         Retrieve the compute capability of all devices available.
@@ -83,10 +83,10 @@ class TestCuda(unittest.TestCase):
         instance = device_properties.Cuda()
 
         for device in range(instance.device_count):
-            cc = instance.get_device_compute_capability(device = device)
+            cc = instance.get_device_compute_capability(device=device)
             logging.info(f'Compute capability of device {device} is {cc}.')
 
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_get_device_name(self) -> None:
         """
         Get the device name.
@@ -94,11 +94,11 @@ class TestCuda(unittest.TestCase):
         instance = device_properties.Cuda()
 
         for device in range(instance.device_count):
-            cc = instance.get_device_name(device = device)
+            cc = instance.get_device_name(device=device)
             assert isinstance(cc, str)
             logging.info(f'Name of device {device} is {cc}.')
 
-    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
+    @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_get_device_total_memory(self) -> None:
         """
         Get the device total memory.
@@ -106,4 +106,4 @@ class TestCuda(unittest.TestCase):
         instance = device_properties.Cuda()
 
         for device in range(instance.device_count):
-            assert instance.get_device_total_memory(device = device) > 1024 * 1024 * 1024
+            assert instance.get_device_total_memory(device=device) > 1024 * 1024 * 1024

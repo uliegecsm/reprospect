@@ -249,7 +249,7 @@ jobs:
                       KOKKOS_CXX_COMPILER=${{ matrix.compilers.CXX.path }}
                       KOKKOS_CUDA_COMPILER=${{ matrix.compilers.CUDA.path }}
                       KOKKOS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
-                      KOKKOS_SHA=4.7.01
+                      KOKKOS_SHA=${{ matrix.kokkos_sha }}
                       KOKKOS_TOOLS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}
                       KOKKOS_TOOLS_SHA=35c6aebf1499687f41d24d7f5dc0dbff57567070
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"

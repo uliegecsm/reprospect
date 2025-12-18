@@ -31,7 +31,7 @@ class PatternBuilder:
     Constant memory bank.
     """
 
-    CONSTANT_OFFSET : typing.Final[str] = r'(?:0x[0-9c]+|' + REG + '|' + UREG + ')'
+    CONSTANT_OFFSET : typing.Final[str] = r'(?:0x[0-9a-f]+|' + REG + '|' + UREG + ')'
     """
     Constant memory offset.
     """

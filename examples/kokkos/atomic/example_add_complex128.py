@@ -10,18 +10,18 @@ from reprospect.test.sass.instruction import (
     PatternBuilder,
     RegisterMatcher,
 )
-from reprospect.tools.sass import Decoder
+from reprospect.tools.sass import ControlFlow, Decoder
 
-from examples.kokkos.atomic import add, desul
+from examples.kokkos.atomic import add, cas, desul
 
 if sys.version_info >= (3, 12):
     from typing import override
 else:
     from typing_extensions import override
 
-class AddKokkosComplexDouble:
+class AddComplex128:
     """
-    Addition of 2 :code:`Kokkos::complex<double>`.
+    Addition of two 128-bit complex values.
 
     1. real parts
     2. imaginary parts
@@ -41,13 +41,13 @@ class AddKokkosComplexDouble:
 
         matcher_dadd_real = OpcodeModsWithOperandsMatcher(opcode = 'DADD',
             operands = (
-                dadd_real_reg, dadd_real_reg,
+                PatternBuilder.REG, dadd_real_reg,
                 PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
             ),
         )
         matcher_dadd_imag = OpcodeModsWithOperandsMatcher(opcode = 'DADD',
             operands = (
-                dadd_imag_reg, dadd_imag_reg,
+                PatternBuilder.REG, dadd_imag_reg,
                 PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
             ),
         )
@@ -56,11 +56,7 @@ class AddKokkosComplexDouble:
 
 class TestAtomicAddComplex128(add.TestCase):
     """
-    Verify that :code:`Kokkos::atomic_add` for :code:`Kokkos::complex<double>` maps to
-    the `desul` lock-based array implementation.
-
-    Although :code:`Kokkos::complex<double>` meets the requirements for 128-bit CAS,
-    the current embedded `desul` version does not support it.
+    Tests for :code:`Kokkos::complex<double>`.
     """
     @classmethod
     @override
@@ -71,12 +67,32 @@ class TestAtomicAddComplex128(add.TestCase):
         r'AtomicAddFunctor<Kokkos::View<Kokkos::complex<double>\s*\*\s*, Kokkos::CudaSpace>>',
     )
 
-    def test_lock_based_atomic(self, decoder : Decoder) -> None:
+    def test_lock_atomic_before_hopper90(self, decoder : Decoder) -> None:
         """
-        This test proves that it uses the lock-based atomic by looking for an instruction sequence pattern.
+        This test proves that it uses the lock-based implementation.
         """
-        desul.LockBasedAtomicMatcher(
+        matched = desul.LockBasedAtomicMatcher(
             arch = self.arch,
-            operation = AddKokkosComplexDouble(),
+            operation=AddComplex128(),
             compiler_id = self.toolchains['CUDA']['compiler']['id'],
-        ).assert_matches(instructions = decoder.instructions)
+        ).match(instructions = decoder.instructions)
+
+        if self.arch.compute_capability.as_int >= 90:
+            assert matched is None
+        else:
+            assert matched is not None
+
+    def test_cas_atomic_as_of_hopper90(self, decoder : Decoder) -> None:
+        """
+        This test proves that it uses the CAS-based implementation.
+        """
+        matched = cas.AtomicCAS(
+            arch=self.arch,
+            operation=AddComplex128(),
+            size=128,
+        ).match(cfg=ControlFlow.analyze(instructions=decoder.instructions))
+
+        if self.arch.compute_capability.as_int >= 90:
+            assert matched is not None
+        else:
+            assert matched is None

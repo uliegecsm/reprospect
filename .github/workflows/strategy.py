@@ -13,6 +13,8 @@ AVAILABLE_RUNNER_ARCHES : typing.Final[tuple[NVIDIAArch, ...]] = (
     NVIDIAArch.from_str('BLACKWELL120'),
 )
 
+KOKKOS_SHA: typing.Final[str] = '5.0.0'
+
 JobDict : typing.TypeAlias = dict[str, typing.Any]
 
 def get_base_name_tag_digest(cuda_version : str, ubuntu_version : str) -> tuple[str, str, str]:
@@ -99,6 +101,9 @@ def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDic
     # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
     partial['cmake_cuda_architectures'] = f"{partial['nvidia_compute_capability']}-real"
 
+    # Kokkos SHA.
+    partial['kokkos_sha'] = KOKKOS_SHA
+
     # Name and tag of the image.
     name = 'cuda-' + '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CXX'].version, partial['compilers']['CUDA'].ID])))
 
@@ -108,8 +113,8 @@ def complete_job_impl(*, partial : JobDict, args : argparse.Namespace) -> JobDic
     partial['nvidia_arch'] = str(arch)
 
     partial['base_image'] = f'{base_name}:{base_tag}@{base_digest}'
-    partial[     'image'] = full_image(name = name,             tag = base_tag,                     platform = partial['platform'], args = args)
-    partial[    'kokkos'] = full_image(name = f'{name}-kokkos', tag = f'{base_tag}-{arch}'.lower(), platform = partial['platform'], args = args)
+    partial[     'image'] = full_image(platform = partial['platform'], args = args, name = name,                          tag = base_tag)
+    partial[    'kokkos'] = full_image(platform = partial['platform'], args = args, name = f'{name}-kokkos-{KOKKOS_SHA}', tag = f'{base_tag}-{arch}'.lower())
 
     # Write compilers as dictionaries.
     for lang in partial['compilers']:

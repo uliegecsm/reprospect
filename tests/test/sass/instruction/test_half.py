@@ -266,4 +266,4 @@ __global__ void test_h{which}(__half* __restrict__ const out, const __half* __re
         if parameters.arch.compute_capability < 80:
             instructions_contain(OpcodeModsMatcher(opcode='FMNMX')).assert_matches(instructions=decoder.instructions)
         else:
-            instructions_contain(Fp16MinMaxMatcher(pmax=which=='max')).assert_matches(instructions=decoder.instructions)
+            instructions_contain(Fp16MinMaxMatcher(pmax=which == 'max')).assert_matches(instructions=decoder.instructions)

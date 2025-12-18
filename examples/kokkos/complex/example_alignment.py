@@ -228,7 +228,7 @@ class TestNCU(TestAlignment):
         assert smsp__inst_executed_sum_specified < smsp__inst_executed_sum_default
 
         for opcode in metrics[Alignment.SPECIFIED]['sass__inst_executed_per_opcode'].correlated:
-            if opcode in ('LDG', 'STG'):
+            if opcode in {'LDG', 'STG'}:
                 assert metrics[Alignment.DEFAULT  ]['sass__inst_executed_per_opcode'].correlated[opcode] \
                     == metrics[Alignment.SPECIFIED]['sass__inst_executed_per_opcode'].correlated[opcode] * 2
             elif opcode != 'NOP':

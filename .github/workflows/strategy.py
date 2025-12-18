@@ -70,7 +70,7 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
 
     assert isinstance(partial['nvidia_compute_capability'], int)
     assert isinstance(partial['compilers'], dict)
-    assert all(k in ['CXX', 'CUDA'] and isinstance(v, Compiler) for k, v in partial['compilers'].items())
+    assert all(k in {'CXX', 'CUDA'} and isinstance(v, Compiler) for k, v in partial['compilers'].items())
 
     # Complete CXX compiler.
     match partial['compilers']['CXX'].ID:

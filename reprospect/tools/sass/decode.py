@@ -172,7 +172,7 @@ class RegisterType(StrEnum):
 
     @property
     def is_predicate(self) -> bool:
-        return self in (RegisterType.PRED, RegisterType.UPRED)
+        return self in {RegisterType.PRED, RegisterType.UPRED}
 
     @property
     def special(self) -> str:

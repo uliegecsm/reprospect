@@ -245,7 +245,7 @@ class NVDisasm:
                             (start := line.find('// |')) != -1
                             and (matched := re.match(pattern = r'^\/\/ \| (?:[0-9]+)?', string = line[start:])) is not None
                         ):
-                            sections = tuple(x.strip() for x in line[start + matched.span()[1]-1::].strip().rstrip('|').split('|'))
+                            sections = tuple(x.strip() for x in line[start + matched.span()[1] - 1::].strip().rstrip('|').split('|'))
                             positions = {}
                             for reg_type, section in zip(reg_types, sections, strict = True):
                                 matches = re.finditer(r'\d+', section)
@@ -261,7 +261,7 @@ class NVDisasm:
                             (start := line.find('// |')) != -1
                             and (matched := re.match(pattern = r'^\/\/ \| (?:[0-9]+)?', string = line[start:])) is not None
                         ):
-                            sections = tuple(x.strip() for x in line[start + matched.span()[1]-1::].strip().rstrip('|').split('|'))
+                            sections = tuple(x.strip() for x in line[start + matched.span()[1] - 1::].strip().rstrip('|').split('|'))
                             for reg_type, section in zip(reg_types, sections, strict = True):
                                 offset = len(section) - len(section.lstrip('0123456789')) - 1
                                 statuses_as_str = tuple(

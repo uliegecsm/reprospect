@@ -156,7 +156,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(CODE_ELEMENTWISE_ADD_RESTRICT)
 
-        decoder, _ = get_decoder(cwd = workdir,arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
+        decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
         # Find the read-only load.
         matcher = LoadGlobalMatcher(arch = parameters.arch, readonly = True)

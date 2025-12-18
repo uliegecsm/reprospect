@@ -176,8 +176,8 @@ class NvInfo:
                     payload = data[offset : offset + length]
                     offset += length
                     # cuobjdump often prints SVAL payload as 32-bit little-endian words if length %4 == 0
-                    if length >= 4 and length % 4 == 0 and eiattr not in (NvInfoEIATTR.KPARAM_INFO,):
-                        value = tuple(struct.unpack("<I", payload[i:i+4])[0] for i in range(0, length, 4))
+                    if length >= 4 and length % 4 == 0 and eiattr not in {NvInfoEIATTR.KPARAM_INFO}:
+                        value = tuple(struct.unpack("<I", payload[i:i + 4])[0] for i in range(0, length, 4))
                     else:
                         value = payload
                 case _:

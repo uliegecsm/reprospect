@@ -75,7 +75,7 @@ class TestAllocation(CMakeAwareTestCase):
     """
     Run the companion executable and make a nice visualization.
     """
-    TIME_UNIT:typing.Final = 'ns'
+    TIME_UNIT: typing.Final = 'ns'
     """
     Time unit of the benchmark.
     """
@@ -104,7 +104,7 @@ class TestAllocation(CMakeAwareTestCase):
         assert match is not None
         assert len(match.groups()) == 5
         assert match.group(1) in Framework
-        assert match.group(2) in ['true', 'false']
+        assert match.group(2) in {'true', 'false'}
 
         framework = Framework(match.group(1))
         use_async = match.group(2) == 'true'

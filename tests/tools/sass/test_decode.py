@@ -1,7 +1,7 @@
 import logging
 import os
 import pathlib
-import re
+import typing
 
 import pytest
 
@@ -37,6 +37,21 @@ ISETP_NE_U32_AND = \
                                                                                      /* 0x040fe40003f05070 */
 """
 
+NORMALIZE: typing.Final[str] = """\
+    /*00c0*/    HADD2.F32 R10, -RZ, c[0x0] [0x160].H0_H0 ;                                /* 0x000000ff0000720c */
+                                                                                          /* 0x000fc800078e0005 */
+    /*00c0*/    FSETP.GEU.AND P1, PT, |R151|, +INF , PT  ;                                /* 0x000000ff0000720c */
+                                                                                          /* 0x000fc800078e0005 */
+    /*0090*/    ISETP.GE.U32.AND P0, PT, R0, UR9, PT ;                                    /* 0x0000000900007c0c */
+                                                                                          /* 0x000fc800078e0005 */
+    /*01d0*/    @!P0 BRA 0x100 ;                                                          /* 0xfffffffc00c88947 */
+                                                                                          /* 0x000fc800078e0005 */
+    /*00e0*/    LDC.64 R10, c[0x0][0x3a0] &wr=0x2 ?trans8;                                /* 0x0000e800ff0a7b82 */
+                                                                                          /* 0x000fc800078e0005 */
+    /*00b0*/    ATOM.E.ADD.F64.RN.STRONG.SM P0, RZ, desc[UR4][R2.64], R4  &wr_early=0x1 ; /* 0x8000000402ff79a2 */
+                                                                                          /* 0x000fc800078e0005 */
+"""
+
 class TestRegisterType:
     """
     Test :py:class:`reprospect.tools.sass.decode.RegisterType`.
@@ -48,38 +63,6 @@ class TestDecoder:
     """
     Test :py:class:`reprospect.tools.sass.Decoder`.
     """
-    def test_matchers(self) -> None:
-        """
-        Simple tests for the matchers.
-        """
-        assert re.match(sass.Decoder.HEXADECIMAL, '0x00000a0000017a02') is not None
-
-        # Complete SASS line (offset, instruction and hex), without noise.
-        matched = re.match(sass.Decoder.MATCHER, '/*0090*/                   ISETP.GE.U32.AND P0, PT, R0, UR9, PT ;           /* 0x0000000900007c0c */')
-        assert matched is not None
-        assert matched.group(1) == '0090'
-        assert matched.group(2) == 'ISETP.GE.U32.AND P0, PT, R0, UR9, PT '
-        assert matched.group(3) == '0x0000000900007c0c'
-
-        matched = re.match(sass.Decoder.MATCHER, '/*01d0*/              @!P0 BRA 0x100 ;                                      /* 0xfffffffc00c88947 */')
-        assert matched is not None
-        assert matched.group(1) == '01d0'
-        assert matched.group(2) == '@!P0 BRA 0x100 '
-        assert matched.group(3) == '0xfffffffc00c88947'
-
-        # With noise.
-        matched = re.match(sass.Decoder.MATCHER, '/*00e0*/                   LDC.64 R10, c[0x0][0x3a0]                     &wr=0x2               ?trans8;           /* 0x0000e800ff0a7b82 */')
-        assert matched is not None
-        assert matched.group(1) == '00e0'
-        assert matched.group(2) == 'LDC.64 R10, c[0x0][0x3a0]'
-        assert matched.group(3) == '0x0000e800ff0a7b82'
-
-        matched = re.match(sass.Decoder.MATCHER, '/*00b0*/                   ATOM.E.ADD.F64.RN.STRONG.SM P0, RZ, desc[UR4][R2.64], R4  &wr_early=0x1 ;           /* 0x8000000402ff79a2 */')
-        assert matched is not None
-        assert matched.group(1) == '00b0'
-        assert matched.group(2) == 'ATOM.E.ADD.F64.RN.STRONG.SM P0, RZ, desc[UR4][R2.64], R4'
-        assert matched.group(3) == '0x8000000402ff79a2'
-
     def test_IMAD(self) -> None:
         """
         Check that it can decode `IMAD`.
@@ -132,6 +115,15 @@ class TestDecoder:
                 control=sass.ControlCode(stall_count=2, yield_flag=True, read=7, write=7, wait=[False] * 6, reuse={'A': True, 'B': False, 'C': False, 'D': False}),
             ),
         ], decoder.instructions
+
+    def test_normalize(self) -> None:
+        decoder = sass.Decoder(code=NORMALIZE, skip_until_headerflags=False)
+        assert decoder.instructions[0].instruction == 'HADD2.F32 R10, -RZ, c[0x0][0x160].H0_H0'
+        assert decoder.instructions[1].instruction == 'FSETP.GEU.AND P1, PT, |R151|, +INF, PT'
+        assert decoder.instructions[2].instruction == 'ISETP.GE.U32.AND P0, PT, R0, UR9, PT'
+        assert decoder.instructions[3].instruction == '@!P0 BRA 0x100'
+        assert decoder.instructions[4].instruction == 'LDC.64 R10, c[0x0][0x3a0]'
+        assert decoder.instructions[5].instruction == 'ATOM.E.ADD.F64.RN.STRONG.SM P0, RZ, desc[UR4][R2.64], R4'
 
     def test_from_source(self) -> None:
         """

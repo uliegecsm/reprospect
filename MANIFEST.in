@@ -1,0 +1,2 @@
+include src/Cargo.toml
+recursive-include src/ *.rs

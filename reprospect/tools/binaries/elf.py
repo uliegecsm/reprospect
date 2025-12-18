@@ -11,6 +11,8 @@ References:
 * https://refspecs.linuxfoundation.org/elf/elf.pdf
 * https://uclibc.org/docs/elf-64-gen.pdf
 """
+from __future__ import annotations
+
 import dataclasses
 import enum
 import pathlib
@@ -136,11 +138,11 @@ class NvInfo:
         return (attr for attr in self.attributes if attr.eiattr == eiattr)
 
     @classmethod
-    def decode(cls, *, section: elftools.elf.sections.Section) -> 'NvInfo':
+    def decode(cls, *, section: elftools.elf.sections.Section) -> NvInfo:
         return cls.parse(data = section.data())
 
     @classmethod
-    def parse(cls, *, data: bytes) -> 'NvInfo':
+    def parse(cls, *, data: bytes) -> NvInfo:
         """
         Parse a single `.nv.info.<mangled>` section according to the per-format rules.
         """
@@ -223,7 +225,7 @@ class TkInfo:
         return arr[24 + offset:end].decode('ascii')
 
     @classmethod
-    def decode(cls, *, note: elftools.elf.sections.NoteSection) -> typing.Generator['TkInfo', None, None]:
+    def decode(cls, *, note: elftools.elf.sections.NoteSection) -> typing.Generator[TkInfo, None, None]:
         """
         Iterate over the note entries and decode them.
         """
@@ -273,7 +275,7 @@ class CuInfo:
     toolkit_version: int
 
     @classmethod
-    def decode(cls, *, note: elftools.elf.sections.NoteSection) -> typing.Generator['CuInfo', None, None]:
+    def decode(cls, *, note: elftools.elf.sections.NoteSection) -> typing.Generator[CuInfo, None, None]:
         """
         Iterate the note entries and decode them.
         """

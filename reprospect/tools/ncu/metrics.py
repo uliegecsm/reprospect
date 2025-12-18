@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import enum
 import sys
@@ -234,7 +236,7 @@ class L1TEXCacheGlobalLoadInstructions:
         unit: Unit = Unit.SMSP,
         mode: typing.Literal['sass'] | None = 'sass',
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = unit,
             quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
@@ -252,7 +254,7 @@ class L1TEXCacheGlobalLoadRequests:
     @staticmethod
     def create(*,
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = Unit.L1TEX,
             pipestage = PipeStage.TAG,
@@ -272,7 +274,7 @@ class L1TEXCacheGlobalLoadSectors:
     def create(*,
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
         suffix: typing.Literal['hit', 'miss'] | None = None,
-    ) -> 'MetricCounter':
+    ) -> MetricCounter:
         qualifier = f'pipe_lsu_mem_global_op_ld_lookup_{suffix}' if suffix else 'pipe_lsu_mem_global_op_ld'
 
         name = counter_name_from(
@@ -293,7 +295,7 @@ class L1TEXCacheGlobalLoadSectorHits:
     @staticmethod
     def create(*,
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+    ) -> MetricCounter:
         return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'hit')
 
 class L1TEXCacheGlobalLoadSectorMisses:
@@ -303,7 +305,7 @@ class L1TEXCacheGlobalLoadSectorMisses:
     @staticmethod
     def create(*,
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+    ) -> MetricCounter:
         return L1TEXCacheGlobalLoadSectors.create(subs = subs, suffix = 'miss')
 
 class L1TEXCacheGlobalLoadWavefronts:
@@ -313,7 +315,7 @@ class L1TEXCacheGlobalLoadWavefronts:
     @staticmethod
     def create(*,
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = Unit.L1TEX,
             pipestage = PipeStage.TAG_OUTPUT,
@@ -350,7 +352,7 @@ class L1TEXCacheGlobalStoreInstructions:
         unit: Unit = Unit.SMSP,
         mode: typing.Literal['sass'] | None = 'sass',
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = unit,
             quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
@@ -368,7 +370,7 @@ class L1TEXCacheGlobalStoreSectors:
     @staticmethod
     def create(*,
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = Unit.L1TEX,
             pipestage = PipeStage.TAG,
@@ -397,7 +399,7 @@ class L1TEXCacheLocalStoreInstructions:
         unit: Unit = Unit.SMSP,
         mode: typing.Literal['sass'] | None = 'sass',
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
-    ) -> 'MetricCounter':
+    ) -> MetricCounter:
         name = counter_name_from(
             unit = unit,
             quantity = f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,

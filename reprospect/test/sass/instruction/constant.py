@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import typing
 
@@ -15,7 +17,7 @@ class ConstantMatch:
     offset: str
 
     @classmethod
-    def parse(cls, bits: regex.Match[str]) -> 'ConstantMatch':
+    def parse(cls, bits: regex.Match[str]) -> ConstantMatch:
         captured = bits.capturesdict()
 
         if not (value := captured.get('bank')):

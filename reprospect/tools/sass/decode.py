@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 import io
 import logging
@@ -115,7 +117,7 @@ class ControlCode:
     reuse: dict[str, bool] #: Reuse flags.
 
     @staticmethod
-    def decode(*, code: str) -> 'ControlCode':
+    def decode(*, code: str) -> ControlCode:
         """
         Decode 64-bit word including a control code.
         """

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import abc
 import dataclasses
 import datetime
@@ -105,7 +107,7 @@ class Cacher(abc.ABC):
     def populate(self, directory: pathlib.Path, **kwargs) -> None:
         pass
 
-    def get(self, **kwargs) -> 'Cacher.Entry':
+    def get(self, **kwargs) -> Cacher.Entry:
         """
         Serve cached entry on cache hit, populate on cache miss.
         """

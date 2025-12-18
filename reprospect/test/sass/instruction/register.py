@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import dataclasses
 
 import attrs
@@ -16,7 +18,7 @@ class RegisterMatch:
     reuse: bool = False
 
     @classmethod
-    def parse(cls, bits: regex.Match[str]) -> 'RegisterMatch':
+    def parse(cls, bits: regex.Match[str]) -> RegisterMatch:
         captured = bits.capturesdict()
 
         if len(rtype := captured['rtype']) != 1:

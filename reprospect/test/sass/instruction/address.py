@@ -19,7 +19,7 @@ else:
     from backports.strenum.strenum import StrEnum
     from typing_extensions import Self
 
-MODIFIER_STRIDE: typing.Final[str] = r'X(?:4|8)'
+MODIFIER_STRIDE: typing.Final[str] = r'X(?:4|8|16)'
 """Stride modifier."""
 
 class StrideModifier(StrEnum):
@@ -28,6 +28,7 @@ class StrideModifier(StrEnum):
     """
     X4 = 'X4'
     X8 = 'X8'
+    X16 = 'X16'
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class GenericOrGlobalAddressMatch:
@@ -207,12 +208,21 @@ class AddressMatcher:
         Shared memory address operand.
         """
         reg_stride_address = cls.build_reg_stride_address(arch=arch, reg=reg, offset=offset, stride=stride, captured=captured)
-        if reg is not None or stride is not None:
+        if stride is not None:
             return reg_stride_address
-        offset_address = offset or PatternBuilder.HEX
-        offset_address = rf"\[{PatternBuilder.group(offset_address, group='offset') if captured else offset_address}\]"
 
-        return PatternBuilder.any(reg_stride_address, offset_address)
+        patterns: list[str] = [reg_stride_address]
+
+        if reg is None:
+            offset_address = offset or PatternBuilder.HEX
+            offset_address = rf"\[{PatternBuilder.group(offset_address, group='offset') if captured else offset_address}\]"
+            patterns.append(offset_address)
+
+        if reg is None and offset is None:
+            rz_address = rf"\[{PatternBuilder.group('RZ', group='reg') if captured else 'RZ'}\]"
+            patterns.append(rz_address)
+
+        return PatternBuilder.any(*patterns)
 
     @classmethod
     def build_local_address(cls, *, arch: NVIDIAArch, reg: str | None = None, offset: str | None = None, captured: bool = False) -> str:
@@ -238,6 +248,7 @@ class AddressMatcher:
         """
         Address operand with stride modifier, such as::
 
+            [R49.X16]
             [R2.X8+0x10]
         """
         pattern_reg = cls.build_pattern_reg(arch=arch, reg=reg, captured=captured)

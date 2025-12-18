@@ -120,6 +120,24 @@ class TestAddressMatcher:
             Register.REG, AddressMatcher.build_pattern(arch=ARCH, memory=MemorySpace.SHARED),
         )).match(inst=f'LDS.U.128 R20, {ADDRESS}') is not None
 
+    def test_shared_rz_address(self) -> None:
+        ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('VOLTA70')
+
+        assert OpcodeModsWithOperandsMatcher(opcode='LDS', modifiers=('U', '64'), operands=(
+            Register.REG, AddressMatcher.build_pattern(arch=ARCH, memory=MemorySpace.SHARED),
+        )).match(inst='LDS.U.64 R26, [RZ]') is not None
+
+        assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED               ).match('[RZ]') is not None
+        assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED, offset='0x10').match('[RZ]') is None
+        assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED, reg='R25'    ).match('[RZ]') is None
+
+    def test_shared_stride_16(self) -> None:
+        ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('TURING75')
+
+        assert OpcodeModsWithOperandsMatcher(opcode='STS', modifiers=('128',), operands=(
+            AddressMatcher.build_pattern(arch=ARCH, memory=MemorySpace.SHARED), Register.REG,
+        )).match(inst='STS.128 [R49.X16], R16') is not None
+
     def test_global_reg64_address_turing75(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('TURING75')
 

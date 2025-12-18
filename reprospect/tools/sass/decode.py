@@ -235,6 +235,12 @@ class Decoder(rich_helpers.TableMixin):
     These strings are ignored.
     """
 
+    FIXIT_FILTER: typing.Final[re.Pattern[str]] = re.compile(
+        r'\] \[| ,'
+    )
+    FIXIT_BRACKET_SPACE: typing.Final[re.Pattern[str]] = re.compile(r'\] \[')
+    FIXIT_COMMA_SPACE: typing.Final[re.Pattern[str]] = re.compile(r' ,')
+
     def __init__(self, *, source: pathlib.Path | None = None, code: str | None = None, skip_until_headerflags: bool = True) -> None:
         """
         Initialize the decoder with the SASS contained in `source` or `code`.
@@ -300,10 +306,45 @@ class Decoder(rich_helpers.TableMixin):
             # Create instruction.
             self.instructions.append(Instruction(
                 offset=int(matchl.group(1), base=16),
-                instruction=matchl.group(2).rstrip(),
+                instruction=self.fixit(matchl.group(2).rstrip()),
                 hex=matchl.group(3),
                 control=control,
             ))
+
+    @classmethod
+    def fixit(cls, instruction: str) -> str:
+        """
+        There are a few instructions that have been encountered that do not conform to the format,
+        such as::
+
+            HADD2.F32 R10, -RZ, c[0x0] [0x160].H0_H0
+
+        This function would output::
+
+            HADD2.F32 R10, -RZ, c[0x0][0x160].H0_H0
+
+        Limits may print in dumped SASS followed by a space as in::
+
+            FSETP.GEU.AND P1, PT, |R151|, +INF , PT
+
+        This function would output::
+
+            FSETP.GEU.AND P1, PT, |R151|, +INF, PT
+
+        So all conform to a pattern:
+        * No space before comma
+        * no space between constant
+
+        # libcublas.27.sm_80.cubin for AMPERE80 CUDA 12.8
+        # HADD2.F32 R10, -RZ, c[0x0] [0x160].H0_H0
+
+        This happens on very few lines out of millions so first use a filter
+        and than 2 subs.
+        """
+        if cls.FIXIT_FILTER.search(instruction) is not None:
+            output = cls.FIXIT_BRACKET_SPACE.sub(repl='][', string=instruction)
+            return cls.FIXIT_COMMA_SPACE.sub(repl=',', string=output)
+        return instruction
 
     def to_df(self) -> pandas.DataFrame:
         """

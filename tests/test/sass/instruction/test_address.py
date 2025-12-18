@@ -59,6 +59,15 @@ class TestAddressMatcher:
         assert AddressMatcher(arch=ARCH, reg='R42', offset='UR2' ).match(ADDRESS_WITH_OFFSET_AS_UREG) is None
         assert AddressMatcher(arch=ARCH, reg='R42', offset='0x20').match(ADDRESS_WITH_OFFSET_AS_UREG) is None
 
+        ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX: typing.Final[str] = '[R14.64+UR8+0x80]'
+
+        assert AddressMatcher(arch=ARCH                                ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) == GenericOrGlobalAddressMatch(reg='R14', offset='UR8+0x80')
+        assert AddressMatcher(arch=ARCH, reg='R14'                     ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) == GenericOrGlobalAddressMatch(reg='R14', offset='UR8+0x80')
+        assert AddressMatcher(arch=ARCH, reg='R14', offset=r'UR8\+0x80').match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) == GenericOrGlobalAddressMatch(reg='R14', offset='UR8+0x80')
+        assert AddressMatcher(arch=ARCH, reg='R27'                     ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) is None
+        assert AddressMatcher(arch=ARCH, reg='R42', offset='UR2'       ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) is None
+        assert AddressMatcher(arch=ARCH, reg='R42', offset='0x20'      ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) is None
+
     def test_reg64_address(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('AMPERE86')
 
@@ -108,7 +117,7 @@ class TestAddressMatcher:
         assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED, reg='R25', offset='0x800', stride=StrideModifier.X8).match(ADDRESS) == SharedAddressMatch(reg='R25', offset='0x800', stride=StrideModifier.X8)
         assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED, reg='R25', offset='0x800', stride=StrideModifier.X4).match(ADDRESS) is None
 
-    def test_shared_offset_address(self) -> None:
+    def test_shared_offset_address_volta70(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('VOLTA70')
 
         ADDRESS: typing.Final[str] = '[0x10]'
@@ -119,6 +128,18 @@ class TestAddressMatcher:
         assert OpcodeModsWithOperandsMatcher(opcode='LDS', modifiers=('U', '128'), operands=(
             Register.REG, AddressMatcher.build_pattern(arch=ARCH, memory=MemorySpace.SHARED),
         )).match(inst=f'LDS.U.128 R20, {ADDRESS}') is not None
+
+    def test_shared_offset_address_ampere86(self) -> None:
+        ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('AMPERE86')
+
+        ADDRESS: typing.Final[str] = '[R33+UR6+-0x4]'
+
+        assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED           ).match(ADDRESS) == SharedAddressMatch(reg='R33', offset='UR6+-0x4')
+        assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED, reg='R32').match(ADDRESS) is None
+
+        assert OpcodeModsWithOperandsMatcher(opcode='LDS', operands=(
+            Register.REG, AddressMatcher.build_pattern(arch=ARCH, memory=MemorySpace.SHARED),
+        )).match(inst=f'LDS R32, {ADDRESS}') is not None
 
     def test_shared_rz_address(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('VOLTA70')

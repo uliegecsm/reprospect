@@ -36,7 +36,7 @@ class TestFileAPI:
         assert 'CUDA' in cmake_file_api.toolchains
         assert 'CXX'  in cmake_file_api.toolchains
 
-        assert cmake_file_api.toolchains['CUDA']['compiler']['id'] in ['NVIDIA', 'Clang']
+        assert cmake_file_api.toolchains['CUDA']['compiler']['id'] in {'NVIDIA', 'Clang'}
 
         for language, toolchain in cmake_file_api.toolchains.items():
             compiler = toolchain['compiler']

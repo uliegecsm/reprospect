@@ -98,7 +98,7 @@ class RegisterMatcher:
     def __call__(self, reg: str) -> RegisterMatch | None:
         return self.match(reg = reg)
 
-    def _build_modifier(self) -> str|None:
+    def _build_modifier(self) -> str | None:
         if self.modifier is None:
             return REGISTER_MATCHER_MOD_PRE
         return PatternBuilder.group(self.modifier.value, group='modifier')

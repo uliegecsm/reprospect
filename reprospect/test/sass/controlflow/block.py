@@ -41,7 +41,7 @@ class BasicBlockMatcher(BasicBlockMatcherBase):
     """
     __slots__ = ('matcher',)
 
-    def __init__(self, matcher: InstructionMatcher|SequenceMatcher) -> None:
+    def __init__(self, matcher: InstructionMatcher | SequenceMatcher) -> None:
         self.matcher: typing.Final[InSequenceMatcher] = matcher if isinstance(matcher, InSequenceMatcher) else InSequenceMatcher(matcher)
 
     @override
@@ -66,7 +66,7 @@ class BasicBlockWithParentMatcher(BasicBlockMatcherBase):
     """
     __slots__ = ('matcher', 'parent')
 
-    def __init__(self, matcher: InstructionMatcher|SequenceMatcher, parent: BasicBlock) -> None:
+    def __init__(self, matcher: InstructionMatcher | SequenceMatcher, parent: BasicBlock) -> None:
         self.matcher: typing.Final[InSequenceMatcher] = matcher if isinstance(matcher, InSequenceMatcher) else InSequenceMatcher(matcher)
         self.parent: typing.Final[BasicBlock] = parent
 

@@ -32,7 +32,7 @@ from tests.parameters import PARAMETERS, Parameters
 def nvcc_version() -> semantic_version.Version:
     return nvcc.get_version()
 
-def check_version(version: int|str) -> None:
+def check_version(version: int | str) -> None:
     """
     Check `version` against ``nvcc`` version.
 

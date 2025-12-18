@@ -244,7 +244,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
             *(('ENL2',) if self.size is not None and self.size == 256 else ()),
             self._get_size(),
             self.cache,
-            *(('SYS',) if self.arch.compute_capability in (70, 75) else ()),
+            *(('SYS',) if self.arch.compute_capability.as_int in {70, 75} else ()),
         )
 
     @override
@@ -344,7 +344,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
             'E',
             *(('ENL2',) if self.size is not None and self.size == 256 else ()),
             self._get_size(),
-            *(('SYS',) if self.arch.compute_capability in (70, 75) else ()),
+            *(('SYS',) if self.arch.compute_capability.as_int in {70, 75} else ()),
         )
 
     @override

@@ -23,10 +23,10 @@ class Fluentizer(instruction.InstructionMatcher):
     """
     __slots__ = ('matcher',)
 
-    def __init__(self, matcher : instruction.InstructionMatcher) -> None:
-        self.matcher : typing.Final[instruction.InstructionMatcher] = matcher
+    def __init__(self, matcher: instruction.InstructionMatcher) -> None:
+        self.matcher: typing.Final[instruction.InstructionMatcher] = matcher
 
-    def times(self, num : int) -> composite_impl.InSequenceAtMatcher | composite_impl.OrderedInSequenceMatcher:
+    def times(self, num: int) -> composite_impl.InSequenceAtMatcher | composite_impl.OrderedInSequenceMatcher:
         """
         Match :py:attr:`matcher` `num` times (consecutively).
 
@@ -54,7 +54,7 @@ class Fluentizer(instruction.InstructionMatcher):
         """
         return composite_impl.ZeroOrMoreInSequenceMatcher(matcher = self.matcher)
 
-    def with_modifier(self, modifier : str, index : int | None = None) -> Fluentizer:
+    def with_modifier(self, modifier: str, index: int | None = None) -> Fluentizer:
         """
         >>> from reprospect.test.sass.composite import instruction_is
         >>> from reprospect.test.sass.instruction import AnyMatcher
@@ -67,7 +67,7 @@ class Fluentizer(instruction.InstructionMatcher):
             index = index, modifier = modifier,
         ))
 
-    def with_operand(self, operand : OperandMatcher, index : int | None = None) -> Fluentizer:
+    def with_operand(self, operand: OperandMatcher, index: int | None = None) -> Fluentizer:
         """
         >>> from reprospect.test.sass.composite   import instruction_is
         >>> from reprospect.test.sass.instruction import Fp32AddMatcher, RegisterMatcher
@@ -82,7 +82,7 @@ class Fluentizer(instruction.InstructionMatcher):
             index = index, operand = operand,
         ))
 
-    def with_operands(self, operands : typing.Collection[tuple[int, OperandMatcher]]) -> Fluentizer:
+    def with_operands(self, operands: typing.Collection[tuple[int, OperandMatcher]]) -> Fluentizer:
         """
         Similar to :py:meth:`with_operand` for many operands.
 
@@ -102,10 +102,10 @@ class Fluentizer(instruction.InstructionMatcher):
 
     @override
     @typing.final
-    def match(self, inst : Instruction | str) -> instruction.InstructionMatch | None:
+    def match(self, inst: Instruction | str) -> instruction.InstructionMatch | None:
         return self.matcher.match(inst = inst)
 
-def instruction_is(matcher : instruction.InstructionMatcher) -> Fluentizer:
+def instruction_is(matcher: instruction.InstructionMatcher) -> Fluentizer:
     """
     Match the current instruction with `matcher`.
 
@@ -118,7 +118,7 @@ def instruction_is(matcher : instruction.InstructionMatcher) -> Fluentizer:
     """
     return Fluentizer(matcher)
 
-def instructions_are(*matchers : instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.OrderedInSequenceMatcher:
+def instructions_are(*matchers: instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.OrderedInSequenceMatcher:
     """
     Match a sequence of instructions against `matchers`.
 
@@ -132,7 +132,7 @@ def instructions_are(*matchers : instruction.InstructionMatcher | composite_impl
     """
     return composite_impl.OrderedInSequenceMatcher(matchers = matchers)
 
-def unordered_instructions_are(*matchers : instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.UnorderedInSequenceMatcher:
+def unordered_instructions_are(*matchers: instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.UnorderedInSequenceMatcher:
     """
     Match a sequence of instructions against `matchers` (unordered).
 
@@ -146,7 +146,7 @@ def unordered_instructions_are(*matchers : instruction.InstructionMatcher | comp
     """
     return composite_impl.UnorderedInSequenceMatcher(matchers = matchers)
 
-def instructions_contain(matcher : instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.InSequenceMatcher:
+def instructions_contain(matcher: instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.InSequenceMatcher:
     """
     Check that a sequence of instructions contains at least one instruction matching `matcher`.
 
@@ -167,7 +167,7 @@ def instructions_contain(matcher : instruction.InstructionMatcher | composite_im
     """
     return composite_impl.InSequenceMatcher(matcher)
 
-def any_of(*matchers : instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.AnyOfMatcher:
+def any_of(*matchers: instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.AnyOfMatcher:
     """
     Match a sequence of instructions against any of the `matchers`.
 
@@ -190,7 +190,7 @@ def any_of(*matchers : instruction.InstructionMatcher | composite_impl.SequenceM
     """
     return composite_impl.AnyOfMatcher(*matchers)
 
-def interleaved_instructions_are(*matchers : instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.OrderedInterleavedInSequenceMatcher:
+def interleaved_instructions_are(*matchers: instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.OrderedInterleavedInSequenceMatcher:
     """
     Match a sequence of instructions against `matchers`, allowing matched instructions to be interleaved with unmatched instructions.
 
@@ -209,7 +209,7 @@ def interleaved_instructions_are(*matchers : instruction.InstructionMatcher | co
     """
     return composite_impl.OrderedInterleavedInSequenceMatcher(matchers)
 
-def unordered_interleaved_instructions_are(*matchers : instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.UnorderedInterleavedInSequenceMatcher:
+def unordered_interleaved_instructions_are(*matchers: instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.UnorderedInterleavedInSequenceMatcher:
     """
     Match a sequence of instructions against `matchers` (unordered), allowing matched instructions to be interleaved with unmatched instructions.
 
@@ -239,8 +239,8 @@ def findall(matcher: composite_impl.SequenceMatcher, instructions: typing.Sequen
     ...
 
 def findall(
-    matcher : instruction.InstructionMatcher | composite_impl.SequenceMatcher,
-    instructions : typing.Sequence[Instruction | str],
+    matcher: instruction.InstructionMatcher | composite_impl.SequenceMatcher,
+    instructions: typing.Sequence[Instruction | str],
 ) -> list[instruction.InstructionMatch] | list[list[instruction.InstructionMatch]]:
     """
     Find all matches for `matcher` in a sequence of instructions.
@@ -261,14 +261,14 @@ def findall(
     return composite_impl.AllInSequenceMatcher(matcher).match(instructions=instructions)
 
 @typing.overload
-def findunique(matcher : instruction.InstructionMatcher, instructions : typing.Sequence[Instruction | str]) -> instruction.InstructionMatch:
+def findunique(matcher: instruction.InstructionMatcher, instructions: typing.Sequence[Instruction | str]) -> instruction.InstructionMatch:
     ...
 
 @typing.overload
-def findunique(matcher : composite_impl.SequenceMatcher, instructions : typing.Sequence[Instruction | str]) -> list[instruction.InstructionMatch]:
+def findunique(matcher: composite_impl.SequenceMatcher, instructions: typing.Sequence[Instruction | str]) -> list[instruction.InstructionMatch]:
     ...
 
-def findunique(matcher : instruction.InstructionMatcher | composite_impl.SequenceMatcher, instructions : typing.Sequence[Instruction | str]) -> instruction.InstructionMatch | list[instruction.InstructionMatch]:
+def findunique(matcher: instruction.InstructionMatcher | composite_impl.SequenceMatcher, instructions: typing.Sequence[Instruction | str]) -> instruction.InstructionMatch | list[instruction.InstructionMatch]:
     """
     Ensure that :py:meth:`findall` matches once.
     """

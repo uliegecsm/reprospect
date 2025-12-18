@@ -39,7 +39,7 @@ class TestStoreMatcher:
         assert matcher.match(inst = 'STG.E.S16 [R2.64], R4') is not None
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Test store with :py:const:`tests.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT`.
         """
@@ -61,7 +61,7 @@ class TestStoreMatcher:
         assert len(matched.operands) == 2
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict_128_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict_128_wide(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Test 128-bit wide store with
         :py:const:`tests.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE`.
@@ -85,7 +85,7 @@ class TestStoreMatcher:
         assert len(matched.operands) == 2
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_elementwise_add_restrict_256_wide(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+    def test_elementwise_add_restrict_256_wide(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """
         Test 256-bit wide store with
         :py:const:`tests.test.sass.test_instruction.CODE_ELEMENTWISE_ADD_RESTRICT_256_WIDE`.
@@ -95,7 +95,7 @@ class TestStoreMatcher:
 
         decoder, _ = get_decoder(cwd = workdir, arch = parameters.arch, file = FILE, cmake_file_api = cmake_file_api)
 
-        aligned_16 : typing.Final[bool] = features.Memory(arch = parameters.arch).max_transaction_size == 16
+        aligned_16: typing.Final[bool] = features.Memory(arch = parameters.arch).max_transaction_size == 16
 
         # Find the wide stores(s).
         matcher_s_128 = StoreGlobalMatcher(arch = parameters.arch, size = 128)

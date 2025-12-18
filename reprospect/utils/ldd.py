@@ -4,7 +4,7 @@ import typing
 
 from reprospect.utils.subprocess_helpers import popen_stream
 
-def get_shared_dependencies(*, file : str | pathlib.Path) -> typing.Generator[pathlib.Path, None, None]:
+def get_shared_dependencies(*, file: str | pathlib.Path) -> typing.Generator[pathlib.Path, None, None]:
     """
     Get the list of shared object dependencies.
 

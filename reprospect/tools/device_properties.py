@@ -24,13 +24,13 @@ class CudaRuntimeError:
     """
     CUDA runtime error code.
     """
-    value : int
+    value: int
 
     @property
     def success(self) -> bool:
         return self.value == 0
 
-    def get(self, libcudart : ctypes.CDLL) -> tuple[str, str]:
+    def get(self, libcudart: ctypes.CDLL) -> tuple[str, str]:
         """
         Get error name and string.
         """
@@ -43,13 +43,13 @@ class CudaDriverError:
     """
     CUDA driver error code.
     """
-    value : int
+    value: int
 
     @property
     def success(self) -> bool:
         return self.value == 0
 
-    def get(self, libcuda : ctypes.CDLL) -> tuple[str, str]:
+    def get(self, libcuda: ctypes.CDLL) -> tuple[str, str]:
         """
         Get error name and string.
         """
@@ -65,8 +65,8 @@ class CudaDriverError:
 
 class Cuda:
 
-    libcuda   : ctypes.CDLL | None = None
-    libcudart : ctypes.CDLL | None = None
+    libcuda: ctypes.CDLL | None = None
+    libcudart: ctypes.CDLL | None = None
 
     @classmethod
     def load(cls) -> None:
@@ -82,7 +82,7 @@ class Cuda:
             logging.info(f"Library {cls.libcudart} loaded successfully.")
 
     @classmethod
-    def check_driver_status(cls, *, status : CudaDriverError, info : typing.Any) -> None:
+    def check_driver_status(cls, *, status: CudaDriverError, info: typing.Any) -> None:
         """
         Check that `status` is successful, raise otherwise.
         """
@@ -94,7 +94,7 @@ class Cuda:
             )
 
     @classmethod
-    def check_runtime_status(cls, *, status : CudaRuntimeError, info : typing.Any) -> None:
+    def check_runtime_status(cls, *, status: CudaRuntimeError, info: typing.Any) -> None:
         """
         Check that `status` is successful, raise otherwise.
         """
@@ -106,7 +106,7 @@ class Cuda:
             )
 
     @classmethod
-    def check_driver_api_call(cls, *, func : str) -> typing.Any:
+    def check_driver_api_call(cls, *, func: str) -> typing.Any:
         """
         Wrap CUDA driver API call `func` to raise an exception if the call is not successful.
         """
@@ -120,7 +120,7 @@ class Cuda:
         return wrapper
 
     @classmethod
-    def check_runtime_api_call(cls, *, func : str) -> typing.Any:
+    def check_runtime_api_call(cls, *, func: str) -> typing.Any:
         """
         Wrap CUDA runtime API call `func` to raise an exception if the call is not successful.
         """
@@ -133,7 +133,7 @@ class Cuda:
             return status
         return wrapper
 
-    def __init__(self, flags : int = 0) -> None:
+    def __init__(self, flags: int = 0) -> None:
         self.load()
         self.check_driver_api_call(func = 'cuInit')(flags)
 
@@ -146,7 +146,7 @@ class Cuda:
         self.check_runtime_api_call(func = 'cudaGetDeviceCount')(ctypes.byref(count))
         return count.value
 
-    def get_device_attribute(self, *, value_type : type, attribute : cuda.bindings.driver.CUdevice_attribute, device : int) -> typing.Any:
+    def get_device_attribute(self, *, value_type: type, attribute: cuda.bindings.driver.CUdevice_attribute, device: int) -> typing.Any:
         """
         Retrieve an attribute of `device`.
         """
@@ -154,7 +154,7 @@ class Cuda:
         self.check_runtime_api_call(func = 'cudaDeviceGetAttribute')(ctypes.byref(value), attribute.value, device)
         return value.value
 
-    def get_device_compute_capability(self, *, device : int) -> architecture.ComputeCapability:
+    def get_device_compute_capability(self, *, device: int) -> architecture.ComputeCapability:
         """
         Get compute capability of `device`.
         """
@@ -167,7 +167,7 @@ class Cuda:
         )
         return architecture.ComputeCapability(major = cc_major.value, minor = cc_minor.value)
 
-    def get_device_name(self, *, device : int, length : int = 150) -> str:
+    def get_device_name(self, *, device: int, length: int = 150) -> str:
         """
         Get name of `device`.
         """
@@ -175,7 +175,7 @@ class Cuda:
         self.check_driver_api_call(func = 'cuDeviceGetName')(ctypes.c_char_p(name), len(name), device)
         return name.split(b"\0", 1)[0].decode()
 
-    def get_device_total_memory(self, *, device : int) -> int:
+    def get_device_total_memory(self, *, device: int) -> int:
         """
         Get device total memory.
         """

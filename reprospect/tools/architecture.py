@@ -13,19 +13,19 @@ if sys.version_info >= (3, 11):
 else:
     from backports.strenum.strenum import StrEnum
 
-CUDA_SUPPORT : typing.Final[dict[int, semantic_version.SimpleSpec]] = {
-    70 : semantic_version.SimpleSpec('>=9,<=12.9'),
-    75 : semantic_version.SimpleSpec('>=10'),
-    80 : semantic_version.SimpleSpec('>=11.2'),
-    86 : semantic_version.SimpleSpec('>=11.2'),
-    87 : semantic_version.SimpleSpec('>=11.5'),
-    89 : semantic_version.SimpleSpec('>=11.8'),
-    90 : semantic_version.SimpleSpec('>=11.8'),
-    100 : semantic_version.SimpleSpec('>=12.8'),
-    103 : semantic_version.SimpleSpec('>=12.9'),
-    110 : semantic_version.SimpleSpec('>=13.0'),
-    120 : semantic_version.SimpleSpec('>=12.8'),
-    121 : semantic_version.SimpleSpec('>=12.9'),
+CUDA_SUPPORT: typing.Final[dict[int, semantic_version.SimpleSpec]] = {
+    70: semantic_version.SimpleSpec('>=9,<=12.9'),
+    75: semantic_version.SimpleSpec('>=10'),
+    80: semantic_version.SimpleSpec('>=11.2'),
+    86: semantic_version.SimpleSpec('>=11.2'),
+    87: semantic_version.SimpleSpec('>=11.5'),
+    89: semantic_version.SimpleSpec('>=11.8'),
+    90: semantic_version.SimpleSpec('>=11.8'),
+    100: semantic_version.SimpleSpec('>=12.8'),
+    103: semantic_version.SimpleSpec('>=12.9'),
+    110: semantic_version.SimpleSpec('>=13.0'),
+    120: semantic_version.SimpleSpec('>=12.8'),
+    121: semantic_version.SimpleSpec('>=12.9'),
 }
 """
 CUDA Toolkit support.
@@ -52,8 +52,8 @@ class ComputeCapability:
 
     * https://docs.nvidia.com/cuda/cuda-c-programming-guide/#compute-capability
     """
-    major : int
-    minor : int
+    major: int
+    minor: int
 
     @property
     def as_int(self) -> int:
@@ -67,14 +67,14 @@ class ComputeCapability:
     def __str__(self) -> str:
         return f'{self.major}.{self.minor}'
 
-    def __eq__(self, other : object) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, ComputeCapability):
             return (self.major, self.minor) == (other.major, other.minor)
         if isinstance(other, int):
             return self.as_int == other
         return NotImplemented
 
-    def __lt__(self, other : int | ComputeCapability) -> bool:
+    def __lt__(self, other: int | ComputeCapability) -> bool:
         if isinstance(other, ComputeCapability):
             return (self.major, self.minor) < (other.major, other.minor)
         if isinstance(other, int):
@@ -82,7 +82,7 @@ class ComputeCapability:
         return NotImplemented
 
     @staticmethod
-    def from_int(value : int) -> ComputeCapability:
+    def from_int(value: int) -> ComputeCapability:
         """
         >>> from reprospect.tools.architecture import ComputeCapability
         >>> ComputeCapability.from_int(86)
@@ -91,7 +91,7 @@ class ComputeCapability:
         major, minor = divmod(value, 10)
         return ComputeCapability(major = major, minor = minor)
 
-    def supported(self, version : semantic_version.Version) -> bool:
+    def supported(self, version: semantic_version.Version) -> bool:
         """
         Check if the architecture is supported by the CUDA `version`.
 
@@ -114,7 +114,7 @@ class NVIDIAFamily(StrEnum):
     BLACKWELL = 'BLACKWELL'
 
     @staticmethod
-    def from_compute_capability(cc : ComputeCapability | int) -> NVIDIAFamily:
+    def from_compute_capability(cc: ComputeCapability | int) -> NVIDIAFamily:
         """
         Get the NVIDIA architecture family from a compute capability.
 
@@ -142,8 +142,8 @@ class NVIDIAArch:
 
     It models NVIDIA GPU hardware identifiers — i.e., the microarchitecture family and compute capability.
     """
-    family : NVIDIAFamily
-    compute_capability : ComputeCapability
+    family: NVIDIAFamily
+    compute_capability: ComputeCapability
 
     def __post_init__(self) -> None:
         """
@@ -176,11 +176,11 @@ class NVIDIAArch:
         return f"{self.family.name}{self.compute_capability.as_int}"
 
     @staticmethod
-    def from_compute_capability(cc : str | int) -> NVIDIAArch:
+    def from_compute_capability(cc: str | int) -> NVIDIAArch:
         return NVIDIAArch(family = NVIDIAFamily.from_compute_capability(cc = int(cc)), compute_capability = ComputeCapability.from_int(int(cc)))
 
     @staticmethod
-    def from_str(arch : str) -> NVIDIAArch:
+    def from_str(arch: str) -> NVIDIAArch:
         """
         >>> from reprospect.tools.architecture import NVIDIAArch
         >>> NVIDIAArch.from_str('AMPERE86')

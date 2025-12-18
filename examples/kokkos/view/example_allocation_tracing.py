@@ -46,7 +46,7 @@ class TestNSYS(TestAllocation):
     """
     `nsys`-focused analysis.
     """
-    HEADER_SIZE : typing.Final[int] = 128
+    HEADER_SIZE: typing.Final[int] = 128
     """Size of the `Kokkos::Impl::SharedAllocationHeader` type, see https://github.com/kokkos/kokkos/blob/c1a715cab26da9407867c6a8c04b2a1d6b2fc7ba/core/src/impl/Kokkos_SharedAlloc.hpp#L23."""
 
     @pytest.fixture(scope = 'class')
@@ -70,23 +70,23 @@ class TestNSYS(TestAllocation):
             return nsys.Report(db = cacher.export_to_sqlite(command = command, entry = entry))
 
     @staticmethod
-    def get_memory_id(report : nsys.Report, memory : Memory) -> numpy.int64:
+    def get_memory_id(report: nsys.Report, memory: Memory) -> numpy.int64:
         """
         Retrieve the `id` from `ENUM_CUDA_MEM_KIND` whose `name` matches `memory`.
         """
-        enum_cuda_mem_kind = report.table(name = 'ENUM_CUDA_MEM_KIND', dtype = {'name' : str, 'id' : int})
+        enum_cuda_mem_kind = report.table(name = 'ENUM_CUDA_MEM_KIND', dtype = {'name': str, 'id': int})
 
         return report.single_row(
             data = enum_cuda_mem_kind[enum_cuda_mem_kind['name'] == f'CUDA_MEMOPR_MEMORY_KIND_{memory}'],
         )['id']
 
     def checks(self, *,
-        report : nsys.Report,
-        expt_cuda_api_calls_allocation : typing.Sequence[str],
-        expt_cuda_api_calls_deallocation : typing.Sequence[str],
-        selectors : dict[str, nsys.ReportPatternSelector | None],
-        memory : Memory,
-        size : int,
+        report: nsys.Report,
+        expt_cuda_api_calls_allocation: typing.Sequence[str],
+        expt_cuda_api_calls_deallocation: typing.Sequence[str],
+        selectors: dict[str, nsys.ReportPatternSelector | None],
+        memory: Memory,
+        size: int,
     ) -> None:
         match memory:
             case Memory.SHARED:
@@ -148,7 +148,7 @@ class TestNSYS(TestAllocation):
             assert malloc['address']  == free['address']
             assert malloc['streamId'] != free['streamId']
 
-    def test_under_39000_CudaSpace(self, report : nsys.Report) -> None:
+    def test_under_39000_CudaSpace(self, report: nsys.Report) -> None:
         """
         Check what happens under the threshold for `Kokkos::CudaSpace` (requested size is 39000).
         """
@@ -164,13 +164,13 @@ class TestNSYS(TestAllocation):
                 'cudaFree',
             ),
             selectors = {
-                'malloc' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMalloc'),
-                'memcpy' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
-                'free'   : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
+                'malloc': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMalloc'),
+                'memcpy': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
+                'free': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
             },
         )
 
-    def test_under_39000_CudaUVMSpace(self, report : nsys.Report) -> None:
+    def test_under_39000_CudaUVMSpace(self, report: nsys.Report) -> None:
         """
         Check what happens under the threshold for `Kokkos::CudaUVMSpace` (requested size is 39000).
         """
@@ -189,13 +189,13 @@ class TestNSYS(TestAllocation):
                 'cudaDeviceSynchronize',
             ),
             selectors = {
-                'malloc' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMallocManaged'),
-                'memcpy' : None,
-                'free'   : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
+                'malloc': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMallocManaged'),
+                'memcpy': None,
+                'free': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFree'),
             },
         )
 
-    def test_above_41000_CudaSpace(self, report : nsys.Report) -> None:
+    def test_above_41000_CudaSpace(self, report: nsys.Report) -> None:
         """
         Check what happens above the threshold for `Kokkos::CudaSpace` (requested size is 41000).
         """
@@ -214,13 +214,13 @@ class TestNSYS(TestAllocation):
                 'cudaDeviceSynchronize',
             ),
             selectors = {
-                'malloc' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMallocAsync'),
-                'memcpy' : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
-                'free'   : nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFreeAsync'),
+                'malloc': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMallocAsync'),
+                'memcpy': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaMemcpyAsync'),
+                'free': nsys.ReportPatternSelector(column = 'name', pattern = r'^cudaFreeAsync'),
             },
         )
 
-    def test_above_41000_CudaUVMSpace(self, report : nsys.Report) -> None:
+    def test_above_41000_CudaUVMSpace(self, report: nsys.Report) -> None:
         """
         Check what happens above the threshold for `Kokkos::CudaUVMSpace` (requested size is 41000).
         """
@@ -239,8 +239,8 @@ class TestNSYS(TestAllocation):
                 'cudaDeviceSynchronize',
             ),
             selectors = {
-                'malloc' : nsys.ReportPatternSelector(column = 'name', pattern = re.compile(r'^cudaMallocManaged')),
-                'memcpy' : None,
-                'free'   : nsys.ReportPatternSelector(column = 'name', pattern = re.compile(r'^cudaFree')),
+                'malloc': nsys.ReportPatternSelector(column = 'name', pattern = re.compile(r'^cudaMallocManaged')),
+                'memcpy': None,
+                'free': nsys.ReportPatternSelector(column = 'name', pattern = re.compile(r'^cudaFree')),
             },
         )

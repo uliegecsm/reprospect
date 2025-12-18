@@ -17,10 +17,10 @@ class TestFunction:
     """
     Tests related to :py:class:`reprospect.tools.binaries.nvdisasm.Function`.
     """
-    REGISTERS : typing.Final[DetailedRegisterUsage] = {
-        RegisterType.GPR  : (8, 7),
-        RegisterType.PRED : (1, 1),
-        RegisterType.UGPR : (7, 3),
+    REGISTERS: typing.Final[DetailedRegisterUsage] = {
+        RegisterType.GPR: (8, 7),
+        RegisterType.PRED: (1, 1),
+        RegisterType.UGPR: (7, 3),
     }
 
     def test_string_representation(self) -> None:
@@ -56,14 +56,14 @@ class TestNVDisasm:
 
             * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/UserGuide.md?plain=1#L262
         """
-        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
-        SYMBOL    : typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
-        SIGNATURE : typing.Final[str] = CuppFilt.demangle(SYMBOL)
+        CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
+        SYMBOL: typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
+        SIGNATURE: typing.Final[str] = CuppFilt.demangle(SYMBOL)
 
-        SASS_ANNOTATED_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass.annotated'
+        SASS_ANNOTATED_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass.annotated'
 
         @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-        def test_from_object(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_from_object(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CUDA_FILE` as object, extract cubin and run ``nvdisasm``.
             """
@@ -95,20 +95,20 @@ class TestNVDisasm:
             match parameters.arch.compute_capability.as_int:
                 case 70 | 75:
                     expt_register_usage_details = {
-                        RegisterType.GPR  : (8, 6),
-                        RegisterType.PRED : (1, 1),
+                        RegisterType.GPR: (8, 6),
+                        RegisterType.PRED: (1, 1),
                     }
                 case 80 | 86 | 89:
                     expt_register_usage_details = {
-                        RegisterType.GPR  : (8, 6),
-                        RegisterType.PRED : (1, 1),
-                        RegisterType.UGPR : (6, 2),
+                        RegisterType.GPR: (8, 6),
+                        RegisterType.PRED: (1, 1),
+                        RegisterType.UGPR: (6, 2),
                     }
                 case 90 | 100 | 103 | 120:
                     expt_register_usage_details = {
-                        RegisterType.GPR  : (8, 7),
-                        RegisterType.PRED : (1, 1),
-                        RegisterType.UGPR : (7, 3),
+                        RegisterType.GPR: (8, 7),
+                        RegisterType.PRED: (1, 1),
+                        RegisterType.UGPR: (7, 3),
                     }
                 case _:
                     raise ValueError(f'unsupported {parameters.arch.compute_capability}')
@@ -125,18 +125,18 @@ class TestNVDisasm:
                     function_mangled = self.SYMBOL,
                     sass = iter(fin),
                 )
-            assert function.registers == {RegisterType.GPR : (8, 7), RegisterType.PRED : (1, 1), RegisterType.UGPR : (7, 3)}
+            assert function.registers == {RegisterType.GPR: (8, 7), RegisterType.PRED: (1, 1), RegisterType.UGPR: (7, 3)}
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
     class TestMany:
         """
         When there are many kernels.
         """
-        CUDA_FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cu'
-        CPP_FILE  : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
-        SYMBOLS   : typing.Final[tuple[str, ...]] = ('_Z6say_hiv', '_Z20vector_atomic_add_42PKfS0_Pfj')
+        CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cu'
+        CPP_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
+        SYMBOLS: typing.Final[tuple[str, ...]] = ('_Z6say_hiv', '_Z20vector_atomic_add_42PKfS0_Pfj')
 
-        def test_from_executable(self, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> None:
+        def test_from_executable(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, extract cubin and run ``nvdisasm``.
             """
@@ -169,23 +169,23 @@ class TestNVDisasm:
             match parameters.arch.compute_capability.as_int:
                 case 70 | 75:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (2, 2)},
-                        self.SYMBOLS[1] : {RegisterType.GPR : (12,  9), RegisterType.PRED : (1, 1)},
+                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (2, 2)},
+                        self.SYMBOLS[1]: {RegisterType.GPR: (12,  9), RegisterType.PRED: (1, 1)},
                     }
                 case 80 | 86 | 89:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (2, 2)},
-                        self.SYMBOLS[1] : {RegisterType.GPR : (12,  9), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2)},
+                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (2, 2)},
+                        self.SYMBOLS[1]: {RegisterType.GPR: (12,  9), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
                     }
                 case 90 | 100 | 103:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18), RegisterType.PRED : (1, 1), RegisterType.UGPR : (8, 4)},
-                        self.SYMBOLS[1] : {RegisterType.GPR : (12, 10), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2)},
+                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (1, 1), RegisterType.UGPR: (8, 4)},
+                        self.SYMBOLS[1]: {RegisterType.GPR: (12, 10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
                     }
                 case 120:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0] : {RegisterType.GPR : (22, 18),                             RegisterType.UGPR : (8, 4)},
-                        self.SYMBOLS[1] : {RegisterType.GPR : (12, 10), RegisterType.PRED : (1, 1), RegisterType.UGPR : (6, 2)},
+                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18),                             RegisterType.UGPR: (8, 4)},
+                        self.SYMBOLS[1]: {RegisterType.GPR: (12, 10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
                     }
                 case _:
                     raise ValueError(f'unsupported {parameters.arch.compute_capability}')
@@ -200,18 +200,18 @@ class TestNVDisasm:
         """
         def mock_init(
             self,
-            file : pathlib.Path,
-            arch : NVIDIAArch | None = None,
-            demangler : type[CuppFilt | LlvmCppFilt] = CuppFilt,
+            file: pathlib.Path,
+            arch: NVIDIAArch | None = None,
+            demangler: type[CuppFilt | LlvmCppFilt] = CuppFilt,
         ) -> None:
             self.file = file
             self.arch = arch
             self.demangler = demangler
             self.functions = {
-                'my_kernel(float, const float *, float *, unsigned int)' : Function(
+                'my_kernel(float, const float *, float *, unsigned int)': Function(
                     registers = TestFunction.REGISTERS,
                 ),
-                'my_other_kernel(float, const float *, float *, unsigned int)' : Function(
+                'my_other_kernel(float, const float *, float *, unsigned int)': Function(
                     registers = TestFunction.REGISTERS,
                 ),
             }

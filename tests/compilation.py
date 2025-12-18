@@ -5,16 +5,16 @@ import subprocess
 from reprospect.utils              import cmake
 from reprospect.tools.architecture import NVIDIAArch
 
-QUALITY_FLAGS : tuple[str, ...] = ('-Wall', '-Wextra', '-Werror')
+QUALITY_FLAGS: tuple[str, ...] = ('-Wall', '-Wextra', '-Werror')
 
 def get_compilation_output(*, # pylint: disable=too-many-branches
-    source : pathlib.Path,
-    cwd : pathlib.Path,
-    arch : NVIDIAArch,
-    cmake_file_api : cmake.FileAPI,
-    object_file : bool = True,
-    resource_usage : bool = False,
-    ptx : bool = False,
+    source: pathlib.Path,
+    cwd: pathlib.Path,
+    arch: NVIDIAArch,
+    cmake_file_api: cmake.FileAPI,
+    object_file: bool = True,
+    resource_usage: bool = False,
+    ptx: bool = False,
 ) -> tuple[pathlib.Path, str]:
     """
     Compile the `source` in `cwd` for `arch`.
@@ -98,7 +98,7 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
         stderr = subprocess.STDOUT,
     ).decode())
 
-def get_cubin_name(*, compiler_id : str, file : pathlib.Path, arch : NVIDIAArch, object_file : bool = False) -> str:
+def get_cubin_name(*, compiler_id: str, file: pathlib.Path, arch: NVIDIAArch, object_file: bool = False) -> str:
     """
     When the compilation is *not* into an object file, the resulting file may contain:
 

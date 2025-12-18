@@ -12,7 +12,7 @@ class TestFp64AddMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.Fp64AddMatcher`.
     """
-    CODE_FP64_ADD : typing.Final[str] = """\
+    CODE_FP64_ADD: typing.Final[str] = """\
 __global__ void fp64_add(double* __restrict__ const dst, const double* __restrict__ const src)
 {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -28,7 +28,7 @@ __global__ void fp64_add(double* __restrict__ const dst, const double* __restric
         assert matched.operands[-1] == 'R2'
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_from_compiled(self, request, workdir, parameters : Parameters, cmake_file_api : cmake.FileAPI):
+    def test_from_compiled(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
         Test with :py:attr:`CODE_FP64_ADD`.
         """

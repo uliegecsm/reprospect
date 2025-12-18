@@ -19,15 +19,15 @@ class TestGetArchFromCompileCommand:
     Tests for :py:meth:`reprospect.utils.compile_command.get_arch_from_compile_command`.
     """
     def test_from_bits(self) -> None:
-        COMMANDS : dict[str, set[NVIDIAArch]] = {
+        COMMANDS: dict[str, set[NVIDIAArch]] = {
             # For nvcc.
-            '-arch=sm_86' : {NVIDIAArch.from_compute_capability(cc = 86)},
-            '--gpu-architecture=compute_70 --gpu-code=sm_70' : {NVIDIAArch.from_str('VOLTA70')},
-            '--generate-code=arch=compute_90,code=[sm_90]' : {NVIDIAArch.from_str('HOPPER90')},
-            '--generate-code=arch=compute_90,code=[compute_90,sm_90]' : {NVIDIAArch.from_str('HOPPER90')},
+            '-arch=sm_86': {NVIDIAArch.from_compute_capability(cc = 86)},
+            '--gpu-architecture=compute_70 --gpu-code=sm_70': {NVIDIAArch.from_str('VOLTA70')},
+            '--generate-code=arch=compute_90,code=[sm_90]': {NVIDIAArch.from_str('HOPPER90')},
+            '--generate-code=arch=compute_90,code=[compute_90,sm_90]': {NVIDIAArch.from_str('HOPPER90')},
             # For clang.
-            '--cuda-gpu-arch=sm_120' : {NVIDIAArch.from_str('BLACKWELL120')},
-            '--cuda-gpu-arch=sm_120 --cuda-gpu-arch=sm_86' : {NVIDIAArch.from_str('BLACKWELL120'), NVIDIAArch.from_str('AMPERE86')},
+            '--cuda-gpu-arch=sm_120': {NVIDIAArch.from_str('BLACKWELL120')},
+            '--cuda-gpu-arch=sm_120 --cuda-gpu-arch=sm_86': {NVIDIAArch.from_str('BLACKWELL120'), NVIDIAArch.from_str('AMPERE86')},
         }
 
         for command, arch in COMMANDS.items():

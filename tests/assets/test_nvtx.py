@@ -4,7 +4,7 @@ import logging
 import nvtx
 
 @contextlib.contextmanager
-def push_pop_range(domain : nvtx.Domain, **kwargs):
+def push_pop_range(domain: nvtx.Domain, **kwargs):
     domain.push_range(attributes = domain.get_event_attributes(**kwargs))
     try:
         yield
@@ -12,7 +12,7 @@ def push_pop_range(domain : nvtx.Domain, **kwargs):
         domain.pop_range()
 
 @contextlib.contextmanager
-def start_end_range(domain : nvtx.Domain, **kwargs):
+def start_end_range(domain: nvtx.Domain, **kwargs):
     range_id = domain.start_range(attributes = domain.get_event_attributes(**kwargs))
     try:
         yield

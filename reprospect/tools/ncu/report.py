@@ -25,7 +25,7 @@ else:
     from typing_extensions import override
 
 #: Metric data in profiling results.
-ProfilingMetricData : typing.TypeAlias = MetricData | MetricCorrelationData | str
+ProfilingMetricData: typing.TypeAlias = MetricData | MetricCorrelationData | str
 
 class ProfilingMetrics(collections.abc.Mapping[str, ProfilingMetricData]):
     """
@@ -37,10 +37,10 @@ class ProfilingMetrics(collections.abc.Mapping[str, ProfilingMetricData]):
     """
     __slots__ = ('data',)
 
-    def __init__(self, data : dict[str, ProfilingMetricData]) -> None:
-        self.data : typing.Final[dict[str, ProfilingMetricData]] = data
+    def __init__(self, data: dict[str, ProfilingMetricData]) -> None:
+        self.data: typing.Final[dict[str, ProfilingMetricData]] = data
 
-    def __getitem__(self, key : str, /) -> ProfilingMetricData:
+    def __getitem__(self, key: str, /) -> ProfilingMetricData:
         return self.data[key]
 
     def __len__(self) -> int:
@@ -82,22 +82,22 @@ class ProfilingResults(rich_helpers.TreeMixin):
     """
     __slots__ = ('data',)
 
-    def __init__(self, data : dict[str, ProfilingResults | ProfilingMetrics] | None = None) -> None:
-        self.data : typing.Final[dict[str, ProfilingResults | ProfilingMetrics]] = data if data is not None else {}
+    def __init__(self, data: dict[str, ProfilingResults | ProfilingMetrics] | None = None) -> None:
+        self.data: typing.Final[dict[str, ProfilingResults | ProfilingMetrics]] = data if data is not None else {}
 
-    def query(self, accessors : typing.Iterable[str]) -> ProfilingResults | ProfilingMetrics:
+    def query(self, accessors: typing.Iterable[str]) -> ProfilingResults | ProfilingMetrics:
         """
         Get the internal node in the hierarchy or the leaf node with profiling metrics
         at accessor path `accessors`.
         """
-        current : ProfilingResults | ProfilingMetrics = self
+        current: ProfilingResults | ProfilingMetrics = self
         for accessor in accessors:
             if not isinstance(current, ProfilingResults):
                 raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r} instead.')
             current = current.data[accessor]
         return current
 
-    def query_metrics(self, accessors : typing.Iterable[str]) -> ProfilingMetrics:
+    def query_metrics(self, accessors: typing.Iterable[str]) -> ProfilingMetrics:
         """
         Query the accessor path `accessors`, check that it leads to a leaf node with profiling metrics,
         and return this leaf node with profiling metrics.
@@ -107,7 +107,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
             raise TypeError(f'Expecting leaf node with profiling metrics at {accessors}, got {type(current).__name__!r} instead.')
         return current
 
-    def query_single_next(self, accessors : typing.Iterable[str]) -> tuple[str, ProfilingResults | ProfilingMetrics]:
+    def query_single_next(self, accessors: typing.Iterable[str]) -> tuple[str, ProfilingResults | ProfilingMetrics]:
         """
         Query the accessor path `accessors`, check that it leads to an internal node with exactly
         one entry, and return this single entry.
@@ -128,7 +128,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
             return next(iter(current.data.items()))
         raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r} instead.')
 
-    def query_single_next_metrics(self, accessors : typing.Iterable[str]) -> tuple[str, ProfilingMetrics]:
+    def query_single_next_metrics(self, accessors: typing.Iterable[str]) -> tuple[str, ProfilingMetrics]:
         """
         Query the accessor path `accessors`, check that it leads to an internal node with exactly
         one entry, check that this entry is a leaf node with profiling metrics, and return this
@@ -139,7 +139,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
             raise TypeError(f'Expecting leaf node {key!r} with profiling metrics as the single entry at {accessors}, got {type(value).__name__!r} instead.')
         return key, value
 
-    def iter_metrics(self, accessors : typing.Iterable[str] = ()) -> typing.Generator[tuple[str, ProfilingMetrics], None, None]:
+    def iter_metrics(self, accessors: typing.Iterable[str] = ()) -> typing.Generator[tuple[str, ProfilingMetrics], None, None]:
         """
         Query the accessor path `accessors`, check that it leads to an internal node, check that all entries
         are leaf nodes with profiling metrics, and return an iterator over these leaf nodes with profiling metrics.
@@ -152,7 +152,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
                 raise TypeError(f'Expecting entry {key!r} to be a leaf node with profiling metrics at {accessors}.')
             yield key, value
 
-    def assign_metrics(self, accessors: typing.Sequence[str], data : ProfilingMetrics) -> None:
+    def assign_metrics(self, accessors: typing.Sequence[str], data: ProfilingMetrics) -> None:
         """
         Set the leaf node with profiling metrics `data` at accessor path `accessors`.
 
@@ -166,7 +166,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
             current = value
         current.data[accessors[-1]] = data
 
-    def aggregate_metrics(self, accessors : typing.Iterable[str], keys : typing.Iterable[str] | None = None) -> dict[str, int | float]:
+    def aggregate_metrics(self, accessors: typing.Iterable[str], keys: typing.Iterable[str] | None = None) -> dict[str, int | float]:
         """
         Aggregate metric values across multiple leaf nodes with profiling metrics at accessor path `accessors`.
 
@@ -183,7 +183,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
             keys = value.keys()
 
         return {
-            key : sum(
+            key: sum(
                 v for _, m in current.iter_metrics(accessors = ())
                 if isinstance(v := m[key], int | float)
             )
@@ -202,7 +202,7 @@ class ProfilingResults(rich_helpers.TreeMixin):
         Convert to a :py:class:`rich.tree.Tree` for nice printing.
         """
         rt = rich.tree.Tree('Profiling results')
-        def add_branch(*, tree : rich.tree.Tree, data : ProfilingResults | ProfilingMetrics) -> None:
+        def add_branch(*, tree: rich.tree.Tree, data: ProfilingResults | ProfilingMetrics) -> None:
             for key, value in data.data.items() if isinstance(data, ProfilingResults) else data.items():
                 if isinstance(value, ProfilingResults | ProfilingMetrics):
                     branch = tree.add(str(key))
@@ -221,15 +221,15 @@ class Range:
 
     If both :py:attr:`includes` and :py:attr:`excludes` are empty, load all actions in :py:attr:`range`.
     """
-    index : int
-    range : typing.Any = dataclasses.field(init = False)
-    actions : tuple[Action, ...] = dataclasses.field(init = False)
+    index: int
+    range: typing.Any = dataclasses.field(init = False)
+    actions: tuple[Action, ...] = dataclasses.field(init = False)
 
-    report : dataclasses.InitVar[typing.Any]
-    includes : dataclasses.InitVar[typing.Iterable[str] | None] = None
-    excludes : dataclasses.InitVar[typing.Iterable[str] | None] = None
+    report: dataclasses.InitVar[typing.Any]
+    includes: dataclasses.InitVar[typing.Iterable[str] | None] = None
+    excludes: dataclasses.InitVar[typing.Iterable[str] | None] = None
 
-    def __post_init__(self, report, includes : typing.Iterable[str] | None, excludes : typing.Iterable[str] | None) -> None:
+    def __post_init__(self, report, includes: typing.Iterable[str] | None, excludes: typing.Iterable[str] | None) -> None:
         self.range = report.range_by_idx(self.index)
 
         if not includes and not excludes:
@@ -245,11 +245,11 @@ class Action:
     """
     Wrapper around :ncu_report:`IAction`.
     """
-    index : int
-    action : typing.Any = dataclasses.field(init = False)
-    domains : tuple[NvtxDomain, ...] = dataclasses.field(init = False, default = ())
+    index: int
+    action: typing.Any = dataclasses.field(init = False)
+    domains: tuple[NvtxDomain, ...] = dataclasses.field(init = False, default = ())
 
-    nvtx_range : dataclasses.InitVar[typing.Any]
+    nvtx_range: dataclasses.InitVar[typing.Any]
 
     def __post_init__(self, nvtx_range) -> None:
         self.action = nvtx_range.action_by_idx(self.index)
@@ -265,10 +265,10 @@ class NvtxDomain:
     """
     Wrapper around :ncu_report:`INvtxDomainInfo`.
     """
-    index : int
-    nvtx_domain : typing.Any = dataclasses.field(init = False)
+    index: int
+    nvtx_domain: typing.Any = dataclasses.field(init = False)
 
-    nvtx_state : dataclasses.InitVar[typing.Any]
+    nvtx_state: dataclasses.InitVar[typing.Any]
 
     def __post_init__(self, nvtx_state) -> None:
         self.nvtx_domain = nvtx_state.domain_by_id(self.index)
@@ -344,7 +344,7 @@ class Report:
     * https://docs.nvidia.com/nsight-compute/CustomizationGuide/index.html#python-report-interface
     * https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
     """
-    def __init__(self, *, path : pathlib.Path | None = None, name : str | None = None, command : Command | None = None) -> None:
+    def __init__(self, *, path: pathlib.Path | None = None, name: str | None = None, command: Command | None = None) -> None:
         """
         Load the report ``<path>/<name>.ncu-rep`` or the report generated by :py:class:`reprospect.tools.ncu.session.Command`.
         """
@@ -366,11 +366,11 @@ class Report:
 
     def extract_results_in_range(
         self,
-        metrics : typing.Collection[MetricKind],
-        range_idx : int = 0,
-        includes : typing.Iterable[str] | None = None,
-        excludes : typing.Iterable[str] | None = None,
-        demangler : type[CuppFilt | LlvmCppFilt] | None = None,
+        metrics: typing.Collection[MetricKind],
+        range_idx: int = 0,
+        includes: typing.Iterable[str] | None = None,
+        excludes: typing.Iterable[str] | None = None,
+        demangler: type[CuppFilt | LlvmCppFilt] | None = None,
     ) -> ProfilingResults:
         """
         Extract the `metrics` of the actions in the range with ID `range_idx`.
@@ -412,7 +412,7 @@ class Report:
 
         return profiling_results
 
-    def collect_metrics_from_action(self, *, metrics : typing.Iterable[MetricKind], action : Action) -> dict[str, ProfilingMetricData]:
+    def collect_metrics_from_action(self, *, metrics: typing.Iterable[MetricKind], action: Action) -> dict[str, ProfilingMetricData]:
         """
         Collect values of the `metrics` in the `action`.
 
@@ -421,13 +421,13 @@ class Report:
         * https://github.com/shunting314/gpumisc/blob/37bbb827ae2ed6f5777daff06956c7a10aafe34d/ncu-related/official-sections/FPInstructions.py#L51
         * https://github.com/NVIDIA/nsight-training/blob/2d680f7f8368b945bc00b22834808af24eff4c3d/cuda/nsight_compute/python_report_interface/Opcode_instanced_metrics.ipynb
         """
-        results : dict[str, ProfilingMetricData] = {}
+        results: dict[str, ProfilingMetricData] = {}
 
         for metric in metrics:
             if isinstance(metric, MetricCorrelation):
                 metric_correlation = action.action.metric_by_name(metric.name)
 
-                correlated : MetricCorrelationDataType = {}
+                correlated: MetricCorrelationDataType = {}
                 correlations = metric_correlation.correlation_ids()
                 assert correlations.num_instances() == metric_correlation.num_instances()
                 for icor in range(metric_correlation.num_instances()):
@@ -457,7 +457,7 @@ class Report:
 
         return results
 
-    def get_metric_value(self, metric : typing.Any, index : int | None = None) -> ValueType | str:
+    def get_metric_value(self, metric: typing.Any, index: int | None = None) -> ValueType | str:
         """
         Recent ``ncu`` (>= 2025.3.0.0) provide a `value` method.
         """
@@ -467,16 +467,16 @@ class Report:
         return metric.value(idx = index)
 
     @classmethod
-    def fill_metric(cls, action : Action, metric : Metric) -> MetricData:
+    def fill_metric(cls, action: Action, metric: Metric) -> MetricData:
         """
         Loop over submetrics of `metric`.
         """
         if metric.subs is not None:
-            return {sub : cls.get_metric_by_name(action = action, metric = f'{metric.name}.{sub}').value() for sub in metric.subs}
+            return {sub: cls.get_metric_by_name(action = action, metric = f'{metric.name}.{sub}').value() for sub in metric.subs}
         return cls.get_metric_by_name(action = action, metric = metric.name).value()
 
     @classmethod
-    def get_metric_by_name(cls, *, action : Action, metric : str):
+    def get_metric_by_name(cls, *, action: Action, metric: str):
         """
         Read a `metric` in `action`.
         """

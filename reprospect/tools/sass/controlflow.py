@@ -15,7 +15,7 @@ class BasicBlock:
     - single exit point (last instruction)
     - no control flow instruction except possibly at the end
     """
-    instructions : tuple[Instruction, ...]
+    instructions: tuple[Instruction, ...]
 
     def __hash__(self) -> int:
         """
@@ -30,23 +30,23 @@ class Graph:
 
     Blocks are :py:class:`reprospect.tools.sass.controlflow.BasicBlock`, edges represent control flow between blocks.
     """
-    blocks : list[BasicBlock] = dataclasses.field(default_factory = list)
+    blocks: list[BasicBlock] = dataclasses.field(default_factory = list)
 
-    edges : dict[BasicBlock, set[BasicBlock]] = dataclasses.field(default_factory = dict)
+    edges: dict[BasicBlock, set[BasicBlock]] = dataclasses.field(default_factory = dict)
     """
     Adjacency list of where control flow may go for each block.
     """
 
-    def add_block(self, block : BasicBlock) -> None:
+    def add_block(self, block: BasicBlock) -> None:
         self.blocks.append(block)
 
-    def add_blocks(self, blocks : typing.Iterable[BasicBlock]) -> None:
+    def add_blocks(self, blocks: typing.Iterable[BasicBlock]) -> None:
         self.blocks.extend(blocks)
 
-    def add_edge(self, src : BasicBlock, dst : BasicBlock) -> None:
+    def add_edge(self, src: BasicBlock, dst: BasicBlock) -> None:
         self.edges.setdefault(src, set()).add(dst)
 
-    def to_mermaid(self, title : str = 'CFG') -> str:
+    def to_mermaid(self, title: str = 'CFG') -> str:
         """
         Generate a Mermaid flowchart diagram.
 
@@ -84,7 +84,7 @@ class ControlFlow:
     """
     Analyze SASS instructions from a :py:class:`reprospect.tools.sass.Decoder` to construct a :py:class:`reprospect.tools.sass.controlflow.Graph`.
     """
-    BRANCHING : typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join((
+    BRANCHING: typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join((
         'BPT',
         'BRA',
         'BREAK',
@@ -100,12 +100,12 @@ class ControlFlow:
     Branching instructions that create a new basic block.
     """
 
-    SYNCHRONIZATION : typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join((
+    SYNCHRONIZATION: typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join((
         'BSSY',
     )) + ')')
 
     @classmethod
-    def analyze(cls, instructions : typing.Sequence[Instruction]) -> Graph:
+    def analyze(cls, instructions: typing.Sequence[Instruction]) -> Graph:
         """
         Analyze instructions to discover blocks.
         """
@@ -118,7 +118,7 @@ class ControlFlow:
         return cfg
 
     @classmethod
-    def get_target(cls, instruction : Instruction) -> int | None:
+    def get_target(cls, instruction: Instruction) -> int | None:
         """
         Get the target of a branching instruction.
 
@@ -132,7 +132,7 @@ class ControlFlow:
         return None
 
     @classmethod
-    def find_entry_points(cls, instructions : typing.Sequence[Instruction]) -> set[int]:
+    def find_entry_points(cls, instructions: typing.Sequence[Instruction]) -> set[int]:
         """
         Identify entry point instructions (first instruction of each basic block).
 
@@ -143,7 +143,7 @@ class ControlFlow:
         3. Any instruction immediately following a branching.
         """
         # The first instruction is always an entry point.
-        entry_points : set[int] = {instructions[0].offset}
+        entry_points: set[int] = {instructions[0].offset}
 
         for iinstr, instr in enumerate(instructions):
             # Instruction after branch is an entry point.
@@ -163,7 +163,7 @@ class ControlFlow:
         return entry_points
 
     @classmethod
-    def create_blocks(cls, instructions : typing.Sequence[Instruction], entry_points : set[int]) -> tuple[BasicBlock, ...]:
+    def create_blocks(cls, instructions: typing.Sequence[Instruction], entry_points: set[int]) -> tuple[BasicBlock, ...]:
         """
         Create basic blocks from entry point instructions.
 
@@ -171,7 +171,7 @@ class ControlFlow:
 
             It discards blocks that are made of ``NOP`` instructions (as ``nvdisasm`` does).
         """
-        blocks : list[BasicBlock] = []
+        blocks: list[BasicBlock] = []
 
         sorted_entry_points = sorted(entry_points)
 
@@ -196,12 +196,12 @@ class ControlFlow:
         return tuple(blocks)
 
     @classmethod
-    def add_control_flow_edges(cls, cfg : Graph) -> None:
+    def add_control_flow_edges(cls, cfg: Graph) -> None:
         """
         Analyze control flow and add edges between blocks.
         """
-        offset_to_block : typing.Final[dict[int, BasicBlock]] = {
-            block.instructions[0].offset : block
+        offset_to_block: typing.Final[dict[int, BasicBlock]] = {
+            block.instructions[0].offset: block
             for block in cfg.blocks
         }
 

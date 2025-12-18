@@ -7,7 +7,7 @@ import urllib.request
 
 import packaging.version
 
-def get_available(package : str) -> list[packaging.version.Version]:
+def get_available(package: str) -> list[packaging.version.Version]:
     """
     Get available versions of `package` from `PyPI`.
     """
@@ -15,7 +15,7 @@ def get_available(package : str) -> list[packaging.version.Version]:
         data = json.load(resp)
         return [packaging.version.Version(x) for x in data["releases"]]
 
-def get_candidate(*, target : packaging.version.Version, versions : list[packaging.version.Version]) -> packaging.version.Version | None:
+def get_candidate(*, target: packaging.version.Version, versions: list[packaging.version.Version]) -> packaging.version.Version | None:
     """
     Match exactly if possible; otherwise, match the closest lower patch version that has the same major and minor.
     """
@@ -35,7 +35,7 @@ def get_candidate(*, target : packaging.version.Version, versions : list[packagi
                 candidate = version
     return candidate
 
-def install_cuda_bindings(target : packaging.version.Version) -> None:
+def install_cuda_bindings(target: packaging.version.Version) -> None:
     """
     Pick a version of ``cuda-bindings`` that best matches `target`.
 

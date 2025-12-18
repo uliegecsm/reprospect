@@ -27,7 +27,7 @@ class AddComplex128:
     2. imaginary parts
     3. possibly with NOP
     """
-    def build(self, loads : typing.Collection[InstructionMatch]) -> UnorderedInSequenceMatcher:
+    def build(self, loads: typing.Collection[InstructionMatch]) -> UnorderedInSequenceMatcher:
         if len(loads) != 1:
             raise RuntimeError(self)
         load_register = loads[0].operands[0]
@@ -63,11 +63,11 @@ class TestAtomicAddComplex128(add.TestCase):
     def get_target_name(cls) -> str:
         return 'examples_kokkos_atomic_add_complex128'
 
-    SIGNATURE_MATCHER : typing.ClassVar[re.Pattern[str]] = re.compile(
+    SIGNATURE_MATCHER: typing.ClassVar[re.Pattern[str]] = re.compile(
         r'AtomicAddFunctor<Kokkos::View<Kokkos::complex<double>\s*\*\s*, Kokkos::CudaSpace>>',
     )
 
-    def test_lock_atomic_before_hopper90(self, decoder : Decoder) -> None:
+    def test_lock_atomic_before_hopper90(self, decoder: Decoder) -> None:
         """
         This test proves that it uses the lock-based implementation.
         """
@@ -82,7 +82,7 @@ class TestAtomicAddComplex128(add.TestCase):
         else:
             assert matched is not None
 
-    def test_cas_atomic_as_of_hopper90(self, decoder : Decoder) -> None:
+    def test_cas_atomic_as_of_hopper90(self, decoder: Decoder) -> None:
         """
         This test proves that it uses the CAS-based implementation.
         """

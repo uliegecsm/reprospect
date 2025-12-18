@@ -49,7 +49,7 @@ class TestEnvironmentField:
         The value is initialized to the given default value.
         """
         class DefaultValue:
-            var : typing.ClassVar[EnvironmentField[float]] = EnvironmentField(default = 6.66)
+            var: typing.ClassVar[EnvironmentField[float]] = EnvironmentField(default = 6.66)
             other = EnvironmentField(default = pathlib.Path('my-default-path'))
 
         default_value = DefaultValue()
@@ -79,7 +79,7 @@ class TestEnvironmentField:
         The value is correctly initialized from the environment (given a key), and converted.
         """
         class ReadAndConvertValue:
-            var : EnvironmentField[pathlib.Path] = EnvironmentField(env = 'my_Weird_NAME', converter = pathlib.Path)
+            var: EnvironmentField[pathlib.Path] = EnvironmentField(env = 'my_Weird_NAME', converter = pathlib.Path)
             other = EnvironmentField(env = 'MY_OTHER_weird', converter = pathlib.Path)
 
         monkeypatch.setenv('my_Weird_NAME', 'my-nice/path.rst')
@@ -99,8 +99,8 @@ class TestEnvironmentField:
         The attribute is correctly initialized from the environment (no key given), and converted.
         """
         class WeirdType:
-            def __init__(self, value : str) -> None:
-                self.computed : int = hash(value)
+            def __init__(self, value: str) -> None:
+                self.computed: int = hash(value)
 
         class ReadAndConvertValue:
             var = EnvironmentField(converter = WeirdType)

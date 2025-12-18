@@ -28,7 +28,7 @@ class SequenceMatcher(abc.ABC):
     Base class for matchers of a sequence of instructions.
     """
     @abc.abstractmethod
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         """
         .. note::
 
@@ -49,7 +49,7 @@ class SequenceMatcher(abc.ABC):
         """
 
     @typing.final
-    def assert_matches(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch]:
+    def assert_matches(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch]:
         """
         Derived matchers are allowed to provide a nice message by implementing :py:meth:`explain`.
         """
@@ -57,7 +57,7 @@ class SequenceMatcher(abc.ABC):
             raise RuntimeError(self.explain(instructions = instructions))
         return matched
 
-    def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str: # pylint: disable=unused-argument
+    def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str: # pylint: disable=unused-argument
         return f'{self!r} did not match.'
 
 class InSequenceAtMatcher(SequenceMatcher):
@@ -70,11 +70,11 @@ class InSequenceAtMatcher(SequenceMatcher):
     """
     __slots__ = ('matcher',)
 
-    def __init__(self, matcher : InstructionMatcher) -> None:
-        self.matcher : typing.Final[InstructionMatcher] = matcher
+    def __init__(self, matcher: InstructionMatcher) -> None:
+        self.matcher: typing.Final[InstructionMatcher] = matcher
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         matched = self.matcher.match(instructions[0])
         return [matched] if matched is not None else None
 
@@ -84,7 +84,7 @@ class InSequenceAtMatcher(SequenceMatcher):
         return 1
 
     @override
-    def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
+    def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
         return f'{self.matcher!r} did not match {instructions[0]!r}.'
 
 class OneOrMoreInSequenceMatcher(SequenceMatcher):
@@ -97,13 +97,13 @@ class OneOrMoreInSequenceMatcher(SequenceMatcher):
     """
     __slots__ = ('_index', 'matcher')
 
-    def __init__(self, matcher : InstructionMatcher) -> None:
+    def __init__(self, matcher: InstructionMatcher) -> None:
         self._index: int = 0
-        self.matcher : typing.Final[InstructionMatcher] = matcher
+        self.matcher: typing.Final[InstructionMatcher] = matcher
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        matches : list[InstructionMatch] = []
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        matches: list[InstructionMatch] = []
 
         for instruction in instructions:
             if (matched := self.matcher.match(instruction)) is not None:
@@ -119,7 +119,7 @@ class OneOrMoreInSequenceMatcher(SequenceMatcher):
         return self._index
 
     @override
-    def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
+    def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
         return f'{self.matcher!r} did not match {instructions[0]!r}.'
 
 class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
@@ -127,11 +127,11 @@ class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
     Match zero or more times.
     """
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         return super().match(instructions = instructions) or []
 
     @override
-    def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
+    def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
         raise RuntimeError('It always matches.')
 
 class OrderedInSequenceMatcher(SequenceMatcher):
@@ -144,13 +144,13 @@ class OrderedInSequenceMatcher(SequenceMatcher):
     """
     __slots__ = ('_index', 'matchers')
 
-    def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
-        self._index : int = 0
-        self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
+    def __init__(self, matchers: typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
+        self._index: int = 0
+        self.matchers: typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        matches : list[InstructionMatch] = []
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        matches: list[InstructionMatch] = []
 
         self._index = 0
 
@@ -171,7 +171,7 @@ class OrderedInSequenceMatcher(SequenceMatcher):
         return self._index
 
     @override
-    def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
+    def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
         return f'{self.matchers!r} did not match {instructions!r}.'
 
 class UnorderedInSequenceMatcher(SequenceMatcher):
@@ -184,12 +184,12 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
     """
     __slots__ = ('_index', 'matchers')
 
-    def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
-        self._index : int = 0
-        self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
+    def __init__(self, matchers: typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
+        self._index: int = 0
+        self.matchers: typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         if (matched := self.search(instructions = instructions, offset = 0, matchers = self.matchers)) is not None:
             self._index = matched[0]
             return matched[1]
@@ -197,9 +197,9 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
 
     @classmethod
     def search(cls, *,
-        instructions : typing.Sequence[Instruction | str],
-        offset : int,
-        matchers : tuple[SequenceMatcher | InstructionMatcher, ...],
+        instructions: typing.Sequence[Instruction | str],
+        offset: int,
+        matchers: tuple[SequenceMatcher | InstructionMatcher, ...],
     ) -> tuple[int, list[InstructionMatch]] | None:
         """
         Backtracking problem.
@@ -222,7 +222,7 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
         return self._index
 
     @override
-    def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
+    def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
         return f'No permutation of {self.matchers!r} did match {instructions!r}.'
 
 class InSequenceMatcher(SequenceMatcher):
@@ -235,9 +235,9 @@ class InSequenceMatcher(SequenceMatcher):
     """
     __slots__ = ('_index', 'matcher')
 
-    def __init__(self, matcher : SequenceMatcher | InstructionMatcher) -> None:
-        self._index : int = 0
-        self.matcher : typing.Final[SequenceMatcher | InstructionMatcher] = matcher
+    def __init__(self, matcher: SequenceMatcher | InstructionMatcher) -> None:
+        self._index: int = 0
+        self.matcher: typing.Final[SequenceMatcher | InstructionMatcher] = matcher
 
     def _match_single(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         assert isinstance(self.matcher, InstructionMatcher)
@@ -256,7 +256,7 @@ class InSequenceMatcher(SequenceMatcher):
         return None
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         if isinstance(self.matcher, InstructionMatcher):
             return self._match_single(instructions=instructions)
         return self._match_sequence(instructions=instructions)
@@ -267,7 +267,7 @@ class InSequenceMatcher(SequenceMatcher):
         return self._index
 
     @override
-    def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
+    def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
         return f'{self.matcher!r} did not match.'
 
 class AnyOfMatcher(SequenceMatcher):
@@ -280,13 +280,13 @@ class AnyOfMatcher(SequenceMatcher):
     """
     __slots__ = ('_index', 'matched', 'matchers')
 
-    def __init__(self, *matchers : SequenceMatcher | InstructionMatcher) -> None:
-        self._index : int = 0
-        self.matched : int = -1
-        self.matchers : typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
+    def __init__(self, *matchers: SequenceMatcher | InstructionMatcher) -> None:
+        self._index: int = 0
+        self.matched: int = -1
+        self.matchers: typing.Final[tuple[SequenceMatcher | InstructionMatcher, ...]] = tuple(matchers)
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
         """
         Loop over the :py:attr:`matchers` and return the first match.
         """
@@ -307,7 +307,7 @@ class AnyOfMatcher(SequenceMatcher):
         return self._index
 
     @override
-    def explain(self, *, instructions : typing.Sequence[Instruction | str]) -> str:
+    def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
         return f'None of {self.matchers!r} did match {instructions}.'
 
 class OrderedInterleavedInSequenceMatcher(SequenceMatcher):
@@ -320,16 +320,16 @@ class OrderedInterleavedInSequenceMatcher(SequenceMatcher):
     """
     __slots__ = ('_index', 'matchers')
 
-    def __init__(self, matchers : typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
+    def __init__(self, matchers: typing.Iterable[SequenceMatcher | InstructionMatcher]) -> None:
         self._index: int = 0
-        self.matchers : typing.Final[tuple[InSequenceMatcher, ...]] = tuple(
+        self.matchers: typing.Final[tuple[InSequenceMatcher, ...]] = tuple(
             matcher if isinstance(matcher, InSequenceMatcher) else InSequenceMatcher(matcher)
             for matcher in matchers
         )
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
-        matches : list[InstructionMatch] = []
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        matches: list[InstructionMatch] = []
         self._index = 0
         for matcher in self.matchers:
             if (many := matcher.match(instructions=instructions[self._index:])) is not None:
@@ -359,23 +359,23 @@ class AllInSequenceMatcher:
     """
     Use :py:class:`InSequenceMatcher` to find all matches for :py:attr:`matcher` in a sequence of instructions.
     """
-    matcher : InSequenceMatcher = attrs.field(converter=lambda x: x if isinstance(x, InSequenceMatcher) else InSequenceMatcher(x))
+    matcher: InSequenceMatcher = attrs.field(converter=lambda x: x if isinstance(x, InSequenceMatcher) else InSequenceMatcher(x))
 
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | list[list[InstructionMatch]]:
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | list[list[InstructionMatch]]:
         if isinstance(self.matcher.matcher, InstructionMatcher):
             return self._match_single(instructions=instructions)
         return self._match_sequence(instructions=instructions)
 
-    def _match_single(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch]:
-        matches : list[InstructionMatch] = []
+    def _match_single(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch]:
+        matches: list[InstructionMatch] = []
         offset = 0
         while (matched := self.matcher.match(instructions=instructions[offset:])):
             matches.append(matched[0])
             offset += self.matcher.next_index
         return matches
 
-    def _match_sequence(self, instructions : typing.Sequence[Instruction | str]) -> list[list[InstructionMatch]]:
-        matches : list[list[InstructionMatch]] = []
+    def _match_sequence(self, instructions: typing.Sequence[Instruction | str]) -> list[list[InstructionMatch]]:
+        matches: list[list[InstructionMatch]] = []
         offset = 0
         while (matched := self.matcher.match(instructions=instructions[offset:])):
             matches.append(matched)
@@ -393,13 +393,13 @@ class ModifierValidator(InstructionMatcher):
     """
     __slots__ = ('index', 'matcher', 'modifier')
 
-    def __init__(self, matcher : InstructionMatcher, modifier : str, index : int | None = None) -> None:
-        self.matcher : typing.Final[InstructionMatcher] = matcher
-        self.index : typing.Final[int | None] = index
-        self.modifier : typing.Final[str] = modifier
+    def __init__(self, matcher: InstructionMatcher, modifier: str, index: int | None = None) -> None:
+        self.matcher: typing.Final[InstructionMatcher] = matcher
+        self.index: typing.Final[int | None] = index
+        self.modifier: typing.Final[str] = modifier
 
     @override
-    def match(self, inst : Instruction | str) -> InstructionMatch | None:
+    def match(self, inst: Instruction | str) -> InstructionMatch | None:
         if (matched := self.matcher.match(inst)) is not None:
             if self.index is not None:
                 try:
@@ -410,7 +410,7 @@ class ModifierValidator(InstructionMatcher):
                 return matched if self.modifier in matched.modifiers else None
         return None
 
-OperandMatcher : typing.TypeAlias = str | AddressMatcher | ConstantMatcher | RegisterMatcher
+OperandMatcher: typing.TypeAlias = str | AddressMatcher | ConstantMatcher | RegisterMatcher
 
 class OperandValidator(InstructionMatcher):
     """
@@ -423,18 +423,18 @@ class OperandValidator(InstructionMatcher):
     """
     __slots__ = ('index', 'matcher', 'operand')
 
-    def __init__(self, matcher : InstructionMatcher, operand : OperandMatcher, index : int | None = None) -> None:
-        self.matcher : typing.Final[InstructionMatcher] = matcher
-        self.index : typing.Final[int | None] = index
-        self.operand : typing.Final[OperandMatcher] = operand
+    def __init__(self, matcher: InstructionMatcher, operand: OperandMatcher, index: int | None = None) -> None:
+        self.matcher: typing.Final[InstructionMatcher] = matcher
+        self.index: typing.Final[int | None] = index
+        self.operand: typing.Final[OperandMatcher] = operand
 
-    def check(self, operand : str) -> bool:
+    def check(self, operand: str) -> bool:
         if isinstance(self.operand, str) and operand == self.operand:
             return True
         return isinstance(self.operand, AddressMatcher | ConstantMatcher | RegisterMatcher) and self.operand.match(operand) is not None
 
     @override
-    def match(self, inst : Instruction | str) -> InstructionMatch | None:
+    def match(self, inst: Instruction | str) -> InstructionMatch | None:
         if (matched := self.matcher.match(inst)) is not None:
             if self.index is not None:
                 try:
@@ -456,12 +456,12 @@ class OperandsValidator(InstructionMatcher):
     """
     __slots__ = ('matcher', 'operands')
 
-    def __init__(self, matcher : InstructionMatcher, operands : typing.Collection[tuple[int, OperandMatcher]]) -> None:
-        self.matcher : typing.Final[InstructionMatcher] = matcher
-        self.operands : typing.Final[tuple[tuple[int, OperandMatcher], ...]] = tuple(operands)
+    def __init__(self, matcher: InstructionMatcher, operands: typing.Collection[tuple[int, OperandMatcher]]) -> None:
+        self.matcher: typing.Final[InstructionMatcher] = matcher
+        self.operands: typing.Final[tuple[tuple[int, OperandMatcher], ...]] = tuple(operands)
 
     @override
-    def match(self, inst : Instruction | str) -> InstructionMatch | None:
+    def match(self, inst: Instruction | str) -> InstructionMatch | None:
         if (matched := self.matcher.match(inst)) is not None:
             for mindex, moperand in self.operands:
                 try:

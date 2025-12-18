@@ -69,9 +69,9 @@ class NvInfoEntry:
     """
     A single entry in a `.nv.info.<mangled>` section.
     """
-    eifmt : NvInfoEIFMT
-    eiattr : NvInfoEIATTR
-    value : bytes | int | tuple[int, ...] | None = None
+    eifmt: NvInfoEIFMT
+    eiattr: NvInfoEIATTR
+    value: bytes | int | tuple[int, ...] | None = None
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class NvInfo:
@@ -127,20 +127,20 @@ class NvInfo:
     * :cite:`hayes-2019-decoding-cubin`
     * https://github.com/decodecudabinary/Decoding-CUDA-Binary/blob/d696075315006c8a94012071a91cdfec6ee23bd7/tools/src/elfmanip.hpp#L144
     """
-    attributes : tuple[NvInfoEntry, ...]
+    attributes: tuple[NvInfoEntry, ...]
 
-    def iter(self, eiattr : NvInfoEIATTR) -> typing.Generator[NvInfoEntry, None, None]:
+    def iter(self, eiattr: NvInfoEIATTR) -> typing.Generator[NvInfoEntry, None, None]:
         """
         Get attribute(s) of type `eiattr`.
         """
         return (attr for attr in self.attributes if attr.eiattr == eiattr)
 
     @classmethod
-    def decode(cls, *, section : elftools.elf.sections.Section) -> 'NvInfo':
+    def decode(cls, *, section: elftools.elf.sections.Section) -> 'NvInfo':
         return cls.parse(data = section.data())
 
     @classmethod
-    def parse(cls, *, data : bytes) -> 'NvInfo':
+    def parse(cls, *, data: bytes) -> 'NvInfo':
         """
         Parse a single `.nv.info.<mangled>` section according to the per-format rules.
         """
@@ -157,7 +157,7 @@ class NvInfo:
             eiattr = NvInfoEIATTR(data[offset + 1])
             offset += 2
 
-            value : bytes | int | tuple[int, ...] | None = None
+            value: bytes | int | tuple[int, ...] | None = None
 
             match eifmt:
                 case NvInfoEIFMT.NVAL:
@@ -207,15 +207,15 @@ class TkInfo:
     * https://github.com/tek-life/cuda-gdb/blob/080b643333b48c1c3aba2ba01f9fc7408c7bf6df/gdb/cuda/cuda-sass-json.h#L56-L62
     * https://github.com/tek-life/cuda-gdb/blob/080b643333b48c1c3aba2ba01f9fc7408c7bf6df/gdb/cuda/cuda-sass-json.c#L758-L768
     """
-    note_version : int
-    object_filename : str
-    tool_name : str
-    tool_version : str
-    tool_branch : str
-    tool_options : str
+    note_version: int
+    object_filename: str
+    tool_name: str
+    tool_version: str
+    tool_branch: str
+    tool_options: str
 
     @staticmethod
-    def extract(arr : bytes, offset : int) -> str:
+    def extract(arr: bytes, offset: int) -> str:
         """
         The strings section starts at offset 24.
         """
@@ -223,7 +223,7 @@ class TkInfo:
         return arr[24 + offset:end].decode('ascii')
 
     @classmethod
-    def decode(cls, *, note : elftools.elf.sections.NoteSection) -> typing.Generator['TkInfo', None, None]:
+    def decode(cls, *, note: elftools.elf.sections.NoteSection) -> typing.Generator['TkInfo', None, None]:
         """
         Iterate over the note entries and decode them.
         """
@@ -268,12 +268,12 @@ class CuInfo:
 
     * https://github.com/tek-life/cuda-gdb/blob/080b643333b48c1c3aba2ba01f9fc7408c7bf6df/gdb/cuda/cuda-sass-json.h##L64-L65
     """
-    note_version : int
-    virtual_sm : int
-    toolkit_version : int
+    note_version: int
+    virtual_sm: int
+    toolkit_version: int
 
     @classmethod
-    def decode(cls, *, note : elftools.elf.sections.NoteSection) -> typing.Generator['CuInfo', None, None]:
+    def decode(cls, *, note: elftools.elf.sections.NoteSection) -> typing.Generator['CuInfo', None, None]:
         """
         Iterate the note entries and decode them.
         """
@@ -298,14 +298,14 @@ class ELF:
     Helper for reading ELF files and retrieve CUDA-specific information.
     """
 
-    ELFOSABI_CUDA : typing.Final[tuple[int, ...]] = (41, 51, 65)
+    ELFOSABI_CUDA: typing.Final[tuple[int, ...]] = (41, 51, 65)
     """
     References:
 
     * https://github.com/llvm/llvm-project/blob/46e9d6325a825b516826d0c56b6231abfaac16ab/llvm/include/llvm/BinaryFormat/ELF.h#L364-L365
     """
 
-    ELFABIVERSION_CUDA : typing.Final[tuple[int, int]] = (7, 8)
+    ELFABIVERSION_CUDA: typing.Final[tuple[int, int]] = (7, 8)
     """
     References:
 
@@ -331,9 +331,9 @@ class ELF:
     Offset for compute capability field post BLACKWELL.
     """
 
-    def __init__(self, *, file : pathlib.Path) -> None:
-        self.file : pathlib.Path = file #: Path to the ELF file.
-        self.elf : elftools.elf.elffile.ELFFile | None = None
+    def __init__(self, *, file: pathlib.Path) -> None:
+        self.file: pathlib.Path = file #: Path to the ELF file.
+        self.elf: elftools.elf.elffile.ELFFile | None = None
 
     def __enter__(self) -> Self:
         self.elf = elftools.elf.elffile.ELFFile(stream = self.file.open('rb'))
@@ -345,7 +345,7 @@ class ELF:
         self.elf = None
 
     @classmethod
-    def is_cuda_impl(cls, *, header : elftools.construct.lib.container.Container) -> bool:
+    def is_cuda_impl(cls, *, header: elftools.construct.lib.container.Container) -> bool:
         return header['e_machine'] == 'EM_CUDA' \
             and header['e_ident']['EI_OSABI'] in cls.ELFOSABI_CUDA \
             and header['e_ident']['EI_ABIVERSION'] in cls.ELFABIVERSION_CUDA
@@ -385,13 +385,13 @@ class ELF:
         """
         return NVIDIAArch.from_compute_capability(cc = self.compute_capability(value = self.header['e_flags']).as_int)
 
-    def nvinfo(self, mangled : str) -> NvInfo:
+    def nvinfo(self, mangled: str) -> NvInfo:
         """
         Extract and parse the `.nv.info.<mangled>` section.
         """
         assert self.elf is not None
 
-        name : str = f'.nv.info.{mangled}'
+        name: str = f'.nv.info.{mangled}'
 
         if (section := self.elf.get_section_by_name(name = name)) is not None:
             return NvInfo.decode(section = section)

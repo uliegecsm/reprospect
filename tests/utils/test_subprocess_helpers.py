@@ -17,7 +17,7 @@ class TestPopenStream:
     Tests for :py:class:`reprospect.utils.subprocess_helpers.popen_stream`.
     """
     @staticmethod
-    def mocker(*, wait : int, stdout : str | None = None, stderr : str | None = None) -> unittest.mock.MagicMock:
+    def mocker(*, wait: int, stdout: str | None = None, stderr: str | None = None) -> unittest.mock.MagicMock:
         mocker = unittest.mock.MagicMock()
 
         mocker.stdout = io.StringIO(stdout)
@@ -103,9 +103,9 @@ class TestPopenStream:
         """
         Break while the generator is not finished.
         """
-        LINES : typing.Final[tuple[str, ...]] = ('one', 'two', 'three', 'four', 'five')
+        LINES: typing.Final[tuple[str, ...]] = ('one', 'two', 'three', 'four', 'five')
 
-        CODE : typing.Final[str] = f"""\
+        CODE: typing.Final[str] = f"""\
 LINES = {LINES}
 for line in LINES:
     print(line)

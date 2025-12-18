@@ -9,10 +9,10 @@ from reprospect.tools.architecture import NVIDIAArch
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class Parameters:
-    arch : NVIDIAArch
+    arch: NVIDIAArch
 
 @functools.cache
-def architectures(version : semantic_version.Version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> tuple[NVIDIAArch, ...]:
+def architectures(version: semantic_version.Version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> tuple[NVIDIAArch, ...]:
     """
     Get the list of architectures to test, that are supported by `version`.
     """
@@ -30,7 +30,7 @@ def architectures(version : semantic_version.Version = semantic_version.Version(
         ] if (arch := NVIDIAArch.from_compute_capability(cc = cc)).compute_capability.supported(version = version)
     )
 
-PARAMETERS : typing.Final[tuple[Parameters, ...]] = tuple(Parameters(arch = arch) for arch in architectures())
+PARAMETERS: typing.Final[tuple[Parameters, ...]] = tuple(Parameters(arch = arch) for arch in architectures())
 """
 Use this set of architectures when parametrizing a test, to ensure it covers as many relevant architectures as possible.
 """

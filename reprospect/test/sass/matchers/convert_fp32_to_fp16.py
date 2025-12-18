@@ -26,8 +26,8 @@ class ConvertFp32ToFp16(InstructionMatcher):
     __slots__ = ('matcher',)
 
     def __init__(self, arch: NVIDIAArch, *,
-        dst : str = PatternBuilder.REG,
-        src : str = PatternBuilder.REG,
+        dst: str = PatternBuilder.REG,
+        src: str = PatternBuilder.REG,
     ) -> None:
         """
         :param src: 32-bit floating-point value.
@@ -40,7 +40,7 @@ class ConvertFp32ToFp16(InstructionMatcher):
                 matcher = OpcodeModsWithOperandsMatcher(opcode='F2FP', modifiers=('PACK_AB',), operands=(dst, 'RZ', src))
             case _:
                 matcher = OpcodeModsWithOperandsMatcher(opcode='F2FP', modifiers=('F16', 'F32', 'PACK_AB'), operands=(dst, 'RZ', src))
-        self.matcher : typing.Final[OpcodeModsWithOperandsMatcher] = matcher
+        self.matcher: typing.Final[OpcodeModsWithOperandsMatcher] = matcher
 
     @override
     def match(self, inst: Instruction | str) -> InstructionMatch | None:

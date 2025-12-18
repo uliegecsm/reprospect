@@ -25,7 +25,7 @@ class TestFp16FusedMulAddMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.half.Fp16FusedMulAddMatcher`.
     """
-    PTX : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'hfma2.ptx'
+    PTX: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'hfma2.ptx'
 
     def test_individual(self) -> None:
         matcher = Fp16FusedMulAddMatcher(packed=False)
@@ -59,7 +59,7 @@ class TestFp16FusedMulAddMatcher:
         assert matcher.match('HFMA2 R19, -RZ, RZ, 0, 0') is not None
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str, scope = 'class')
-    def test_from_ptx(self, request, workdir : pathlib.Path, parameters : Parameters) -> None:
+    def test_from_ptx(self, request, workdir: pathlib.Path, parameters: Parameters) -> None:
         """
         Compile the PTX from :py:attr:`PTX`.
         """
@@ -124,19 +124,19 @@ class TestFp16AddMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.half.Fp16AddMatcher`.
     """
-    CODE_AUTO_PACK : typing.Final[str] = """#include "cuda_fp16.h"
+    CODE_AUTO_PACK: typing.Final[str] = """#include "cuda_fp16.h"
 __global__ void test_packed(__half* __restrict__ const dst, const __half* __restrict__ const src) {
     dst[0] += src[0]; dst[1] += src[1];
 }
 """
 
-    CODE_FORCE_PACK : typing.Final[str] = """#include "cuda_fp16.h"
+    CODE_FORCE_PACK: typing.Final[str] = """#include "cuda_fp16.h"
 __global__ void test_packed(__half* __restrict__ const dst, const __half* __restrict__ const src) {
     reinterpret_cast<__half2*>(dst)[0] += reinterpret_cast<const __half2*>(src)[0];
 }
 """
 
-    CODE_FP16_TO_FP32 : typing.Final[str] = """#include "cuda_fp16.h"
+    CODE_FP16_TO_FP32: typing.Final[str] = """#include "cuda_fp16.h"
 __global__ void test_fp16_to_fp32(float* __restrict__ const dst, const __half* __restrict__ const src, const unsigned int size)
 {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
@@ -164,7 +164,7 @@ __global__ void test_fp16_to_fp32(float* __restrict__ const dst, const __half* _
         assert matcher.match('HADD2.F32 R6, -RZ, R2.H0_H0') is not None
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_no_auto_pack(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api) -> None:
+    def test_no_auto_pack(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api) -> None:
         """
         The compiler never automatically packs in :py:attr:`CODE_AUTO_PACK`.
         """
@@ -177,7 +177,7 @@ __global__ void test_fp16_to_fp32(float* __restrict__ const dst, const __half* _
         assert len(findall(matcher, decoder.instructions)) == 2
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_force_pack(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api) -> None:
+    def test_force_pack(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api) -> None:
         """
         One can force the packing in :py:attr:`CODE_FORCE_PACK`.
         """
@@ -192,7 +192,7 @@ __global__ void test_fp16_to_fp32(float* __restrict__ const dst, const __half* _
         ), decoder.instructions))
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_fp16_to_fp32(self, request, workdir : pathlib.Path, parameters : Parameters, cmake_file_api) -> None:
+    def test_fp16_to_fp32(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api) -> None:
         """
         Use :py:attr:`CODE_FP16_TO_FP32` to check that the conversion of :code:`__half` to :code:`float`
         always goes through a ``HADD2.F32`` instruction.
@@ -213,7 +213,7 @@ class TestFp16MinMaxMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.half.Fp16MinMaxMatcher`.
     """
-    CODE_HMNMX : typing.Final[str] = """\
+    CODE_HMNMX: typing.Final[str] = """\
 #include "cuda_fp16.h"
 
 __global__ void test_h{which}(__half* __restrict__ const out, const __half* __restrict__ const src_a, const __half* __restrict__ const src_b, const unsigned int size)
@@ -247,7 +247,7 @@ __global__ void test_h{which}(__half* __restrict__ const out, const __half* __re
         itertools.product(('min', 'max'), PARAMETERS),
         ids = str,
     )
-    def test_from_object(self, request, workdir : pathlib.Path, parameters : Parameters, which : typing.Literal['min', 'max'], cmake_file_api) -> None:
+    def test_from_object(self, request, workdir: pathlib.Path, parameters: Parameters, which: typing.Literal['min', 'max'], cmake_file_api) -> None:
         """
         Inspect the behavior of :code:`__hmin` and :code:`__hmax` intrinsics with :py:attr:`CODE_HMNMX`.
         """

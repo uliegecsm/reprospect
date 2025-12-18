@@ -29,7 +29,7 @@ class NewInstructionMatcher(InstructionMatcher):
     Faking a matcher for some unforeseen use case.
     """
     @override
-    def match(self, inst : str | Instruction) -> InstructionMatch | None:
+    def match(self, inst: str | Instruction) -> InstructionMatch | None:
         if (matched := regex.match(r'(?P<opcode>[A-Z]+).*', inst.instruction if isinstance(inst, Instruction) else inst)) is not None:
             return InstructionMatch.parse(bits = matched)
         return None
@@ -61,15 +61,15 @@ class TestInstructionMatching:
     """
     Match instructions with :py:class:`NewInstructionMatcher` and :py:class:`NewPatternMatcher`.
     """
-    CONTROLCODE : typing.Final[ControlCode] = ControlCode(
+    CONTROLCODE: typing.Final[ControlCode] = ControlCode(
         stall_count = 5, yield_flag = False, read = 7, write = 7,
         wait = [True, False, False, False, False, False],
-        reuse = {'A' : False, 'B' : False, 'C' : False, 'D' : False},
+        reuse = {'A': False, 'B': False, 'C': False, 'D': False},
     )
 
-    DADD : typing.Final[Instruction] = Instruction(offset = 0, instruction = 'DADD R4, R4, c[0x0][0x180]', hex = '0x0', control = CONTROLCODE)
-    DMUL : typing.Final[Instruction] = Instruction(offset = 0, instruction = 'DMUL R6, R6, c[0x0][0x188]', hex = '0x1', control = CONTROLCODE)
-    NOP  : typing.Final[Instruction] = Instruction(offset = 0, instruction = 'NOP',                        hex = '0x2', control = CONTROLCODE)
+    DADD: typing.Final[Instruction] = Instruction(offset = 0, instruction = 'DADD R4, R4, c[0x0][0x180]', hex = '0x0', control = CONTROLCODE)
+    DMUL: typing.Final[Instruction] = Instruction(offset = 0, instruction = 'DMUL R6, R6, c[0x0][0x188]', hex = '0x1', control = CONTROLCODE)
+    NOP: typing.Final[Instruction] = Instruction(offset = 0, instruction = 'NOP',                        hex = '0x2', control = CONTROLCODE)
 
     def test_NewInstructionMatcher(self) -> None:
         result = instruction_is(matcher = NewInstructionMatcher()).times(3).match(instructions = (self.DADD, self.DMUL, self.NOP))

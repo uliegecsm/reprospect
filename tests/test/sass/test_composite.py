@@ -54,8 +54,8 @@ class TestInstructionIs:
         """
         Test :py:meth:`reprospect.test.sass.composite.Fluentizer.with_modifier`.
         """
-        INSTRUCTION : typing.Final[str] = 'IMAD.WIDE.U32 R2, R0, R7, c[0x0][0x180]'
-        MATCHER : typing.Final[Fluentizer] = instruction_is(AnyMatcher())
+        INSTRUCTION: typing.Final[str] = 'IMAD.WIDE.U32 R2, R0, R7, c[0x0][0x180]'
+        MATCHER: typing.Final[Fluentizer] = instruction_is(AnyMatcher())
 
         assert MATCHER.with_modifier('WIDE', index = 0).match(INSTRUCTION) is not None
         assert MATCHER.with_modifier('WIDE', index = 1).match(INSTRUCTION) is None

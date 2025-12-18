@@ -11,11 +11,11 @@ class ConstantMatch:
     """
     Result of matching a constant memory location.
     """
-    bank : str
-    offset : str
+    bank: str
+    offset: str
 
     @classmethod
-    def parse(cls, bits : regex.Match[str]) -> 'ConstantMatch':
+    def parse(cls, bits: regex.Match[str]) -> 'ConstantMatch':
         captured = bits.capturesdict()
 
         if not (value := captured.get('bank')):
@@ -28,17 +28,17 @@ class ConstantMatch:
 
         return cls(bank = bank, offset = offset)
 
-TEMPLATE_CONSTANT : typing.Final[str] = r'c\[{bank}\]\[{offset}\]'
+TEMPLATE_CONSTANT: typing.Final[str] = r'c\[{bank}\]\[{offset}\]'
 
 @attrs.define(frozen = True, slots = True, kw_only = True)
 class ConstantMatcher:
     """
     Matcher for a constant memory location.
     """
-    bank : str | None = None
-    offset : str | None = None
+    bank: str | None = None
+    offset: str | None = None
 
-    pattern : regex.Pattern[str] = attrs.field(init = False)
+    pattern: regex.Pattern[str] = attrs.field(init = False)
 
     def __attrs_post_init__(self) -> None:
         object.__setattr__(self, 'pattern', regex.compile(self.build_pattern(
@@ -48,11 +48,11 @@ class ConstantMatcher:
 
     @classmethod
     def build_pattern(cls, *,
-        bank : str | None = None,
-        offset : str | None = None,
-        captured : bool = True,
-        capture_bank : bool = False,
-        capture_offset : bool = False,
+        bank: str | None = None,
+        offset: str | None = None,
+        captured: bool = True,
+        capture_bank: bool = False,
+        capture_offset: bool = False,
     ) -> str:
         pattern_bank   = bank   or PatternBuilder.CONSTANT_BANK
         pattern_offset = offset or PatternBuilder.CONSTANT_OFFSET
@@ -64,10 +64,10 @@ class ConstantMatcher:
 
         return PatternBuilder.group(pattern, group = 'operands') if captured else pattern
 
-    def match(self, constant : str) -> ConstantMatch | None:
+    def match(self, constant: str) -> ConstantMatch | None:
         if (matched := self.pattern.match(constant)) is not None:
             return ConstantMatch.parse(bits = matched)
         return None
 
-    def __call__(self, constant : str) -> ConstantMatch | None:
+    def __call__(self, constant: str) -> ConstantMatch | None:
         return self.match(constant = constant)

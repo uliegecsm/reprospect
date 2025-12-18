@@ -16,19 +16,19 @@ class TestFileAPI:
             cmake_build_directory = pathlib.Path(os.environ['CMAKE_BINARY_DIR']),
         )
 
-    def test_cache(self, cmake_file_api : cmake.FileAPI) -> None:
+    def test_cache(self, cmake_file_api: cmake.FileAPI) -> None:
         """
         Check that cache variables are read correctly.
         """
         assert cmake_file_api.cache['ReProspect_ENABLE_TESTS'] == {
-            'properties' : [
-                {'name' : 'HELPSTRING', 'value' : 'Enable tests.'},
+            'properties': [
+                {'name': 'HELPSTRING', 'value': 'Enable tests.'},
             ],
-            'type' : 'BOOL',
-            'value' : 'ON',
+            'type': 'BOOL',
+            'value': 'ON',
         }
 
-    def test_toolchains(self, cmake_file_api : cmake.FileAPI) -> None:
+    def test_toolchains(self, cmake_file_api: cmake.FileAPI) -> None:
         """
         Check toolchain information.
         """
@@ -44,7 +44,7 @@ class TestFileAPI:
             logging.info(f"\t- compiler path   : {compiler['path']}")
             logging.info(f"\t- compiler version: {compiler['version']}")
 
-    def test_codemodel_configuration(self, cmake_file_api : cmake.FileAPI) -> None:
+    def test_codemodel_configuration(self, cmake_file_api: cmake.FileAPI) -> None:
         """
         Check codemodel configuration information.
         """
@@ -55,7 +55,7 @@ class TestFileAPI:
 
         assert 'targets' in cmake_file_api.codemodel_configuration
 
-    def test_target(self, cmake_file_api : cmake.FileAPI) -> None:
+    def test_target(self, cmake_file_api: cmake.FileAPI) -> None:
         """
         Check target information.
         """

@@ -68,7 +68,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-def get_atomic_memory_suffix(compiler_id : str) -> typing.Literal['G', '']:
+def get_atomic_memory_suffix(compiler_id: str) -> typing.Literal['G', '']:
     """
     See :py:meth:`tests.test.sass.test_atomic.TestAtomicMatcher.test_exch_device_ptr`.
     """
@@ -90,7 +90,7 @@ class AtomicAcquireMatcher:
     * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Array_CUDA.hpp#L83
     """
     @classmethod
-    def build(cls, arch : NVIDIAArch, compiler_id : str) -> OrderedInSequenceMatcher:
+    def build(cls, arch: NVIDIAArch, compiler_id: str) -> OrderedInSequenceMatcher:
         return instructions_are(
             # Storing 1 in a register can be done in different ways.
             any_of(
@@ -122,7 +122,7 @@ class AtomicReleaseMatcher:
     * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Array_CUDA.hpp#L102
     """
     @classmethod
-    def build(cls, arch : NVIDIAArch, compiler_id : str) -> InstructionMatcher:
+    def build(cls, arch: NVIDIAArch, compiler_id: str) -> InstructionMatcher:
         return instruction_is(AtomicMatcher(
             memory = get_atomic_memory_suffix(compiler_id = compiler_id),
             arch = arch,
@@ -142,7 +142,7 @@ class DeviceAtomicThreadFenceMatcher:
 
     """
     @classmethod
-    def build(cls, arch : NVIDIAArch) -> OrderedInSequenceMatcher:
+    def build(cls, arch: NVIDIAArch) -> OrderedInSequenceMatcher:
         matchers = [
             OpcodeModsMatcher(opcode = 'MEMBAR', modifiers = ('SC', 'GPU'), operands = False),
             OpcodeModsMatcher(opcode = 'ERRBAR', operands = False),
@@ -153,7 +153,7 @@ class DeviceAtomicThreadFenceMatcher:
         return instructions_are(*matchers)
 
 class Operation(typing.Protocol):
-    def build(self, loads : typing.Collection[InstructionMatch]) -> SequenceMatcher:
+    def build(self, loads: typing.Collection[InstructionMatch]) -> SequenceMatcher:
         ...
 
 class LockBasedAtomicMatcher(SequenceMatcher):
@@ -165,23 +165,23 @@ class LockBasedAtomicMatcher(SequenceMatcher):
     * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L39-L44
     """
     def __init__(self, *,
-        arch : NVIDIAArch,
-        operation : Operation,
-        compiler_id : str,
-        size : int = 128,
-        level : int = logging.INFO,
-        load : SequenceMatcher | None = None,
-        store : SequenceMatcher | None = None,
+        arch: NVIDIAArch,
+        operation: Operation,
+        compiler_id: str,
+        size: int = 128,
+        level: int = logging.INFO,
+        load: SequenceMatcher | None = None,
+        store: SequenceMatcher | None = None,
     ) -> None:
-        self.arch : typing.Final[NVIDIAArch] = arch
-        self.operation : typing.Final[Operation] = operation
-        self.compiler_id : typing.Final[str] = compiler_id
-        self.level : typing.Final[int] = level
-        self.load : typing.Final[SequenceMatcher] = load or InSequenceAtMatcher(matcher = LoadGlobalMatcher(arch = self.arch, size = size, readonly = False))
-        self.store : typing.Final[SequenceMatcher] = store or InSequenceAtMatcher(matcher = StoreGlobalMatcher(arch = self.arch, size = size))
-        self._index : int = 0
+        self.arch: typing.Final[NVIDIAArch] = arch
+        self.operation: typing.Final[Operation] = operation
+        self.compiler_id: typing.Final[str] = compiler_id
+        self.level: typing.Final[int] = level
+        self.load: typing.Final[SequenceMatcher] = load or InSequenceAtMatcher(matcher = LoadGlobalMatcher(arch = self.arch, size = size, readonly = False))
+        self.store: typing.Final[SequenceMatcher] = store or InSequenceAtMatcher(matcher = StoreGlobalMatcher(arch = self.arch, size = size))
+        self._index: int = 0
 
-    def collect(self, matched : list[InstructionMatch], new : InstructionMatch | list[InstructionMatch]) -> int:
+    def collect(self, matched: list[InstructionMatch], new: InstructionMatch | list[InstructionMatch]) -> int:
         if isinstance(new, list):
             for elem in new:
                 logging.log(self.level, elem)
@@ -193,14 +193,14 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         return 1
 
     @override
-    def match(self, instructions : typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=too-many-branches,too-many-return-statements,too-many-statements
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=too-many-branches,too-many-return-statements,too-many-statements
         """
         .. note::
 
             For data types that require many loads or stores, the operation instructions might be interleaved, such that the
             sequence within the memory thread fences is not strictly load/operation/store.
         """
-        matched : list[InstructionMatch] = []
+        matched: list[InstructionMatch] = []
 
         # First, try to atomically acquire a lock.
         matcher_start = instructions_contain(matcher = AtomicAcquireMatcher.build(arch = self.arch, compiler_id = self.compiler_id))
@@ -222,7 +222,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         offset += self.collect(matched = matched, new = matched_plop3_lut)
 
         # Then, ISETP.NE.AND that reuses the register in which the atomic acquire put its result.
-        modifiers : tuple[str, ...]
+        modifiers: tuple[str, ...]
         match self.compiler_id:
             case 'NVIDIA':
                 modifiers = ('NE', 'AND')

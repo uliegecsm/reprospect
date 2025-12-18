@@ -97,13 +97,13 @@ class TestNVIDIAArch:
         assert repr(NVIDIAArch.from_compute_capability(86)) == "NVIDIAArch(family=<NVIDIAFamily.AMPERE: 'AMPERE'>, compute_capability=ComputeCapability(major=8, minor=6))"
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_str_cycle(self, parameters : Parameters) -> None:
+    def test_str_cycle(self, parameters: Parameters) -> None:
         assert NVIDIAArch.from_str(str(parameters.arch)) == parameters.arch
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_cc_cycle(self, parameters : Parameters) -> None:
+    def test_cc_cycle(self, parameters: Parameters) -> None:
         assert NVIDIAArch.from_compute_capability(parameters.arch.compute_capability.as_int) == parameters.arch
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
-    def test_in_cuda_support(self, parameters : Parameters) -> None:
+    def test_in_cuda_support(self, parameters: Parameters) -> None:
         assert parameters.arch.compute_capability.as_int in CUDA_SUPPORT

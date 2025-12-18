@@ -18,9 +18,9 @@ class GPUDetector:
 
         By default, results are cached.
     """
-    COLUMNS : typing.ClassVar[dict[str, type[str] | numpy.dtype]] = {'uuid' : str, 'index' : numpy.dtype('int32'), 'name' : str, 'compute_cap' : str}
+    COLUMNS: typing.ClassVar[dict[str, type[str] | numpy.dtype]] = {'uuid': str, 'index': numpy.dtype('int32'), 'name': str, 'compute_cap': str}
 
-    _cache : typing.ClassVar[pandas.DataFrame | None] = None
+    _cache: typing.ClassVar[pandas.DataFrame | None] = None
 
     @classmethod
     def clear_cache(cls) -> None:
@@ -30,7 +30,7 @@ class GPUDetector:
         cls._cache = None
 
     @classmethod
-    def get(cls, *, cache : bool = True, enrich : bool = True) -> pandas.DataFrame:
+    def get(cls, *, cache: bool = True, enrich: bool = True) -> pandas.DataFrame:
         if cache and cls._cache is not None:
             return cls._cache
 
@@ -42,11 +42,11 @@ class GPUDetector:
         return results
 
     @classmethod
-    def detect(cls, *, enrich : bool = True) -> pandas.DataFrame:
+    def detect(cls, *, enrich: bool = True) -> pandas.DataFrame:
         """
         Implementation of the detection.
         """
-        CMD : tuple[str, ...] = ('nvidia-smi', '--query-gpu=' + ','.join(cls.COLUMNS.keys()), '--format=csv') # pylint: disable=invalid-name
+        CMD: tuple[str, ...] = ('nvidia-smi', '--query-gpu=' + ','.join(cls.COLUMNS.keys()), '--format=csv') # pylint: disable=invalid-name
 
         if shutil.which('nvidia-smi') is not None:
             gpus = pandas.read_csv(
@@ -66,7 +66,7 @@ class GPUDetector:
         return pandas.DataFrame(columns = cls.COLUMNS.keys()) # type: ignore[arg-type]
 
     @classmethod
-    def count(cls, *, cache : bool = True) -> int:
+    def count(cls, *, cache: bool = True) -> int:
         """
         Get the number of available GPUs.
         """

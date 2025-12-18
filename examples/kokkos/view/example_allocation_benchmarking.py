@@ -65,27 +65,27 @@ class Framework(StrEnum):
     KOKKOS = 'Kokkos'
 
 class Parameters(typing.TypedDict):
-    use_async : bool
-    framework : Framework
-    count : int
-    size : int
+    use_async: bool
+    framework: Framework
+    count: int
+    size: int
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason = 'needs a GPU')
 class TestAllocation(CMakeAwareTestCase):
     """
     Run the companion executable and make a nice visualization.
     """
-    TIME_UNIT :typing.Final = 'ns'
+    TIME_UNIT:typing.Final = 'ns'
     """
     Time unit of the benchmark.
     """
 
-    THRESHOLD : typing.Final[int] = 40000
+    THRESHOLD: typing.Final[int] = 40000
     """
     Threshold for using stream ordered allocation, see https://github.com/kokkos/kokkos/blob/146241cf3a68454527994a46ac473861c2b5d4f1/core/src/Cuda/Kokkos_CudaSpace.cpp#L147.
     """
 
-    PATTERN : typing.Final[re.Pattern[str]] = re.compile(
+    PATTERN: typing.Final[re.Pattern[str]] = re.compile(
         r'^With(CUDA|Kokkos)<(true|false)>/((?:cuda|kokkos)(?:_async)?)/count:([0-9]+)/size:([0-9]+)',
     )
 
@@ -95,7 +95,7 @@ class TestAllocation(CMakeAwareTestCase):
         return 'examples_kokkos_view_allocation_benchmarking'
 
     @classmethod
-    def params(cls, *, name : str) -> Parameters:
+    def params(cls, *, name: str) -> Parameters:
         """
         Parse the name of a case and return parameters.
         """
@@ -114,10 +114,10 @@ class TestAllocation(CMakeAwareTestCase):
         assert match.group(3) == expt_name
 
         return {
-            'framework' : framework,
-            'use_async' : use_async,
-            'count' : int(match.group(4)),
-            'size' : int(match.group(5)),
+            'framework': framework,
+            'use_async': use_async,
+            'count': int(match.group(4)),
+            'size': int(match.group(5)),
         }
 
     @pytest.fixture(scope = 'class')
@@ -129,9 +129,9 @@ class TestAllocation(CMakeAwareTestCase):
 
             Be sure to remove `--benchmark_min_time` for better converged results.
         """
-        file : pathlib.Path = self.cwd / 'results.json'
+        file: pathlib.Path = self.cwd / 'results.json'
 
-        cmd : tuple[str | pathlib.Path, ...] = (
+        cmd: tuple[str | pathlib.Path, ...] = (
             self.executable,
             '--benchmark_min_time=2x',
             '--benchmark_enable_random_interleaving=true',
@@ -147,7 +147,7 @@ class TestAllocation(CMakeAwareTestCase):
             return json.load(fp = fp)
 
     @pytest.fixture(scope = 'class')
-    def results(self, raw : dict) -> pandas.DataFrame:
+    def results(self, raw: dict) -> pandas.DataFrame:
         """
         Processed results.
         """
@@ -168,7 +168,7 @@ class TestAllocation(CMakeAwareTestCase):
         """
         Retrieve the memory pool attributes and check consistency and behavior.
         """
-        COLUMNS : typing.Final[tuple[str, ...]] = (
+        COLUMNS: typing.Final[tuple[str, ...]] = (
             'ReservedMemCurrent',
             'ReservedMemHigh',
             'UsedMemCurrent',
@@ -203,7 +203,7 @@ class TestAllocation(CMakeAwareTestCase):
         steps = numpy.diff(numpy.sort(attributes['ReservedMemHigh'].unique()))
         assert (steps % STEP_SIZE == 0).all()
 
-    def test_visualize(self, results : pandas.DataFrame) -> None:
+    def test_visualize(self, results: pandas.DataFrame) -> None:
         """
         Create a visualization of the results.
         """
@@ -214,27 +214,27 @@ class TestAllocation(CMakeAwareTestCase):
         logging.info(f'Counts are {counts}.')
 
         # Factor for size (results are initially in bytes).
-        SIZE_FACTOR : typing.Final[int] = 1000
-        SIZE_UNIT   : typing.Final[str] = 'kB'
+        SIZE_FACTOR: typing.Final[int] = 1000
+        SIZE_UNIT: typing.Final[str] = 'kB'
 
         # Legend.
         FONTSIZE = 22
 
-        LINESTYLES : typing.Final[dict[bool, matplotlib.lines.Line2D]] = {
-            True  : matplotlib.lines.Line2D((0,), (0,), color = 'black', linestyle = 'solid',  lw = 4, label = 'async'),
-            False : matplotlib.lines.Line2D((0,), (0,), color = 'black', linestyle = 'dotted', lw = 4, label = 'sync'),
+        LINESTYLES: typing.Final[dict[bool, matplotlib.lines.Line2D]] = {
+            True: matplotlib.lines.Line2D((0,), (0,), color = 'black', linestyle = 'solid',  lw = 4, label = 'async'),
+            False: matplotlib.lines.Line2D((0,), (0,), color = 'black', linestyle = 'dotted', lw = 4, label = 'sync'),
         }
 
-        MARKERS : typing.Final[dict[Framework, matplotlib.lines.Line2D]] = {
-            Framework.CUDA   : matplotlib.lines.Line2D((0,), (0,), color = 'black', marker = 's', linestyle = '', markersize = 10, markerfacecolor = 'grey', label = 'CUDA'),
-            Framework.KOKKOS : matplotlib.lines.Line2D((0,), (0,), color = 'black', marker = 'o', linestyle = '', markersize = 10, markerfacecolor = 'grey', label = 'Kokkos'),
+        MARKERS: typing.Final[dict[Framework, matplotlib.lines.Line2D]] = {
+            Framework.CUDA: matplotlib.lines.Line2D((0,), (0,), color = 'black', marker = 's', linestyle = '', markersize = 10, markerfacecolor = 'grey', label = 'CUDA'),
+            Framework.KOKKOS: matplotlib.lines.Line2D((0,), (0,), color = 'black', marker = 'o', linestyle = '', markersize = 10, markerfacecolor = 'grey', label = 'Kokkos'),
         }
 
-        COLORS : typing.Final[dict[int, matplotlib.lines.Line2D]] = {
-            1  : matplotlib.lines.Line2D((0,), (0,), color = 'black', lw = 2, linestyle = 'solid', label = '1'),
-            4  : matplotlib.lines.Line2D((0,), (0,), color = 'red',   lw = 2, linestyle = 'solid', label = '4'),
-            8  : matplotlib.lines.Line2D((0,), (0,), color = 'green', lw = 2, linestyle = 'solid', label = '8'),
-            12 : matplotlib.lines.Line2D((0,), (0,), color = 'blue',  lw = 2, linestyle = 'solid', label = '12'),
+        COLORS: typing.Final[dict[int, matplotlib.lines.Line2D]] = {
+            1: matplotlib.lines.Line2D((0,), (0,), color = 'black', lw = 2, linestyle = 'solid', label = '1'),
+            4: matplotlib.lines.Line2D((0,), (0,), color = 'red',   lw = 2, linestyle = 'solid', label = '4'),
+            8: matplotlib.lines.Line2D((0,), (0,), color = 'green', lw = 2, linestyle = 'solid', label = '8'),
+            12: matplotlib.lines.Line2D((0,), (0,), color = 'blue',  lw = 2, linestyle = 'solid', label = '12'),
         }
 
         # Make a nice plot.
@@ -293,11 +293,11 @@ class TestAllocation(CMakeAwareTestCase):
 class HandleSubtitle(matplotlib.legend_handler.HandlerBase):
     @override
     def create_artists(self,
-        legend : matplotlib.legend.Legend,
-        orig_handle : matplotlib.artist.Artist,
-        xdescent : float, ydescent : float,
-        width : float, height : float,
-        fontsize : float, trans: matplotlib.transforms.Transform,
+        legend: matplotlib.legend.Legend,
+        orig_handle: matplotlib.artist.Artist,
+        xdescent: float, ydescent: float,
+        width: float, height: float,
+        fontsize: float, trans: matplotlib.transforms.Transform,
     ) -> list[matplotlib.artist.Artist]:
         if not isinstance(orig_handle, Subtitle):
             raise TypeError('Wrong usage.')
@@ -311,8 +311,8 @@ class HandleSubtitle(matplotlib.legend_handler.HandlerBase):
         return [text]
 
 class Subtitle:
-    def __init__(self, text : str):
-        self.text : typing.Final[str] = text
+    def __init__(self, text: str):
+        self.text: typing.Final[str] = text
 
     def get_label(self) -> str:
         return ''

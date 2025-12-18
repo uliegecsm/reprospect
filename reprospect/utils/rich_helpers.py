@@ -8,10 +8,10 @@ import rich.tree
 import rich_tools
 
 def to_string(
-    ro : rich.table.Table | rich.tree.Tree,
+    ro: rich.table.Table | rich.tree.Tree,
     *,
-    width : int = 200,
-    no_wrap : bool = True,
+    width: int = 200,
+    no_wrap: bool = True,
     **kwargs,
 ) -> str:
     """
@@ -22,7 +22,7 @@ def to_string(
         console.print(ro, no_wrap = no_wrap)
     return capture.get()
 
-def ds_to_table(ds : pandas.Series) -> rich.table.Table:
+def ds_to_table(ds: pandas.Series) -> rich.table.Table:
     """
     Convert a :py:class:`pandas.Series` to a :py:class:`rich.table.Table`.
     """
@@ -33,10 +33,10 @@ def ds_to_table(ds : pandas.Series) -> rich.table.Table:
     return rt
 
 def df_to_table(
-    df : pandas.DataFrame,
+    df: pandas.DataFrame,
     *,
-    rich_table : rich.table.Table | None = None,
-    show_index : bool = False,
+    rich_table: rich.table.Table | None = None,
+    show_index: bool = False,
     **kwargs,
 ) -> rich.table.Table:
     """

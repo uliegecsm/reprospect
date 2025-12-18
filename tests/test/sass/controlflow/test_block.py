@@ -17,13 +17,13 @@ from tests.parameters import Parameters, PARAMETERS
 from tests.test.sass.test_instruction import get_compilation_output
 
 class TestBasicBlock:
-    FILE : typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent.parent / 'assets' / 'test_half.cu'
+    FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent.parent / 'assets' / 'test_half.cu'
 
-    SIGNATURE_INDIVIDUAL : typing.Final[str] = 'pow2_individual(__half *, const __half *, unsigned int)'
-    SIGNATURE_PACKED : typing.Final[str] = 'pow2_packed(__half *, const __half *, unsigned int)'
+    SIGNATURE_INDIVIDUAL: typing.Final[str] = 'pow2_individual(__half *, const __half *, unsigned int)'
+    SIGNATURE_PACKED: typing.Final[str] = 'pow2_packed(__half *, const __half *, unsigned int)'
 
     @pytest.fixture(scope='class')
-    def cuobjdump(self, workdir : pathlib.Path, parameters : Parameters, cmake_file_api : cmake.FileAPI) -> CuObjDump:
+    def cuobjdump(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> CuObjDump:
         output, _ = get_compilation_output(
             source=self.FILE,
             cwd=workdir,

@@ -38,7 +38,7 @@ extensions = [
 
 html_theme = 'sphinx_rtd_theme'
 html_theme_options = {
-    "style_external_links" : True,
+    "style_external_links": True,
 }
 html_static_path = ['_static']
 html_logo = '_static/logo.svg'
@@ -50,32 +50,32 @@ extlinks = {
 }
 
 intersphinx_mapping = {
-    'cuda-bindings' : ('https://nvidia.github.io/cuda-python/cuda-bindings/latest/', None),
-    'cuda-core' : ('https://nvidia.github.io/cuda-python/cuda-core/latest/', None),
-    'matplotlib' : ('https://matplotlib.org/stable/', None),
-    'numpy' : ('https://numpy.org/doc/stable/', None),
-    'packaging' : ('https://packaging.pypa.io/en/stable/', None),
-    'pandas' : ('https://pandas.pydata.org/pandas-docs/stable/', None),
-    'python' : ('https://docs.python.org/3', None),
-    'rich' : ('https://rich.readthedocs.io/en/stable/', None),
-    'semantic_version' : ('https://python-semanticversion.readthedocs.io/en/latest/', None),
+    'cuda-bindings': ('https://nvidia.github.io/cuda-python/cuda-bindings/latest/', None),
+    'cuda-core': ('https://nvidia.github.io/cuda-python/cuda-core/latest/', None),
+    'matplotlib': ('https://matplotlib.org/stable/', None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'packaging': ('https://packaging.pypa.io/en/stable/', None),
+    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'python': ('https://docs.python.org/3', None),
+    'rich': ('https://rich.readthedocs.io/en/stable/', None),
+    'semantic_version': ('https://python-semanticversion.readthedocs.io/en/latest/', None),
 }
 
 autodoc_default_options = {
-    'members' : True,
-    'special-members' : '__str__,__init__,__enter__,__exit__',
-    'show-inheritance' : True,
-    'undoc-members' : True,
+    'members': True,
+    'special-members': '__str__,__init__,__enter__,__exit__',
+    'show-inheritance': True,
+    'undoc-members': True,
 }
 
 autodoc_inherit_docstrings = False
 
 apidoc_modules = [
     {
-        'path' : PROJECT_DIR / project.lower(),
-        'destination' : 'api',
-        'max_depth' : 4,
-        'implicit_namespaces' : True,
+        'path': PROJECT_DIR / project.lower(),
+        'destination': 'api',
+        'max_depth': 4,
+        'implicit_namespaces': True,
     },
 ]
 
@@ -121,14 +121,14 @@ nitpick_ignore_regex = [
 nb_merge_streams = True
 nb_execution_in_temp = True
 
-def get_last_commit(*, file : pathlib.Path, cwd : pathlib.Path) -> str:
+def get_last_commit(*, file: pathlib.Path, cwd: pathlib.Path) -> str:
     """
     Get the last commit hash that modified `file`.
     """
     cmd = ('git', 'log', '-n', '1', '--pretty=format:%H', '--', file)
     return subprocess.check_output(args = cmd, cwd = cwd, text = True).strip()
 
-def lastcommit(name : str, rawtext : str, text : str, lineno : int, inliner : docutils.parsers.rst.states.Inliner, **kwargs) -> tuple[list[docutils.nodes.Node], list[docutils.nodes.system_message]]:
+def lastcommit(name: str, rawtext: str, text: str, lineno: int, inliner: docutils.parsers.rst.states.Inliner, **kwargs) -> tuple[list[docutils.nodes.Node], list[docutils.nodes.system_message]]:
     """
     References:
 

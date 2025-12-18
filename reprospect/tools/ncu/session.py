@@ -19,23 +19,23 @@ class Command: # pylint: disable=too-many-instance-attributes
     """Executable to run."""
     output: pathlib.Path
     """Report file."""
-    opts : tuple[str, ...] = ()
+    opts: tuple[str, ...] = ()
     """Options that do not involve paths."""
     log: pathlib.Path = attrs.field(init = False)
     """Log file."""
-    metrics : tuple[MetricKind, ...] | None = None
+    metrics: tuple[MetricKind, ...] | None = None
     """Metrics."""
-    nvtx_includes : tuple[str, ...] | None = None
+    nvtx_includes: tuple[str, ...] | None = None
     """
     NVTX include.
     Refer to https://docs.nvidia.com/nsight-compute/2023.3/NsightComputeCli/index.html#nvtx-filtering.
     """
     args: tuple[str | pathlib.Path, ...] | None = None
     """Arguments to pass to the executable."""
-    env : typing.Mapping[str, str] | None = None
+    env: typing.Mapping[str, str] | None = None
     """Mapping used to update the environment before running, see :py:meth:`run`."""
 
-    cmd : tuple[str | pathlib.Path, ...] = attrs.field(init = False)
+    cmd: tuple[str | pathlib.Path, ...] = attrs.field(init = False)
 
     def __attrs_post_init__(self) -> None:
         """
@@ -45,7 +45,7 @@ class Command: # pylint: disable=too-many-instance-attributes
         object.__setattr__(self, 'log', self.output.with_suffix('.log'))
 
         # Enrich the options.
-        opts : tuple[str, ...] = self.opts + (
+        opts: tuple[str, ...] = self.opts + (
             '--print-summary=per-kernel',
             '--warp-sampling-interval=0',
         )
@@ -72,8 +72,8 @@ class Command: # pylint: disable=too-many-instance-attributes
         ))
 
     def run(self, *,
-        cwd : pathlib.Path | None = None,
-        env : typing.MutableMapping[str, str] | None = None,
+        cwd: pathlib.Path | None = None,
+        env: typing.MutableMapping[str, str] | None = None,
     ) -> int:
         if self.env is not None:
             if env is None:
@@ -86,14 +86,14 @@ class Session:
     """
     `Nsight Compute` session interface.
     """
-    command : Command
+    command: Command
 
     def run(
         self,
-        cwd : pathlib.Path | None = None,
-        env : typing.MutableMapping | None = None,
-        retries : int = 1,
-        sleep : typing.Callable[[int, int], float] = lambda retry, retries: 3. * (1. - retry / retries),
+        cwd: pathlib.Path | None = None,
+        env: typing.MutableMapping | None = None,
+        retries: int = 1,
+        sleep: typing.Callable[[int, int], float] = lambda retry, retries: 3. * (1. - retry / retries),
     ) -> None:
         """
         Run ``ncu`` using :py:attr:`command`.

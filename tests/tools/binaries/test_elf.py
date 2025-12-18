@@ -12,12 +12,21 @@ import semantic_version
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump
-from reprospect.tools.binaries.elf import ELF, TkInfo, CuInfo, NvInfo, NvInfoEntry, NvInfoEIFMT, NvInfoEIATTR
+from reprospect.tools.binaries.elf import (
+    ELF,
+    CuInfo,
+    NvInfo,
+    NvInfoEIATTR,
+    NvInfoEIFMT,
+    NvInfoEntry,
+    TkInfo,
+)
 from reprospect.utils import cmake, nvcc
 
 from tests.compilation import get_compilation_output, get_cubin_name
 from tests.cublas import CuBLAS
-from tests.parameters import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
+
 
 @functools.cache
 def nvcc_version() -> semantic_version.Version:

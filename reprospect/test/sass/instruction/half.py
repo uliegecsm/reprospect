@@ -5,6 +5,7 @@ import regex
 from reprospect.test.sass.instruction.instruction import PatternMatcher
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 
+
 class Fp16(PatternMatcher):
     """
     Helper for FP16 matchers.

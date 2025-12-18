@@ -5,6 +5,7 @@ from setuptools import setup
 from setuptools.dist import Distribution
 from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
 
+
 def enable_mypyc(dist: Distribution) -> None:
     """
     Enable `mypyc` as extension modules.

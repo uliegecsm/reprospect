@@ -6,9 +6,15 @@ import subprocess
 import pytest
 import semantic_version
 
-from reprospect.tools.architecture import CUDA_SUPPORT, ComputeCapability, NVIDIAFamily, NVIDIAArch
+from reprospect.tools.architecture import (
+    CUDA_SUPPORT,
+    ComputeCapability,
+    NVIDIAArch,
+    NVIDIAFamily,
+)
 
-from tests.parameters import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
+
 
 class TestComputeCapability:
     """

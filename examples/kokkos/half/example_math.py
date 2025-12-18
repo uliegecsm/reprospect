@@ -39,9 +39,9 @@ import pytest
 
 from reprospect.test import CMakeAwareTestCase
 from reprospect.test.sass.composite import (
+    instruction_is,
     instructions_are,
     instructions_contain,
-    instruction_is,
 )
 from reprospect.test.sass.controlflow.block import BasicBlockMatcher
 from reprospect.test.sass.instruction import (
@@ -54,8 +54,8 @@ from reprospect.test.sass.instruction import (
 from reprospect.test.sass.instruction.half import Fp16AddMatcher, Fp16MinMaxMatcher
 from reprospect.test.sass.matchers.convert_fp32_to_fp16 import ConvertFp32ToFp16
 from reprospect.tools.binaries import CuObjDump
-from reprospect.tools.sass.controlflow import BasicBlock
 from reprospect.tools.sass import ControlFlow, Decoder, Instruction
+from reprospect.tools.sass.controlflow import BasicBlock
 
 if sys.version_info >= (3, 12):
     from typing import override

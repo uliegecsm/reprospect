@@ -4,6 +4,7 @@ import pytest
 
 from reprospect.tools.binaries import CuppFilt, LlvmCppFilt
 
+
 class TestCuppFilt:
     """
     Test :py:class:`reprospect.tools.binaries.CuppFilt`.

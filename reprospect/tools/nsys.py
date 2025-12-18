@@ -18,8 +18,7 @@ import pandas
 import rich.tree
 
 from reprospect.tools import cacher
-from reprospect.utils import ldd
-from reprospect.utils import rich_helpers
+from reprospect.utils import ldd, rich_helpers
 
 if sys.version_info >= (3, 12):
     from typing import override

@@ -12,8 +12,11 @@ import attrs
 import mypy_extensions
 
 from reprospect.test.sass.instruction import (
-    InstructionMatcher, InstructionMatch,
-    AddressMatcher, ConstantMatcher, RegisterMatcher,
+    AddressMatcher,
+    ConstantMatcher,
+    InstructionMatch,
+    InstructionMatcher,
+    RegisterMatcher,
 )
 from reprospect.tools.sass import Instruction
 

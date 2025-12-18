@@ -5,6 +5,7 @@ import pytest
 
 from reprospect.test.environment import EnvironmentField
 
+
 class TestEnvironmentField:
     """
     Tests for :py:class:`reprospect.test.environment.EnvironmentField`.

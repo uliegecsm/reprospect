@@ -1,4 +1,4 @@
-from .case import TestCase, CMakeAwareTestCase
+from .case import CMakeAwareTestCase, TestCase
 
 __all__ = (
     'CMakeAwareTestCase',

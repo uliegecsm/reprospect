@@ -4,6 +4,7 @@ import pytest
 
 from reprospect.test.sass.instruction import BranchMatcher, InstructionMatch
 
+
 class TestBranchMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.BranchMatcher`.

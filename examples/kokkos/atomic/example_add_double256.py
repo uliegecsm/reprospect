@@ -4,8 +4,15 @@ import sys
 import typing
 
 from reprospect.test.features import Memory
-from reprospect.test.sass.composite import instruction_is, unordered_interleaved_instructions_are, interleaved_instructions_are
-from reprospect.test.sass.composite_impl import UnorderedInSequenceMatcher, SequenceMatcher
+from reprospect.test.sass.composite import (
+    instruction_is,
+    interleaved_instructions_are,
+    unordered_interleaved_instructions_are,
+)
+from reprospect.test.sass.composite_impl import (
+    SequenceMatcher,
+    UnorderedInSequenceMatcher,
+)
 from reprospect.test.sass.instruction import (
     InstructionMatch,
     LoadGlobalMatcher,

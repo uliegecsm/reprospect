@@ -10,6 +10,7 @@ import attrs
 
 from reprospect.tools.ncu.metrics import MetricKind, gather
 
+
 @attrs.define(frozen = True, slots = True, kw_only = True)
 class Command: # pylint: disable=too-many-instance-attributes
     """

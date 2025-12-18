@@ -7,10 +7,6 @@ import pytest
 import regex
 import semantic_version
 
-from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries import CuObjDump
-from reprospect.tools.sass import Decoder
-from reprospect.utils import cmake
 from reprospect.test.sass.composite import findunique
 from reprospect.test.sass.instruction import (
     AtomicMatcher,
@@ -19,9 +15,13 @@ from reprospect.test.sass.instruction import (
     PatternBuilder,
     ReductionMatcher,
 )
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.binaries import CuObjDump
+from reprospect.tools.sass import Decoder
+from reprospect.utils import cmake
 
 from tests.compilation import get_compilation_output
-from tests.parameters import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
 
 CODE_ELEMENTWISE_ADD_RESTRICT = """\
 __global__ void elementwise_add_restrict(int* __restrict__ const dst, const int* __restrict__ const src) {

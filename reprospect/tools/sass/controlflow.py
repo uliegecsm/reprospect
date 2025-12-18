@@ -4,6 +4,7 @@ import typing
 
 from reprospect.tools.sass.decode import Decoder, Instruction
 
+
 @dataclasses.dataclass(frozen = True, slots = True)
 class BasicBlock:
     """

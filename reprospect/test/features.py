@@ -22,6 +22,7 @@ import semantic_version
 
 from reprospect.tools.architecture import NVIDIAArch
 
+
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
 class Memory:
     arch: NVIDIAArch

@@ -55,13 +55,23 @@ import typing
 
 import pytest
 
-from reprospect.test                  import environment
-from reprospect.test.case             import CMakeAwareTestCase
+from reprospect.test import environment
+from reprospect.test.case import CMakeAwareTestCase
 from reprospect.test.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
-from reprospect.tools.binaries        import CuObjDump
-from reprospect.tools.sass            import Decoder
-from reprospect.tools.ncu             import Metric, MetricCounter, MetricCounterRollUp, MetricCorrelation, L1TEXCache, Command, Report, ProfilingMetrics, Cacher
-from reprospect.utils                 import detect
+from reprospect.tools.binaries import CuObjDump
+from reprospect.tools.ncu import (
+    Cacher,
+    Command,
+    L1TEXCache,
+    Metric,
+    MetricCorrelation,
+    MetricCounter,
+    MetricCounterRollUp,
+    ProfilingMetrics,
+    Report,
+)
+from reprospect.tools.sass import Decoder
+from reprospect.utils import detect
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum

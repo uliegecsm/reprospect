@@ -5,6 +5,7 @@ import pytest
 
 from reprospect.utils import cmake
 
+
 @pytest.fixture(scope = 'session')
 def bindir() -> pathlib.Path:
     return pathlib.Path(os.environ['CMAKE_BINARY_DIR'])

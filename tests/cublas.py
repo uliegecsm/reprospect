@@ -8,8 +8,9 @@ import random
 import typing
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import CuObjDump
-from reprospect.utils              import cmake
+from reprospect.tools.binaries import CuObjDump
+from reprospect.utils import cmake
+
 
 class CuBLAS:
     CUDA_CUDART: typing.Final[str] = 'CUDA_CUDART'

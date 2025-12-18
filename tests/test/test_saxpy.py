@@ -4,11 +4,11 @@ import typing
 
 import pytest
 
-from reprospect.test           import CMakeAwareTestCase
+from reprospect.test import CMakeAwareTestCase
+from reprospect.tools import ncu
 from reprospect.tools.binaries import CuObjDump
-from reprospect.tools          import ncu
-from reprospect.tools.sass     import Decoder
-from reprospect.utils          import detect
+from reprospect.tools.sass import Decoder
+from reprospect.utils import detect
 
 if sys.version_info >= (3, 12):
     from typing import override

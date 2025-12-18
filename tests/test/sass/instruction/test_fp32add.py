@@ -3,10 +3,14 @@ import logging
 import pytest
 
 from reprospect.test.sass.instruction import Fp32AddMatcher
-from reprospect.utils                 import cmake
+from reprospect.utils import cmake
 
-from tests.parameters                 import Parameters, PARAMETERS
-from tests.test.sass.test_instruction import get_decoder, CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE
+from tests.parameters import PARAMETERS, Parameters
+from tests.test.sass.test_instruction import (
+    CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE,
+    get_decoder,
+)
+
 
 class TestFp32AddMatcher:
     """

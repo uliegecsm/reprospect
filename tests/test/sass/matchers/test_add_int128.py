@@ -6,13 +6,14 @@ import typing
 
 import pytest
 
-from reprospect.test.sass.composite   import instructions_contain, instruction_is
+from reprospect.test.sass.composite import instruction_is, instructions_contain
 from reprospect.test.sass.instruction import LoadGlobalMatcher, RegisterMatcher
-from reprospect.test.sass.matchers    import add_int128
-from reprospect.utils                 import cmake
+from reprospect.test.sass.matchers import add_int128
+from reprospect.utils import cmake
 
-from tests.parameters                 import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
 from tests.test.sass.test_instruction import get_decoder
+
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestAddInt128:

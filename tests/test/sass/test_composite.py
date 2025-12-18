@@ -3,24 +3,38 @@ import typing
 import pytest
 
 from reprospect.test.sass.composite import (
+    Fluentizer,
     any_of,
     findall,
     findunique,
-    Fluentizer,
-    instruction_is, instructions_are, instructions_contain,
+    instruction_is,
+    instructions_are,
+    instructions_contain,
     interleaved_instructions_are,
-    unordered_interleaved_instructions_are, unordered_instructions_are,
+    unordered_instructions_are,
+    unordered_interleaved_instructions_are,
 )
 from reprospect.test.sass.composite_impl import (
     AnyOfMatcher,
+    InSequenceAtMatcher,
     InSequenceMatcher,
-    InSequenceAtMatcher, OrderedInterleavedInSequenceMatcher,
-    OneOrMoreInSequenceMatcher, UnorderedInterleavedInSequenceMatcher,
-    OrderedInSequenceMatcher, UnorderedInSequenceMatcher,
+    OneOrMoreInSequenceMatcher,
+    OrderedInSequenceMatcher,
+    OrderedInterleavedInSequenceMatcher,
+    UnorderedInSequenceMatcher,
+    UnorderedInterleavedInSequenceMatcher,
     ZeroOrMoreInSequenceMatcher,
 )
-from reprospect.test.sass.instruction import AnyMatcher, Fp64AddMatcher, Fp32AddMatcher, InstructionMatch, OpcodeModsMatcher, RegisterMatcher
+from reprospect.test.sass.instruction import (
+    AnyMatcher,
+    Fp32AddMatcher,
+    Fp64AddMatcher,
+    InstructionMatch,
+    OpcodeModsMatcher,
+    RegisterMatcher,
+)
 from reprospect.tools.sass.decode import RegisterType
+
 
 class TestInstructionIs:
     """

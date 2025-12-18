@@ -2,8 +2,8 @@ import logging
 import pathlib
 import subprocess
 
-from reprospect.utils              import cmake
 from reprospect.tools.architecture import NVIDIAArch
+from reprospect.utils import cmake
 
 QUALITY_FLAGS: tuple[str, ...] = ('-Wall', '-Wextra', '-Werror')
 

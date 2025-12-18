@@ -10,6 +10,7 @@ import mypy_extensions
 import regex
 import semantic_version
 
+from reprospect.test.sass.instruction import _instruction
 from reprospect.test.sass.instruction.operand import Operand
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.architecture import NVIDIAArch
@@ -329,7 +330,7 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
             predicate=False,
         ))
 
-class AnyMatcher(PatternMatcher):
+class AnyMatcher(InstructionMatcher):
     """
     Match any instruction.
 
@@ -351,7 +352,9 @@ class AnyMatcher(PatternMatcher):
     >>> AnyMatcher().match(inst = 'RET.REL.NODEC R4 0x0')
     InstructionMatch(opcode='RET', modifiers=('REL', 'NODEC'), operands=('R4', '0x0'), predicate=None, additional=None)
     """
-    PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(PatternMatcher.build_pattern())
-
-    def __init__(self) -> None:
-        super().__init__(pattern=self.PATTERN)
+    @override
+    @typing.final
+    def match(self, inst: Instruction | str) -> InstructionMatch | None:
+        if (matched := _instruction.parse_any(instruction=inst.instruction if isinstance(inst, Instruction) else inst)) is not None:
+            return InstructionMatch(opcode=matched[0], modifiers=matched[1], operands=matched[2], predicate=matched[3])
+        return None

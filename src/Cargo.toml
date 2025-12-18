@@ -1,0 +1,12 @@
+[package]
+name = "reprospect"
+edition = "2021"
+
+[dependencies.pyo3]
+version = "0.27.2"
+features = ["extension-module"]
+
+[lib]
+path = "lib.rs"
+name = "_impl"
+crate-type = ["cdylib"]

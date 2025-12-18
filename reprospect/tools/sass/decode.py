@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import io
-import logging
 import pathlib
-import re
 import sys
 import typing
 
@@ -12,6 +10,7 @@ import mypy_extensions
 import pandas
 import rich.table
 
+from reprospect.tools.sass import _decode
 from reprospect.utils import rich_helpers
 
 if sys.version_info >= (3, 11):
@@ -204,37 +203,6 @@ class Decoder(rich_helpers.TableMixin):
     """
     __slots__ = ('code', 'instructions', 'source')
 
-    OFFSET: typing.Final[str] = r'[a-f0-9]+'
-
-    HEXADECIMAL: typing.Final[str] = r'0x[a-f0-9]+'
-    """
-    Matcher for an hex-like string, such as `0x00000a0000017a02`.
-    """
-
-    MATCHER_CONTROL: typing.Final[re.Pattern[str]] = re.compile(rf'\/\* ({HEXADECIMAL}) \*\/')
-
-    MATCHER: typing.Final[re.Pattern[str]] = re.compile(
-        rf'/\*({OFFSET})\*/'
-        r'\s+'
-        r'(.*?)(?=\s{2,}|[;?&])'
-        r'.*?'
-        rf'/\*\s*({HEXADECIMAL})\s*\*/',
-    )
-    """
-    Matcher for the full SASS line. It focuses on the offset, instruction and trailing hex encoding.
-
-    For instance, it matches::
-
-        /*0070*/                   UIMAD UR4, UR4, UR5, URZ ;                       /* 0x00000005040472a4 */
-
-    Note that sometimes, additional strings appear after the instruction and before the hex::
-
-        /*0090*/ ISETP.GE.U32.AND P0, PT, R0, UR9, PT            ?WAIT13_END_GROUP;  /* 0x0000000900007c0c */
-        /*00e0*/ LDC.64 R10, c[0x0][0x3a0]  &wr=0x2  ?trans8;    /* 0x0000e800ff0a7b82 */
-
-    These strings are ignored.
-    """
-
     def __init__(self, *, source: pathlib.Path | None = None, code: str | None = None, skip_until_headerflags: bool = True) -> None:
         """
         Initialize the decoder with the SASS contained in `source` or `code`.
@@ -260,6 +228,50 @@ class Decoder(rich_helpers.TableMixin):
         raise RuntimeError('Neither code nor source was given.')
 
     def _parse_lines(self, lines: typing.Iterable[str], *, skip_until_headerflags: bool = False) -> None:
+        """
+        Parse lines from ``cuobjdump`` output containing interleaved SASS instructions and control codes,
+        such as::
+
+            /*0070*/                   UIMAD UR4, UR4, UR5, URZ ;                       /* 0x00000005040472a4 */
+                                                                                        /* 0x040fe40003f05070 */
+
+        For each instruction-control pair, this method extracts:
+
+        * instruction offset (*e.g.*, ``0070``)
+        * normalized instruction text
+        * hexadecimal encoding
+        * corresponding :py:class:`ControlCode`
+
+        .. note::
+
+            Some instructions include annotation strings between the instruction and its encoding::
+
+                /*0090*/ ISETP.GE.U32.AND P0, PT, R0, UR9, PT            ?WAIT13_END_GROUP;  /* 0x0000000900007c0c */
+                /*00e0*/ LDC.64 R10, c[0x0][0x3a0]  &wr=0x2  ?trans8;    /* 0x0000e800ff0a7b82 */
+
+            These annotations (*e.g.*, ``?WAIT13_END_GROUP``, ``&wr=0x2``, ``?trans8``) are ignored during parsing.
+
+        .. note::
+
+            ``cuobjdump`` and ``nvdisasm`` occasionally produce instructions with formatting irregularities,
+            such as inconsistent whitespace, that complicate further parsing. This method normalizes these issues.
+
+            For instance, the following instructions::
+
+                HADD2.F32 R10, -RZ, c[0x0] [0x160].H0_H0
+                FSETP.GEU.AND P1, PT, |R151|, +INF , PT
+
+            are normalized to::
+
+                HADD2.F32 R10, -RZ, c[0x0][0x160].H0_H0
+                FSETP.GEU.AND P1, PT, |R151|, +INF, PT
+
+            These formatting issues are extremely rare, such that the normalization implementation must
+            incur as little overhead as possible.
+
+            Formatting irregularities have been observed *e.g.* in kernels from ``libcublas.27.sm_80.cubin``
+            (extracted from ``libcublas.so`` in CUDA 12.8.1) targeting the ``AMPERE80`` architecture.
+        """
         headerflags = False
 
         iterator: typing.Iterator[str] = iter(lines)
@@ -279,31 +291,17 @@ class Decoder(rich_helpers.TableMixin):
                 headerflags = '.headerflags' in line
                 continue
 
-            matchl = self.MATCHER.search(line)
-
-            if not matchl:
-                logging.error(f'The line:\n\t{line}\ndid not match {self.MATCHER}.')
-                raise RuntimeError(line)
-
-            # Peek next line safely (lookahead).
-            try:
-                next_line = next(iterator)
-            except StopIteration:
-                next_line = None
-
-            control: ControlCode | None = None
-
-            if next_line and (matchc := self.MATCHER_CONTROL.search(next_line)):
-                control = ControlCode.decode(code=matchc.group(1))
-
-            assert control is not None
+            offset, instruction, instruction_hex, controlcode_hex = _decode.parse_instruction_and_controlcode(
+                instruction=line,
+                controlcode=next(iterator),
+            )
 
             # Create instruction.
             self.instructions.append(Instruction(
-                offset=int(matchl.group(1), base=16),
-                instruction=matchl.group(2).rstrip(),
-                hex=matchl.group(3),
-                control=control,
+                offset=offset,
+                instruction=instruction,
+                hex=instruction_hex,
+                control=ControlCode.decode(code=controlcode_hex),
             ))
 
     def to_df(self) -> pandas.DataFrame:

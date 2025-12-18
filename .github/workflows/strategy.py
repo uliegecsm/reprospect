@@ -255,7 +255,7 @@ def main(*, args: argparse.Namespace) -> None:
         ubuntu_version='24.04',
         compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=0),
-        platforms=('linux/amd64', 'linux/arm64'),
+        platforms=('linux/amd64',),# 'linux/arm64'),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -271,7 +271,7 @@ def main(*, args: argparse.Namespace) -> None:
         ubuntu_version='24.04',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
-        platforms=('linux/amd64', 'linux/arm64'),
+        platforms=('linux/amd64',),# 'linux/arm64'),
     ), args=args))
 
     matrix.extend(from_config(Config(

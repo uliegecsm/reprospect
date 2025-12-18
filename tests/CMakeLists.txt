@@ -33,6 +33,16 @@ function(add_pytest FILE)
 
 endfunction()
 
+# Ensure that PyO3 extension modules are compiled.
+file(GLOB_RECURSE PYO3_RUST_SOURCES "${CMAKE_SOURCE_DIR}/src/*.rs")
+add_custom_target(
+    PyO3_extensions ALL
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_SOURCE_DIR}/setup.py
+            build_rust --inplace --release
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    DEPENDS ${PYO3_RUST_SOURCES} ${CMAKE_SOURCE_DIR}/setup.py
+)
+
 add_subdirectory(assets)
 add_subdirectory(test)
 add_subdirectory(tools)

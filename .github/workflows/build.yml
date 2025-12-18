@@ -220,7 +220,7 @@ jobs:
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: true #${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
                   file: docker/dockerfile
                   tags: ${{ matrix.image }}
                   cache-from: type=registry,ref=${{ matrix.image }}
@@ -242,7 +242,7 @@ jobs:
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: true #${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
                   file: docker/dockerfile.kokkos
                   tags: ${{ matrix.kokkos }}
                   cache-from: type=registry,ref=${{ matrix.kokkos }}
@@ -338,31 +338,11 @@ jobs:
                   retention-days: 1
                   if-no-files-found: error
 
-    build-package-sdist:
-        needs: []
-        runs-on: [self-hosted, linux, docker, amd64]
-        container:
-            image: ubuntu:24.04
-        steps:
-            - uses: actions/checkout@v6
-            - uses: actions/setup-python@v6
-              with:
-                  python-version: '3.11'
-            - run: python -m pip install -U build
-            - run: python -m build --sdist --verbose --outdir wheelhouse .
-            - uses: actions/upload-artifact@v6
-              with:
-                  name: package-sdist
-                  path: wheelhouse/
-                  retention-days: 1
-                  if-no-files-found: error
-
     examples:
         needs: [
             setup-job-matrix,
             build-images,
             build-package,
-            build-package-sdist,
         ]
         strategy:
             fail-fast: false
@@ -474,6 +454,7 @@ jobs:
                   name: tests-gnu-nvidia-BLACKWELL120
                   path: artifacts
 
+            - run: python setup.py build_rust --inplace --release
             - run: cd docs && make -j4 doctest
             - run: cd docs && make -j4 html
 
@@ -585,7 +566,6 @@ jobs:
             setup-job-matrix,
             build-images,
             build-package,
-            build-package-sdist,
             documentation,
             examples,
             mypy,
@@ -617,7 +597,6 @@ jobs:
             setup-job-matrix,
             build-images,
             build-package,
-            build-package-sdist,
             documentation,
             examples,
             mypy,

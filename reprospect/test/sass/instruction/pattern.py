@@ -1,6 +1,7 @@
 import functools
 import typing
 
+
 class PatternBuilder:
     """
     Helper class to build patterns for instruction components.

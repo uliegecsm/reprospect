@@ -41,7 +41,8 @@ import typing
 
 from reprospect.test.sass.composite import (
     any_of,
-    instructions_are, instruction_is,
+    instruction_is,
+    instructions_are,
     instructions_contain,
 )
 from reprospect.test.sass.composite_impl import (

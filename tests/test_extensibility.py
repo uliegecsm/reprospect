@@ -15,9 +15,14 @@ import typing
 import pytest
 import regex
 
-from reprospect.tools.sass            import Instruction, ControlCode
-from reprospect.test.sass.instruction import InstructionMatch, InstructionMatcher, PatternMatcher, Fp32AddMatcher
-from reprospect.test.sass.composite   import instruction_is
+from reprospect.test.sass.composite import instruction_is
+from reprospect.test.sass.instruction import (
+    Fp32AddMatcher,
+    InstructionMatch,
+    InstructionMatcher,
+    PatternMatcher,
+)
+from reprospect.tools.sass import ControlCode, Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

@@ -5,13 +5,13 @@ import re
 
 import pytest
 
-from reprospect.tools             import sass, binaries
+from reprospect.tools import binaries, sass
 from reprospect.tools.sass.decode import RegisterType
-from reprospect.utils             import cmake
+from reprospect.utils import cmake
 
 from tests.compilation import get_compilation_output
-from tests.cublas      import CuBLAS
-from tests.parameters  import Parameters, PARAMETERS
+from tests.cublas import CuBLAS
+from tests.parameters import PARAMETERS, Parameters
 
 FFMA = \
 """\

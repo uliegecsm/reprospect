@@ -3,6 +3,7 @@ import subprocess
 
 import semantic_version
 
+
 def get_version() -> semantic_version.Version:
     """
     Get version of ``nvcc``.

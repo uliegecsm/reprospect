@@ -2,10 +2,11 @@ import typing
 
 import pytest
 
-from reprospect.tools.architecture import NVIDIAArch
 from reprospect.test.sass.instruction.address import AddressMatch, AddressMatcher
+from reprospect.tools.architecture import NVIDIAArch
 
-from tests.parameters import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
+
 
 class TestAddressMatcher:
     """

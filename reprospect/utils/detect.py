@@ -10,6 +10,7 @@ import pandas
 
 from reprospect.tools import architecture
 
+
 class GPUDetector:
     """
     Detect all available GPUs using `nvidia-smi`.

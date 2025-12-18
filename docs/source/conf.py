@@ -1,12 +1,12 @@
 import datetime
-import pathlib
 import os
-import sys
+import pathlib
 import subprocess
-import tomllib
+import sys
 
 import docutils.nodes
 import docutils.parsers.rst.states
+import tomllib
 
 project = 'ReProspect'
 author = 'Tomasetti, R and Arnst, M.'
@@ -98,9 +98,11 @@ tikz_latex_preamble = r'\usepackage[dvipsnames]{xcolor}'
 # 'unittest.TestCase' is implemented in 'unittest.test.TestCase' but is documented
 # as 'unittest.TestCase', thus confusing 'intersphinx'.
 import unittest
+
 unittest.TestCase.__module__ = 'unittest'
 
 import semantic_version
+
 semantic_version.SimpleSpec.__module__ = 'semantic_version'
 semantic_version.Version.__module__ = 'semantic_version'
 

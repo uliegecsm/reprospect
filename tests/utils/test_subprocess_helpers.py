@@ -12,6 +12,7 @@ import pytest
 
 from reprospect.utils.subprocess_helpers import popen_stream
 
+
 class TestPopenStream:
     """
     Tests for :py:class:`reprospect.utils.subprocess_helpers.popen_stream`.

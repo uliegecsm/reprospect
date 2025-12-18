@@ -5,17 +5,18 @@ import pytest
 
 from reprospect.test import features
 from reprospect.test.sass.composite import findall
-from reprospect.test.sass.instruction import StoreMatcher, StoreGlobalMatcher
+from reprospect.test.sass.instruction import StoreGlobalMatcher, StoreMatcher
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 
-from tests.parameters import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
 from tests.test.sass.test_instruction import (
-    get_decoder,
     CODE_ELEMENTWISE_ADD_RESTRICT,
     CODE_ELEMENTWISE_ADD_RESTRICT_128_WIDE,
     CODE_ELEMENTWISE_ADD_RESTRICT_256_WIDE,
+    get_decoder,
 )
+
 
 class TestStoreMatcher:
     """

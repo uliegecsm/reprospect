@@ -10,9 +10,15 @@ import pandas
 import pytest
 import semantic_version
 
-from reprospect.tools.nsys import Report, Session, Command, strip_cuda_api_suffix, Cacher
-from reprospect.utils      import detect
-from reprospect.utils      import rich_helpers
+from reprospect.tools.nsys import (
+    Cacher,
+    Command,
+    Report,
+    Session,
+    strip_cuda_api_suffix,
+)
+from reprospect.utils import detect, rich_helpers
+
 
 class TestTracingResults:
     """

@@ -4,17 +4,21 @@ import typing
 
 import pytest
 
-from reprospect.test.sass.controlflow.block import BasicBlockMatcher, BasicBlockWithParentMatcher
 from reprospect.test.sass.composite import any_of, interleaved_instructions_are
-from reprospect.test.sass.instruction import OpcodeModsMatcher, LoadGlobalMatcher
-from reprospect.test.sass.instruction.half import Fp16MulMatcher, Fp16FusedMulAddMatcher
+from reprospect.test.sass.controlflow.block import (
+    BasicBlockMatcher,
+    BasicBlockWithParentMatcher,
+)
+from reprospect.test.sass.instruction import LoadGlobalMatcher, OpcodeModsMatcher
+from reprospect.test.sass.instruction.half import Fp16FusedMulAddMatcher, Fp16MulMatcher
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.sass.controlflow import ControlFlow
 from reprospect.tools.sass.decode import Decoder
 from reprospect.utils import cmake
 
-from tests.parameters import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
 from tests.test.sass.test_instruction import get_compilation_output
+
 
 class TestBasicBlock:
     FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent.parent / 'assets' / 'test_half.cu'

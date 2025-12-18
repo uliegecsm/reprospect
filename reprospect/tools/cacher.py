@@ -7,8 +7,8 @@ import logging
 import pathlib
 import pickle
 import sqlite3
-import typing
 import sys
+import typing
 
 import blake3
 

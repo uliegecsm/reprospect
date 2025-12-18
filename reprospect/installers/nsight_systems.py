@@ -7,7 +7,6 @@ import subprocess
 import typing
 
 import semantic_version
-
 import system_helpers.apt.install
 
 from reprospect.utils import nvcc

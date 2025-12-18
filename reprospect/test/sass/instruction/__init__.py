@@ -33,6 +33,8 @@ References:
 * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L9C75-L9C83
 """
 
+from .address import AddressMatch, AddressMatcher
+from .constant import ConstantMatch, ConstantMatcher
 from .instruction import (
     AnyMatcher,
     ArchitectureAndVersionAwarePatternMatcher,
@@ -44,17 +46,15 @@ from .instruction import (
     InstructionMatch,
     InstructionMatcher,
     LoadConstantMatcher,
-    LoadMatcher,
     LoadGlobalMatcher,
+    LoadMatcher,
     OpcodeModsMatcher,
     OpcodeModsWithOperandsMatcher,
     PatternMatcher,
     ReductionMatcher,
-    StoreMatcher,
     StoreGlobalMatcher,
+    StoreMatcher,
 )
-from .address import AddressMatch, AddressMatcher
-from .constant import ConstantMatch, ConstantMatcher
 from .pattern import PatternBuilder
 from .register import RegisterMatch, RegisterMatcher
 

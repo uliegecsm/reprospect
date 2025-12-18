@@ -2,7 +2,13 @@ import typing
 
 import pytest
 
-from reprospect.test.sass.instruction.register import RegisterMatch, RegisterType, RegisterMatcher, RegisterModifier
+from reprospect.test.sass.instruction.register import (
+    RegisterMatch,
+    RegisterMatcher,
+    RegisterModifier,
+    RegisterType,
+)
+
 
 class TestRegisterMatcher:
     """

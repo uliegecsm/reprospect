@@ -22,14 +22,14 @@ import mypy_extensions
 import pandas
 import regex
 import rich.console
-import rich.text
 import rich.table
+import rich.text
 
-from reprospect.tools.architecture       import NVIDIAArch
-from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
-from reprospect.tools.binaries.elf       import ELF
-from reprospect.tools.binaries.symtab    import get_symbol_table
-from reprospect.utils                    import rich_helpers
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
+from reprospect.tools.binaries.elf import ELF
+from reprospect.tools.binaries.symtab import get_symbol_table
+from reprospect.utils import rich_helpers
 from reprospect.utils.subprocess_helpers import popen_stream
 
 RESOURCE_USAGE_PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(

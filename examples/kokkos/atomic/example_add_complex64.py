@@ -2,7 +2,10 @@ import re
 import sys
 import typing
 
-from reprospect.test.sass.composite import instruction_is, unordered_interleaved_instructions_are
+from reprospect.test.sass.composite import (
+    instruction_is,
+    unordered_interleaved_instructions_are,
+)
 from reprospect.test.sass.composite_impl import UnorderedInterleavedInSequenceMatcher
 from reprospect.test.sass.instruction import (
     Fp32AddMatcher,

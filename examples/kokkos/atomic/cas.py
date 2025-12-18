@@ -3,7 +3,10 @@ import typing
 
 from reprospect.test.sass.composite import instruction_is, interleaved_instructions_are
 from reprospect.test.sass.composite_impl import SequenceMatcher
-from reprospect.test.sass.controlflow.block import BasicBlockMatcher, BasicBlockWithParentMatcher
+from reprospect.test.sass.controlflow.block import (
+    BasicBlockMatcher,
+    BasicBlockWithParentMatcher,
+)
 from reprospect.test.sass.instruction import (
     AtomicMatcher,
     InstructionMatch,
@@ -11,6 +14,7 @@ from reprospect.test.sass.instruction import (
 )
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass.controlflow import Graph
+
 
 class Operation(typing.Protocol):
     def build(self, loads: typing.Collection[InstructionMatch]) -> SequenceMatcher:

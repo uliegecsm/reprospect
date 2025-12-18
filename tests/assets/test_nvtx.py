@@ -3,6 +3,7 @@ import logging
 
 import nvtx
 
+
 @contextlib.contextmanager
 def push_pop_range(domain: nvtx.Domain, **kwargs):
     domain.push_range(attributes = domain.get_event_attributes(**kwargs))

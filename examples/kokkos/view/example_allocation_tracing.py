@@ -9,7 +9,7 @@ import numpy
 import pandas
 import pytest
 
-from reprospect.test  import CMakeAwareTestCase, environment
+from reprospect.test import CMakeAwareTestCase, environment
 from reprospect.tools import nsys
 from reprospect.utils import detect
 

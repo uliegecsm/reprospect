@@ -6,8 +6,9 @@ import pytest
 from reprospect.test.sass.composite import instructions_contain
 from reprospect.test.sass.matchers.convert_fp32_to_fp16 import ConvertFp32ToFp16
 
-from tests.parameters import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
 from tests.test.sass.test_instruction import get_decoder
+
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids = str)
 class TestConvertFp32ToFp16:

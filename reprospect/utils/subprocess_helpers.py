@@ -3,6 +3,7 @@ import pathlib
 import subprocess
 import typing
 
+
 def popen_stream(*,
     args: typing.Sequence[str | pathlib.Path],
     **kwargs,

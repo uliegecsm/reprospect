@@ -6,8 +6,9 @@ import typing
 import attrs
 import regex
 
-from reprospect.tools.architecture import NVIDIAArch
 from reprospect.test.sass.instruction.pattern import PatternBuilder
+from reprospect.tools.architecture import NVIDIAArch
+
 
 @dataclasses.dataclass(frozen = True, slots = True)
 class AddressMatch:

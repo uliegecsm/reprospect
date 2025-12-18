@@ -3,7 +3,10 @@ import sys
 import typing
 
 from reprospect.test.sass.composite import instructions_are
-from reprospect.test.sass.composite_impl import OrderedInSequenceMatcher, SequenceMatcher
+from reprospect.test.sass.composite_impl import (
+    OrderedInSequenceMatcher,
+    SequenceMatcher,
+)
 from reprospect.test.sass.instruction import (
     InstructionMatch,
     RegisterMatch,

@@ -4,14 +4,15 @@ import unittest.mock
 
 import pytest
 
-from reprospect.tools.architecture      import NVIDIAArch
-from reprospect.tools.binaries          import CuObjDump, CuppFilt, LlvmCppFilt, NVDisasm
-from reprospect.tools.binaries.nvdisasm import Function, DetailedRegisterUsage
-from reprospect.tools.sass.decode       import RegisterType
-from reprospect.utils                   import cmake
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.binaries import CuObjDump, CuppFilt, LlvmCppFilt, NVDisasm
+from reprospect.tools.binaries.nvdisasm import DetailedRegisterUsage, Function
+from reprospect.tools.sass.decode import RegisterType
+from reprospect.utils import cmake
 
 from tests.compilation import get_compilation_output, get_cubin_name
-from tests.parameters  import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
+
 
 class TestFunction:
     """

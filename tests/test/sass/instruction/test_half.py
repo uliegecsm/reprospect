@@ -7,7 +7,13 @@ import typing
 import pytest
 
 from reprospect.test.features import PTX
-from reprospect.test.sass.composite import findall, findunique, instructions_contain, instruction_is, any_of
+from reprospect.test.sass.composite import (
+    any_of,
+    findall,
+    findunique,
+    instruction_is,
+    instructions_contain,
+)
 from reprospect.test.sass.instruction import OpcodeModsMatcher
 from reprospect.test.sass.instruction.half import (
     Fp16AddMatcher,
@@ -18,8 +24,9 @@ from reprospect.test.sass.instruction.half import (
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.sass import Decoder
 
-from tests.parameters import Parameters, PARAMETERS
+from tests.parameters import PARAMETERS, Parameters
 from tests.test.sass.test_instruction import get_decoder
+
 
 class TestFp16FusedMulAddMatcher:
     """

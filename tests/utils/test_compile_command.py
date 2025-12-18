@@ -4,9 +4,10 @@ import pathlib
 
 import pytest
 
-from reprospect.tools.architecture    import NVIDIAArch
-from reprospect.utils                 import cmake
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.utils import cmake
 from reprospect.utils.compile_command import get_arch_from_compile_command
+
 
 @pytest.fixture(scope = 'session')
 def cmake_file_api() -> cmake.FileAPI:

@@ -6,12 +6,12 @@ import typing
 
 import rich.table
 
-from reprospect.tools.architecture       import NVIDIAArch
-from reprospect.tools.binaries.demangle  import CuppFilt, LlvmCppFilt
-from reprospect.tools.binaries.elf       import ELF
-from reprospect.tools.binaries.symtab    import get_symbol_table
-from reprospect.tools.sass.decode        import RegisterType
-from reprospect.utils                    import rich_helpers
+from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
+from reprospect.tools.binaries.elf import ELF
+from reprospect.tools.binaries.symtab import get_symbol_table
+from reprospect.tools.sass.decode import RegisterType
+from reprospect.utils import rich_helpers
 from reprospect.utils.subprocess_helpers import popen_stream
 
 if sys.version_info >= (3, 11):

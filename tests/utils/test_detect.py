@@ -8,6 +8,7 @@ import pandas
 from reprospect.tools import architecture
 from reprospect.utils import detect
 
+
 class TestGPUDetector:
     """
     Tests for :py:class:`reprospect.utils.detect.GPUDetector`.

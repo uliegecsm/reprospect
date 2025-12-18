@@ -15,9 +15,10 @@ import functools
 import logging
 import typing
 
-import cuda.bindings.driver # type: ignore[import-not-found]
+import cuda.bindings.driver  # type: ignore[import-not-found]
 
 from reprospect.tools import architecture
+
 
 @dataclasses.dataclass(frozen = True, eq = True)
 class CudaRuntimeError:

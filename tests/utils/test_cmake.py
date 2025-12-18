@@ -6,6 +6,7 @@ import pytest
 
 from reprospect.utils import cmake
 
+
 class TestFileAPI:
     """
     Tests for :py:class:`reprospect.utils.cmake.FileAPI`.

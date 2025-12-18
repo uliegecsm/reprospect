@@ -3,7 +3,12 @@ import typing
 
 from reprospect.test.sass.composite import instructions_contain
 from reprospect.test.sass.composite_impl import SequenceMatcher
-from reprospect.test.sass.instruction import InstructionMatch, OpcodeModsWithOperandsMatcher, PatternBuilder, RegisterMatcher
+from reprospect.test.sass.instruction import (
+    InstructionMatch,
+    OpcodeModsWithOperandsMatcher,
+    PatternBuilder,
+    RegisterMatcher,
+)
 from reprospect.tools.sass.decode import Instruction
 
 if sys.version_info >= (3, 12):

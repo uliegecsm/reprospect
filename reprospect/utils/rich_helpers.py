@@ -7,6 +7,7 @@ import rich.table
 import rich.tree
 import rich_tools
 
+
 def to_string(
     ro: rich.table.Table | rich.tree.Tree,
     *,

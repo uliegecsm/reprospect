@@ -8,6 +8,7 @@ import regex
 
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 
+
 @dataclasses.dataclass(frozen = True, slots = True)
 class ConstantMatch:
     """

@@ -5,6 +5,7 @@ import pytest
 
 from reprospect.test.sass.instruction import AnyMatcher, InstructionMatch
 
+
 class TestAnyMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.AnyMatcher`.

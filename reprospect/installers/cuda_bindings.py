@@ -7,6 +7,7 @@ import urllib.request
 
 import packaging.version
 
+
 def get_available(package: str) -> list[packaging.version.Version]:
     """
     Get available versions of `package` from `PyPI`.

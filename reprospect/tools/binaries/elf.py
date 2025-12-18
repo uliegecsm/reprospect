@@ -23,7 +23,7 @@ import typing
 import elftools.elf.elffile
 import elftools.elf.sections
 
-from reprospect.tools.architecture import NVIDIAArch, ComputeCapability
+from reprospect.tools.architecture import ComputeCapability, NVIDIAArch
 
 if sys.version_info >= (3, 11):
     from typing import Self

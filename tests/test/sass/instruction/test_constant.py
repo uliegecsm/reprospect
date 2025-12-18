@@ -2,6 +2,7 @@ import typing
 
 from reprospect.test.sass.instruction.constant import ConstantMatch, ConstantMatcher
 
+
 class TestConstantMatcher:
     """
     Tests for :py:class:`reprospect.test.sass.instruction.constant.ConstantMatcher`.

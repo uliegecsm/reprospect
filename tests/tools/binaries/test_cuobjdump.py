@@ -6,13 +6,13 @@ import typing
 import pytest
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries     import CuObjDump, CuppFilt, Function, ResourceUsage
-from reprospect.utils              import cmake
-from reprospect.utils              import rich_helpers
+from reprospect.tools.binaries import CuObjDump, CuppFilt, Function, ResourceUsage
+from reprospect.utils import cmake, rich_helpers
 
 from tests.compilation import get_compilation_output, get_cubin_name
-from tests.cublas      import CuBLAS
-from tests.parameters  import Parameters, PARAMETERS
+from tests.cublas import CuBLAS
+from tests.parameters import PARAMETERS, Parameters
+
 
 class TestResourceUsage:
     """

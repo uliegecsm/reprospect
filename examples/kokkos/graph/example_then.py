@@ -1,8 +1,8 @@
 import re
 import sys
 
-from reprospect.test               import CMakeAwareTestCase
-from reprospect.tools              import binaries
+from reprospect.test import CMakeAwareTestCase
+from reprospect.tools import binaries
 from reprospect.tools.binaries.elf import NvInfoEIATTR
 
 if sys.version_info >= (3, 12):

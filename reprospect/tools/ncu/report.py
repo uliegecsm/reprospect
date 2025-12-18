@@ -15,7 +15,16 @@ import typing
 import rich.tree
 
 from reprospect.tools.binaries import CuppFilt, LlvmCppFilt
-from reprospect.tools.ncu.metrics import ValueType, Metric, MetricData, MetricDeviceAttribute,  MetricCorrelation, MetricCorrelationData, MetricCorrelationDataType, MetricKind
+from reprospect.tools.ncu.metrics import (
+    Metric,
+    MetricCorrelation,
+    MetricCorrelationData,
+    MetricCorrelationDataType,
+    MetricData,
+    MetricDeviceAttribute,
+    MetricKind,
+    ValueType,
+)
 from reprospect.tools.ncu.session import Command
 from reprospect.utils import rich_helpers
 

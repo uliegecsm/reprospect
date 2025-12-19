@@ -303,31 +303,31 @@ jobs:
 
     build-package:
         needs: [setup-job-matrix, build-images]
-        runs-on: [self-hosted, linux, docker, amd64]
-        container:
-            image: ghcr.io/${{ github.repository }}/build-images:latest
-        services:
-            docker:
-                image: docker:dind
+        runs-on: ${{ matrix.runs-on }}
         strategy:
             fail-fast: false
             matrix:
                 pyver: [cp310, cp311, cp312, cp313, cp314]
+                arch : [x86_64, aarch64]
+                include:
+                    - runs-on: ubuntu-24.04
+                      arch: x86_64
+                    - runs-on: ubuntu-24.04-arm
+                      arch: aarch64
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v6
-            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
             - uses: actions/setup-python@v6
               with:
                   python-version: '3.11'
             - run: python -m pip install -U cibuildwheel
             - run: python -m cibuildwheel --config-file pyproject.toml --output-dir wheelhouse
               env:
-                  CIBW_ARCHS: x86_64
+                  CIBW_ARCHS: ${{ matrix.arch }}
                   CIBW_BUILD: "${{ matrix.pyver }}-manylinux*"
             - uses: actions/upload-artifact@v6
               with:
-                  name: package-${{ matrix.pyver }}
+                  name: package-${{ matrix.pyver }}-${{ matrix.arch }}
                   path: wheelhouse/
                   retention-days: 1
                   if-no-files-found: error
@@ -375,6 +375,7 @@ jobs:
 
             - name: Install the package.
               run : |
+                tree wheelhouse/
                 python -m pip install --no-deps --no-index --find-links=wheelhouse/ reprospect
 
             - name: Print version and import.

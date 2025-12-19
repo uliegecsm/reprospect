@@ -1,4 +1,6 @@
-![logo](docs/source/_static/logo.svg)
+![logo](https://raw.githubusercontent.com/uliegecsm/reprospect/refs/heads/main/docs/source/_static/logo.svg)
+
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/uliegecsm/reprospect/build.yml)
 
 [![PyPI - Version](https://img.shields.io/pypi/v/reprospect?color=blue)](https://pypi.org/project/reprospect/)
 ![PyPI - Wheel](https://img.shields.io/pypi/wheel/reprospect)

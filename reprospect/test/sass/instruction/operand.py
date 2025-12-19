@@ -6,13 +6,10 @@ if sys.version_info >= (3, 11):
 else:
     from backports.strenum.strenum import StrEnum
 
-OPERAND_MODIFIER_MATH: typing.Final[str] = r'[\-!\|~]'
-"""Match any math modifier (NOT, NEG, INV, ABS)."""
+MODIFIER_MATH: typing.Final[str] = r'[\-!\|~]'
+"""Match any math modifier from :py:class:`MathModifier`."""
 
-OPERAND_MODIFIER_ABS: typing.Final[str] = r'\|'
-"""Match absolute value delimiter."""
-
-class OperandModifierMath(StrEnum):
+class MathModifier(StrEnum):
     """
     Math operand modifier.
     """

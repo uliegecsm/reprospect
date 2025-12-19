@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import dataclasses
+import typing
 
 import attrs
 import regex
 
 from reprospect.test.sass.instruction.operand import (
-    OPERAND_MODIFIER_ABS,
-    OPERAND_MODIFIER_MATH,
-    OperandModifierMath,
+    MODIFIER_MATH,
+    MathModifier,
 )
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.sass.decode import RegisterType
@@ -23,7 +23,7 @@ class RegisterMatch:
     rtype: RegisterType
     index: int | None = None
     reuse: bool = False
-    math: OperandModifierMath | None = None
+    math: MathModifier | None = None
 
     @classmethod
     def parse(cls, bits: regex.Match[str]) -> RegisterMatch:
@@ -37,10 +37,10 @@ class RegisterMatch:
             if len(value) == 1:
                 index = int(value[0])
 
-        math: OperandModifierMath | None = None
+        math: MathModifier | None = None
         if (value := captured.get('modifier_math')) is not None:
             if len(value) == 1:
-                math = OperandModifierMath(value[0])
+                math = MathModifier(value[0])
 
         return cls(
             rtype=RegisterType(rtype[0]),
@@ -48,6 +48,8 @@ class RegisterMatch:
             reuse=bool(captured.get('reuse')),
             math=math,
         )
+
+REGISTER_MATCHER_MOD_PRE: typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.group(MODIFIER_MATH, group='modifier_math'))
 
 @attrs.define(frozen=True, slots=True, kw_only=True)
 class RegisterMatcher:
@@ -58,7 +60,7 @@ class RegisterMatcher:
     special: bool | None = None
     index: int | None = None
     reuse: bool | None = None
-    math: OperandModifierMath | None = None
+    math: MathModifier | None = None
 
     pattern: regex.Pattern[str] = attrs.field(init=False)
 
@@ -67,12 +69,11 @@ class RegisterMatcher:
             raise RuntimeError(self)
 
         object.__setattr__(self, 'pattern', regex.compile(''.join(filter(None, (
-            self._build_modifier_math_pre(),
+            self._build_modifier_math(),
             PatternBuilder.group(self.rtype.value if self.rtype else 'R|UR|P|UP', group='rtype'),
             self._build_special(),
             self._build_index(),
             self._build_reuse(),
-            self._build_modifier_math_post(),
         )))))
 
     def match(self, reg: str) -> RegisterMatch | None:
@@ -83,17 +84,10 @@ class RegisterMatcher:
     def __call__(self, reg: str) -> RegisterMatch | None:
         return self.match(reg=reg)
 
-    def _build_modifier_math_pre(self) -> str | None:
+    def _build_modifier_math(self) -> str | None:
         if self.math is None:
-            return PatternBuilder.zero_or_one(PatternBuilder.group(OPERAND_MODIFIER_MATH, group='modifier_math'))
+            return REGISTER_MATCHER_MOD_PRE
         return PatternBuilder.group(self.math.value, group='modifier_math')
-
-    def _build_modifier_math_post(self) -> str | None:
-        if self.math is None:
-            return PatternBuilder.zero_or_one(OPERAND_MODIFIER_ABS)
-        if self.math is OperandModifierMath.ABS:
-            return OPERAND_MODIFIER_ABS
-        return None
 
     def _build_special(self) -> str | None:
         if self.index is not None:

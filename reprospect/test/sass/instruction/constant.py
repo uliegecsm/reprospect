@@ -7,9 +7,8 @@ import attrs
 import regex
 
 from reprospect.test.sass.instruction.operand import (
-    OPERAND_MODIFIER_ABS,
-    OPERAND_MODIFIER_MATH,
-    OperandModifierMath,
+    MODIFIER_MATH,
+    MathModifier,
 )
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 
@@ -21,7 +20,7 @@ class ConstantMatch:
     """
     bank: str
     offset: str
-    math: OperandModifierMath | None = None
+    math: MathModifier | None = None
 
     @classmethod
     def parse(cls, bits: regex.Match[str]) -> ConstantMatch:
@@ -35,14 +34,14 @@ class ConstantMatch:
             raise ValueError(bits)
         offset = value[0]
 
-        math: OperandModifierMath | None = None
+        math: MathModifier | None = None
         if (value := captured.get('modifier_math')) is not None:
             if len(value) == 1:
-                math = OperandModifierMath(value[0])
+                math = MathModifier(value[0])
 
         return cls(bank=bank, offset=offset, math=math)
 
-TEMPLATE_CONSTANT: typing.Final[str] = r'{modifier_math_pre}c\[{bank}\]\[{offset}\]{modifier_math_post}'
+TEMPLATE_CONSTANT: typing.Final[str] = r'{modifier_math}c\[{bank}\]\[{offset}\]'
 
 @attrs.define(frozen=True, slots=True, kw_only=True)
 class ConstantMatcher:
@@ -51,7 +50,7 @@ class ConstantMatcher:
     """
     bank: str | None = None
     offset: str | None = None
-    math: OperandModifierMath | None = None
+    math: MathModifier | None = None
 
     pattern: regex.Pattern[str] = attrs.field(init=False)
 
@@ -65,33 +64,24 @@ class ConstantMatcher:
     def build_pattern(cls, *,
         bank: str | None = None,
         offset: str | None = None,
-        math: OperandModifierMath | None = None,
+        math: MathModifier | None = None,
         captured: bool = True,
         capture_bank: bool = False,
         capture_offset: bool = False,
         capture_modifier_math: bool = False,
     ) -> str:
         if math is None:
-            if capture_modifier_math:
-                pattern_modifier_math_pre = PatternBuilder.zero_or_one(PatternBuilder.group(OPERAND_MODIFIER_MATH, group='modifier_math'))
-            else:
-                pattern_modifier_math_pre = PatternBuilder.zero_or_one(OPERAND_MODIFIER_MATH)
-            pattern_modifier_math_post = PatternBuilder.zero_or_one(OPERAND_MODIFIER_ABS)
+            pattern_modifier_math = PatternBuilder.zero_or_one(PatternBuilder.group(MODIFIER_MATH, group='modifier_math') if capture_modifier_math else MODIFIER_MATH)
         else:
-            if capture_modifier_math:
-                pattern_modifier_math_pre = PatternBuilder.group(math.value, group='modifier_math')
-            else:
-                pattern_modifier_math_pre = math.value
-            pattern_modifier_math_post = math.value if math == OperandModifierMath.ABS else ''
+            pattern_modifier_math = PatternBuilder.group(math.value, group='modifier_math') if capture_modifier_math else math.value
 
         pattern_bank   = bank   or PatternBuilder.CONSTANT_BANK
         pattern_offset = offset or PatternBuilder.CONSTANT_OFFSET
 
         pattern = TEMPLATE_CONSTANT.format(
-            modifier_math_pre=pattern_modifier_math_pre,
+            modifier_math=pattern_modifier_math,
             bank=PatternBuilder.group(  pattern_bank,   group='bank')   if capture_bank   else pattern_bank,
             offset=PatternBuilder.group(pattern_offset, group='offset') if capture_offset else pattern_offset,
-            modifier_math_post=pattern_modifier_math_post,
         )
 
         return PatternBuilder.group(pattern, group='operands') if captured else pattern

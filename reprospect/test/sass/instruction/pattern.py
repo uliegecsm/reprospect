@@ -1,10 +1,7 @@
 import functools
 import typing
 
-from reprospect.test.sass.instruction.operand import (
-    OPERAND_MODIFIER_ABS,
-    OPERAND_MODIFIER_MATH,
-)
+from reprospect.test.sass.instruction.operand import MODIFIER_MATH
 
 
 class PatternBuilder:
@@ -115,9 +112,9 @@ class PatternBuilder:
     @classmethod
     def mathmodregz(cls) -> str:
         """
-        :py:attr:`REGZ` with `operands` group and optional pre/post math modifiers.
+        :py:attr:`REGZ` with `operands` group and optional math modifiers :py:const:`reprospect.test.sass.instruction.operand.MODIFIER_MATH`.
         """
-        return cls.group(cls.zero_or_one(OPERAND_MODIFIER_MATH) + cls.REGZ + cls.zero_or_one(OPERAND_MODIFIER_ABS), group='operands')
+        return cls.group(cls.zero_or_one(MODIFIER_MATH) + cls.REGZ, group='operands')
 
     @classmethod
     def regz(cls) -> str:

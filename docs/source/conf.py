@@ -91,6 +91,7 @@ rst_prolog = '''
 .. _Nsight Compute: https://developer.nvidia.com/nsight-compute
 .. _Nsight Systems: https://developer.nvidia.com/nsight-systems
 .. _CMake: https://cmake.org
+.. _std::mdspan: https://en.cppreference.com/w/cpp/container/mdspan.html
 '''
 
 tikz_latex_preamble = r'\usepackage[dvipsnames]{xcolor}'

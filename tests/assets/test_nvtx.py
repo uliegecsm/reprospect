@@ -22,7 +22,7 @@ def start_end_range(domain: nvtx.Domain, **kwargs):
 
 class TestNVTX:
     """
-    Use the `Python` interface of NVTX to create intricated situations.
+    Use the `Python` interface of NVTX to create intricate situations.
 
     References:
 
@@ -67,9 +67,9 @@ class TestNVTX:
         assert reg is not None
 
     @classmethod
-    def intricated(cls, domain) -> None:
+    def intricate(cls, domain) -> None:
         """
-        Build a situation with many intricated ranges.
+        Build a situation with many intricate ranges.
         """
         with start_end_range(domain=domain, message='start-end-level-0'):
             with push_pop_range(domain=domain, message='push-pop-level-1'):
@@ -78,14 +78,14 @@ class TestNVTX:
                         with push_pop_range(domain=domain, message='push-pop-level-3'):
                             cls.function()
 
-    def test_intricated(self, request) -> None:
+    def test_intricate(self, request) -> None:
         """
-        Build a situation with many intricated ranges.
+        Build a situation with many intricate ranges.
         """
-        self.intricated(domain=nvtx.get_domain(name=request.node.name))
+        self.intricate(domain=nvtx.get_domain(name=request.node.name))
 
 if __name__ == '__main__':
 
     logging.basicConfig(level=logging.INFO)
 
-    TestNVTX.intricated(domain=nvtx.get_domain('intricated'))
+    TestNVTX.intricate(domain=nvtx.get_domain('intricate'))

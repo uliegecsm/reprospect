@@ -381,9 +381,9 @@ NVTX events
     └── launch_saxpy_kernel_second_time (NvtxPushPopRange)
 """
 
-        def test_intricated(self, workdir) -> None:
+        def test_intricate(self, workdir) -> None:
             """
-            Use :py:class:`tests.assets.test_nvtx.TestNVTX.intricated` to check that we can
+            Use :py:class:`tests.assets.test_nvtx.TestNVTX.intricate` to check that we can
             build the hierarchy of NVTX events for arbitrarily complicated situations.
             """
             with Cacher(directory=workdir) as cacher:
@@ -404,7 +404,7 @@ NVTX events
 
                     assert str(report.nvtx_events) == """\
 NVTX events
-├── intricated (NvtxDomainCreate)
+├── intricate (NvtxDomainCreate)
 └── start-end-level-0 (NvtxStartEndRange)
     └── push-pop-level-1 (NvtxPushPopRange)
         └── push-pop-level-2 (NvtxPushPopRange)

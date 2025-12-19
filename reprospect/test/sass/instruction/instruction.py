@@ -13,6 +13,7 @@ import semantic_version
 
 from reprospect.test.sass.instruction.address import AddressMatcher
 from reprospect.test.sass.instruction.constant import ConstantMatcher
+from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import Instruction
@@ -214,7 +215,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         *,
         size: int | None = None,
         readonly: bool | None = None,
-        memory: str | None = 'G',
+        memory: MemorySpace | str = MemorySpace.GLOBAL,
         extend: ExtendBitsMethod | None = None,
     ):
         """
@@ -226,7 +227,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
 
         self.size: int | None = size
         self.cache: str | None = None if readonly is False else ('CONSTANT' if readonly is True else '?CONSTANT')
-        self.memory = memory
+        self.memory: typing.Final[MemorySpace] = MemorySpace(memory)
         self.extend: typing.Final[ExtendBitsMethod | None] = extend
 
         super().__init__(arch=arch)
@@ -251,7 +252,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
     def _build_pattern(self) -> str:
         return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
             opcode=PatternBuilder.opcode_mods(
-                opcode=f'LD{self.memory}' if self.memory else 'LD',
+                opcode=f'LD{self.memory.value}',
                 modifiers=self._get_modifiers(),
             ),
             address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch), groups=('operands', 'address')),
@@ -262,7 +263,7 @@ class LoadGlobalMatcher(LoadMatcher):
     Specialization of :py:class:`LoadMatcher` for global memory (``LDG``).
     """
     def __init__(self, arch: NVIDIAArch, *, size: int | None = None, readonly: bool | None = None, extend: ExtendBitsMethod | None = None) -> None:
-        super().__init__(arch=arch, size=size, readonly=readonly, memory='G', extend=extend)
+        super().__init__(arch=arch, size=size, readonly=readonly, memory=MemorySpace.GLOBAL, extend=extend)
 
 class LoadConstantMatcher(PatternMatcher):
     """
@@ -318,7 +319,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
     def __init__(self,
         arch: NVIDIAArch,
         size: int | None = None,
-        memory: str | None = 'G',
+        memory: MemorySpace | str = MemorySpace.GLOBAL,
         extend: ExtendBitsMethod | None = None,
     ):
         """
@@ -328,7 +329,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
             check_memory_instruction_word_size(size=size // 8)
 
         self.size = size
-        self.memory = memory
+        self.memory: typing.Final[MemorySpace] = MemorySpace(memory)
         self.extend: typing.Final[ExtendBitsMethod | None] = extend
         super().__init__(arch=arch)
 
@@ -350,7 +351,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
     @override
     def _build_pattern(self) -> str:
         return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
-            opcode=PatternBuilder.opcode_mods(f'ST{self.memory}' if self.memory else 'ST', self._get_modifiers()),
+            opcode=PatternBuilder.opcode_mods(f'ST{self.memory}', self._get_modifiers()),
             address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch), groups=('operands', 'address')),
         )
 
@@ -359,7 +360,7 @@ class StoreGlobalMatcher(StoreMatcher):
     Specialization of :py:class:`StoreMatcher` for global memory (``STG``).
     """
     def __init__(self, arch: NVIDIAArch, size: int | None = None, extend: ExtendBitsMethod | None = None) -> None:
-        super().__init__(arch=arch, size=size, memory='G', extend=extend)
+        super().__init__(arch=arch, size=size, memory=MemorySpace.GLOBAL, extend=extend)
 
 ThreadScope = typing.Literal['BLOCK', 'DEVICE', 'THREADS']
 """
@@ -497,7 +498,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
         scope: ThreadScope | None = None,
         consistency: str = 'STRONG',
         dtype: tuple[str | None, int] | None = None,
-        memory: str = 'G',
+        memory: MemorySpace | str = MemorySpace.GLOBAL,
         version: semantic_version.Version | None = None,
     ):
         """
@@ -510,7 +511,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
             operation=operation,
             scope=convert_thread_scope(scope=scope, arch=arch) if scope else None,
             consistency=consistency,
-            memory=memory,
+            memory=MemorySpace(memory),
             dtype=dtype,
         )
         super().__init__(arch=arch, version=version)

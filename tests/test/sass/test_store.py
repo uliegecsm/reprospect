@@ -6,6 +6,7 @@ import pytest
 from reprospect.test import features
 from reprospect.test.sass.composite import findall
 from reprospect.test.sass.instruction import StoreGlobalMatcher, StoreMatcher
+from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 
@@ -24,16 +25,16 @@ class TestStoreMatcher:
     and :py:class:`reprospect.test.sass.instruction.StoreGlobalMatcher`.
     """
     def test(self) -> None:
-        matcher = StoreMatcher(arch=NVIDIAArch.from_compute_capability(86), size=64, memory=None)
+        matcher = StoreMatcher(arch=NVIDIAArch.from_compute_capability(86), size=64, memory=MemorySpace.GENERIC)
         assert matcher.match(inst='ST.E.64 [R4.64], R2') is not None
 
-        matcher = StoreMatcher(arch=NVIDIAArch.from_compute_capability(100), size=64, memory=None)
+        matcher = StoreMatcher(arch=NVIDIAArch.from_compute_capability(100), size=64, memory=MemorySpace.GENERIC)
         assert matcher.match(inst='ST.E.64 desc[UR10][R4.64], R2') is not None
 
         matcher = StoreMatcher(arch=NVIDIAArch.from_compute_capability(120), size=256, memory='G')
         assert matcher.match(inst='STG.E.ENL2.256 desc[UR4][R4.64], R8, R12') is not None
 
-        matcher = StoreMatcher(arch=NVIDIAArch.from_compute_capability(86), size=16, extend='U', memory=None)
+        matcher = StoreMatcher(arch=NVIDIAArch.from_compute_capability(86), size=16, extend='U', memory=MemorySpace.GENERIC)
         assert matcher.match(inst='ST.E.U16 [R2.64], R3') is not None
 
         matcher = StoreMatcher(arch=NVIDIAArch.from_compute_capability(86), size=16, extend='S', memory='G')

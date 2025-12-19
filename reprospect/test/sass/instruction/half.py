@@ -3,6 +3,7 @@ import typing
 import regex
 
 from reprospect.test.sass.instruction.instruction import PatternMatcher
+from reprospect.test.sass.instruction.operand import MODIFIER_MATH
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 
 
@@ -33,14 +34,14 @@ class Fp16(PatternMatcher):
     @classmethod
     def any_operand(cls) -> str:
         return PatternBuilder.group(
-            PatternBuilder.any(cls.REGZ_LANE, PatternBuilder.zero_or_more(PatternBuilder.PRE_OPERAND_MOD) + PatternBuilder.REGZ, PatternBuilder.IMMEDIATE),
+            PatternBuilder.any(cls.REGZ_LANE, PatternBuilder.zero_or_more(MODIFIER_MATH) + PatternBuilder.REGZ, PatternBuilder.IMMEDIATE),
             group='operands',
         )
 
     @classmethod
     def regz_or_immediate(cls) -> str:
         return PatternBuilder.group(PatternBuilder.any(
-            PatternBuilder.zero_or_more(PatternBuilder.PRE_OPERAND_MOD) + PatternBuilder.REGZ,
+            PatternBuilder.zero_or_more(MODIFIER_MATH) + PatternBuilder.REGZ,
             PatternBuilder.IMMEDIATE,
         ), group='operands')
 
@@ -106,7 +107,7 @@ class Fp16FusedMulAddMatcher(Fp16):
     ))
 
     PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=PatternBuilder.premodregz(),
+        op1=PatternBuilder.mathmodregz(),
         op2=Fp16.regz_or_immediate(),
         op3=Fp16.regz_or_immediate(),
         op4=Fp16.regz_or_immediate(),

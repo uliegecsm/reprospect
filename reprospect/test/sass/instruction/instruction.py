@@ -255,7 +255,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
                 opcode=f'LD{self.memory.value}',
                 modifiers=self._get_modifiers(),
             ),
-            address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch), groups=('operands', 'address')),
+            address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch, memory=self.memory), groups=('operands', 'address')),
         )
 
 class LoadGlobalMatcher(LoadMatcher):
@@ -352,7 +352,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
     def _build_pattern(self) -> str:
         return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
             opcode=PatternBuilder.opcode_mods(f'ST{self.memory}', self._get_modifiers()),
-            address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch), groups=('operands', 'address')),
+            address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch, memory=self.memory), groups=('operands', 'address')),
         )
 
 class StoreGlobalMatcher(StoreMatcher):
@@ -554,11 +554,11 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
                 else:
                     dtype = ()
 
-        address: str = AddressMatcher.build_pattern(arch=self.arch)
+        address: str = AddressMatcher.build_pattern(arch=self.arch, memory=self.params.memory)
 
         match self.arch.compute_capability.as_int:
             case 80 | 86 | 89 | 90 | 100 | 103 | 120:
-                address = PatternBuilder.any(AddressMatcher.build_address(), address)
+                address = PatternBuilder.any(AddressMatcher.build_address(arch=self.arch), address)
             case _:
                 pass
 

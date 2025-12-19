@@ -41,6 +41,9 @@ class TestAnyMatcher:
         'HMUL2 R0, R2.H0_H0, R3.H0_H0': InstructionMatch(opcode='HMUL2', modifiers=(), operands=('R0', 'R2.H0_H0', 'R3.H0_H0')),
         'UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ': InstructionMatch(opcode='UIADD3', modifiers=(), operands=('UR5', 'UPT', 'UPT', '-UR4', 'UR9', 'URZ')),
         'BAR.SYNC.DEFER_BLOCKING 0x0': InstructionMatch(opcode='BAR', modifiers=('SYNC', 'DEFER_BLOCKING'), operands=('0x0',)),
+        'STL [R1], R2': InstructionMatch(opcode='STL', modifiers=(), operands=('[R1]', 'R2')),
+        'LDGSTS.E.LTC128B [R211+-0x4000], desc[UR24][R182.64+0x20]': InstructionMatch(opcode='LDGSTS', modifiers=('E', 'LTC128B'), operands=('[R211+-0x4000]', 'desc[UR24][R182.64+0x20]')),
+        'STS.64 [R9.X8], R2': InstructionMatch(opcode='STS', modifiers=('64',), operands=('[R9.X8]', 'R2')),
     }
     """
     Zoo of real SASS instructions.

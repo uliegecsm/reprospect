@@ -20,6 +20,7 @@ from reprospect.test.sass.instruction import (
     OpcodeModsWithOperandsMatcher,
     PatternBuilder,
 )
+from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 
@@ -133,7 +134,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
 """
 
     def test(self) -> None:
-        matcher = LoadMatcher(arch=NVIDIAArch.from_compute_capability(100), size=64, memory=None)
+        matcher = LoadMatcher(arch=NVIDIAArch.from_compute_capability(100), size=64, memory=MemorySpace.GENERIC)
         assert matcher.match(inst='LD.E.64 R2, desc[UR10][R4.64]') is not None
 
         matcher = LoadMatcher(arch=NVIDIAArch.from_compute_capability(120), size=256, readonly=True, memory='G')

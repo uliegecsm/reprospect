@@ -12,6 +12,7 @@ from reprospect.test.sass.instruction import (
     InstructionMatch,
     PatternBuilder,
 )
+from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.tools.sass import Instruction
 from reprospect.utils import cmake
 
@@ -479,12 +480,12 @@ __global__ void atomic_exch_kernel() {
         )
 
         # Find the atomic exchange.
-        memory: str
+        memory: MemorySpace
         match cmake_file_api.toolchains['CUDA']['compiler']['id']:
             case 'NVIDIA':
-                memory = 'G'
+                memory = MemorySpace.GLOBAL
             case 'Clang':
-                memory = ''
+                memory = MemorySpace.GENERIC
             case _:
                 raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
 

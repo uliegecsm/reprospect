@@ -9,7 +9,7 @@ requires = [
     "attrs",
     "backports.strenum",
     "blake3",
-    "cmake-file-api==0.0.8.3",
+    "cmake-file-api==0.0.8.5",
     "ijson",
     "mypy_extensions",
     "pandas",

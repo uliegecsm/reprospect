@@ -12,7 +12,7 @@ import regex
 import semantic_version
 
 from reprospect.test.sass.instruction.address import AddressMatcher
-from reprospect.test.sass.instruction.constant import ConstantMatcher
+from reprospect.test.sass.instruction.constant import Constant, ConstantMatcher
 from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.architecture import NVIDIAArch
@@ -111,7 +111,7 @@ def floating_point_add_pattern(*, ftype: typing.Literal['F', 'D']) -> regex.Patt
         PatternBuilder.mathmodregz() + r'\s*,\s*' +
         PatternBuilder.any(
             PatternBuilder.mathmodregz(), PatternBuilder.ureg(),
-            ConstantMatcher.build_pattern(),
+            Constant.address(),
             PatternBuilder.immediate(),
         ),
     )

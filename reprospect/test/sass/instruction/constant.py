@@ -13,6 +13,25 @@ from reprospect.test.sass.instruction.operand import (
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 
 
+class Constant:
+    """
+    Constant memory patterns.
+    """
+    BANK: typing.Final[str] = r'0x[0-9]+'
+    """Constant memory bank."""
+
+    OFFSET: typing.Final[str] = PatternBuilder.any(PatternBuilder.HEX, PatternBuilder.REG, PatternBuilder.UREG)
+    """Constant memory offset."""
+
+    ADDRESS: typing.Final[str] = r'c\[' + BANK + r'\]\[' + OFFSET + r'\]'
+    """
+    Constant memory location.
+    """
+
+    @classmethod
+    def address(cls) -> str:
+        return PatternBuilder.group(cls.ADDRESS, group='operands')
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class ConstantMatch:
     """
@@ -75,8 +94,8 @@ class ConstantMatcher:
         else:
             pattern_modifier_math = PatternBuilder.group(math.value, group='modifier_math') if capture_modifier_math else math.value
 
-        pattern_bank   = bank   or PatternBuilder.CONSTANT_BANK
-        pattern_offset = offset or PatternBuilder.CONSTANT_OFFSET
+        pattern_bank   = bank   or Constant.BANK
+        pattern_offset = offset or Constant.OFFSET
 
         pattern = TEMPLATE_CONSTANT.format(
             modifier_math=pattern_modifier_math,

@@ -13,6 +13,7 @@ from reprospect.test.sass.composite import (
     instructions_contain,
 )
 from reprospect.test.sass.instruction import (
+    ConstantMatcher,
     InstructionMatch,
     LoadConstantMatcher,
     LoadGlobalMatcher,
@@ -97,7 +98,7 @@ __global__ __launch_bounds__(128, 1) void ldc({type}* __restrict__ const out)
         logging.info(f'{matcher} matched instruction {inst.instruction} as {matched}.')
 
         assert len(matched.operands) == 2
-        assert re.match(PatternBuilder.CONSTANT, matched.operands[1]) is not None
+        assert ConstantMatcher().match(matched.operands[1]) is not None
 
         assert matched.additional is not None
         assert 'bank' in matched.additional

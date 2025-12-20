@@ -21,6 +21,7 @@ from reprospect.test.sass.instruction import (
     RegisterMatcher,
     StoreGlobalMatcher,
 )
+from reprospect.test.sass.instruction.constant import Constant
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import Decoder
 
@@ -92,14 +93,14 @@ class AddDouble4:
             matchers.append(OpcodeModsWithOperandsMatcher(opcode='DADD',
                 operands=(
                     register, register,
-                    PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
+                    PatternBuilder.any(PatternBuilder.UREG, Constant.ADDRESS),
                 ),
             ))
             matchers.append(OpcodeModsWithOperandsMatcher(opcode='DADD',
                 operands=(
                     f'{matched.rtype}{matched.index + 2}',
                     f'{matched.rtype}{matched.index + 2}',
-                    PatternBuilder.any(PatternBuilder.UREG, PatternBuilder.CONSTANT),
+                    PatternBuilder.any(PatternBuilder.UREG, Constant.ADDRESS),
                 ),
             ))
 

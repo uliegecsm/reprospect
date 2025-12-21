@@ -5,7 +5,7 @@ import typing
 from reprospect.tools.sass.decode import Decoder, Instruction
 
 
-@dataclasses.dataclass(frozen=True, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True, repr=False)
 class BasicBlock:
     """
     Basic block in the control flow graph.

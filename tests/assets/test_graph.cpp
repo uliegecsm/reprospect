@@ -75,7 +75,7 @@ int main()
 
     /// Node D depends on nodes B and C. It increments index 3 and adds
     /// the values at indices 1 and 2 to index 3.
-    const auto node_D = add_node<3, 2, 1, 2>(graph, counters, {node_B, node_C});
+    [[maybe_unused]] const auto node_D = add_node<3, 2, 1, 2>(graph, counters, {node_B, node_C});
 
     //! Instantiate and launch the graph.
     cudaGraphExec_t graph_exec = nullptr;

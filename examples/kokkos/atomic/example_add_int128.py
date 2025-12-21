@@ -32,8 +32,8 @@ class RegisterMatchValidator(SequenceMatcher):
     """
     __slots__ = ('load_register', 'matcher', 'start_register_matcher')
 
-    def __init__(self, matcher: add_int128.AddInt128, load: InstructionMatch) -> None:
-        self.matcher: typing.Final[add_int128.AddInt128] = matcher
+    def __init__(self, matcher: add_int128.AddInt128Matcher, load: InstructionMatch) -> None:
+        self.matcher: typing.Final[add_int128.AddInt128Matcher] = matcher
         """Inner matcher."""
         matched = RegisterMatcher().match(load.operands[0])
         assert matched is not None
@@ -60,7 +60,7 @@ class AddInt128:
     def build(self, loads: typing.Collection[InstructionMatch]) -> OrderedInSequenceMatcher:
         if len(loads) != 1:
             raise RuntimeError(self)
-        return instructions_are(RegisterMatchValidator(matcher=add_int128.AddInt128(), load=loads[0]))
+        return instructions_are(RegisterMatchValidator(matcher=add_int128.AddInt128Matcher(), load=loads[0]))
 
 class TestAtomicAddInt128(add.TestCase):
     """

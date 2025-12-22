@@ -44,10 +44,14 @@ class AddInt128Matcher(SequenceMatcher):
 
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    __slots__ = ('_index',)
+    __slots__ = ('_index', 'start')
 
-    def __init__(self) -> None:
+    def __init__(self, start: str | None = None) -> None:
         self._index: int = 0
+        self.start: typing.Final[str] = PatternBuilder.group(
+            start or PatternBuilder.anygpreg(reuse=None),
+            group='start',
+        )
 
     def pattern_3IADD(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
         """
@@ -66,7 +70,7 @@ class AddInt128Matcher(SequenceMatcher):
             operands=(
                 'RZ',
                 PatternBuilder.PRED,
-                PatternBuilder.anygpreg(reuse=None, group='start'),
+                self.start,
                 PatternBuilder.anygpreg(reuse=None),
             ),
         )
@@ -107,11 +111,9 @@ class AddInt128Matcher(SequenceMatcher):
         ))
         if (matched_iadd_step_2 := matcher_iadd_step_2.match(instructions[offset:])) is None:
             return None
-        if len(matched_iadd_step_2) != 1:
-            raise RuntimeError
         self._index = offset + matcher_iadd_step_2.next_index
 
-        matched.append(matched_iadd_step_2[0])
+        matched.extend(matched_iadd_step_2)
 
         return matched
 
@@ -119,10 +121,10 @@ class AddInt128Matcher(SequenceMatcher):
         """
         Typically::
 
-            IADD3 R8, P0, R8, c[0x0][0x180], RZ
-            IADD3.X R9, P0, R9, c[0x0][0x184], RZ, P0, !PT
-            IADD3.X R10, P0, R10, c[0x0][0x188], RZ, P0, !PT
-            IADD3.X R11, R11, c[0x0][0x18c], RZ, P0, !PT
+            IADD3 R20, P0, R8, c[0x0][0x180], RZ
+            IADD3.X R21, P0, R9, c[0x0][0x184], RZ, P0, !PT
+            IADD3.X R22, P0, R10, c[0x0][0x188], RZ, P0, !PT
+            IADD3.X R23, R11, c[0x0][0x18c], RZ, P0, !PT
 
         or::
 
@@ -140,82 +142,87 @@ class AddInt128Matcher(SequenceMatcher):
         matcher_iadd3_step_0 = OpcodeModsWithOperandsMatcher(
             opcode='IADD3',
             operands=(
-                PatternBuilder.group(PatternBuilder.REG, group='start'),
+                PatternBuilder.REG,
                 PatternBuilder.PRED,
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
-                PatternBuilder.REG,
-                PatternBuilder.any(PatternBuilder.REG, Constant.ADDRESS),
+                self.start,
+                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG, Constant.ADDRESS),
                 'RZ',
             ),
         )
         if (matched_iadd3_step_0 := matcher_iadd3_step_0.match(instructions[offset])) is None:
             return None
-        if matched_iadd3_step_0.operands.count(matched_iadd3_step_0.operands[0]) != 2:
-            return None
         offset += 1
         matched.append(matched_iadd3_step_0)
 
-        iadd3_step_0_reg = RegisterMatcher(special=False).match(matched_iadd3_step_0.operands[0])
-        assert iadd3_step_0_reg is not None and iadd3_step_0_reg.index is not None
-        iadd3_step_1_reg = f'{iadd3_step_0_reg.rtype}{iadd3_step_0_reg.index + 1}'
+        index_src = 2 if len(matched_iadd3_step_0.operands) == 5 else 3
 
-        matcher_iadd3_step_1 = OpcodeModsWithOperandsMatcher(
+        iadd3_step_0_dst = RegisterMatcher(special=False).match(matched_iadd3_step_0.operands[0])
+        iadd3_step_0_src = RegisterMatcher(special=False).match(matched_iadd3_step_0.operands[index_src])
+        assert iadd3_step_0_dst is not None and iadd3_step_0_dst.index is not None
+        assert iadd3_step_0_src is not None and iadd3_step_0_src.index is not None
+        iadd3_step_1_dst = f'{iadd3_step_0_dst.rtype}{iadd3_step_0_dst.index + 1}'
+        iadd3_step_1_src = f'{iadd3_step_0_src.rtype}{iadd3_step_0_src.index + 1}'
+
+        matcher_iadd3_step_1 = instructions_contain(OpcodeModsWithOperandsMatcher(
             opcode='IADD3', modifiers=('X',),
             operands=(
-                iadd3_step_1_reg,
+                iadd3_step_1_dst,
                 PatternBuilder.PRED,
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
-                iadd3_step_1_reg,
-                PatternBuilder.any(PatternBuilder.REG, Constant.ADDRESS),
+                iadd3_step_1_src,
+                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG, Constant.ADDRESS),
                 'RZ',
                 PatternBuilder.PRED,
                 '!PT',
             ),
-        )
-        if (matched_iadd3_step_1 := matcher_iadd3_step_1.match(instructions[offset])) is None:
+        ))
+        if (matched_iadd3_step_1 := matcher_iadd3_step_1.match(instructions[offset:])) is None:
             return None
-        offset += 1
-        matched.append(matched_iadd3_step_1)
+        offset += matcher_iadd3_step_1.next_index
+        matched.extend(matched_iadd3_step_1)
 
-        iadd3_step_2_reg = f'{iadd3_step_0_reg.rtype}{iadd3_step_0_reg.index + 2}'
+        iadd3_step_2_dst = f'{iadd3_step_0_dst.rtype}{iadd3_step_0_dst.index + 2}'
+        iadd3_step_2_src = f'{iadd3_step_0_src.rtype}{iadd3_step_0_src.index + 2}'
 
-        matcher_iadd3_step_2 = OpcodeModsWithOperandsMatcher(
+        matcher_iadd3_step_2 = instructions_contain(OpcodeModsWithOperandsMatcher(
             opcode='IADD3', modifiers=('X',),
             operands=(
-                iadd3_step_2_reg,
+                iadd3_step_2_dst,
                 PatternBuilder.PRED,
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
-                iadd3_step_2_reg,
-                PatternBuilder.any(PatternBuilder.REG, Constant.ADDRESS),
+                iadd3_step_2_src,
+                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG, Constant.ADDRESS),
                 'RZ',
                 PatternBuilder.PRED,
                 '!PT',
             ),
-        )
-        if (matched_iadd3_step_2 := matcher_iadd3_step_2.match(instructions[offset])) is None:
+        ))
+        if (matched_iadd3_step_2 := matcher_iadd3_step_2.match(instructions[offset:])) is None:
             return None
-        offset += 1
-        matched.append(matched_iadd3_step_2)
+        offset += matcher_iadd3_step_2.next_index
+        matched.extend(matched_iadd3_step_2)
 
-        iadd3_step_3_reg = f'{iadd3_step_0_reg.rtype}{iadd3_step_0_reg.index + 3}'
+        iadd3_step_3_dst = f'{iadd3_step_0_dst.rtype}{iadd3_step_0_dst.index + 3}'
+        iadd3_step_3_src = f'{iadd3_step_0_src.rtype}{iadd3_step_0_src.index + 3}'
 
-        matcher_iadd3_step_3 = OpcodeModsWithOperandsMatcher(
+        matcher_iadd3_step_3 = instructions_contain(OpcodeModsWithOperandsMatcher(
             opcode='IADD3', modifiers=('X',),
             operands=(
-                iadd3_step_3_reg,
+                iadd3_step_3_dst,
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
-                iadd3_step_3_reg,
-                PatternBuilder.any(PatternBuilder.REG, Constant.ADDRESS),
+                iadd3_step_3_src,
+                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG, Constant.ADDRESS),
                 'RZ',
                 PatternBuilder.PRED,
                 '!PT',
             ),
-        )
-        if (matched_iadd3_step_3 := matcher_iadd3_step_3.match(instructions[offset])) is None:
+        ))
+        if (matched_iadd3_step_3 := matcher_iadd3_step_3.match(instructions[offset:])) is None:
             return None
-        self._index = offset + 1
-        matched.append(matched_iadd3_step_3)
+        self._index = offset + matcher_iadd3_step_3.next_index
+        matched.extend(matched_iadd3_step_3)
 
         return matched
 

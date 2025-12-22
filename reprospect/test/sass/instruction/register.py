@@ -64,7 +64,7 @@ class RegisterMatcher:
     special: bool | None = None
     index: int | None = None
     reuse: bool | None = None
-    math: MathModifier | None = None
+    math: MathModifier | bool | None = None
 
     pattern: regex.Pattern[str] = attrs.field(init=False)
 
@@ -90,7 +90,7 @@ class RegisterMatcher:
         special: bool | None = None,
         index: int | None = None,
         reuse: bool | None = None,
-        math: MathModifier | None = None,
+        math: MathModifier | bool | None = None,
         captured: bool = True,
         capture_math: bool = False,
         capture_reg: bool = False,
@@ -104,11 +104,13 @@ class RegisterMatcher:
         return PatternBuilder.group(pattern, group='operands') if captured else pattern
 
     @classmethod
-    def build_pattern_modifier_math(cls, *, math: MathModifier | None = None, captured: bool = True) -> str | None:
-        if math is not None:
+    def build_pattern_modifier_math(cls, *, math: MathModifier | bool | None = None, captured: bool = True) -> str | None:
+        if isinstance(math, MathModifier):
             return PatternBuilder.group(math.value, group='modifier_math') if captured else math.value
-        inner = PatternBuilder.group(MODIFIER_MATH, group='modifier_math') if captured else MODIFIER_MATH
-        return PatternBuilder.zero_or_one(inner)
+        if math is None or math is True:
+            inner = PatternBuilder.group(MODIFIER_MATH, group='modifier_math') if captured else MODIFIER_MATH
+            return PatternBuilder.zero_or_one(inner) if math is None else inner
+        return None
 
     @classmethod
     def build_pattern_reg(cls, *, rtype: RegisterType | None = None, special: bool | None = None, index: int | None = None, captured: bool = True) -> str:

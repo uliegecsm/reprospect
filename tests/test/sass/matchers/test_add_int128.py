@@ -16,9 +16,9 @@ from tests.test.sass.test_instruction import get_decoder
 
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
-class TestAddInt128:
+class TestAddInt128Matcher:
     """
-    Tests for :py:class:`reprospect.test.sass.matchers.add_int128.AddInt128`.
+    Tests for :py:class:`reprospect.test.sass.matchers.add_int128.AddInt128Matcher`.
     """
     CODE_ADD_INT128: typing.Final[str] = """\
 __global__ void add_int128(__int128_t* __restrict__ const dst, const __int128_t* __restrict__ const src)
@@ -57,7 +57,7 @@ st\.global\.v2\.(u|b)64 \[%rd\d+\], {%rd\d+, %rd\d+};
         logging.info(matched_load_dst)
 
         # Find the int128 addition pattern.
-        matcher = add_int128.AddInt128()
+        matcher = add_int128.AddInt128Matcher()
         matched = matcher.assert_matches(instructions=decoder.instructions[matcher_load_src.next_index + 1:])
 
         logging.info(matched)

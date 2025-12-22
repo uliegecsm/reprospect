@@ -23,6 +23,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
+@mypy_extensions.mypyc_attr(native_class=True)
 @dataclasses.dataclass(frozen=True, slots=True)
 class InstructionMatch:
     """

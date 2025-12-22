@@ -17,7 +17,7 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-class AddInt128(SequenceMatcher):
+class AddInt128Matcher(SequenceMatcher):
     """
     Match SASS instructions originating from the addition of 2 :code:`__int128`.
 

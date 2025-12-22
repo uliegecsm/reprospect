@@ -29,23 +29,6 @@ class PatternBuilder:
 
     OPERAND: typing.Final[str] = r'[\w@!\.\[\]\+\-\s]+'
 
-    CONSTANT_BANK: typing.Final[str] = r'0x[0-9]+'
-    """
-    Constant memory bank.
-    """
-
-    CONSTANT_OFFSET: typing.Final[str] = r'(?:0x[0-9a-f]+|' + REG + '|' + UREG + ')'
-    """
-    Constant memory offset.
-    """
-
-    CONSTANT: typing.Final[str] = r'c\[' + CONSTANT_BANK + r'\]\[' + CONSTANT_OFFSET + r'\]'
-    """
-    Constant memory location.
-    The bank looks like ``0x3`` while the address is either compile-time (*e.g.*
-    ``0x899``) or depends on a register.
-    """
-
     IMMEDIATE: typing.Final[str] = r'(-?\d+)(\.\d*)?((e|E)[-+]?\d+)?'
     """
     References:

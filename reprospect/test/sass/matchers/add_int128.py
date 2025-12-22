@@ -9,6 +9,7 @@ from reprospect.test.sass.instruction import (
     PatternBuilder,
     RegisterMatcher,
 )
+from reprospect.test.sass.instruction.constant import Constant
 from reprospect.tools.sass.decode import Instruction
 
 if sys.version_info >= (3, 12):
@@ -143,7 +144,7 @@ class AddInt128(SequenceMatcher):
                 PatternBuilder.PRED,
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
                 PatternBuilder.REG,
-                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.CONSTANT),
+                PatternBuilder.any(PatternBuilder.REG, Constant.ADDRESS),
                 'RZ',
             ),
         )
@@ -165,7 +166,7 @@ class AddInt128(SequenceMatcher):
                 PatternBuilder.PRED,
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
                 iadd3_step_1_reg,
-                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.CONSTANT),
+                PatternBuilder.any(PatternBuilder.REG, Constant.ADDRESS),
                 'RZ',
                 PatternBuilder.PRED,
                 '!PT',
@@ -185,7 +186,7 @@ class AddInt128(SequenceMatcher):
                 PatternBuilder.PRED,
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
                 iadd3_step_2_reg,
-                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.CONSTANT),
+                PatternBuilder.any(PatternBuilder.REG, Constant.ADDRESS),
                 'RZ',
                 PatternBuilder.PRED,
                 '!PT',
@@ -205,7 +206,7 @@ class AddInt128(SequenceMatcher):
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
                 PatternBuilder.zero_or_one(PatternBuilder.PREDT),
                 iadd3_step_3_reg,
-                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.CONSTANT),
+                PatternBuilder.any(PatternBuilder.REG, Constant.ADDRESS),
                 'RZ',
                 PatternBuilder.PRED,
                 '!PT',

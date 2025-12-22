@@ -29,13 +29,6 @@ class PatternBuilder:
 
     OPERAND: typing.Final[str] = r'[\w@!\.\[\]\+\-\s]+'
 
-    IMMEDIATE: typing.Final[str] = r'(-?\d+)(\.\d*)?((e|E)[-+]?\d+)?'
-    """
-    References:
-
-    * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuInsParser.py#L34
-    """
-
     PREDICATE: typing.Final[str] = r'@!?U?P(?:T|\d+)'
     """
     Predicate for the whole instruction (comes before the opcode).
@@ -83,7 +76,7 @@ class PatternBuilder:
         """
         :py:attr:`HEX` with `operands` group.
         """
-        return cls.group(PatternBuilder.HEX, group='operands')
+        return cls.group(cls.HEX, group='operands')
 
     @classmethod
     def reg(cls) -> str:
@@ -133,13 +126,6 @@ class PatternBuilder:
         :py:attr:`PREDT` with `operands` group.
         """
         return cls.group(cls.PREDT, group='operands')
-
-    @classmethod
-    def immediate(cls) -> str:
-        """
-        :py:attr:`IMMEDIATE` with `operands` group.
-        """
-        return cls.group(cls.IMMEDIATE, group='operands')
 
     @classmethod
     def predicate(cls) -> str:

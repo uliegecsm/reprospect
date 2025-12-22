@@ -2,6 +2,7 @@ import typing
 
 import regex
 
+from reprospect.test.sass.instruction.immediate import Immediate
 from reprospect.test.sass.instruction.instruction import PatternMatcher
 from reprospect.test.sass.instruction.operand import MODIFIER_MATH
 from reprospect.test.sass.instruction.pattern import PatternBuilder
@@ -34,7 +35,7 @@ class Fp16(PatternMatcher):
     @classmethod
     def any_operand(cls) -> str:
         return PatternBuilder.group(
-            PatternBuilder.any(cls.REGZ_LANE, PatternBuilder.zero_or_more(MODIFIER_MATH) + PatternBuilder.REGZ, PatternBuilder.IMMEDIATE),
+            PatternBuilder.any(cls.REGZ_LANE, PatternBuilder.zero_or_more(MODIFIER_MATH) + PatternBuilder.REGZ, Immediate.FLOATING),
             group='operands',
         )
 
@@ -42,7 +43,7 @@ class Fp16(PatternMatcher):
     def regz_or_immediate(cls) -> str:
         return PatternBuilder.group(PatternBuilder.any(
             PatternBuilder.zero_or_more(MODIFIER_MATH) + PatternBuilder.REGZ,
-            PatternBuilder.IMMEDIATE,
+            Immediate.FLOATING,
         ), group='operands')
 
     @classmethod
@@ -102,8 +103,8 @@ class Fp16FusedMulAddMatcher(Fp16):
     PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1=Fp16.regz_lane(),
         op2=Fp16.regz_lane(),
-        op3=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, PatternBuilder.IMMEDIATE), group='operands'),
-        op4=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, PatternBuilder.IMMEDIATE), group='operands'),
+        op3=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, Immediate.FLOATING), group='operands'),
+        op4=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, Immediate.FLOATING), group='operands'),
     ))
 
     PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(

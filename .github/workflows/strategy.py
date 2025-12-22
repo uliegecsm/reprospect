@@ -241,6 +241,14 @@ def main(*, args: argparse.Namespace) -> None:
     }, args=args))
 
     matrix.extend(complete_job({
+        'cuda_version': '13.1.0',
+        'ubuntu_version': '24.04',
+        'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
+        'nvidia_compute_capability': 100,
+        'platforms': ('linux/amd64',),
+    }, args=args))
+
+    matrix.extend(complete_job({
         'cuda_version': '13.0.0',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='clang', version='20'), 'CUDA': Compiler(ID='nvidia')},

@@ -33,10 +33,17 @@ class TestRegisterMatcher:
     MATCHER: typing.Final[RegisterMatcher] = RegisterMatcher()
 
     def test_reg(self) -> None:
-        REG: typing.Final[str] = 'R42'
+        REG: typing.Final[str] = '!R42'
 
         matcher = RegisterMatcher(rtype=RegisterType.GPR, special=False, reuse=None)
         assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>R)(?P<index>\d+)(?:\.(?P<reuse>reuse))?'
+        assert matcher.match(REG) == self.REGISTERS[REG]
+
+    def test_reg_no_math(self) -> None:
+        REG: typing.Final[str] = 'R42'
+
+        matcher = RegisterMatcher(rtype=RegisterType.GPR, special=False, reuse=None, math=False)
+        assert matcher.pattern.pattern == r'(?P<rtype>R)(?P<index>\d+)(?:\.(?P<reuse>reuse))?'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_regz(self) -> None:

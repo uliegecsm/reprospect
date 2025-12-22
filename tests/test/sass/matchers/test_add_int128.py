@@ -15,7 +15,6 @@ from tests.parameters import PARAMETERS, Parameters
 from tests.test.sass.test_instruction import get_decoder
 
 
-@pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestAddInt128Matcher:
     """
     Tests for :py:class:`reprospect.test.sass.matchers.add_int128.AddInt128Matcher`.
@@ -34,6 +33,29 @@ addc\.cc\.s64 %rd\d+, %rd\d+, %rd\d+;
 st\.global\.v2\.(u|b)64 \[%rd\d+\], {%rd\d+, %rd\d+};
 """)
 
+    def test_IADD(self) -> None:
+        INSTRUCTIONS: tuple[str, ...] = (
+            'IADD.64 RZ, P0, R4.reuse, R12.reuse',
+            'IADD.64 R4, R4, R12',
+            'IADD.64.X R6, R6, R14, P0',
+        )
+        matched = add_int128.AddInt128Matcher(start='R4.reuse').assert_matches(instructions=INSTRUCTIONS)
+
+        assert len(matched) == 3
+
+        assert matched[2].modifiers == ('64', 'X')
+        assert matched[2].operands == ('R6', 'R6', 'R14', 'P0')
+
+    def test_IADD3(self) -> None:
+        INSTRUCTIONS: tuple[str, ...] = (
+            'IADD3 R20, P0, PT, R4, R12, RZ',
+            'IADD3.X R21, P0, PT, R5, R13, RZ, P0, !PT',
+            'IADD3.X R22, P0, PT, R6, R14, RZ, P0, !PT',
+            'IADD3.X R23, PT, PT, R7, R15, RZ, P0, !PT',
+        )
+        add_int128.AddInt128Matcher(start='R4').assert_matches(instructions=INSTRUCTIONS)
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test(self, request, parameters: Parameters, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI) -> None:
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_ADD_INT128)

@@ -11,14 +11,16 @@ from reprospect.test.sass.instruction import (
     RegisterMatcher,
 )
 from reprospect.test.sass.instruction.constant import Constant
+from reprospect.test.sass.matchers.cas import AtomicCASMatcher
 from reprospect.tools.sass import ControlFlow, Decoder
 
-from examples.kokkos.atomic import add, cas, desul
+from examples.kokkos.atomic import add, desul
 
 if sys.version_info >= (3, 12):
     from typing import override
 else:
     from typing_extensions import override
+
 
 class AddComplex128:
     """
@@ -28,15 +30,17 @@ class AddComplex128:
     2. imaginary parts
     3. possibly with NOP
     """
-    def build(self, loads: typing.Collection[InstructionMatch]) -> UnorderedInSequenceMatcher:
-        if len(loads) != 1:
-            raise RuntimeError(self)
-        load_register = loads[0].operands[0]
+    def build(self, loads: typing.Collection[InstructionMatch] | None = None) -> UnorderedInSequenceMatcher:
+        if loads is not None:
+            assert len(loads) == 1
+            load_register = loads[0].operands[0]
 
-        assert (parsed := RegisterMatcher(special=False).match(load_register)) is not None
+            assert (parsed := RegisterMatcher(special=False).match(load_register)) is not None
 
-        dadd_real_reg = load_register
-        dadd_imag_reg = f'{parsed.rtype}{parsed.index + 2}'
+            dadd_real_reg = load_register
+            dadd_imag_reg = f'{parsed.rtype}{parsed.index + 2}'
+        else:
+            dadd_real_reg = dadd_imag_reg = PatternBuilder.REG
 
         matcher_dadd_real = OpcodeModsWithOperandsMatcher(opcode='DADD',
             operands=(
@@ -85,7 +89,7 @@ class TestAtomicAddComplex128(add.TestCase):
         """
         This test proves that it uses the CAS-based implementation.
         """
-        matched = cas.AtomicCAS(
+        matched = AtomicCASMatcher(
             arch=self.arch,
             operation=AddComplex128(),
             size=128,

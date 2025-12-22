@@ -2,18 +2,15 @@ import re
 import sys
 import typing
 
-from reprospect.test.sass.composite import instructions_are
-from reprospect.test.sass.composite_impl import (
-    OrderedInSequenceMatcher,
-)
 from reprospect.test.sass.instruction import (
     InstructionMatch,
     RegisterMatcher,
 )
 from reprospect.test.sass.matchers import add_int128
+from reprospect.test.sass.matchers.cas import AtomicCASMatcher
 from reprospect.tools.sass import ControlFlow, Decoder
 
-from examples.kokkos.atomic import add, cas, desul
+from examples.kokkos.atomic import add, desul
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -25,20 +22,21 @@ class AddInt128:
     """
     Addition of 2 :code:`__int128` that uses a specific set of registers.
     """
-    def build(self, loads: typing.Collection[InstructionMatch]) -> OrderedInSequenceMatcher:
-        if len(loads) != 1:
-            raise RuntimeError(self)
+    def build(self, loads: typing.Collection[InstructionMatch] | None = None) -> add_int128.AddInt128Matcher:
+        if loads is not None:
+            assert len(loads) == 1
 
-        assert (matched := RegisterMatcher().match(loads[0].operands[0])) is not None
+            assert (matched := RegisterMatcher().match(loads[0].operands[0])) is not None
 
-        return instructions_are(add_int128.AddInt128Matcher(
-            start=RegisterMatcher.build_pattern(
-                rtype=matched.rtype,
-                index=matched.index,
-                reuse=None,
-                math=False,
-            ),
-        ))
+            return add_int128.AddInt128Matcher(
+                start=RegisterMatcher.build_pattern(
+                    rtype=matched.rtype,
+                    index=matched.index,
+                    reuse=None,
+                    math=False,
+                ),
+            )
+        return add_int128.AddInt128Matcher()
 
 class TestAtomicAddInt128(add.TestCase):
     """
@@ -72,7 +70,7 @@ class TestAtomicAddInt128(add.TestCase):
         """
         This test proves that it uses the CAS-based implementation.
         """
-        matched = cas.AtomicCAS(
+        matched = AtomicCASMatcher(
             arch=self.arch,
             operation=AddInt128(),
             size=128,

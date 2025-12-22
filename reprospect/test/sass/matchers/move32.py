@@ -36,16 +36,16 @@ class Move32Matcher(InstructionMatcher):
     ) -> None:
         self.mov: typing.Final[OpcodeModsWithOperandsMatcher] = OpcodeModsWithOperandsMatcher(
             opcode='MOV', operands=(
-                dst or PatternBuilder.REG,
-                src or PatternBuilder.OPERAND,
+                PatternBuilder.group(dst or PatternBuilder.REG, group='dst'),
+                PatternBuilder.group(src or PatternBuilder.OPERAND, group='src'),
             ),
         )
 
         self.imad: typing.Final[OpcodeModsWithOperandsMatcher] = OpcodeModsWithOperandsMatcher(
             opcode='IMAD', modifiers=('MOV', 'U32'), operands=(
-                dst or PatternBuilder.REG,
+                PatternBuilder.group(dst or PatternBuilder.REG, group='dst'),
                 'RZ', 'RZ',
-                src or PatternBuilder.OPERAND,
+                PatternBuilder.group(src or PatternBuilder.OPERAND, group='src'),
             ),
         )
 

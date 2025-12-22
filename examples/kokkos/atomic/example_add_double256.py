@@ -71,7 +71,8 @@ class AddDouble4:
     def __init__(self, arch: NVIDIAArch) -> None:
         self.arch: typing.Final[NVIDIAArch] = arch
 
-    def build(self, loads: typing.Collection[InstructionMatch]) -> UnorderedInSequenceMatcher:
+    def build(self, loads: typing.Collection[InstructionMatch] | None = None) -> UnorderedInSequenceMatcher:
+        assert loads is not None
         match Memory(arch=self.arch).max_transaction_size:
             case 16:
                 assert len(loads) == 2

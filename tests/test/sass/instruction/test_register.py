@@ -35,22 +35,22 @@ class TestRegisterMatcher:
     def test_reg(self) -> None:
         REG: typing.Final[str] = 'R42'
 
-        matcher = RegisterMatcher(rtype=RegisterType.GPR, special=False, reuse=False)
-        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>R)(?P<index>\d+)'
+        matcher = RegisterMatcher(rtype=RegisterType.GPR, special=False, reuse=None)
+        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>R)(?P<index>\d+)(?:\.(?P<reuse>reuse))?'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_regz(self) -> None:
         REG: typing.Final[str] = 'RZ'
 
-        matcher = RegisterMatcher(rtype=RegisterType.GPR, special=True)
+        matcher = RegisterMatcher(rtype=RegisterType.GPR, special=True, reuse=False)
         assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>R)(?P<special>Z)'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_ureg(self) -> None:
         REG: typing.Final[str] = 'UR42'
 
-        matcher = RegisterMatcher(rtype=RegisterType.UGPR, special=False)
-        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>UR)(?P<index>\d+)(?P<reuse>\.reuse)?'
+        matcher = RegisterMatcher(rtype=RegisterType.UGPR, special=False, reuse=False)
+        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>UR)(?P<index>\d+)'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_reg_reuse(self) -> None:
@@ -62,8 +62,8 @@ class TestRegisterMatcher:
     def test_predt(self) -> None:
         REG: typing.Final[str] = 'PT'
 
-        matcher = RegisterMatcher(rtype=RegisterType.PRED)
-        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>P)(?P<special>T)?(?P<index>\d+)?'
+        matcher = RegisterMatcher(rtype=RegisterType.PRED, reuse=False)
+        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>P)(?:(?P<special>T)|(?P<index>\d+))'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_upred(self) -> None:

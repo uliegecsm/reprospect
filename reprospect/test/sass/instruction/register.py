@@ -13,6 +13,7 @@ from reprospect.test.sass.instruction.operand import (
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.sass.decode import RegisterType
 
+MODIFIER_REUSE: typing.Final[str] = 'reuse'
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class RegisterMatch:
@@ -37,6 +38,11 @@ class RegisterMatch:
             if len(value) == 1:
                 index = int(value[0])
 
+        reuse: bool = False
+        if (value := captured.get('reuse')) is not None:
+            if len(value) == 1:
+                reuse = True
+
         math: MathModifier | None = None
         if (value := captured.get('modifier_math')) is not None:
             if len(value) == 1:
@@ -45,11 +51,9 @@ class RegisterMatch:
         return cls(
             rtype=RegisterType(rtype[0]),
             index=index,
-            reuse=bool(captured.get('reuse')),
+            reuse=reuse,
             math=math,
         )
-
-REGISTER_MATCHER_MOD_PRE: typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.group(MODIFIER_MATH, group='modifier_math'))
 
 @attrs.define(frozen=True, slots=True, kw_only=True)
 class RegisterMatcher:
@@ -68,13 +72,75 @@ class RegisterMatcher:
         if self.special is not None and self.index is not None:
             raise RuntimeError(self)
 
-        object.__setattr__(self, 'pattern', regex.compile(''.join(filter(None, (
-            self._build_modifier_math(),
-            PatternBuilder.group(self.rtype.value if self.rtype else 'R|UR|P|UP', group='rtype'),
-            self._build_special(),
-            self._build_index(),
-            self._build_reuse(),
-        )))))
+        object.__setattr__(self, 'pattern', regex.compile(self.build_pattern(
+            math=self.math,
+            rtype=self.rtype,
+            special=self.special,
+            index=self.index,
+            reuse=self.reuse,
+            captured=False,
+            capture_math=True,
+            capture_reg=True,
+            capture_reuse=True,
+        )))
+
+    @classmethod
+    def build_pattern(cls, *,
+        rtype: RegisterType | None = None,
+        special: bool | None = None,
+        index: int | None = None,
+        reuse: bool | None = None,
+        math: MathModifier | None = None,
+        captured: bool = True,
+        capture_math: bool = False,
+        capture_reg: bool = False,
+        capture_reuse: bool = False,
+    ) -> str:
+        pattern = ''.join(filter(None, (
+            cls.build_pattern_modifier_math(math=math, captured=capture_math),
+            cls.build_pattern_reg(rtype=rtype, special=special, index=index, captured=capture_reg),
+            cls.build_pattern_modifier_reuse(reuse=reuse, captured=capture_reuse),
+        )))
+        return PatternBuilder.group(pattern, group='operands') if captured else pattern
+
+    @classmethod
+    def build_pattern_modifier_math(cls, *, math: MathModifier | None = None, captured: bool = True) -> str | None:
+        if math is not None:
+            return PatternBuilder.group(math.value, group='modifier_math') if captured else math.value
+        inner = PatternBuilder.group(MODIFIER_MATH, group='modifier_math') if captured else MODIFIER_MATH
+        return PatternBuilder.zero_or_one(inner)
+
+    @classmethod
+    def build_pattern_reg(cls, *, rtype: RegisterType | None = None, special: bool | None = None, index: int | None = None, captured: bool = True) -> str:
+        if rtype is not None:
+            inner_rtype = rtype.value
+            inner_special = rtype.special
+        else:
+            inner_rtype = PatternBuilder.any('R', 'UR', 'P', 'UP')
+            inner_special = PatternBuilder.any('Z', 'T')
+        pattern_rtype = PatternBuilder.group(inner_rtype, group='rtype') if captured else inner_rtype
+
+        if index is not None:
+            return pattern_rtype + (PatternBuilder.group(index, group='index') if captured else str(index))
+
+        if special is True:
+            return pattern_rtype + (PatternBuilder.group(inner_special, group='special') if captured else inner_special)
+
+        if special is False:
+            return pattern_rtype + (PatternBuilder.group(r'\d+', group='index') if captured else r'\d+')
+
+        pattern_special = PatternBuilder.group(inner_special, group='special') if captured else inner_special
+        pattern_index   = PatternBuilder.group(r'\d+', group='index') if captured else r'\d+'
+        return pattern_rtype + PatternBuilder.any(pattern_special, pattern_index)
+
+    @classmethod
+    def build_pattern_modifier_reuse(cls, *, reuse: bool | None = None, captured: bool = True) -> str | None:
+        if reuse is True:
+            return rf"\.{PatternBuilder.group(MODIFIER_REUSE, group='reuse')}" if captured else rf"\.{MODIFIER_REUSE}"
+        if reuse is False:
+            return None
+        inner = PatternBuilder.group(MODIFIER_REUSE, group='reuse') if captured else MODIFIER_REUSE
+        return PatternBuilder.zero_or_one(rf'\.{inner}')
 
     def match(self, reg: str) -> RegisterMatch | None:
         if (matched := self.pattern.match(reg)) is not None:
@@ -83,44 +149,3 @@ class RegisterMatcher:
 
     def __call__(self, reg: str) -> RegisterMatch | None:
         return self.match(reg=reg)
-
-    def _build_modifier_math(self) -> str | None:
-        if self.math is None:
-            return REGISTER_MATCHER_MOD_PRE
-        return PatternBuilder.group(self.math.value, group='modifier_math')
-
-    def _build_special(self) -> str | None:
-        if self.index is not None:
-            return None
-        if self.special is False:
-            return None
-
-        idx = self.rtype.special if self.rtype is not None else r'Z|T'
-
-        special = PatternBuilder.group(idx, group='special')
-
-        if self.special is None:
-            return special + '?'
-        return special
-
-    def _build_index(self) -> str | None:
-        if self.special is True:
-            return None
-        if self.index is not None:
-            return PatternBuilder.group(self.index, group='index')
-        index = PatternBuilder.group(r'\d+', group='index')
-        if self.special is None:
-            return index + '?'
-        return index
-
-    def _build_reuse(self) -> str | None:
-        if self.reuse is False:
-            return None
-        if self.special is True:
-            return None
-        if self.rtype is not None and self.rtype.is_predicate:
-            return None
-        reuse = PatternBuilder.group(r'\.reuse', group='reuse')
-        if self.reuse is None:
-            return reuse + '?'
-        return reuse

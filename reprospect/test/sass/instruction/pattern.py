@@ -77,7 +77,7 @@ class PatternBuilder:
         """
         Build a pattern matching any of `args`.
         """
-        return f'({"|".join(args)})'
+        return f'(?:{"|".join(args)})'
 
     @staticmethod
     def group(s: int | str, group: str) -> str:

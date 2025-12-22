@@ -1,7 +1,7 @@
 attrs
 backports.strenum
 blake3
-cmake-file-api==0.0.8.5
+cmake-file-api==0.0.8.6
 ijson
 mypy_extensions
 pandas

@@ -1,4 +1,3 @@
-import functools
 import typing
 
 
@@ -7,8 +6,6 @@ class PatternBuilder:
     Helper class to build patterns for instruction components.
     """
     HEX: typing.Final[str] = r'0x[0-9A-Fa-f]+'
-
-    OPERAND: typing.Final[str] = r'[\w@!\.\[\]\+\-\s]+'
 
     PREDICATE: typing.Final[str] = r'@!?U?P(?:T|\d+)'
     """
@@ -88,12 +85,3 @@ class PatternBuilder:
                 parts.append(r'\.' + PatternBuilder.group(modifier, group='modifiers'))
 
         return ''.join(parts)
-
-    @classmethod
-    @functools.cache
-    def operands(cls) -> str:
-        """
-        Many operands, with the `operands` named capture group.
-        """
-        op = PatternBuilder.group(cls.OPERAND, group='operands')
-        return rf'{op}(?:\s*,\s*{op})*'

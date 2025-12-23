@@ -4,7 +4,7 @@ import regex
 
 from reprospect.test.sass.instruction.immediate import Immediate
 from reprospect.test.sass.instruction.instruction import PatternMatcher
-from reprospect.test.sass.instruction.operand import MODIFIER_MATH
+from reprospect.test.sass.instruction.operand import Operand
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.test.sass.instruction.register import Register
 
@@ -28,26 +28,40 @@ class Fp16:
 
     * :cite:`ho-exploiting-2017`
     """
-    REGZ_HALF_SEL: typing.Final[str] = PatternBuilder.zero_or_more(MODIFIER_MATH) + Register.REGZ + rf'\.{MODIFIER_HALF_SEL}'
+    REGZ_HALF_SEL: typing.Final[str] = Register.REGZ + rf'\.{MODIFIER_HALF_SEL}'
 
     @classmethod
     def regz_half_sel(cls) -> str:
         return PatternBuilder.group(cls.REGZ_HALF_SEL, group='operands')
 
     @classmethod
-    def any_operand(cls) -> str:
-        return PatternBuilder.group(PatternBuilder.any(
-            cls.REGZ_HALF_SEL,
-            PatternBuilder.zero_or_more(MODIFIER_MATH) + Register.REGZ,
-            Immediate.FLOATING,
-        ), group='operands')
+    def mod(cls, reg: str, *, half_sel: bool | None = None, captured: bool = True) -> str:
+        """
+        Wrap a register pattern with a half selector modifier.
+        """
+        if half_sel is None:
+            inner = reg + PatternBuilder.zero_or_one(rf'\.{MODIFIER_HALF_SEL}')
+        elif half_sel is True:
+            inner = reg + rf'\.{MODIFIER_HALF_SEL}'
+        else:
+            inner = reg
+        return PatternBuilder.group(inner, group='operands') if captured else inner
 
     @classmethod
-    def regz_or_immediate(cls) -> str:
-        return PatternBuilder.group(PatternBuilder.any(
-            PatternBuilder.zero_or_more(MODIFIER_MATH) + Register.REGZ,
-            Immediate.FLOATING,
-        ), group='operands')
+    def build_pattern_operand(cls, *, half_sel: bool | None = None, math: bool | None = None, immediate: bool | None = None, captured: bool = True) -> str:
+        """
+        Build pattern for an FP16 operand.
+        """
+        opnd_reg = Operand.mod(cls.mod(Register.REGZ, half_sel=half_sel, captured=False), math=math, captured=False)
+
+        if immediate is None:
+            inner = PatternBuilder.any(opnd_reg, Immediate.FLOATING)
+        elif immediate is True:
+            inner = Immediate.FLOATING
+        else:
+            inner = opnd_reg
+
+        return PatternBuilder.group(inner, group='operands') if captured else inner
 
 class Fp16FusedMulAddMatcher(PatternMatcher):
     """
@@ -93,24 +107,24 @@ class Fp16FusedMulAddMatcher(PatternMatcher):
     TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HFMA2', modifiers = ('?MMA',))} {Register.dst()}, {{op1}}, {{op2}}, {{op3}}(?:, {{op4}})?"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.any_operand(),
-        op2=Fp16.any_operand(),
-        op3=Fp16.any_operand(),
-        op4=Fp16.any_operand(),
+        op1=Fp16.build_pattern_operand(),
+        op2=Fp16.build_pattern_operand(),
+        op3=Fp16.build_pattern_operand(),
+        op4=Fp16.build_pattern_operand(),
     ))
 
     PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.regz_half_sel(),
-        op2=Fp16.regz_half_sel(),
-        op3=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_HALF_SEL, Immediate.FLOATING), group='operands'),
-        op4=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_HALF_SEL, Immediate.FLOATING), group='operands'),
+        op1=Fp16.build_pattern_operand(half_sel=True, immediate=False),
+        op2=Fp16.build_pattern_operand(half_sel=True, immediate=False),
+        op3=Fp16.build_pattern_operand(half_sel=True),
+        op4=Fp16.build_pattern_operand(half_sel=True),
     ))
 
     PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Register.mathmodregz(),
-        op2=Fp16.regz_or_immediate(),
-        op3=Fp16.regz_or_immediate(),
-        op4=Fp16.regz_or_immediate(),
+        op1=Fp16.build_pattern_operand(half_sel=False, immediate=False),
+        op2=Fp16.build_pattern_operand(half_sel=False),
+        op3=Fp16.build_pattern_operand(half_sel=False),
+        op4=Fp16.build_pattern_operand(half_sel=False),
     ))
 
     def __init__(self, *, packed: bool | None = None) -> None:
@@ -141,18 +155,18 @@ class Fp16MulMatcher(PatternMatcher):
     TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMUL2')} {Register.dst()}, {{op1}}, {{op2}}"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.any_operand(),
-        op2=Fp16.any_operand(),
+        op1=Fp16.build_pattern_operand(),
+        op2=Fp16.build_pattern_operand(),
     ))
 
     PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.regz_half_sel(),
-        op2=Fp16.regz_half_sel(),
+        op1=Fp16.build_pattern_operand(half_sel=True, immediate=False),
+        op2=Fp16.build_pattern_operand(half_sel=True, immediate=False),
     ))
 
     PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Register.reg(),
-        op2=Register.reg(),
+        op1=Fp16.build_pattern_operand(half_sel=False, math=False, immediate=False),
+        op2=Fp16.build_pattern_operand(half_sel=False, math=False, immediate=False),
     ))
 
     def __init__(self, *, packed: bool | None = None) -> None:
@@ -187,18 +201,18 @@ class Fp16AddMatcher(PatternMatcher):
     TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HADD2', modifiers = ('?F32',))} {Register.dst()}, {{op1}}, {{op2}}"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.any_operand(),
-        op2=Fp16.any_operand(),
-    ))
-
-    PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Register.reg(),
-        op2=Register.reg(),
+        op1=Fp16.build_pattern_operand(),
+        op2=Fp16.build_pattern_operand(),
     ))
 
     PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.regz_half_sel(),
-        op2=Fp16.regz_half_sel(),
+        op1=Fp16.build_pattern_operand(half_sel=True, immediate=False),
+        op2=Fp16.build_pattern_operand(half_sel=True, immediate=False),
+    ))
+
+    PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
+        op1=Fp16.build_pattern_operand(half_sel=False, math=False, immediate=False),
+        op2=Fp16.build_pattern_operand(half_sel=False, math=False, immediate=False),
     ))
 
     def __init__(self, *, packed: bool | None = None) -> None:
@@ -217,20 +231,20 @@ class Fp16MinMaxMatcher(PatternMatcher):
     TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMNMX2')} {Register.dst()}, {{op1}}, {{op2}}, {{which}}"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.any_operand(),
-        op2=Fp16.any_operand(),
+        op1=Fp16.build_pattern_operand(),
+        op2=Fp16.build_pattern_operand(),
         which=PatternBuilder.group(r'!?PT', group='operands'),
     ))
 
     PATTERN_MAX: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.any_operand(),
-        op2=Fp16.any_operand(),
+        op1=Fp16.build_pattern_operand(),
+        op2=Fp16.build_pattern_operand(),
         which=PatternBuilder.group('!PT', group='operands'),
     ))
 
     PATTERN_MIN: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.any_operand(),
-        op2=Fp16.any_operand(),
+        op1=Fp16.build_pattern_operand(),
+        op2=Fp16.build_pattern_operand(),
         which=PatternBuilder.group('PT', group='operands'),
     ))
 

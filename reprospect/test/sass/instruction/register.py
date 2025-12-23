@@ -76,26 +76,23 @@ class Register:
         return PatternBuilder.group(cls.UPREDT, group='operands')
 
     @classmethod
-    def mathmodregz(cls) -> str:
-        """
-        :py:attr:`REGZ` with `operands` group and optional math modifiers :py:const:`reprospect.test.sass.instruction.operand.MODIFIER_MATH`.
-        """
-        return PatternBuilder.group(PatternBuilder.zero_or_one(MODIFIER_MATH) + cls.REGZ, group='operands')
+    def dst(cls, *, captured: bool = True) -> str:
+        if captured is True:
+            return PatternBuilder.groups(cls.REG, groups=('dst', 'operands'))
+        return PatternBuilder.group(cls.REG, group='dst')
 
     @classmethod
-    def dst(cls) -> str:
-        return PatternBuilder.groups(cls.REG, groups=('dst', 'operands'))
-
-    @classmethod
-    def mod(cls, reg: str, *, reuse: bool | None = None) -> str:
+    def mod(cls, reg: str, *, reuse: bool | None = None, captured: bool = True) -> str:
         """
         Wrap a register pattern with a reuse modifier.
         """
         if reuse is None:
-            return reg + PatternBuilder.zero_or_one(rf'\.{MODIFIER_REUSE}')
-        if reuse is True:
-            return reg + rf'\.{MODIFIER_REUSE}'
-        return reg
+            inner = reg + PatternBuilder.zero_or_one(rf'\.{MODIFIER_REUSE}')
+        elif reuse is True:
+            inner = reg + rf'\.{MODIFIER_REUSE}'
+        else:
+            inner = reg
+        return PatternBuilder.group(inner, group='operands') if captured else inner
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class RegisterMatch:

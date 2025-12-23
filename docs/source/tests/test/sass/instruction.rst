@@ -8,4 +8,5 @@ Instruction
 .. automodule:: tests.test.sass.instruction.test_half
 .. automodule:: tests.test.sass.instruction.test_immediate
 .. automodule:: tests.test.sass.instruction.test_integer
+.. automodule:: tests.test.sass.instruction.test_operand
 .. automodule:: tests.test.sass.instruction.test_register

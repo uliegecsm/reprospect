@@ -9,6 +9,7 @@ import regex
 
 from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.pattern import PatternBuilder
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 
 if sys.version_info >= (3, 11):
@@ -136,19 +137,19 @@ class AddressMatcher:
 
     @classmethod
     def build_pattern_reg(cls, *, arch: NVIDIAArch, reg: str | None = None, captured: bool = True) -> str:
-        pattern_reg = reg or (rf'(?:{PatternBuilder.REG}|{PatternBuilder.UREG})' if arch.compute_capability.as_int >= 75 else PatternBuilder.REG)
+        pattern_reg = reg or (rf'(?:{Register.REG}|{Register.UREG})' if arch.compute_capability.as_int >= 75 else Register.REG)
         return PatternBuilder.group(pattern_reg, 'reg') if captured else pattern_reg
 
     @classmethod
     def build_pattern_offset(cls, *, arch: NVIDIAArch, offset: str | None = None, captured: bool = True) -> str:
         if offset is not None:
             return rf'\+{PatternBuilder.group(offset, "offset") if captured else offset}'
-        inner = rf'(?:-?{PatternBuilder.HEX}|{PatternBuilder.UREG})' if arch.compute_capability.as_int >= 75 else rf'-?{PatternBuilder.HEX}'
+        inner = rf'(?:-?{PatternBuilder.HEX}|{Register.UREG})' if arch.compute_capability.as_int >= 75 else rf'-?{PatternBuilder.HEX}'
         return PatternBuilder.zero_or_one(r'\+' + (PatternBuilder.group(inner, 'offset') if captured else inner))
 
     @classmethod
     def build_pattern_desc_ureg(cls, *, desc_ureg: str | None = None, captured: bool = True) -> str:
-        pattern_desc_ureg = desc_ureg or PatternBuilder.UREG
+        pattern_desc_ureg = desc_ureg or Register.UREG
         return PatternBuilder.group(pattern_desc_ureg, 'desc_ureg') if captured else pattern_desc_ureg
 
     @classmethod

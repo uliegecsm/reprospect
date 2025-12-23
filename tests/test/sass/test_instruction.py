@@ -4,7 +4,6 @@ import os
 import pathlib
 
 import pytest
-import regex
 import semantic_version
 
 from reprospect.test.sass.composite import findunique
@@ -12,9 +11,9 @@ from reprospect.test.sass.instruction import (
     AtomicMatcher,
     OpcodeModsMatcher,
     OpcodeModsWithOperandsMatcher,
-    PatternBuilder,
     ReductionMatcher,
 )
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.sass import Decoder
@@ -76,36 +75,6 @@ def get_decoder(*, cwd: pathlib.Path, arch: NVIDIAArch, file: pathlib.Path, cmak
     assert len(cuobjdump.functions) == 1
 
     return Decoder(code=next(iter(cuobjdump.functions.values())).code), output
-
-class TestPatternBuilder:
-    """
-    Tests for :py:class:`reprospect.test.sass.instruction.PatternBuilder`.
-    """
-    def test_reg_vs_ureg(self) -> None:
-        """
-        Ensure that :py:attr:`reprospect.test.sass.instruction.PatternBuilder.REG` does not
-        match what :py:attr:`reprospect.test.sass.instruction.PatternBuilder.UREG` matches (and
-        vice versa).
-        """
-        assert regex.match(PatternBuilder.REG,    'R42') is not None
-        assert regex.match(PatternBuilder.reg(),  'R42') is not None
-        assert regex.match(PatternBuilder.UREG,   'R42') is None
-        assert regex.match(PatternBuilder.ureg(), 'R42') is None
-
-        assert regex.match(PatternBuilder.REG,    'UR42') is None
-        assert regex.match(PatternBuilder.reg(),  'UR42') is None
-        assert regex.match(PatternBuilder.UREG,   'UR42') is not None
-        assert regex.match(PatternBuilder.ureg(), 'UR42') is not None
-
-    def test_anygpreg(self) -> None:
-        """
-        Test :py:meth:`reprospect.test.sass.instruction.PatternBuilder.anygpreg`.
-        """
-        assert regex.match(PatternBuilder.anygpreg(reuse=None, group='mygroup'),  'R42').captures('mygroup') == ['R42']
-        assert regex.match(PatternBuilder.anygpreg(reuse=None, group='mygroup'), 'UR42').captures('mygroup') == ['UR42']
-
-        assert regex.match(PatternBuilder.anygpreg(reuse=False), 'R66.reuse').group() == 'R66'
-        assert regex.match(PatternBuilder.anygpreg(reuse=True),  'R66.reuse').group() == 'R66.reuse'
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestReductionMatcher:
@@ -366,11 +335,11 @@ class TestOpcodeModsWithOperandsMatcher:
         instruction = 'ISETP.NE.AND P2, PT, R4, RZ, PT'
 
         matcher = OpcodeModsWithOperandsMatcher(opcode='ISETP', modifiers=('NE', 'AND'), operands=(
-            PatternBuilder.PRED,
-            PatternBuilder.PREDT,
+            Register.PRED,
+            Register.PREDT,
             'R4',
-            PatternBuilder.REGZ,
-            PatternBuilder.PREDT,
+            Register.REGZ,
+            Register.PREDT,
         ))
 
         matched = matcher.match(instruction)

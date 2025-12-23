@@ -22,7 +22,7 @@ from reprospect.test.sass.instruction import (
     OpcodeModsWithOperandsMatcher,
 )
 from reprospect.test.sass.instruction.constant import Constant
-from reprospect.test.sass.instruction.pattern import PatternBuilder
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import ControlCode, Instruction
 
@@ -351,10 +351,10 @@ class TestOrderedInterleavedInSequenceMatcher:
     )
 
     MATCHERS_DADD: typing.Final[tuple[OpcodeModsWithOperandsMatcher, ...]] = (
-        OpcodeModsWithOperandsMatcher(opcode='DADD', modifiers=(), operands=('R4',  'R4',  PatternBuilder.UREG)),
-        OpcodeModsWithOperandsMatcher(opcode='DADD', modifiers=(), operands=('R6',  'R6',  PatternBuilder.UREG)),
-        OpcodeModsWithOperandsMatcher(opcode='DADD', modifiers=(), operands=('R8',  'R8',  PatternBuilder.UREG)),
-        OpcodeModsWithOperandsMatcher(opcode='DADD', modifiers=(), operands=('R10', 'R10', PatternBuilder.UREG)),
+        OpcodeModsWithOperandsMatcher(opcode='DADD', modifiers=(), operands=('R4',  'R4',  Register.UREG)),
+        OpcodeModsWithOperandsMatcher(opcode='DADD', modifiers=(), operands=('R6',  'R6',  Register.UREG)),
+        OpcodeModsWithOperandsMatcher(opcode='DADD', modifiers=(), operands=('R8',  'R8',  Register.UREG)),
+        OpcodeModsWithOperandsMatcher(opcode='DADD', modifiers=(), operands=('R10', 'R10', Register.UREG)),
     )
 
     INSTRUCTIONS_LDG: typing.Final[tuple[str, ...]] = (

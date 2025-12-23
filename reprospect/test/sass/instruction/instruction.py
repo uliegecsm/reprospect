@@ -16,6 +16,7 @@ from reprospect.test.sass.instruction.constant import Constant, ConstantMatcher
 from reprospect.test.sass.instruction.immediate import Immediate
 from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.pattern import PatternBuilder
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import Instruction
 
@@ -109,10 +110,10 @@ def floating_point_add_pattern(*, ftype: typing.Literal['F', 'D']) -> regex.Patt
     """
     return regex.compile(
         PatternBuilder.opcode_mods(f'{ftype}ADD', modifiers=('?FTZ',)) + r'\s+' +
-        PatternBuilder.groups(PatternBuilder.REG, groups=('dst', 'operands')) + r'\s*,\s*' +
-        PatternBuilder.mathmodregz() + r'\s*,\s*' +
+        Register.dst() + r'\s*,\s*' +
+        Register.mathmodregz() + r'\s*,\s*' +
         PatternBuilder.any(
-            PatternBuilder.mathmodregz(), PatternBuilder.ureg(),
+            Register.mathmodregz(), Register.ureg(),
             Constant.address(),
             Immediate.floating(),
         ),
@@ -209,8 +210,8 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
     """
     __slots__ = ('cache', 'extend', 'memory', 'size')
 
-    TEMPLATE:     typing.Final[str] = f'{{opcode}} {PatternBuilder.reg()}, {{address}}'
-    TEMPLATE_256: typing.Final[str] = f'{{opcode}} {PatternBuilder.reg()}, {PatternBuilder.reg()}, {{address}}'
+    TEMPLATE:     typing.Final[str] = f'{{opcode}} {Register.reg()}, {{address}}'
+    TEMPLATE_256: typing.Final[str] = f'{{opcode}} {Register.reg()}, {Register.reg()}, {{address}}'
 
     def __init__(self,
         arch: NVIDIAArch,
@@ -289,13 +290,13 @@ class LoadConstantMatcher(PatternMatcher):
 
         if uniform is None:
             opcode = PatternBuilder.any('LDC', 'LDCU')
-            dest   = PatternBuilder.anygpreg(reuse=False)
+            dest   = PatternBuilder.any(Register.REG, Register.UREG)
         elif uniform is True:
             opcode = 'LDCU'
-            dest   = PatternBuilder.UREG
+            dest   = Register.UREG
         else:
             opcode = 'LDC'
-            dest   = PatternBuilder.REG
+            dest   = Register.REG
 
         super().__init__(pattern=self.TEMPLATE.format(
             opcode=PatternBuilder.opcode_mods(opcode, (size,)),
@@ -315,8 +316,8 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
     """
     __slots__ = ('extend', 'memory', 'size')
 
-    TEMPLATE:     typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}'
-    TEMPLATE_256: typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
+    TEMPLATE:     typing.Final[str] = f'{{opcode}} {{address}}, {Register.reg()}'
+    TEMPLATE_256: typing.Final[str] = f'{{opcode}} {{address}}, {Register.reg()}, {Register.reg()}'
 
     def __init__(self,
         arch: NVIDIAArch,
@@ -412,7 +413,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
 
     * https://forums.developer.nvidia.com/t/difference-between-red-and-atomg-sass-instruction/203469
     """
-    TEMPLATE: typing.Final[str] = f'{{opcode}} {{address}}, {PatternBuilder.reg()}'
+    TEMPLATE: typing.Final[str] = f'{{opcode}} {{address}}, {Register.reg()}'
 
     def __init__(self,
         arch: NVIDIAArch,
@@ -491,8 +492,8 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
 
     * https://docs.nvidia.com/cuda/archive/12.6.3/cuda-binary-utilities/index.html#hopper-instruction-set
     """
-    TEMPLATE_CAS: typing.Final[str] = rf'{{opcode}} {PatternBuilder.predt()}, {PatternBuilder.regz()}, {{address}}, {PatternBuilder.reg()}, {PatternBuilder.reg()}'
-    TEMPLATE: typing.Final[str]     = rf'{{opcode}} {PatternBuilder.predt()}, {PatternBuilder.regz()}, {{address}}, {PatternBuilder.regz()}'
+    TEMPLATE_CAS: typing.Final[str] = rf'{{opcode}} {Register.predt()}, {Register.regz()}, {{address}}, {Register.reg()}, {Register.reg()}'
+    TEMPLATE: typing.Final[str]     = rf'{{opcode}} {Register.predt()}, {Register.regz()}, {{address}}, {Register.regz()}'
 
     def __init__(self,
         arch: NVIDIAArch,
@@ -598,15 +599,16 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
     Similar to :py:class:`OpcodeModsMatcher`, but the operands can be better constrained.
 
     >>> from reprospect.test.sass.instruction import OpcodeModsWithOperandsMatcher, PatternBuilder
+    >>> from reprospect.test.sass.instruction.register import Register
     >>> OpcodeModsWithOperandsMatcher(
     ...     opcode = 'ISETP',
     ...     modifiers = ('NE', 'AND'),
     ...     operands = (
-    ...         PatternBuilder.PRED,
-    ...         PatternBuilder.PREDT,
+    ...         Register.PRED,
+    ...         Register.PREDT,
     ...         'R4',
-    ...         PatternBuilder.REGZ,
-    ...         PatternBuilder.PREDT,
+    ...         Register.REGZ,
+    ...         Register.PREDT,
     ...     )
     ... ).match('ISETP.NE.AND P2, PT, R4, RZ, PT')
     InstructionMatch(opcode='ISETP', modifiers=('NE', 'AND'), operands=('P2', 'PT', 'R4', 'RZ', 'PT'), predicate=None, additional=None)

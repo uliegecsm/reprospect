@@ -11,6 +11,7 @@ from reprospect.test.sass.instruction import (
     RegisterMatcher,
 )
 from reprospect.test.sass.instruction.constant import Constant
+from reprospect.test.sass.instruction.register import Register
 from reprospect.test.sass.matchers.cas import AtomicCASMatcher
 from reprospect.tools.sass import ControlFlow, Decoder
 
@@ -40,18 +41,16 @@ class AddComplex128:
             dadd_real_reg = load_register
             dadd_imag_reg = f'{parsed.rtype}{parsed.index + 2}'
         else:
-            dadd_real_reg = dadd_imag_reg = PatternBuilder.REG
+            dadd_real_reg = dadd_imag_reg = Register.REG
 
         matcher_dadd_real = OpcodeModsWithOperandsMatcher(opcode='DADD',
             operands=(
-                PatternBuilder.REG, dadd_real_reg,
-                PatternBuilder.any(PatternBuilder.UREG, Constant.ADDRESS),
+                Register.REG, dadd_real_reg, PatternBuilder.any(Register.UREG, Constant.ADDRESS),
             ),
         )
         matcher_dadd_imag = OpcodeModsWithOperandsMatcher(opcode='DADD',
             operands=(
-                PatternBuilder.REG, dadd_imag_reg,
-                PatternBuilder.any(PatternBuilder.UREG, Constant.ADDRESS),
+                Register.REG, dadd_imag_reg, PatternBuilder.any(Register.UREG, Constant.ADDRESS),
             ),
         )
 

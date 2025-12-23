@@ -1,31 +1,12 @@
 import functools
 import typing
 
-from reprospect.test.sass.instruction.operand import MODIFIER_MATH
-
 
 class PatternBuilder:
     """
     Helper class to build patterns for instruction components.
     """
     HEX: typing.Final[str] = r'0x[0-9A-Fa-f]+'
-    OFFSET: typing.Final[str] = r'\+0x[0-9A-Fa-f]+'
-    PRED: typing.Final[str] = r'P[0-9]+'
-    REG: typing.Final[str] = r'R[0-9]+'
-    REG64: typing.Final[str] = r'R[0-9]+\.64'
-    UREG: typing.Final[str] = r'UR[0-9]+'
-
-    #: Match a register or ``RZ``.
-    REGZ: typing.Final[str] = r'R(?:Z|\d+)'
-
-    #: Match a predicate register or ``PT``.
-    PREDT: typing.Final[str] = r'P(?:T|\d+)'
-
-    #: Match a uniform predicate register.
-    UPRED: typing.Final[str] = r'UP[0-9]+'
-
-    #: Match a uniform predicate register or ``UPT``.
-    UPREDT: typing.Final[str] = r'UP(?:T|\d+)'
 
     OPERAND: typing.Final[str] = r'[\w@!\.\[\]\+\-\s]+'
 
@@ -77,55 +58,6 @@ class PatternBuilder:
         :py:attr:`HEX` with `operands` group.
         """
         return cls.group(cls.HEX, group='operands')
-
-    @classmethod
-    def reg(cls) -> str:
-        """
-        :py:attr:`REG` with `operands` group.
-        """
-        return cls.group(cls.REG, group='operands')
-
-    @classmethod
-    def mathmodregz(cls) -> str:
-        """
-        :py:attr:`REGZ` with `operands` group and optional math modifiers :py:const:`reprospect.test.sass.instruction.operand.MODIFIER_MATH`.
-        """
-        return cls.group(cls.zero_or_one(MODIFIER_MATH) + cls.REGZ, group='operands')
-
-    @classmethod
-    def regz(cls) -> str:
-        """
-        :py:attr:`REGZ` with `operands` group.
-        """
-        return cls.group(cls.REGZ, group='operands')
-
-    @classmethod
-    def ureg(cls) -> str:
-        """
-        :py:attr:`UREG` with `operands` group.
-        """
-        return cls.group(cls.UREG, group='operands')
-
-    @classmethod
-    def anygpreg(cls, *, reuse: bool | None = None, group: str | None = None) -> str:
-        """
-        Match any general purpose register.
-        """
-        pattern = cls.any(cls.REG, cls.UREG)
-        if reuse is None:
-            pattern += PatternBuilder.zero_or_one(r'\.reuse')
-        elif reuse is True:
-            pattern += r'\.reuse'
-        if group is not None:
-            pattern = cls.group(pattern, group=group)
-        return pattern
-
-    @classmethod
-    def predt(cls) -> str:
-        """
-        :py:attr:`PREDT` with `operands` group.
-        """
-        return cls.group(cls.PREDT, group='operands')
 
     @classmethod
     def predicate(cls) -> str:

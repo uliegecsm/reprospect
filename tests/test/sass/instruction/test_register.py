@@ -1,14 +1,36 @@
 import typing
 
 import pytest
+import regex
 
 from reprospect.test.sass.instruction.register import (
     MathModifier,
+    Register,
     RegisterMatch,
     RegisterMatcher,
     RegisterType,
 )
 
+
+class TestRegister:
+    """
+    Tests for :py:class:`reprospect.test.sass.instruction.register.Register`.
+    """
+    def test_reg_vs_ureg(self) -> None:
+        """
+        Ensure that :py:attr:`reprospect.test.sass.instruction.register.Register.REG` does not
+        match what :py:attr:`reprospect.test.sass.instruction.register.Register.UREG` matches
+        (and vice versa).
+        """
+        assert regex.fullmatch(Register.REG,    'R42') is not None
+        assert regex.fullmatch(Register.reg(),  'R42') is not None
+        assert regex.fullmatch(Register.UREG,   'R42') is None
+        assert regex.fullmatch(Register.ureg(), 'R42') is None
+
+        assert regex.fullmatch(Register.REG,    'UR42') is None
+        assert regex.fullmatch(Register.reg(),  'UR42') is None
+        assert regex.fullmatch(Register.UREG,   'UR42') is not None
+        assert regex.fullmatch(Register.ureg(), 'UR42') is not None
 
 class TestRegisterMatcher:
     """

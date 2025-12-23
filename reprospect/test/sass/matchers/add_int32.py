@@ -5,12 +5,12 @@ from reprospect.test.sass.instruction import (
     InstructionMatch,
     InstructionMatcher,
     OpcodeModsWithOperandsMatcher,
-    PatternBuilder,
 )
 from reprospect.test.sass.instruction.integer import (
     IntAdd3Matcher,
     IntAddMatcher,
 )
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass.decode import Instruction
 
@@ -38,9 +38,9 @@ class AddInt32Matcher(InstructionMatcher):
 
     def __init__(self, *,
         arch: NVIDIAArch,
-        dst: str = PatternBuilder.REG,
-        src_a: str = PatternBuilder.REG,
-        src_b: str = PatternBuilder.REG,
+        dst: str = Register.REG,
+        src_a: str = Register.REG,
+        src_b: str = Register.REG,
         swap: bool = False,
     ) -> None:
         """

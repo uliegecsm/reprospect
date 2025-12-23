@@ -4,39 +4,46 @@ import typing
 
 from reprospect.test.sass.composite import (
     instruction_is,
+    interleaved_instructions_are,
     unordered_interleaved_instructions_are,
 )
-from reprospect.test.sass.composite_impl import UnorderedInterleavedInSequenceMatcher
+from reprospect.test.sass.composite_impl import (
+    OrderedInterleavedInSequenceMatcher,
+    UnorderedInterleavedInSequenceMatcher,
+)
 from reprospect.test.sass.instruction import (
     Fp32AddMatcher,
     InstructionMatch,
     RegisterMatcher,
 )
+from reprospect.test.sass.matchers.cas import AtomicCASMatcher
 from reprospect.tools.sass import ControlFlow, Decoder
 
-from examples.kokkos.atomic import add, cas
+from examples.kokkos.atomic import add
 
 if sys.version_info >= (3, 12):
     from typing import override
 else:
     from typing_extensions import override
 
+
 class AddComplex64:
     """
     Addition of two 64-bit complex values.
     """
-    def build(self, loads: typing.Collection[InstructionMatch]) -> UnorderedInterleavedInSequenceMatcher:
-        assert len(loads) == 1
+    def build(self, loads: typing.Collection[InstructionMatch] | None = None) -> OrderedInterleavedInSequenceMatcher | UnorderedInterleavedInSequenceMatcher:
+        if loads is not None:
+            assert len(loads) == 1
 
-        assert (load_reg := RegisterMatcher(special=False).match(reg=loads[0].operands[0])) is not None
+            assert (load_reg := RegisterMatcher(special=False).match(reg=loads[0].operands[0])) is not None
 
-        reg_real = f'{load_reg.rtype}{load_reg.index}'
-        reg_imag = f'{load_reg.rtype}{load_reg.index + 1}'
-
-        return unordered_interleaved_instructions_are(
-            instruction_is(Fp32AddMatcher()).with_operand(index=1, operand=reg_real),
-            instruction_is(Fp32AddMatcher()).with_operand(index=1, operand=reg_imag),
-        )
+            reg_real = f'{load_reg.rtype}{load_reg.index}'
+            reg_imag = f'{load_reg.rtype}{load_reg.index + 1}'
+            return unordered_interleaved_instructions_are(
+                instruction_is(Fp32AddMatcher()).with_operand(index=1, operand=reg_real),
+                instruction_is(Fp32AddMatcher()).with_operand(index=1, operand=reg_imag),
+            )
+        return interleaved_instructions_are(Fp32AddMatcher(), Fp32AddMatcher())
 
 class TestAtomicAddComplex64(add.TestCase):
     """
@@ -55,7 +62,7 @@ class TestAtomicAddComplex64(add.TestCase):
         """
         This test proves that it uses the CAS-based implementation.
         """
-        assert cas.AtomicCAS(
+        assert AtomicCASMatcher(
             arch=self.arch,
             operation=AddComplex64(),
             size=64,

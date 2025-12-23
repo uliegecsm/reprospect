@@ -53,7 +53,9 @@ st\.global\.v2\.(u|b)64 \[%rd\d+\], {%rd\d+, %rd\d+};
             'IADD3.X R22, P0, PT, R6, R14, RZ, P0, !PT',
             'IADD3.X R23, PT, PT, R7, R15, RZ, P0, !PT',
         )
-        add_int128.AddInt128Matcher(start='R4').assert_matches(instructions=INSTRUCTIONS)
+        matched = add_int128.AddInt128Matcher(start='R4').assert_matches(instructions=INSTRUCTIONS)
+
+        assert len(matched) == 4
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test(self, request, parameters: Parameters, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI) -> None:

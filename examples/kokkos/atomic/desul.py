@@ -21,7 +21,7 @@ and resort to the CAS-based implementation otherwise.
 
 To ensure that :code:`Kokkos` implements the right code path, the following matchers can be used:
 
-* :py:class:`examples.kokkos.atomic.cas.AtomicCAS`
+* :py:class:`reprospect.test.sass.matchers.cas.AtomicCASMatcher`
 * :py:class:`examples.kokkos.atomic.desul.LockBasedAtomicMatcher`
 
 The following tests:

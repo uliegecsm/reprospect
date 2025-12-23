@@ -29,7 +29,6 @@ class AddComplex64:
         assert len(loads) == 1
 
         assert (load_reg := RegisterMatcher(special=False).match(reg=loads[0].operands[0])) is not None
-        assert load_reg.index is not None
 
         reg_real = f'{load_reg.rtype}{load_reg.index}'
         reg_imag = f'{load_reg.rtype}{load_reg.index + 1}'

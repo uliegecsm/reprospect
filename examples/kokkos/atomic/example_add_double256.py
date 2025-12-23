@@ -85,8 +85,7 @@ class AddDouble4:
         matchers: list[OpcodeModsWithOperandsMatcher] = []
 
         for register in registers:
-            matched = RegisterMatcher(special=False).match(register)
-            assert matched is not None and matched.index is not None
+            assert (matched := RegisterMatcher(special=False).match(register)) is not None
 
             logging.info(f'Load register {matched}.')
 

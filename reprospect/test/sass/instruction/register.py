@@ -18,11 +18,11 @@ MODIFIER_REUSE: typing.Final[str] = 'reuse'
 @dataclasses.dataclass(frozen=True, slots=True)
 class RegisterMatch:
     """
-    If :py:attr:`index` is :py:obj:`None`, it is a special register (*e.g.*
+    If :py:attr:`index` is set to a negative value, it is a special register (*e.g.*
     ``RZ`` if :py:attr:`rtype` is :py:const:`reprospect.tools.sass.decode.RegisterType.GPR`).
     """
     rtype: RegisterType
-    index: int | None = None
+    index: int = -1
     reuse: bool = False
     math: MathModifier | None = None
 
@@ -33,7 +33,7 @@ class RegisterMatch:
         if len(rtype := captured['rtype']) != 1:
             raise ValueError(bits)
 
-        index: int | None = None
+        index: int = -1
         if (value := captured.get('index')) is not None:
             if len(value) == 1:
                 index = int(value[0])

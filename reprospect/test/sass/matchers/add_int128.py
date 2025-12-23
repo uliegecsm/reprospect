@@ -79,10 +79,8 @@ class AddInt128Matcher(SequenceMatcher):
         offset += 1
         matched.append(matched_iadd_step_0)
 
-        iadd_step_0_reg_0 = RegisterMatcher(special=False).match(matched_iadd_step_0.operands[-2])
-        assert iadd_step_0_reg_0 is not None and iadd_step_0_reg_0.index is not None
-        iadd_step_0_reg_1 = RegisterMatcher(special=False).match(matched_iadd_step_0.operands[-1])
-        assert iadd_step_0_reg_1 is not None and iadd_step_0_reg_1.index is not None
+        assert (iadd_step_0_reg_0 := RegisterMatcher(special=False).match(matched_iadd_step_0.operands[-2])) is not None
+        assert (iadd_step_0_reg_1 := RegisterMatcher(special=False).match(matched_iadd_step_0.operands[-1])) is not None
 
         matcher_iadd_step_1 = OpcodeModsWithOperandsMatcher(
             opcode='IADD', modifiers=('64',),
@@ -157,10 +155,8 @@ class AddInt128Matcher(SequenceMatcher):
 
         index_src = 2 if len(matched_iadd3_step_0.operands) == 5 else 3
 
-        iadd3_step_0_dst = RegisterMatcher(special=False).match(matched_iadd3_step_0.operands[0])
-        iadd3_step_0_src = RegisterMatcher(special=False).match(matched_iadd3_step_0.operands[index_src])
-        assert iadd3_step_0_dst is not None and iadd3_step_0_dst.index is not None
-        assert iadd3_step_0_src is not None and iadd3_step_0_src.index is not None
+        assert (iadd3_step_0_dst := RegisterMatcher(special=False).match(matched_iadd3_step_0.operands[0])) is not None
+        assert (iadd3_step_0_src := RegisterMatcher(special=False).match(matched_iadd3_step_0.operands[index_src])) is not None
         iadd3_step_1_dst = f'{iadd3_step_0_dst.rtype}{iadd3_step_0_dst.index + 1}'
         iadd3_step_1_src = f'{iadd3_step_0_src.rtype}{iadd3_step_0_src.index + 1}'
 

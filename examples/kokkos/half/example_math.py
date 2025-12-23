@@ -48,10 +48,10 @@ from reprospect.test.sass.instruction import (
     InstructionMatch,
     LoadGlobalMatcher,
     OpcodeModsWithOperandsMatcher,
-    PatternBuilder,
     StoreGlobalMatcher,
 )
 from reprospect.test.sass.instruction.half import Fp16AddMatcher, Fp16MinMaxMatcher
+from reprospect.test.sass.instruction.register import Register
 from reprospect.test.sass.matchers.convert_fp32_to_fp16 import ConvertFp32ToFp16
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.sass import ControlFlow, Decoder, Instruction
@@ -240,9 +240,8 @@ class TestMax(CMakeAwareTestCase):
         offset += advanced
 
         # Take the max.
-        matcher_fmnmx = instructions_contain(OpcodeModsWithOperandsMatcher(opcode='FMNMX', operands=(
-            PatternBuilder.REG,
-            matched_hadd2_a.operands[0], matched_hadd2_b.operands[0], '!PT',
+        matcher_fmnmx = instructions_contain(OpcodeModsWithOperandsMatcher(opcode='FMNMX',
+            operands=(Register.REG, matched_hadd2_a.operands[0], matched_hadd2_b.operands[0], '!PT',
         )))
         [matched_fmnmx] = matcher_fmnmx.assert_matches(instructions=block.instructions[offset:])
         logging.info(matched_fmnmx)

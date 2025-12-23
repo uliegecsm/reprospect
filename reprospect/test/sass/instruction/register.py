@@ -15,6 +15,88 @@ from reprospect.tools.sass.decode import RegisterType
 
 MODIFIER_REUSE: typing.Final[str] = 'reuse'
 
+class Register:
+    """
+    Register patterns.
+    """
+    #: Match a general purpose register.
+    REG: typing.Final[str] = r'R[0-9]+'
+
+    #: Match a general purpose register or ``RZ``.
+    REGZ: typing.Final[str] = r'R(?:Z|\d+)'
+
+    #: Match a uniform general purpose register.
+    UREG: typing.Final[str] = r'UR[0-9]+'
+
+    #: Match a uniform general purpose register or ``URZ``.
+    UREGZ: typing.Final[str] = r'UR(?:Z|\d+)'
+
+    #: Match a predicate register.
+    PRED: typing.Final[str] = r'P[0-9]+'
+
+    #: Match a predicate register or ``PT``.
+    PREDT: typing.Final[str] = r'P(?:T|\d+)'
+
+    #: Match a uniform predicate register.
+    UPRED: typing.Final[str] = r'UP[0-9]+'
+
+    #: Match a uniform predicate register or ``UPT``.
+    UPREDT: typing.Final[str] = r'UP(?:T|\d+)'
+
+    @classmethod
+    def reg(cls) -> str:
+        return PatternBuilder.group(cls.REG, group='operands')
+
+    @classmethod
+    def regz(cls) -> str:
+        return PatternBuilder.group(cls.REGZ, group='operands')
+
+    @classmethod
+    def ureg(cls) -> str:
+        return PatternBuilder.group(cls.UREG, group='operands')
+
+    @classmethod
+    def uregz(cls) -> str:
+        return PatternBuilder.group(cls.UREGZ, group='operands')
+
+    @classmethod
+    def pred(cls) -> str:
+        return PatternBuilder.group(cls.PRED, group='operands')
+
+    @classmethod
+    def predt(cls) -> str:
+        return PatternBuilder.group(cls.PREDT, group='operands')
+
+    @classmethod
+    def upred(cls) -> str:
+        return PatternBuilder.group(cls.UPRED, group='operands')
+
+    @classmethod
+    def upredt(cls) -> str:
+        return PatternBuilder.group(cls.UPREDT, group='operands')
+
+    @classmethod
+    def mathmodregz(cls) -> str:
+        """
+        :py:attr:`REGZ` with `operands` group and optional math modifiers :py:const:`reprospect.test.sass.instruction.operand.MODIFIER_MATH`.
+        """
+        return PatternBuilder.group(PatternBuilder.zero_or_one(MODIFIER_MATH) + cls.REGZ, group='operands')
+
+    @classmethod
+    def dst(cls) -> str:
+        return PatternBuilder.groups(cls.REG, groups=('dst', 'operands'))
+
+    @classmethod
+    def mod(cls, reg: str, *, reuse: bool | None = None) -> str:
+        """
+        Wrap a register pattern with a reuse modifier.
+        """
+        if reuse is None:
+            return reg + PatternBuilder.zero_or_one(rf'\.{MODIFIER_REUSE}')
+        if reuse is True:
+            return reg + rf'\.{MODIFIER_REUSE}'
+        return reg
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class RegisterMatch:
     """

@@ -22,6 +22,7 @@ from reprospect.test.sass.instruction import (
     PatternBuilder,
 )
 from reprospect.test.sass.instruction.memory import MemorySpace
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 
@@ -103,7 +104,7 @@ __global__ __launch_bounds__(128, 1) void ldc({type}* __restrict__ const out)
         assert matched.additional is not None
         assert 'bank' in matched.additional
         assert 'offset' in matched.additional
-        assert re.match(PatternBuilder.REG, matched.additional['offset'][0]) is not None
+        assert re.match(Register.REG, matched.additional['offset'][0]) is not None
 
 class TestLoadMatcher:
     """
@@ -322,7 +323,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
 
             matcher_prmt = instructions_contain(matcher=instruction_is(OpcodeModsWithOperandsMatcher(
                 opcode='PRMT',
-                operands=(PatternBuilder.REG, PatternBuilder.REG, PatternBuilder.HEX, PatternBuilder.REGZ),
+                operands=(Register.REG, Register.REG, PatternBuilder.HEX, Register.REGZ),
             )).with_operand(index=1, operand=matched_u16_ro.operands[0]))
             matcher_prmt.assert_matches(decoder_u16.instructions[matcher_u16_ro.next_index::])
         else:

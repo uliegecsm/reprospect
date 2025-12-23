@@ -6,9 +6,11 @@ from reprospect.test.sass.instruction.immediate import Immediate
 from reprospect.test.sass.instruction.instruction import PatternMatcher
 from reprospect.test.sass.instruction.operand import MODIFIER_MATH
 from reprospect.test.sass.instruction.pattern import PatternBuilder
+from reprospect.test.sass.instruction.register import Register
 
+MODIFIER_HALF_SEL: typing.Final[str] = r'H[01]_H[01]'
 
-class Fp16(PatternMatcher):
+class Fp16:
     """
     Helper for FP16 matchers.
 
@@ -26,31 +28,28 @@ class Fp16(PatternMatcher):
 
     * :cite:`ho-exploiting-2017`
     """
-    REGZ_LANE: typing.Final[str] = r'-?' + PatternBuilder.REGZ + r'\.H[01]_H[01]'
+    REGZ_HALF_SEL: typing.Final[str] = PatternBuilder.zero_or_more(MODIFIER_MATH) + Register.REGZ + rf'\.{MODIFIER_HALF_SEL}'
 
     @classmethod
-    def regz_lane(cls) -> str:
-        return PatternBuilder.group(cls.REGZ_LANE, group='operands')
+    def regz_half_sel(cls) -> str:
+        return PatternBuilder.group(cls.REGZ_HALF_SEL, group='operands')
 
     @classmethod
     def any_operand(cls) -> str:
-        return PatternBuilder.group(
-            PatternBuilder.any(cls.REGZ_LANE, PatternBuilder.zero_or_more(MODIFIER_MATH) + PatternBuilder.REGZ, Immediate.FLOATING),
-            group='operands',
-        )
-
-    @classmethod
-    def regz_or_immediate(cls) -> str:
         return PatternBuilder.group(PatternBuilder.any(
-            PatternBuilder.zero_or_more(MODIFIER_MATH) + PatternBuilder.REGZ,
+            cls.REGZ_HALF_SEL,
+            PatternBuilder.zero_or_more(MODIFIER_MATH) + Register.REGZ,
             Immediate.FLOATING,
         ), group='operands')
 
     @classmethod
-    def dst(cls) -> str:
-        return PatternBuilder.groups(PatternBuilder.REG, groups=('dst', 'operands'))
+    def regz_or_immediate(cls) -> str:
+        return PatternBuilder.group(PatternBuilder.any(
+            PatternBuilder.zero_or_more(MODIFIER_MATH) + Register.REGZ,
+            Immediate.FLOATING,
+        ), group='operands')
 
-class Fp16FusedMulAddMatcher(Fp16):
+class Fp16FusedMulAddMatcher(PatternMatcher):
     """
     Matcher for 16-bit floating-point fused multiply add (``HFMA2``) instruction, such as::
 
@@ -91,7 +90,7 @@ class Fp16FusedMulAddMatcher(Fp16):
 
         This likely means "multiply both lanes of ``R0`` by 1 and add ``R5``".
     """
-    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HFMA2', modifiers = ('?MMA',))} {Fp16.dst()}, {{op1}}, {{op2}}, {{op3}}(?:, {{op4}})?"
+    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HFMA2', modifiers = ('?MMA',))} {Register.dst()}, {{op1}}, {{op2}}, {{op3}}(?:, {{op4}})?"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1=Fp16.any_operand(),
@@ -101,14 +100,14 @@ class Fp16FusedMulAddMatcher(Fp16):
     ))
 
     PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.regz_lane(),
-        op2=Fp16.regz_lane(),
-        op3=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, Immediate.FLOATING), group='operands'),
-        op4=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_LANE, Immediate.FLOATING), group='operands'),
+        op1=Fp16.regz_half_sel(),
+        op2=Fp16.regz_half_sel(),
+        op3=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_HALF_SEL, Immediate.FLOATING), group='operands'),
+        op4=PatternBuilder.group(PatternBuilder.any(Fp16.REGZ_HALF_SEL, Immediate.FLOATING), group='operands'),
     ))
 
     PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=PatternBuilder.mathmodregz(),
+        op1=Register.mathmodregz(),
         op2=Fp16.regz_or_immediate(),
         op3=Fp16.regz_or_immediate(),
         op4=Fp16.regz_or_immediate(),
@@ -127,7 +126,7 @@ class Fp16FusedMulAddMatcher(Fp16):
         super().__init__(pattern=pattern)
 
 
-class Fp16MulMatcher(Fp16):
+class Fp16MulMatcher(PatternMatcher):
     """
     Matcher for 16-bit floating-point multiply (``HMUL2``) instruction.
 
@@ -139,7 +138,7 @@ class Fp16MulMatcher(Fp16):
 
         HMUL2 R0, R2, R3
     """
-    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMUL2')} {Fp16.dst()}, {{op1}}, {{op2}}"
+    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMUL2')} {Register.dst()}, {{op1}}, {{op2}}"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1=Fp16.any_operand(),
@@ -147,13 +146,13 @@ class Fp16MulMatcher(Fp16):
     ))
 
     PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.regz_lane(),
-        op2=Fp16.regz_lane(),
+        op1=Fp16.regz_half_sel(),
+        op2=Fp16.regz_half_sel(),
     ))
 
     PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=PatternBuilder.reg(),
-        op2=PatternBuilder.reg(),
+        op1=Register.reg(),
+        op2=Register.reg(),
     ))
 
     def __init__(self, *, packed: bool | None = None) -> None:
@@ -173,7 +172,7 @@ class Fp16MulMatcher(Fp16):
             pattern = self.PATTERN_INDIVIDUAL
         super().__init__(pattern=pattern)
 
-class Fp16AddMatcher(Fp16):
+class Fp16AddMatcher(PatternMatcher):
     """
     Matcher for 16-bit floating-point add (``HADD2``) instruction.
 
@@ -185,7 +184,7 @@ class Fp16AddMatcher(Fp16):
 
         HADD2 R0, R2, R3
     """
-    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HADD2', modifiers = ('?F32',))} {Fp16.dst()}, {{op1}}, {{op2}}"
+    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HADD2', modifiers = ('?F32',))} {Register.dst()}, {{op1}}, {{op2}}"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1=Fp16.any_operand(),
@@ -193,13 +192,13 @@ class Fp16AddMatcher(Fp16):
     ))
 
     PATTERN_PACKED: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=PatternBuilder.reg(),
-        op2=PatternBuilder.reg(),
+        op1=Register.reg(),
+        op2=Register.reg(),
     ))
 
     PATTERN_INDIVIDUAL: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        op1=Fp16.regz_lane(),
-        op2=Fp16.regz_lane(),
+        op1=Fp16.regz_half_sel(),
+        op2=Fp16.regz_half_sel(),
     ))
 
     def __init__(self, *, packed: bool | None = None) -> None:
@@ -211,11 +210,11 @@ class Fp16AddMatcher(Fp16):
             pattern = self.PATTERN_INDIVIDUAL
         super().__init__(pattern=pattern)
 
-class Fp16MinMaxMatcher(Fp16):
+class Fp16MinMaxMatcher(PatternMatcher):
     """
     Matcher for 16-bit floating-point min-max (``HMNMX2``) instruction.
     """
-    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMNMX2')} {Fp16.dst()}, {{op1}}, {{op2}}, {{which}}"
+    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMNMX2')} {Register.dst()}, {{op1}}, {{op2}}, {{which}}"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1=Fp16.any_operand(),

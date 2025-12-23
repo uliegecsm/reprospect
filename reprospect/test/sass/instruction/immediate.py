@@ -6,10 +6,16 @@ from reprospect.test.sass.instruction.pattern import PatternBuilder
 class Immediate:
     """
     Immediate patterns.
-    """
-    INF: typing.Final[str] = r'[+-]?INF'
 
-    QNAN: typing.Final[str] = PatternBuilder.any(r'[+-]?QNAN', '0x7fffffff')
+    ..note::
+
+         Limits may print in dumped SASS followed by a space as in::
+
+            FSETP.GEU.AND P1, PT, |R151|, +INF , PT
+    """
+    INF: typing.Final[str] = r'[+-]?INF\s?'
+
+    QNAN: typing.Final[str] = PatternBuilder.any(r'[+-]?QNAN\s?', '0x7fffffff')
     """Quiet NaN. Note that in SASS, :code:`CUDART_NAN_F` from ``math_constants.h`` is represented as ``0x7fffffff``."""
 
     FLOATING: typing.Final[str] = r'(?:-?\d+)(?:\.\d*)?(?:[eE][-+]?\d+)?'

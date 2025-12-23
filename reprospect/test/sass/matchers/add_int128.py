@@ -10,6 +10,7 @@ from reprospect.test.sass.instruction import (
     RegisterMatcher,
 )
 from reprospect.test.sass.instruction.constant import Constant
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.sass.decode import Instruction
 
 if sys.version_info >= (3, 12):
@@ -49,8 +50,7 @@ class AddInt128Matcher(SequenceMatcher):
     def __init__(self, start: str | None = None) -> None:
         self._index: int = 0
         self.start: typing.Final[str] = PatternBuilder.group(
-            start or PatternBuilder.anygpreg(reuse=None),
-            group='start',
+            start or Register.mod(PatternBuilder.any(Register.REG, Register.UREG), reuse=None), group='start',
         )
 
     def pattern_3IADD(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
@@ -69,9 +69,9 @@ class AddInt128Matcher(SequenceMatcher):
             opcode='IADD', modifiers=('64',),
             operands=(
                 'RZ',
-                PatternBuilder.PRED,
+                Register.PRED,
                 self.start,
-                PatternBuilder.anygpreg(reuse=None),
+                Register.mod(PatternBuilder.any(Register.REG, Register.UREG), reuse=None),
             ),
         )
         if (matched_iadd_step_0 := matcher_iadd_step_0.match(instructions[offset])) is None:
@@ -85,7 +85,7 @@ class AddInt128Matcher(SequenceMatcher):
         matcher_iadd_step_1 = OpcodeModsWithOperandsMatcher(
             opcode='IADD', modifiers=('64',),
             operands=(
-                PatternBuilder.REG,
+                Register.REG,
                 f'{iadd_step_0_reg_0.rtype}{iadd_step_0_reg_0.index}',
                 f'{iadd_step_0_reg_1.rtype}{iadd_step_0_reg_1.index}',
             ),
@@ -101,7 +101,7 @@ class AddInt128Matcher(SequenceMatcher):
         matcher_iadd_step_2 = instructions_contain(OpcodeModsWithOperandsMatcher(
             opcode='IADD', modifiers=('64', 'X'),
             operands=(
-                PatternBuilder.REG,
+                Register.REG,
                 iadd_step_2_reg_0,
                 iadd_step_2_reg_1,
                 matched_iadd_step_0.operands[1],
@@ -140,11 +140,11 @@ class AddInt128Matcher(SequenceMatcher):
         matcher_iadd3_step_0 = OpcodeModsWithOperandsMatcher(
             opcode='IADD3',
             operands=(
-                PatternBuilder.REG,
-                PatternBuilder.PRED,
-                PatternBuilder.zero_or_one(PatternBuilder.PREDT),
+                Register.REG,
+                Register.PRED,
+                PatternBuilder.zero_or_one(Register.PREDT),
                 self.start,
-                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG, Constant.ADDRESS),
+                PatternBuilder.any(Register.REG, Register.UREG, Constant.ADDRESS),
                 'RZ',
             ),
         )
@@ -164,12 +164,12 @@ class AddInt128Matcher(SequenceMatcher):
             opcode='IADD3', modifiers=('X',),
             operands=(
                 iadd3_step_1_dst,
-                PatternBuilder.PRED,
-                PatternBuilder.zero_or_one(PatternBuilder.PREDT),
+                Register.PRED,
+                PatternBuilder.zero_or_one(Register.PREDT),
                 iadd3_step_1_src,
-                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG, Constant.ADDRESS),
+                PatternBuilder.any(Register.REG, Register.UREG, Constant.ADDRESS),
                 'RZ',
-                PatternBuilder.PRED,
+                Register.PRED,
                 '!PT',
             ),
         ))
@@ -185,12 +185,12 @@ class AddInt128Matcher(SequenceMatcher):
             opcode='IADD3', modifiers=('X',),
             operands=(
                 iadd3_step_2_dst,
-                PatternBuilder.PRED,
-                PatternBuilder.zero_or_one(PatternBuilder.PREDT),
+                Register.PRED,
+                PatternBuilder.zero_or_one(Register.PREDT),
                 iadd3_step_2_src,
-                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG, Constant.ADDRESS),
+                PatternBuilder.any(Register.REG, Register.UREG, Constant.ADDRESS),
                 'RZ',
-                PatternBuilder.PRED,
+                Register.PRED,
                 '!PT',
             ),
         ))
@@ -206,12 +206,12 @@ class AddInt128Matcher(SequenceMatcher):
             opcode='IADD3', modifiers=('X',),
             operands=(
                 iadd3_step_3_dst,
-                PatternBuilder.zero_or_one(PatternBuilder.PREDT),
-                PatternBuilder.zero_or_one(PatternBuilder.PREDT),
+                PatternBuilder.zero_or_one(Register.PREDT),
+                PatternBuilder.zero_or_one(Register.PREDT),
                 iadd3_step_3_src,
-                PatternBuilder.any(PatternBuilder.REG, PatternBuilder.UREG, Constant.ADDRESS),
+                PatternBuilder.any(Register.REG, Register.UREG, Constant.ADDRESS),
                 'RZ',
-                PatternBuilder.PRED,
+                Register.PRED,
                 '!PT',
             ),
         ))

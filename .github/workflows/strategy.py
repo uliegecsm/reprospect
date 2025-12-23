@@ -188,7 +188,16 @@ def main(*, args: argparse.Namespace) -> None:
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='13'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 70,
-        'platforms': ['linux/amd64', 'linux/arm64'],
+        'platforms': ('linux/amd64', 'linux/arm64'),
+    }, args=args))
+
+    matrix.extend(complete_job({
+        'cuda_version': '12.8.1',
+        'ubuntu_version': '24.04',
+        'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
+        'nvidia_compute_capability': 90,
+        'platforms': ('linux/amd64',),
+        'tests': False,
     }, args=args))
 
     matrix.extend(complete_job({
@@ -196,7 +205,7 @@ def main(*, args: argparse.Namespace) -> None:
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 120,
-        'platforms': ['linux/amd64', 'linux/arm64'],
+        'platforms': ('linux/amd64', 'linux/arm64'),
     }, args=args))
 
     matrix.extend(complete_job({
@@ -204,7 +213,7 @@ def main(*, args: argparse.Namespace) -> None:
         'ubuntu_version': '22.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='12'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 75,
-        'platforms': ['linux/amd64'],
+        'platforms': ('linux/amd64',),
     }, args=args))
 
     matrix.extend(complete_job({
@@ -212,7 +221,7 @@ def main(*, args: argparse.Namespace) -> None:
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='13'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 89,
-        'platforms': ['linux/amd64'],
+        'platforms': ('linux/amd64',),
     }, args=args))
 
     matrix.extend(complete_job({
@@ -220,7 +229,7 @@ def main(*, args: argparse.Namespace) -> None:
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 86,
-        'platforms': ['linux/amd64'],
+        'platforms': ('linux/amd64',),
     }, args=args))
 
     matrix.extend(complete_job({
@@ -228,7 +237,7 @@ def main(*, args: argparse.Namespace) -> None:
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='clang', version='19'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 70,
-        'platforms': ['linux/amd64'],
+        'platforms': ('linux/amd64',),
     }, args=args))
 
     matrix.extend(complete_job({
@@ -236,7 +245,7 @@ def main(*, args: argparse.Namespace) -> None:
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='clang', version='20'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 120,
-        'platforms': ['linux/amd64'],
+        'platforms': ('linux/amd64',),
     }, args=args))
 
     matrix.extend(complete_job({
@@ -244,7 +253,7 @@ def main(*, args: argparse.Namespace) -> None:
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='clang', version='21')},
         'nvidia_compute_capability': 120,
-        'platforms': ['linux/amd64'],
+        'platforms': ('linux/amd64',),
     }, args=args))
 
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')

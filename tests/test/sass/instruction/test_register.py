@@ -15,19 +15,19 @@ class TestRegisterMatcher:
     Tests for :py:class:`reprospect.test.sass.instruction.register.RegisterMatcher`.
     """
     REGISTERS: typing.Final[dict[str, RegisterMatch]] = {
-        'R42':       RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False),
-        '!P0':       RegisterMatch(rtype=RegisterType.PRED,  index=0,    reuse=False, math=MathModifier.NOT),
-        '!R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, math=MathModifier.NOT),
-        '~R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, math=MathModifier.INV),
-        '-R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, math=MathModifier.NEG),
-        '|R42|':     RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=False, math=MathModifier.ABS),
-        'R42.reuse': RegisterMatch(rtype=RegisterType.GPR,   index=42,   reuse=True),
-        'RZ':        RegisterMatch(rtype=RegisterType.GPR,   index=None, reuse=False),
-        'UR42':      RegisterMatch(rtype=RegisterType.UGPR,  index=42,   reuse=False),
-        'P3':        RegisterMatch(rtype=RegisterType.PRED,  index=3,    reuse=False),
-        'PT':        RegisterMatch(rtype=RegisterType.PRED,  index=None, reuse=False),
-        'UP3':       RegisterMatch(rtype=RegisterType.UPRED, index=3,    reuse=False),
-        'UPT':       RegisterMatch(rtype=RegisterType.UPRED, index=None, reuse=False),
+        'R42':       RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=False),
+        '!P0':       RegisterMatch(rtype=RegisterType.PRED,  index=0,  reuse=False, math=MathModifier.NOT),
+        '!R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=False, math=MathModifier.NOT),
+        '~R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=False, math=MathModifier.INV),
+        '-R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=False, math=MathModifier.NEG),
+        '|R42|':     RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=False, math=MathModifier.ABS),
+        'R42.reuse': RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=True),
+        'RZ':        RegisterMatch(rtype=RegisterType.GPR,   index=-1, reuse=False),
+        'UR42':      RegisterMatch(rtype=RegisterType.UGPR,  index=42, reuse=False),
+        'P3':        RegisterMatch(rtype=RegisterType.PRED,  index=3,  reuse=False),
+        'PT':        RegisterMatch(rtype=RegisterType.PRED,  index=-1, reuse=False),
+        'UP3':       RegisterMatch(rtype=RegisterType.UPRED, index=3,  reuse=False),
+        'UPT':       RegisterMatch(rtype=RegisterType.UPRED, index=-1, reuse=False),
     }
 
     MATCHER: typing.Final[RegisterMatcher] = RegisterMatcher()

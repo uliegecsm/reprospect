@@ -33,9 +33,7 @@ class AddComplex128:
             raise RuntimeError(self)
         load_register = loads[0].operands[0]
 
-        parsed = RegisterMatcher(special=False).match(load_register)
-        assert parsed is not None
-        assert parsed.index is not None
+        assert (parsed := RegisterMatcher(special=False).match(load_register)) is not None
 
         dadd_real_reg = load_register
         dadd_imag_reg = f'{parsed.rtype}{parsed.index + 2}'

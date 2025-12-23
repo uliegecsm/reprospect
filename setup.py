@@ -34,6 +34,7 @@ def enable_mypyc(dist: Distribution) -> None:
             'reprospect/test/sass/matchers/add_int128.py',
             'reprospect/test/sass/matchers/add_int32.py',
             'reprospect/test/sass/matchers/convert_fp32_to_fp16.py',
+            'reprospect/test/sass/matchers/move32.py',
             'reprospect/tools/architecture.py',
             'reprospect/tools/binaries/cuobjdump.py',
             'reprospect/tools/binaries/demangle.py',

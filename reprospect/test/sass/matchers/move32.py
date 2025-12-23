@@ -7,6 +7,7 @@ from reprospect.test.sass.instruction import (
     OpcodeModsWithOperandsMatcher,
     PatternBuilder,
 )
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.sass.decode import Instruction
 
 if sys.version_info >= (3, 12):
@@ -36,14 +37,14 @@ class Move32Matcher(InstructionMatcher):
     ) -> None:
         self.mov: typing.Final[OpcodeModsWithOperandsMatcher] = OpcodeModsWithOperandsMatcher(
             opcode='MOV', operands=(
-                dst or PatternBuilder.REG,
+                dst or Register.REG,
                 src or PatternBuilder.OPERAND,
             ),
         )
 
         self.imad: typing.Final[OpcodeModsWithOperandsMatcher] = OpcodeModsWithOperandsMatcher(
             opcode='IMAD', modifiers=('MOV', 'U32'), operands=(
-                dst or PatternBuilder.REG,
+                dst or Register.REG,
                 'RZ', 'RZ',
                 src or PatternBuilder.OPERAND,
             ),

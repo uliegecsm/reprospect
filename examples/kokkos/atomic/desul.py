@@ -57,9 +57,9 @@ from reprospect.test.sass.instruction import (
     LoadGlobalMatcher,
     OpcodeModsMatcher,
     OpcodeModsWithOperandsMatcher,
-    PatternBuilder,
     StoreGlobalMatcher,
 )
+from reprospect.test.sass.instruction.register import Register
 from reprospect.test.sass.matchers.move32 import Move32Matcher
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import Instruction
@@ -225,11 +225,11 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         matcher_isetp_enter = OpcodeModsWithOperandsMatcher(
             opcode='ISETP', modifiers=modifiers,
             operands=(
-                PatternBuilder.PRED,
-                PatternBuilder.PREDT,
+                Register.PRED,
+                Register.PREDT,
                 matched_atomic_acquire[-1].operands[1],
-                PatternBuilder.REGZ,
-                PatternBuilder.PREDT,
+                Register.REGZ,
+                Register.PREDT,
             ),
         )
 

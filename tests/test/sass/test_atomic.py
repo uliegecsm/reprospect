@@ -10,9 +10,9 @@ import semantic_version
 from reprospect.test.sass.instruction import (
     AtomicMatcher,
     InstructionMatch,
-    PatternBuilder,
 )
 from reprospect.test.sass.instruction.memory import MemorySpace
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.sass import Instruction
 from reprospect.utils import cmake
 
@@ -234,7 +234,7 @@ __global__ void atomic_exch_kernel() {
             dtype=('S', 32),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert regex.match(Register.PREDT, matched.operands[0]) is not None
         assert matched.operands[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
@@ -264,7 +264,7 @@ __global__ void atomic_exch_kernel() {
             dtype=('U', 64),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert regex.match(Register.PREDT, matched.operands[0]) is not None
         assert matched.operands[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
@@ -291,7 +291,7 @@ __global__ void atomic_exch_kernel() {
             dtype=('F', 32),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert regex.match(Register.PREDT, matched.operands[0]) is not None
         assert matched.operands[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
@@ -318,7 +318,7 @@ __global__ void atomic_exch_kernel() {
             dtype=('F', 64),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert regex.match(Register.PREDT, matched.operands[0]) is not None
         assert matched.operands[1] == 'RZ'
 
         # In the PTX, we can see the '.relaxed'.
@@ -345,7 +345,7 @@ __global__ void atomic_exch_kernel() {
             dtype=('S', 32),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert regex.match(Register.PREDT, matched.operands[0]) is not None
         assert matched.operands[1] == 'RZ'
         assert {'MIN', 'S32'}.issubset(matched.modifiers)
 
@@ -373,7 +373,7 @@ __global__ void atomic_exch_kernel() {
             dtype=('S', 64),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert regex.match(Register.PREDT, matched.operands[0]) is not None
         assert matched.operands[1] == 'RZ'
         assert {'MIN', 'S64'}.issubset(matched.modifiers)
 
@@ -401,7 +401,7 @@ __global__ void atomic_exch_kernel() {
             dtype=('U', 64),
         )
 
-        assert regex.match(PatternBuilder.PREDT, matched.operands[0]) is not None
+        assert regex.match(Register.PREDT, matched.operands[0]) is not None
         assert matched.operands[1] == 'RZ'
         assert {'MIN', '64'}.issubset(matched.modifiers)
 

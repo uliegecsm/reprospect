@@ -11,6 +11,7 @@ from reprospect.test.sass.instruction import (
     RegisterMatcher,
 )
 from reprospect.test.sass.instruction.constant import Constant
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.sass import ControlFlow, Decoder
 
 from examples.kokkos.atomic import add, cas, desul
@@ -42,14 +43,12 @@ class AddComplex128:
 
         matcher_dadd_real = OpcodeModsWithOperandsMatcher(opcode='DADD',
             operands=(
-                PatternBuilder.REG, dadd_real_reg,
-                PatternBuilder.any(PatternBuilder.UREG, Constant.ADDRESS),
+                Register.REG, dadd_real_reg, PatternBuilder.any(Register.UREG, Constant.ADDRESS),
             ),
         )
         matcher_dadd_imag = OpcodeModsWithOperandsMatcher(opcode='DADD',
             operands=(
-                PatternBuilder.REG, dadd_imag_reg,
-                PatternBuilder.any(PatternBuilder.UREG, Constant.ADDRESS),
+                Register.REG, dadd_imag_reg, PatternBuilder.any(Register.UREG, Constant.ADDRESS),
             ),
         )
 

@@ -11,6 +11,7 @@ from reprospect.test.sass.instruction.operand import (
     MathModifier,
 )
 from reprospect.test.sass.instruction.pattern import PatternBuilder
+from reprospect.test.sass.instruction.register import Register
 
 
 class Constant:
@@ -20,7 +21,7 @@ class Constant:
     BANK: typing.Final[str] = r'0x[0-9]+'
     """Constant memory bank."""
 
-    OFFSET: typing.Final[str] = PatternBuilder.any(PatternBuilder.HEX, PatternBuilder.REG, PatternBuilder.UREG)
+    OFFSET: typing.Final[str] = PatternBuilder.any(PatternBuilder.HEX, Register.REG, Register.UREG)
     """Constant memory offset."""
 
     ADDRESS: typing.Final[str] = r'c\[' + BANK + r'\]\[' + OFFSET + r'\]'

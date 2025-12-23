@@ -5,8 +5,8 @@ from reprospect.test.sass.instruction import (
     InstructionMatch,
     InstructionMatcher,
     OpcodeModsWithOperandsMatcher,
-    PatternBuilder,
 )
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass.decode import Instruction
 
@@ -26,8 +26,8 @@ class ConvertFp32ToFp16(InstructionMatcher):
     __slots__ = ('matcher',)
 
     def __init__(self, arch: NVIDIAArch, *,
-        dst: str = PatternBuilder.REG,
-        src: str = PatternBuilder.REG,
+        dst: str = Register.REG,
+        src: str = Register.REG,
     ) -> None:
         """
         :param src: 32-bit floating-point value.

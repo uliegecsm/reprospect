@@ -11,6 +11,7 @@ from reprospect.test.sass.instruction import (
     PatternBuilder,
     PatternMatcher,
 )
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 
 
@@ -21,9 +22,9 @@ class IntAddMatcher(OpcodeModsWithOperandsMatcher):
         IADD R14, R8, R11
     """
     def __init__(self, *,
-        src_a: str = PatternBuilder.REG,
-        src_b: str = PatternBuilder.REG,
-        dst: str = PatternBuilder.REG,
+        src_a: str = Register.REG,
+        src_b: str = Register.REG,
+        dst: str = Register.REG,
     ) -> None:
         super().__init__(
             opcode='IADD',
@@ -45,10 +46,10 @@ class IntAdd3Matcher(OpcodeModsWithOperandsMatcher):
     """
     def __init__(self, *,
         arch: NVIDIAArch,
-        src_a: str = PatternBuilder.REG,
-        src_b: str = PatternBuilder.REG,
-        src_c: str = PatternBuilder.REGZ,
-        dst: str = PatternBuilder.REG,
+        src_a: str = Register.REG,
+        src_b: str = Register.REG,
+        src_c: str = Register.REGZ,
+        dst: str = Register.REG,
     ) -> None:
         super().__init__(
             opcode='IADD3',
@@ -83,9 +84,9 @@ class LEAMatcher(PatternMatcher):
     SHIFT: typing.Final[str] = r'0x[0-9]+'
 
     PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        dest=PatternBuilder.reg(),
-        index=PatternBuilder.reg(),
-        base=PatternBuilder.reg(),
+        dest=Register.reg(),
+        index=Register.reg(),
+        base=Register.reg(),
         shift=PatternBuilder.groups(SHIFT, groups=('operands', 'shift')),
     ))
 
@@ -99,8 +100,8 @@ class LEAMatcher(PatternMatcher):
             pattern=self.PATTERN
             if not (dest or index or base or shift)
             else self.TEMPLATE.format(
-                dest=PatternBuilder.group(dest or PatternBuilder.REG, group='operands'),
-                index=PatternBuilder.group(index or PatternBuilder.REG, group='operands'),
-                base=PatternBuilder.group(base or PatternBuilder.REG, group='operands'),
+                dest=PatternBuilder.group(dest or Register.REG, group='operands'),
+                index=PatternBuilder.group(index or Register.REG, group='operands'),
+                base=PatternBuilder.group(base or Register.REG, group='operands'),
                 shift=PatternBuilder.groups(shift or self.SHIFT, groups=('operands', 'shift')),
             ))

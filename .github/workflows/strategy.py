@@ -197,7 +197,6 @@ def main(*, args: argparse.Namespace) -> None:
         'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
         'nvidia_compute_capability': 90,
         'platforms': ('linux/amd64',),
-        'tests': False,
     }, args=args))
 
     matrix.extend(complete_job({

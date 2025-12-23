@@ -40,7 +40,6 @@ import sys
 import typing
 
 from reprospect.test.sass.composite import (
-    any_of,
     instruction_is,
     instructions_are,
     instructions_contain,
@@ -61,6 +60,7 @@ from reprospect.test.sass.instruction import (
     PatternBuilder,
     StoreGlobalMatcher,
 )
+from reprospect.test.sass.matchers.move32 import Move32Matcher
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import Instruction
 
@@ -94,16 +94,7 @@ class AtomicAcquireMatcher:
     def build(cls, arch: NVIDIAArch, compiler_id: str) -> OrderedInSequenceMatcher:
         return instructions_are(
             # Storing 1 in a register can be done in different ways.
-            any_of(
-                OpcodeModsWithOperandsMatcher(
-                    opcode='MOV',
-                    operands=(PatternBuilder.REG, '0x1'),
-                ),
-                OpcodeModsWithOperandsMatcher(
-                    opcode='IMAD', modifiers=('MOV', 'U32'),
-                    operands=(PatternBuilder.REG, PatternBuilder.REGZ, PatternBuilder.REGZ, '0x1'),
-                ),
-            ),
+            Move32Matcher(src='0x1'),
             AtomicMatcher(
                 memory=get_atomic_memory_suffix(compiler_id=compiler_id),
                 arch=arch,

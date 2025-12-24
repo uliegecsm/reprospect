@@ -19,11 +19,18 @@ class TestBranchMatcher:
     Zoo of real ``BRA`` instructions.
     """
 
+    MATCHER: typing.Final[BranchMatcher] = BranchMatcher()
+
+    def test_pattern(self) -> None:
+        assert self.MATCHER.pattern.pattern == (
+            r'(?:(?P<predicate>@!?U?P(?:T|\d+)))?\s*'
+            r'(?P<opcode>BRA)\s*'
+            r'(?P<operands>0x[0-9A-Fa-f]+)'
+        )
+
     @pytest.mark.parametrize(('instruction', 'expected'), INSTRUCTIONS.items())
     def test(self, instruction: str, expected: InstructionMatch) -> None:
-        matcher = BranchMatcher()
-
-        matched = matcher.match(inst=instruction)
+        matched = self.MATCHER.match(inst=instruction)
 
         assert matched is not None
         assert matched == expected
@@ -40,4 +47,4 @@ class TestBranchMatcher:
         assert matcher.match(      'BRA 0xc') is None
 
     def test_no_match(self) -> None:
-        assert BranchMatcher().match(inst='STG.E [R2], R4') is None
+        assert self.MATCHER.match(inst='STG.E [R2], R4') is None

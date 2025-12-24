@@ -44,12 +44,22 @@ class TestAnyMatcher:
         'STL [R1], R2': InstructionMatch(opcode='STL', modifiers=(), operands=('[R1]', 'R2')),
         'LDGSTS.E.LTC128B [R211+-0x4000], desc[UR24][R182.64+0x20]': InstructionMatch(opcode='LDGSTS', modifiers=('E', 'LTC128B'), operands=('[R211+-0x4000]', 'desc[UR24][R182.64+0x20]')),
         'STS.64 [R9.X8], R2': InstructionMatch(opcode='STS', modifiers=('64',), operands=('[R9.X8]', 'R2')),
+        'LEA.HI.X R145, R140, R134.reuse, R135, 0x2, P3': InstructionMatch(opcode='LEA', modifiers=('HI', 'X'), operands=('R145', 'R140', 'R134.reuse', 'R135', '0x2', 'P3')),
     }
     """
     Zoo of real SASS instructions.
     """
 
     MATCHER: typing.Final[AnyMatcher] = AnyMatcher()
+
+    def test_pattern(self) -> None:
+        assert self.MATCHER.pattern.pattern == (
+            r'(?:(?P<predicate>@!?U?P(?:T|\d+))\s*)?'
+            r'(?P<opcode>[A-Z0-9]+)'
+            r'(?:\.(?P<modifiers>[A-Z0-9_]+))*\s*'
+            r'(?:(?P<operands>[^,\s]+)(?:\s*,\s*|\s+))*'
+            r'(?:(?P<operands>[^,\s]+))?'
+        )
 
     @pytest.mark.parametrize(('instruction', 'expected'), INSTRUCTIONS.items())
     def test(self, instruction: str, expected: InstructionMatch) -> None:

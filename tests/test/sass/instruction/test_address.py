@@ -9,7 +9,9 @@ from reprospect.test.sass.instruction.address import (
     SharedAddressMatch,
     StrideModifier,
 )
+from reprospect.test.sass.instruction.instruction import OpcodeModsWithOperandsMatcher
 from reprospect.test.sass.instruction.memory import MemorySpace
+from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 
 from tests.parameters import PARAMETERS, Parameters
@@ -105,6 +107,20 @@ class TestAddressMatcher:
         assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED, reg='R25', offset='0x800'                          ).match(ADDRESS) == SharedAddressMatch(reg='R25', offset='0x800', stride=StrideModifier.X8)
         assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED, reg='R25', offset='0x800', stride=StrideModifier.X8).match(ADDRESS) == SharedAddressMatch(reg='R25', offset='0x800', stride=StrideModifier.X8)
         assert AddressMatcher(arch=ARCH, memory=MemorySpace.SHARED, reg='R25', offset='0x800', stride=StrideModifier.X4).match(ADDRESS) is None
+
+    def test_shared_hex_only_address_volta70(self) -> None:
+        ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('VOLTA70')
+
+        assert OpcodeModsWithOperandsMatcher(opcode='LDS', modifiers=('U', '128'), operands=(
+            Register.REG, AddressMatcher.build_pattern(arch=ARCH, memory=MemorySpace.SHARED),
+        )).match(inst='LDS.U.128 R20, [0x10]') is not None
+
+    def test_global_reg64_address_turing75(self) -> None:
+        ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('TURING75')
+
+        assert OpcodeModsWithOperandsMatcher(opcode='LDG', modifiers=('E', '128', 'SYS'), operands=(
+            Register.REG, AddressMatcher.build_pattern(arch=ARCH, memory=MemorySpace.GLOBAL),
+        )).match(inst='LDG.E.128.SYS R24, [R24.64+UR4]') is not None
 
     def test_build_pattern(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('BLACKWELL120')

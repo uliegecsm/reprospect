@@ -186,8 +186,13 @@ class AddressMatcher:
         Generic or global memory address operand.
         """
         match arch.compute_capability.as_int:
-            case 70 | 75:
+            case 70:
                 return cls.build_address(arch=arch, reg=reg, offset=offset, captured=captured)
+            case 75:
+                return PatternBuilder.any(
+                    cls.build_address(arch=arch, reg=reg, offset=offset, captured=captured),
+                    cls.build_reg64_address(arch=arch, reg=reg, offset=offset, captured=captured),
+                )
             case 80 | 86 | 89:
                 return cls.build_reg64_address(arch=arch, reg=reg, offset=offset, captured=captured)
             case 90 | 100 | 103 | 120:
@@ -200,7 +205,10 @@ class AddressMatcher:
         """
         Shared memory address operand.
         """
-        return cls.build_stride_address(arch=arch, reg=reg, offset=offset, stride=stride, captured=captured)
+        return PatternBuilder.any(
+            rf'\[{PatternBuilder.HEX}\]',
+            cls.build_stride_address(arch=arch, reg=reg, offset=offset, stride=stride, captured=captured),
+        )
 
     @classmethod
     def build_local_address(cls, *, arch: NVIDIAArch, reg: str | None = None, offset: str | None = None, captured: bool = False) -> str:

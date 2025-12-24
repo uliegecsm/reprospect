@@ -373,6 +373,15 @@ class TestOpcodeModsWithOperandsMatcher:
             PatternBuilder.PREDT,
         ))
 
+        assert matcher.pattern.pattern == (
+            r'(?P<opcode>ISETP)\.(?P<modifiers>NE)\.(?P<modifiers>AND)\s*'
+            r'(?P<operands>P[0-9]+),\s+'
+            r'(?P<operands>P(?:T|\d+)),\s+'
+            r'(?P<operands>R4),\s+'
+            r'(?P<operands>R(?:Z|\d+)),\s+'
+            r'(?P<operands>P(?:T|\d+))'
+        )
+
         matched = matcher.match(instruction)
 
         logging.info(f'{matcher} matched instruction {instruction} as {matched}.')

@@ -54,7 +54,7 @@ class TestAnyMatcher:
 
     def test_pattern(self) -> None:
         assert self.MATCHER.pattern.pattern == (
-            r'(?:(?P<predicate>@!?U?P(?:T|\d+))\s*)?'
+            r'(?:(?P<predicate>@!?U?P(?:T|[0-9]+))\s*)?'
             r'(?P<opcode>[A-Z0-9]+)'
             r'(?:\.(?P<modifiers>[A-Z0-9_]+))*\s*'
             r'(?:(?P<operands>[^,\s]+)(?:\s*,\s*|\s+))*'

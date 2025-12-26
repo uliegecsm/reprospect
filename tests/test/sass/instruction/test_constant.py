@@ -52,7 +52,7 @@ class TestConstantMatcher:
 
     def test_build_pattern(self) -> None:
         pattern = ConstantMatcher.build_pattern(bank='0x0', capture_bank=True, capture_modifier_math=True, captured=False)
-        assert pattern == r'(?:(?P<modifier_math>[\-!\|~]))?c\[(?P<bank>0x0)\]\[(?:0x[0-9A-Fa-f]+|R[0-9]+|UR[0-9]+)\]'
+        assert pattern == r'(?:(?P<modifier_math>(?:!|\-\||\-|\~|\|)))?c\[(?P<bank>0x0)\]\[(?:0x[0-9A-Fa-f]+|R[0-9]+|UR[0-9]+)\]'
 
     @pytest.mark.parametrize(('constant', 'expected'), CONSTANTS.items())
     def test_any(self, constant: str, expected: ConstantMatch) -> None:

@@ -43,6 +43,7 @@ class TestRegisterMatcher:
         '~R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=False, math=MathModifier.INV),
         '-R42':      RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=False, math=MathModifier.NEG),
         '|R42|':     RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=False, math=MathModifier.ABS),
+        '-|R42|':    RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=False, math=MathModifier.NEG_ABS),
         'R42.reuse': RegisterMatch(rtype=RegisterType.GPR,   index=42, reuse=True),
         'RZ':        RegisterMatch(rtype=RegisterType.GPR,   index=-1, reuse=False),
         'UR42':      RegisterMatch(rtype=RegisterType.UGPR,  index=42, reuse=False),
@@ -58,7 +59,7 @@ class TestRegisterMatcher:
         REG: typing.Final[str] = '!R42'
 
         matcher = RegisterMatcher(rtype=RegisterType.GPR, special=False, reuse=None)
-        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>R)(?P<index>\d+)(?:\.(?P<reuse>reuse))?'
+        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>(?:!|\-\||\-|\~|\|)))?(?P<rtype>R)(?P<index>\d+)(?:\.(?P<reuse>reuse))?'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_reg_no_math(self) -> None:
@@ -72,14 +73,14 @@ class TestRegisterMatcher:
         REG: typing.Final[str] = 'RZ'
 
         matcher = RegisterMatcher(rtype=RegisterType.GPR, special=True, reuse=False)
-        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>R)(?P<special>Z)'
+        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>(?:!|\-\||\-|\~|\|)))?(?P<rtype>R)(?P<special>Z)'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_ureg(self) -> None:
         REG: typing.Final[str] = 'UR42'
 
         matcher = RegisterMatcher(rtype=RegisterType.UGPR, special=False, reuse=False)
-        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>UR)(?P<index>\d+)'
+        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>(?:!|\-\||\-|\~|\|)))?(?P<rtype>UR)(?P<index>\d+)'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_reg_reuse(self) -> None:
@@ -92,7 +93,7 @@ class TestRegisterMatcher:
         REG: typing.Final[str] = 'PT'
 
         matcher = RegisterMatcher(rtype=RegisterType.PRED, reuse=False)
-        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>[\-!\|~]))?(?P<rtype>P)(?:(?P<special>T)|(?P<index>\d+))'
+        assert matcher.pattern.pattern == r'(?:(?P<modifier_math>(?:!|\-\||\-|\~|\|)))?(?P<rtype>P)(?:(?P<special>T)|(?P<index>\d+))'
         assert matcher.match(REG) == self.REGISTERS[REG]
 
     def test_upred(self) -> None:

@@ -146,7 +146,15 @@ class AddressMatcher:
     def build_pattern_offset(cls, *, arch: NVIDIAArch, offset: str | None = None, captured: bool = True) -> str:
         if offset is not None:
             return rf'\+{PatternBuilder.group(offset, "offset") if captured else offset}'
-        inner = rf'(?:-?{PatternBuilder.HEX}|{Register.UREG})' if arch.compute_capability.as_int >= 75 else rf'-?{PatternBuilder.HEX}'
+        match arch.compute_capability.as_int:
+            case 70:
+                inner = r'-?' + PatternBuilder.HEX
+            case 75 | 80 | 86 | 89:
+                inner = PatternBuilder.any(r'-?' + PatternBuilder.HEX, Register.UREG)
+            case 90 | 100 | 103 | 120:
+                inner = PatternBuilder.any(r'-?' + PatternBuilder.HEX, Register.UREG, rf'{Register.UREG}\+{PatternBuilder.HEX}')
+            case _:
+                raise ValueError(f'unsupported architecture {arch}')
         return PatternBuilder.zero_or_one(r'\+' + (PatternBuilder.group(inner, 'offset') if captured else inner))
 
     @classmethod
@@ -250,6 +258,10 @@ class AddressMatcher:
 
             [R49.X16]
             [R2.X8+0x10]
+
+        As of :py:attr:`reprospect.tools.architecture.NVIDIAFamily.HOPPER`, it may be::
+
+            [R32+UR10+0x1c0]
         """
         pattern_reg = cls.build_pattern_reg(arch=arch, reg=reg, captured=captured)
         pattern_offset = cls.build_pattern_offset(arch=arch, offset=offset, captured=captured)

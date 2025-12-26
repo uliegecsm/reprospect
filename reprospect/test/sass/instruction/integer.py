@@ -11,6 +11,7 @@ from reprospect.test.sass.instruction import (
     PatternBuilder,
     PatternMatcher,
 )
+from reprospect.test.sass.instruction.instruction import OpCode
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 
@@ -79,7 +80,7 @@ class LEAMatcher(PatternMatcher):
 
     * https://forums.developer.nvidia.com/t/how-to-understand-the-lea-assembly-behind-the-cuda-c/257679/2
     """
-    TEMPLATE: typing.Final[str] = rf"{PatternBuilder.opcode_mods(opcode='LEA')} {{dest}}, {{index}}, {{base}}, {{shift}}"
+    TEMPLATE: typing.Final[str] = rf"{OpCode.mod(opcode='LEA', modifiers=())} {{dest}}, {{index}}, {{base}}, {{shift}}"
 
     SHIFT: typing.Final[str] = r'0x[0-9]+'
 

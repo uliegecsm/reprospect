@@ -50,26 +50,3 @@ class PatternBuilder:
         for g in groups:
             s = PatternBuilder.group(s, group=g)
         return str(s)
-
-    @staticmethod
-    def opcode_mods(opcode: str, modifiers: typing.Iterable[int | str | None] | None = None) -> str:
-        """
-        Append each modifier with a `.`, within a proper named capture group.
-
-        Note that the modifiers starting with a `?` are matched optionally.
-        """
-        opcode = PatternBuilder.group(opcode, group='opcode')
-        if modifiers is None:
-            return opcode
-
-        parts: list[str] = [opcode]
-
-        for modifier in modifiers:
-            if not modifier:
-                continue
-            if isinstance(modifier, str) and modifier[0] == '?':
-                parts.append(PatternBuilder.zero_or_one(r'\.' + PatternBuilder.group(modifier[1:], group='modifiers')))
-            else:
-                parts.append(r'\.' + PatternBuilder.group(modifier, group='modifiers'))
-
-        return ''.join(parts)

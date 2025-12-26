@@ -18,6 +18,7 @@ class TestConstantMatcher:
         'c[0x0][R9]':     ConstantMatch(bank='0x0', offset='R9'),
         '-c[0x0][0x18c]': ConstantMatch(bank='0x0', offset='0x18c', math=MathModifier.NEG),
         'c[0x0][UR456]':  ConstantMatch(bank='0x0', offset='UR456'),
+        'c[0x0][RZ]':     ConstantMatch(bank='0x0', offset='RZ'),
     }
 
     MATCHER: typing.Final[ConstantMatcher] = ConstantMatcher()
@@ -36,6 +37,13 @@ class TestConstantMatcher:
         assert ConstantMatcher(bank='0x0', offset='R9').match(CONSTANT) == self.CONSTANTS[CONSTANT]
         assert ConstantMatcher(bank='0x2'             ).match(CONSTANT) is None
 
+    def test_constant_with_rz(self) -> None:
+        CONSTANT: typing.Final[str] = 'c[0x0][RZ]'
+
+        assert ConstantMatcher(bank='0x0'             ).match(CONSTANT) == self.CONSTANTS[CONSTANT]
+        assert ConstantMatcher(bank='0x0', offset='RZ').match(CONSTANT) == self.CONSTANTS[CONSTANT]
+        assert ConstantMatcher(bank='0x2'             ).match(CONSTANT) is None
+
     def test_constant_with_ureg(self) -> None:
         CONSTANT: typing.Final[str] = 'c[0x0][UR456]'
 
@@ -52,7 +60,7 @@ class TestConstantMatcher:
 
     def test_build_pattern(self) -> None:
         pattern = ConstantMatcher.build_pattern(bank='0x0', capture_bank=True, capture_modifier_math=True, captured=False)
-        assert pattern == r'(?:(?P<modifier_math>(?:!|\-\||\-|\~|\|)))?c\[(?P<bank>0x0)\]\[(?:0x[0-9A-Fa-f]+|R[0-9]+|UR[0-9]+)\]'
+        assert pattern == r'(?:(?P<modifier_math>(?:!|\-\||\-|\~|\|)))?c\[(?P<bank>0x0)\]\[(?:0x[0-9A-Fa-f]+|R(?:Z|\d+)|UR[0-9]+)\]'
 
     @pytest.mark.parametrize(('constant', 'expected'), CONSTANTS.items())
     def test_any(self, constant: str, expected: ConstantMatch) -> None:

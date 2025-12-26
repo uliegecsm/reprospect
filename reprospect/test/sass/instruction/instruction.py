@@ -561,7 +561,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
 
         match self.arch.compute_capability.as_int:
             case 80 | 86 | 89 | 90 | 100 | 103 | 120:
-                address = PatternBuilder.any(AddressMatcher.build_address(arch=self.arch), address)
+                address = PatternBuilder.any(AddressMatcher.build_reg_address(arch=self.arch), address)
             case _:
                 pass
 

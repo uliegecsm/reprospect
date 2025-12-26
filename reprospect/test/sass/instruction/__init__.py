@@ -34,7 +34,6 @@ References:
 """
 
 from .address import (
-    AddressMatch,
     AddressMatcher,
     GenericOrGlobalAddressMatch,
     LocalAddressMatch,
@@ -66,7 +65,6 @@ from .pattern import PatternBuilder
 from .register import RegisterMatch, RegisterMatcher
 
 __all__ = (
-    'AddressMatch',
     'AddressMatcher',
     'AnyMatcher',
     'ArchitectureAndVersionAwarePatternMatcher',

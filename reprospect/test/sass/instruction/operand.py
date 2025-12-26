@@ -1,3 +1,4 @@
+import re
 import sys
 import typing
 
@@ -8,9 +9,6 @@ if sys.version_info >= (3, 11):
 else:
     from backports.strenum.strenum import StrEnum
 
-MODIFIER_MATH: typing.Final[str] = r'[\-!\|~]'
-"""Match any math modifier from :py:class:`MathModifier`."""
-
 MODIFIER_MATH_ABS_DELIMITER: typing.Final[str] = r'\|'
 """Match :py:attr:`MathModifier.ABS`."""
 
@@ -19,9 +17,13 @@ class MathModifier(StrEnum):
     Math operand modifier.
     """
     NOT = '!'
+    NEG_ABS = '-|'
     NEG = '-'
     INV = '~'
     ABS = '|'
+
+MODIFIER_MATH: typing.Final[str] = PatternBuilder.any(*(re.escape(x.value) for x in MathModifier))
+"""Match any math modifier from :py:class:`MathModifier`."""
 
 class Operand:
     """

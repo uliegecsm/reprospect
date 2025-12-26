@@ -50,7 +50,7 @@ class AddInt128Matcher(SequenceMatcher):
     def __init__(self, start: str | None = None) -> None:
         self._index: int = 0
         self.start: typing.Final[str] = PatternBuilder.group(
-            start or Register.mod(PatternBuilder.any(Register.REG, Register.UREG), reuse=None), group='start',
+            start or Register.mod(PatternBuilder.any(Register.REG, Register.UREG), reuse=None, captured=False), group='start',
         )
 
     def pattern_3IADD(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None: # pylint: disable=invalid-name
@@ -71,7 +71,7 @@ class AddInt128Matcher(SequenceMatcher):
                 'RZ',
                 Register.PRED,
                 self.start,
-                Register.mod(PatternBuilder.any(Register.REG, Register.UREG), reuse=None),
+                Register.mod(PatternBuilder.any(Register.REG, Register.UREG), reuse=None, captured=False),
             ),
         )
         if (matched_iadd_step_0 := matcher_iadd_step_0.match(instructions[offset])) is None:

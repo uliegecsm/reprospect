@@ -15,6 +15,7 @@ from reprospect.test.sass.instruction.address import AddressMatcher
 from reprospect.test.sass.instruction.constant import Constant, ConstantMatcher
 from reprospect.test.sass.instruction.immediate import Immediate
 from reprospect.test.sass.instruction.memory import MemorySpace
+from reprospect.test.sass.instruction.operand import Operand
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
@@ -111,9 +112,9 @@ def floating_point_add_pattern(*, ftype: typing.Literal['F', 'D']) -> regex.Patt
     return regex.compile(
         PatternBuilder.opcode_mods(f'{ftype}ADD', modifiers=('?FTZ',)) + r'\s+' +
         Register.dst() + r'\s*,\s*' +
-        Register.mathmodregz() + r'\s*,\s*' +
+        Operand.mod(Register.REGZ, math=None) + r'\s*,\s*' +
         PatternBuilder.any(
-            Register.mathmodregz(), Register.ureg(),
+            Operand.mod(Register.REGZ, math=None), Register.ureg(),
             Constant.address(),
             Immediate.floating(),
         ),
@@ -588,8 +589,13 @@ class OpcodeModsMatcher(PatternMatcher):
         operands: bool = True,
     ) -> None:
         pattern = PatternBuilder.opcode_mods(opcode, modifiers)
+
         if operands:
-            pattern += rf'\s+{PatternBuilder.operands()}'
+            pattern_operands = PatternBuilder.zero_or_one(
+                Operand.operand() + PatternBuilder.zero_or_more(r'\s*,\s*' + Operand.operand()),
+            )
+            pattern += r'\s+' + pattern_operands
+
         super().__init__(pattern=pattern)
 
 class OpcodeModsWithOperandsMatcher(PatternMatcher):
@@ -674,10 +680,10 @@ class AnyMatcher(PatternMatcher):
 
     PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         predicate=PatternBuilder.zero_or_one(PatternBuilder.predicate() + r'\s*'),
-        opcode=   PatternBuilder.group(s=r'[A-Z0-9]+', group='opcode'),  # noqa: E251
-        modifiers=PatternBuilder.zero_or_more(s=r'\.' + PatternBuilder.group(s=r'[A-Z0-9_]+', group='modifiers')),
-        operands= PatternBuilder.zero_or_more(s=PatternBuilder.group(s=r'[^,\s]+', group='operands') + PatternBuilder.any(r'\s*,\s*', r'\s+')),  # noqa: E251
-        operand=  PatternBuilder.zero_or_one(s=PatternBuilder.group(s=r'[^,\s]+', group='operands')),  # noqa: E251
+        opcode=   PatternBuilder.group(r'[A-Z0-9]+', group='opcode'),  # noqa: E251
+        modifiers=PatternBuilder.zero_or_more(r'\.' + PatternBuilder.group(s=r'[A-Z0-9_]+', group='modifiers')),
+        operands= PatternBuilder.zero_or_more(PatternBuilder.group(s=r'[^,\s]+', group='operands') + PatternBuilder.any(r'\s*,\s*', r'\s+')),  # noqa: E251
+        operand=  PatternBuilder.zero_or_one(PatternBuilder.group(s=r'[^,\s]+', group='operands')),  # noqa: E251
     ))
 
     def __init__(self):

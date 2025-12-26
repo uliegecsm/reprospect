@@ -7,6 +7,7 @@ from reprospect.test.sass.instruction import (
     OpcodeModsWithOperandsMatcher,
     PatternBuilder,
 )
+from reprospect.test.sass.instruction.operand import Operand
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.sass.decode import Instruction
 
@@ -38,7 +39,7 @@ class Move32Matcher(InstructionMatcher):
         self.mov: typing.Final[OpcodeModsWithOperandsMatcher] = OpcodeModsWithOperandsMatcher(
             opcode='MOV', operands=(
                 PatternBuilder.group(dst or Register.REG, group='dst'),
-                PatternBuilder.group(src or PatternBuilder.OPERAND, group='src'),
+                PatternBuilder.group(src or Operand.OPERAND, group='src'),
             ),
         )
 
@@ -46,7 +47,7 @@ class Move32Matcher(InstructionMatcher):
             opcode='IMAD', modifiers=('MOV', 'U32'), operands=(
                 PatternBuilder.group(dst or Register.REG, group='dst'),
                 'RZ', 'RZ',
-                PatternBuilder.group(src or PatternBuilder.OPERAND, group='src'),
+                PatternBuilder.group(src or Operand.OPERAND, group='src'),
             ),
         )
 

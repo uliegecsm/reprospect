@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
     {
         using namespace reprospect::examples::kokkos::complex;
 
-        Kokkos::Profiling::ProfilingSection profiling_section {"Alignment"};
+        Kokkos::Profiling::ProfilingSection profiling_section {"alignment"};
         profiling_section.start();
 
         using complex_double_specified_alignment_t = Kokkos::complex<double>;

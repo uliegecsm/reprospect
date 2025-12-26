@@ -180,7 +180,7 @@ class TestNCU(TestAlignment):
         MetricCounter(name='lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs=(MetricCounterRollUp.SUM,)),
     )
 
-    NVTX_INCLUDES: typing.Final[tuple[str, ...]] = ('Alignment',)
+    NVTX_INCLUDES: typing.Final[tuple[str, ...]] = ('alignment',)
 
     @pytest.fixture(scope='class')
     def report(self) -> Report:

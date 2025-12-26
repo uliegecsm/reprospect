@@ -7,10 +7,12 @@ class PatternBuilder:
     """
     HEX: typing.Final[str] = r'0x[0-9A-Fa-f]+'
 
-    PREDICATE: typing.Final[str] = r'@!?U?P(?:T|\d+)'
-    """
-    Predicate for the whole instruction (comes before the opcode).
-    """
+    @classmethod
+    def hex(cls) -> str:
+        """
+        :py:attr:`HEX` with `operands` group.
+        """
+        return cls.group(cls.HEX, group='operands')
 
     @staticmethod
     def zero_or_one(s: str) -> str:
@@ -48,20 +50,6 @@ class PatternBuilder:
         for g in groups:
             s = PatternBuilder.group(s, group=g)
         return str(s)
-
-    @classmethod
-    def hex(cls) -> str:
-        """
-        :py:attr:`HEX` with `operands` group.
-        """
-        return cls.group(cls.HEX, group='operands')
-
-    @classmethod
-    def predicate(cls) -> str:
-        """
-        :py:attr:`PREDICATE` with `predicate` group.
-        """
-        return cls.group(s=cls.PREDICATE, group='predicate')
 
     @staticmethod
     def opcode_mods(opcode: str, modifiers: typing.Iterable[int | str | None] | None = None) -> str:

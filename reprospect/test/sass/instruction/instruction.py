@@ -26,6 +26,22 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
+class Predicate:
+    """
+    Predicate patterns.
+    """
+    PREDICATE: typing.Final[str] = r'@!?U?P(?:T|[0-9]+)'
+    """
+    Predicate for the whole instruction (comes before the opcode).
+    """
+
+    @classmethod
+    def predicate(cls) -> str:
+        """
+        :py:attr:`PREDICATE` with `predicate` group.
+        """
+        return PatternBuilder.group(s=cls.PREDICATE, group='predicate')
+
 @mypy_extensions.mypyc_attr(native_class=True)
 @dataclasses.dataclass(frozen=True, slots=True)
 class InstructionMatch:
@@ -679,7 +695,7 @@ class AnyMatcher(PatternMatcher):
     TEMPLATE: typing.Final[str] = r'{predicate}{opcode}{modifiers}\s*{operands}{operand}'
 
     PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        predicate=PatternBuilder.zero_or_one(PatternBuilder.predicate() + r'\s*'),
+        predicate=PatternBuilder.zero_or_one(Predicate.predicate() + r'\s*'),
         opcode=   PatternBuilder.group(r'[A-Z0-9]+', group='opcode'),  # noqa: E251
         modifiers=PatternBuilder.zero_or_more(r'\.' + PatternBuilder.group(s=r'[A-Z0-9_]+', group='modifiers')),
         operands= PatternBuilder.zero_or_more(PatternBuilder.group(s=r'[^,\s]+', group='operands') + PatternBuilder.any(r'\s*,\s*', r'\s+')),  # noqa: E251
@@ -699,7 +715,7 @@ class BranchMatcher(PatternMatcher):
     """
     BRA: typing.Final[str] = rf"{PatternBuilder.opcode_mods('BRA')}\s*{PatternBuilder.hex()}"
 
-    PREDICATE: typing.Final[str] = PatternBuilder.zero_or_one(PatternBuilder.predicate())
+    PREDICATE: typing.Final[str] = PatternBuilder.zero_or_one(Predicate.predicate())
 
     TEMPLATE: typing.Final[str] = rf'{{predicate}}\s*{BRA}'
 

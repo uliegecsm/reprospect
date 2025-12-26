@@ -343,12 +343,13 @@ class TestOpcodeModsWithOperandsMatcher:
         ))
 
         assert matcher.pattern.pattern == (
-            r'(?P<opcode>ISETP)\.(?P<modifiers>NE)\.(?P<modifiers>AND)\s*'
-            r'(?P<operands>P[0-9]+),\s+'
-            r'(?P<operands>P(?:T|\d+)),\s+'
-            r'(?P<operands>R4),\s+'
-            r'(?P<operands>R(?:Z|\d+)),\s+'
-            r'(?P<operands>P(?:T|\d+))'
+            r'(?P<opcode>ISETP)\.(?P<modifiers>NE)\.(?P<modifiers>AND)'
+            r'\s*'
+            r'(?P<operands>P[0-9]+)'
+            r',?\s*(?P<operands>P(?:T|\d+))'
+            r',?\s*(?P<operands>R4)'
+            r',?\s*(?P<operands>R(?:Z|\d+))'
+            r',?\s*(?P<operands>P(?:T|\d+))'
         )
 
         matched = matcher.match(instruction)

@@ -23,8 +23,10 @@ class TestBranchMatcher:
 
     def test_pattern(self) -> None:
         assert self.MATCHER.pattern.pattern == (
-            r'(?:(?P<predicate>@!?U?P(?:T|[0-9]+)))?\s*'
-            r'(?P<opcode>BRA)\s*'
+            r'(?:(?P<predicate>@!?U?P(?:T|[0-9]+)))?'
+            r'\s*'
+            r'(?P<opcode>BRA)'
+            r'\s*'
             r'(?P<operands>0x[0-9A-Fa-f]+)'
         )
 

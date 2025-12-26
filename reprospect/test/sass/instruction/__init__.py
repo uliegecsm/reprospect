@@ -59,6 +59,7 @@ from .instruction import (
     ReductionMatcher,
     StoreGlobalMatcher,
     StoreMatcher,
+    ZeroOrOne,
 )
 from .memory import MemorySpace
 from .pattern import PatternBuilder
@@ -93,4 +94,5 @@ __all__ = (
     'SharedAddressMatch',
     'StoreGlobalMatcher',
     'StoreMatcher',
+    'ZeroOrOne',
 )

@@ -26,6 +26,13 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class ZeroOrOne:
+    """
+    Mark an instruction component as optional.
+    """
+    cmpnt: str | int
+
 class Predicate:
     """
     Predicate patterns.
@@ -40,7 +47,49 @@ class Predicate:
         """
         :py:attr:`PREDICATE` with `predicate` group.
         """
-        return PatternBuilder.group(s=cls.PREDICATE, group='predicate')
+        return PatternBuilder.group(cls.PREDICATE, group='predicate')
+
+class OpCode:
+    """
+    Opcode patterns.
+    """
+    OPCODE: typing.Final[str] = r'[A-Z0-9]+'
+    """Opcode."""
+
+    MODIFIER: typing.Final[str] = r'[A-Z0-9_]+'
+    """Opcode modifier."""
+
+    @classmethod
+    def opcode(cls) -> str:
+        """
+        :py:attr:`OPCODE` with `opcode` group.
+        """
+        return PatternBuilder.group(cls.OPCODE, group='opcode')
+
+    @classmethod
+    def modifier(cls) -> str:
+        """
+        :py:attr:`MODIFIER` with `modifiers` group.
+        """
+        return PatternBuilder.group(cls.MODIFIER, group='modifiers')
+
+    @classmethod
+    def mod(cls, opcode: str, modifiers: typing.Iterable[str | int | ZeroOrOne] | None = None, *, captured: bool = True) -> str:
+        """
+        Append each modifier with a `.` separator. Modifiers wrapped in a :py:class:`ZeroOrOne` instance are matched optionally.
+        """
+        pattern: str = PatternBuilder.group(opcode, group='opcode') if captured else opcode
+
+        if modifiers is not None:
+            for mod in modifiers:
+                if isinstance(mod, ZeroOrOne):
+                    pattern += PatternBuilder.zero_or_one(rf'\.{PatternBuilder.group(str(mod.cmpnt), group="modifiers") if captured else str(mod.cmpnt)}')
+                else:
+                    pattern += rf'\.{PatternBuilder.group(str(mod), group="modifiers") if captured else str(mod)}'
+        else:
+            pattern += PatternBuilder.zero_or_more(rf'\.{cls.modifier() if captured else cls.MODIFIER}')
+
+        return pattern
 
 @mypy_extensions.mypyc_attr(native_class=True)
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -126,7 +175,7 @@ def floating_point_add_pattern(*, ftype: typing.Literal['F', 'D']) -> regex.Patt
     * :py:class:reprospect.test.sass.instruction.Fp64AddMatcher`.
     """
     return regex.compile(
-        PatternBuilder.opcode_mods(f'{ftype}ADD', modifiers=('?FTZ',)) + r'\s+' +
+        OpCode.mod(f'{ftype}ADD', modifiers=(ZeroOrOne('FTZ'),)) + r'\s+' +
         Register.dst() + r'\s*,\s*' +
         Operand.mod(Register.REGZ, math=None) + r'\s*,\s*' +
         PatternBuilder.any(
@@ -246,7 +295,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
             check_memory_instruction_word_size(size=size // 8)
 
         self.size: int | None = size
-        self.cache: str | None = None if readonly is False else ('CONSTANT' if readonly is True else '?CONSTANT')
+        self.cache: str | ZeroOrOne | None = None if readonly is False else ('CONSTANT' if readonly is True else ZeroOrOne('CONSTANT'))
         self.memory: typing.Final[MemorySpace] = MemorySpace(memory)
         self.extend: typing.Final[ExtendBitsMethod | None] = extend
 
@@ -259,19 +308,19 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
             return self.size
         return None
 
-    def _get_modifiers(self) -> tuple[str, ...]:
-        return (
+    def _get_modifiers(self) -> typing.Iterable[str | int | ZeroOrOne]:
+        return filter(None, (
             'E',
             *(('ENL2',) if self.size is not None and self.size == 256 else ()),
             self._get_size(),
             self.cache,
             *(('SYS',) if self.arch.compute_capability.as_int in {70, 75} else ()),
-        )
+        ))
 
     @override
     def _build_pattern(self) -> str:
         return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
-            opcode=PatternBuilder.opcode_mods(
+            opcode=OpCode.mod(
                 opcode=f'LD{self.memory.value}',
                 modifiers=self._get_modifiers(),
             ),
@@ -316,7 +365,10 @@ class LoadConstantMatcher(PatternMatcher):
             dest   = Register.REG
 
         super().__init__(pattern=self.TEMPLATE.format(
-            opcode=PatternBuilder.opcode_mods(opcode, (size,)),
+            opcode=OpCode.mod(
+                opcode=opcode,
+                modifiers=(size,) if size else (),
+            ),
             dest=PatternBuilder.group(dest, group='operands'),
         ))
 
@@ -360,18 +412,21 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
             return self.size
         return None
 
-    def _get_modifiers(self) -> tuple[str, ...]:
-        return (
+    def _get_modifiers(self) -> typing.Iterable[str | int]:
+        return filter(None, (
             'E',
             *(('ENL2',) if self.size is not None and self.size == 256 else ()),
             self._get_size(),
             *(('SYS',) if self.arch.compute_capability.as_int in {70, 75} else ()),
-        )
+        ))
 
     @override
     def _build_pattern(self) -> str:
         return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
-            opcode=PatternBuilder.opcode_mods(f'ST{self.memory}', self._get_modifiers()),
+            opcode=OpCode.mod(
+                opcode=f'ST{self.memory}',
+                modifiers=self._get_modifiers(),
+            ),
             address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch, memory=self.memory), groups=('operands', 'address')),
         )
 
@@ -455,14 +510,14 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
 
     @override
     def _build_pattern(self) -> str:
-        dtype: typing.Sequence[int | str]
+        dtype: typing.Sequence[int | str | ZeroOrOne]
         if self.params.dtype is not None:
             match self.params.dtype[0]:
                 case 'F':
                     dtype = (
                         f'{self.params.dtype[0]}{self.params.dtype[1]}',
-                        '?FTZ',
-                        '?RN',
+                        ZeroOrOne('FTZ'),
+                        ZeroOrOne('RN'),
                     )
                 case 'S':
                     if self.params.operation == 'ADD':
@@ -485,7 +540,10 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
                 raise ValueError(f'unsupported {self.arch}')
 
         return self.TEMPLATE.format(
-            opcode= PatternBuilder.opcode_mods(opcode, ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)),  # noqa: E251
+            opcode=OpCode.mod(
+                opcode=opcode,
+                modifiers=filter(None, ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)),
+            ),
             address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch), groups=('operands', 'address')),
         )
 
@@ -547,7 +605,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
 
             {pred}, {dest}, [{addr}], {compare}, {newval}
         """
-        dtype: typing.Sequence[int | str]
+        dtype: typing.Sequence[int | str | ZeroOrOne]
         match self.params.operation:
             case 'CAS':
                 dtype = (self.params.dtype[1],) if self.params.dtype is not None and self.params.dtype[1] > 32 else ()
@@ -559,8 +617,8 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
                         case 'F':
                             dtype = (
                                 f'{self.params.dtype[0]}{self.params.dtype[1]}',
-                                '?FTZ',
-                                '?RN',
+                                ZeroOrOne('FTZ'),
+                                ZeroOrOne('RN'),
                             )
                         case 'S':
                             if self.params.operation == 'ADD' and self.version in semantic_version.SimpleSpec('<12.8'):
@@ -583,7 +641,10 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
                 pass
 
         return (self.TEMPLATE_CAS if self.params.operation == 'CAS' else self.TEMPLATE).format(
-            opcode=PatternBuilder.opcode_mods(f'ATOM{self.params.memory}', ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)),
+            opcode=OpCode.mod(
+                opcode=f'ATOM{self.params.memory}',
+                modifiers=filter(None, ('E', self.params.operation, *dtype, self.params.consistency, self.params.scope)),
+            ),
             address=PatternBuilder.groups(address, groups=('operands', 'address')),
         )
 
@@ -601,10 +662,10 @@ class OpcodeModsMatcher(PatternMatcher):
     """
     def __init__(self, *,
         opcode: str,
-        modifiers: typing.Iterable[str] | None = None,
+        modifiers: typing.Iterable[str | int | ZeroOrOne] | None = None,
         operands: bool = True,
     ) -> None:
-        pattern = PatternBuilder.opcode_mods(opcode, modifiers)
+        pattern = OpCode.mod(opcode, modifiers)
 
         if operands:
             pattern_operands = PatternBuilder.zero_or_one(
@@ -663,12 +724,12 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
     def __init__(self, *,
         opcode: str,
         operands: typing.Iterable[str],
-        modifiers: typing.Iterable[str] | None = None,
+        modifiers: typing.Iterable[str | int | ZeroOrOne] | None = None,
     ) -> None:
         ops_iter = iter(operands)
         ops: str = PatternBuilder.group(next(ops_iter), group='operands')
         ops += ''.join(self.operand(op=op) for op in ops_iter)
-        super().__init__(pattern=rf'{PatternBuilder.opcode_mods(opcode, modifiers)}\s*{ops}')
+        super().__init__(pattern=rf'{OpCode.mod(opcode, modifiers)}\s*{ops}')
 
 class AnyMatcher(PatternMatcher):
     """
@@ -713,7 +774,7 @@ class BranchMatcher(PatternMatcher):
 
         @!UP5 BRA 0x456
     """
-    BRA: typing.Final[str] = rf"{PatternBuilder.opcode_mods('BRA')}\s*{PatternBuilder.hex()}"
+    BRA: typing.Final[str] = rf"{OpCode.mod('BRA', modifiers=())}\s*{PatternBuilder.hex()}"
 
     PREDICATE: typing.Final[str] = PatternBuilder.zero_or_one(Predicate.predicate())
 

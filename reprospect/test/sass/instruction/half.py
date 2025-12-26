@@ -3,7 +3,11 @@ import typing
 import regex
 
 from reprospect.test.sass.instruction.immediate import Immediate
-from reprospect.test.sass.instruction.instruction import PatternMatcher
+from reprospect.test.sass.instruction.instruction import (
+    OpCode,
+    PatternMatcher,
+    ZeroOrOne,
+)
 from reprospect.test.sass.instruction.operand import Operand
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.test.sass.instruction.register import Register
@@ -104,7 +108,7 @@ class Fp16FusedMulAddMatcher(PatternMatcher):
 
         This likely means "multiply both lanes of ``R0`` by 1 and add ``R5``".
     """
-    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HFMA2', modifiers = ('?MMA',))} {Register.dst()}, {{op1}}, {{op2}}, {{op3}}(?:, {{op4}})?"
+    TEMPLATE: typing.Final[str] = f"{OpCode.mod('HFMA2', modifiers=(ZeroOrOne('MMA'),))} {Register.dst()}, {{op1}}, {{op2}}, {{op3}}(?:, {{op4}})?"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1=Fp16.build_pattern_operand(),
@@ -152,7 +156,7 @@ class Fp16MulMatcher(PatternMatcher):
 
         HMUL2 R0, R2, R3
     """
-    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMUL2')} {Register.dst()}, {{op1}}, {{op2}}"
+    TEMPLATE: typing.Final[str] = f"{OpCode.mod('HMUL2', modifiers=())} {Register.dst()}, {{op1}}, {{op2}}"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1=Fp16.build_pattern_operand(),
@@ -198,7 +202,7 @@ class Fp16AddMatcher(PatternMatcher):
 
         HADD2 R0, R2, R3
     """
-    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HADD2', modifiers = ('?F32',))} {Register.dst()}, {{op1}}, {{op2}}"
+    TEMPLATE: typing.Final[str] = f"{OpCode.mod('HADD2', modifiers=(ZeroOrOne('F32'),))} {Register.dst()}, {{op1}}, {{op2}}"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1=Fp16.build_pattern_operand(),
@@ -228,7 +232,7 @@ class Fp16MinMaxMatcher(PatternMatcher):
     """
     Matcher for 16-bit floating-point min-max (``HMNMX2``) instruction.
     """
-    TEMPLATE: typing.Final[str] = f"{PatternBuilder.opcode_mods('HMNMX2')} {Register.dst()}, {{op1}}, {{op2}}, {{which}}"
+    TEMPLATE: typing.Final[str] = f"{OpCode.mod('HMNMX2', modifiers=())} {Register.dst()}, {{op1}}, {{op2}}, {{which}}"
 
     PATTERN_ANY: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
         op1=Fp16.build_pattern_operand(),

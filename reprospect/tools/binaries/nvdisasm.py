@@ -232,7 +232,7 @@ class NVDisasm:
                     elif re.match(pattern=r'^\t\.(section|sectionflags|sectioninfo|align)', string=line) is not None:
                         continue
                     # Skip empty lines.
-                    elif len(line.strip()) == 0:
+                    elif not line or line.isspace():
                         continue
                     elif re.match(cls.HEADER_SEP, line) is not None:
                         continue

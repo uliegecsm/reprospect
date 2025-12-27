@@ -263,23 +263,21 @@ class Decoder(rich_helpers.TableMixin):
         iterator: typing.Iterator[str] = iter(lines)
 
         for line in iterator:
-            line = line.strip()
+            # Skip empty lines.
+            if not line or line.isspace():
+                continue
 
             # The line containing '..........' means the end of the SASS code.
             if skip_until_headerflags:
                 if '..........' in line:
                     break
 
-            # Skip empty lines.
-            if not line:
-                continue
-
             # Skip lines until '.headerflags' is met.
             if skip_until_headerflags and not headerflags:
                 headerflags = '.headerflags' in line
                 continue
 
-            matchl = self.MATCHER.match(line)
+            matchl = self.MATCHER.search(line)
 
             if not matchl:
                 logging.error(f'The line:\n\t{line}\ndid not match {self.MATCHER}.')

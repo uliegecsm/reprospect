@@ -457,7 +457,7 @@ class TestCuObjDump:
             arch=NVIDIAArch.from_str('BLACKWELL120'),
             sass=False,
         )
-        cuobjdump.functions = {
+        cuobjdump.functions.update({
             'my_kernel(float, const float *, float *, unsigned int)': Function(
                 symbol=TestFunction.SYMBOL,
                 code=TestFunction.CODE,
@@ -468,7 +468,7 @@ class TestCuObjDump:
                 code=TestFunction.CODE,
                 ru=TestFunction.RU,
             ),
-        }
+        })
 
         assert str(cuobjdump) == """\
 CuObjDump of code_object.o for architecture BLACKWELL120:

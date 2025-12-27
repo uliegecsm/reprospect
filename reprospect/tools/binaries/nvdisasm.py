@@ -133,6 +133,8 @@ class NVDisasm:
     """
     HEADER_SEP:      typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \+[\-\+]+\+$')
     HEADER_COLS:     typing.Final[re.Pattern[str]] = re.compile(r'^[ ]+\/\/ \|(?:([A-Z ]+\|)+),?$')
+    REGISTER_INDEX:  typing.Final[re.Pattern[str]] = re.compile(r'^\/\/ \| (?:[0-9]+)?')
+    SECTION_SKIP:    typing.Final[re.Pattern[str]] = re.compile(r'^\t\.(section|sectionflags|sectioninfo|align)')
     TABLE_CUT:       typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\.]+')
     TABLE_BEGIN_END: typing.Final[re.Pattern[str]] = re.compile(r'(?:\.[A-Za-z0-9_]+:)?[ ]+\/\/ \+[\-\+]+\+$')
 
@@ -222,19 +224,19 @@ class NVDisasm:
             else:
                 # Process lines with the headers.
                 if reg_types is None:
-                    if re.match(cls.HEADER_COLS, line) is not None:
+                    if cls.HEADER_COLS.match(line) is not None:
                         reg_types = tuple(RegisterType[reg] for reg in re.findall(r'[A-Z]+', line))
                     # Skipping lines with:
                     #   .section
                     #   .sectionflags
                     #   .sectioninfo
                     #   .align
-                    elif re.match(pattern=r'^\t\.(section|sectionflags|sectioninfo|align)', string=line) is not None:
+                    elif cls.SECTION_SKIP.match(line) is not None:
                         continue
                     # Skip empty lines.
                     elif not line or line.isspace():
                         continue
-                    elif re.match(cls.HEADER_SEP, line) is not None:
+                    elif cls.HEADER_SEP.match(line) is not None:
                         continue
                     else:
                         raise RuntimeError('unexpected format')
@@ -243,7 +245,7 @@ class NVDisasm:
                         # Extract the register positions for each register type.
                         if (
                             (start := line.find('// |')) != -1
-                            and (matched := re.match(pattern=r'^\/\/ \| (?:[0-9]+)?', string=line[start:])) is not None
+                            and (matched := cls.REGISTER_INDEX.match(line[start:])) is not None
                         ):
                             sections = tuple(x.strip() for x in line[start + matched.span()[1] - 1::].strip().rstrip('|').split('|'))
                             positions = {}
@@ -259,7 +261,7 @@ class NVDisasm:
                         # Parse the register usage for each line.
                         if (
                             (start := line.find('// |')) != -1
-                            and (matched := re.match(pattern=r'^\/\/ \| (?:[0-9]+)?', string=line[start:])) is not None
+                            and (matched := cls.REGISTER_INDEX.match(line[start:])) is not None
                         ):
                             sections = tuple(x.strip() for x in line[start + matched.span()[1] - 1::].strip().rstrip('|').split('|'))
                             for reg_type, section in zip(reg_types, sections, strict=True):
@@ -273,9 +275,9 @@ class NVDisasm:
                                     already_used or status.used
                                     for already_used, status in zip(used[reg_type], statuses, strict=True)
                                 )
-                        elif re.match(cls.TABLE_CUT, line) is not None:
+                        elif cls.TABLE_CUT.match(line) is not None:
                             continue
-                        elif re.match(cls.TABLE_BEGIN_END, line) is not None:
+                        elif cls.TABLE_BEGIN_END.match(line) is not None:
                             # If all register usages are False, we're beginning rather than ending, so we continue.
                             if not any(used[RegisterType.GPR]):
                                 continue

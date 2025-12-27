@@ -153,7 +153,7 @@ class CuObjDump:
         """
         self.file: typing.Final[pathlib.Path] = file #: The binary file.
         self.arch: typing.Final[NVIDIAArch] = arch #: The NVIDIA architecture.
-        self.functions: dict[str, Function] = {}
+        self.functions: typing.Final[dict[str, Function]] = {}
         if sass:
             self.parse_sass(demangler=demangler, keep=keep)
 

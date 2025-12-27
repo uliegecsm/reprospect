@@ -78,6 +78,10 @@ class TestCuBLAS:
 
 # libcublas.27.sm_80.cubin for AMPERE80
 # HADD2.F32 R10, -RZ, c[0x0] [0x160].H0_H0
+# /*0010*/                   HADD2.F32 R10, -RZ, c[0x0] [0x160].H0_H0 ;            /* 0x20005800ff0a7630 */
+#                                                                                  /* 0x000fca0000004100 */
+# nvidisasm also shows the space, except if using emit-json.
+# So it probably does not mean anything.
 
 # libcublas.22.sm_86.cubin for AMPERE86
 # HADD2.F32 R9, -RZ, c[0x0] [0x160].H0_H0

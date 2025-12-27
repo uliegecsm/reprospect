@@ -10,6 +10,7 @@ from reprospect.test.sass.instruction import (
     RegisterMatcher,
 )
 from reprospect.test.sass.instruction.constant import Constant
+from reprospect.test.sass.instruction.instruction import ZeroOrOne
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.sass.decode import Instruction
 
@@ -142,7 +143,7 @@ class AddInt128Matcher(SequenceMatcher):
             operands=(
                 Register.REG,
                 Register.PRED,
-                PatternBuilder.zero_or_one(Register.PREDT),
+                ZeroOrOne(Register.PREDT),
                 self.start,
                 PatternBuilder.any(Register.REG, Register.UREG, Constant.ADDRESS),
                 'RZ',
@@ -165,7 +166,7 @@ class AddInt128Matcher(SequenceMatcher):
             operands=(
                 iadd3_step_1_dst,
                 Register.PRED,
-                PatternBuilder.zero_or_one(Register.PREDT),
+                ZeroOrOne(Register.PREDT),
                 iadd3_step_1_src,
                 PatternBuilder.any(Register.REG, Register.UREG, Constant.ADDRESS),
                 'RZ',
@@ -186,7 +187,7 @@ class AddInt128Matcher(SequenceMatcher):
             operands=(
                 iadd3_step_2_dst,
                 Register.PRED,
-                PatternBuilder.zero_or_one(Register.PREDT),
+                ZeroOrOne(Register.PREDT),
                 iadd3_step_2_src,
                 PatternBuilder.any(Register.REG, Register.UREG, Constant.ADDRESS),
                 'RZ',
@@ -206,8 +207,8 @@ class AddInt128Matcher(SequenceMatcher):
             opcode='IADD3', modifiers=('X',),
             operands=(
                 iadd3_step_3_dst,
-                PatternBuilder.zero_or_one(Register.PREDT),
-                PatternBuilder.zero_or_one(Register.PREDT),
+                ZeroOrOne(Register.PREDT),
+                ZeroOrOne(Register.PREDT),
                 iadd3_step_3_src,
                 PatternBuilder.any(Register.REG, Register.UREG, Constant.ADDRESS),
                 'RZ',

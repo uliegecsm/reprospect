@@ -11,7 +11,6 @@ from reprospect.test.sass.instruction import (
     PatternBuilder,
     PatternMatcher,
 )
-from reprospect.test.sass.instruction.instruction import OpCode
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 
@@ -80,15 +79,18 @@ class LEAMatcher(PatternMatcher):
 
     * https://forums.developer.nvidia.com/t/how-to-understand-the-lea-assembly-behind-the-cuda-c/257679/2
     """
-    TEMPLATE: typing.Final[str] = rf"{OpCode.mod(opcode='LEA', modifiers=())} {{dest}}, {{index}}, {{base}}, {{shift}}"
-
     SHIFT: typing.Final[str] = r'0x[0-9]+'
 
-    PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        dest=Register.reg(),
-        index=Register.reg(),
-        base=Register.reg(),
-        shift=PatternBuilder.groups(SHIFT, groups=('operands', 'shift')),
+    PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(PatternMatcher.build_pattern(
+        opcode='LEA',
+        modifiers=(),
+        operands=(
+            Register.REG,
+            Register.REG,
+            Register.REG,
+            PatternBuilder.group(SHIFT, group='shift'),
+        ),
+        predicate=False,
     ))
 
     def __init__(self, *,
@@ -100,9 +102,15 @@ class LEAMatcher(PatternMatcher):
         super().__init__(
             pattern=self.PATTERN
             if not (dest or index or base or shift)
-            else self.TEMPLATE.format(
-                dest=PatternBuilder.group(dest or Register.REG, group='operands'),
-                index=PatternBuilder.group(index or Register.REG, group='operands'),
-                base=PatternBuilder.group(base or Register.REG, group='operands'),
-                shift=PatternBuilder.groups(shift or self.SHIFT, groups=('operands', 'shift')),
-            ))
+            else self.build_pattern(
+                opcode='LEA',
+                modifiers=(),
+                operands=(
+                    dest or Register.REG,
+                    index or Register.REG,
+                    base or Register.REG,
+                    PatternBuilder.group(shift or self.SHIFT, group='shift'),
+                ),
+                predicate=False,
+            ),
+        )

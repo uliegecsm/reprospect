@@ -26,6 +26,17 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
+SEPARATOR: typing.Final[str] = r'\s*'
+"""
+Separator between instruction components (between predicate and opcode, or separating
+the opcode with its modifiers from the operands).
+"""
+
+OPERAND_SEPARATOR: typing.Final[str] = r',?\s*'
+"""
+Separator between operands.
+"""
+
 @dataclasses.dataclass(frozen=True, slots=True)
 class ZeroOrOne:
     """
@@ -157,6 +168,49 @@ class PatternMatcher(InstructionMatcher):
     def __init__(self, pattern: str | regex.Pattern[str]) -> None:
         self.pattern: typing.Final[regex.Pattern[str]] = pattern if isinstance(pattern, regex.Pattern) else regex.compile(pattern)
 
+    @classmethod
+    def build_pattern(cls, *,
+        opcode: str | None = None,
+        modifiers: typing.Iterable[str | int | ZeroOrOne] | None = None,
+        operands: typing.Iterable[str | ZeroOrOne] | None = None,
+        predicate: str | bool | None = None,
+    ) -> str:
+        parts: list[str | None] = []
+
+        if isinstance(predicate, str):
+            parts.append(PatternBuilder.group(predicate, group='predicate'))
+        elif predicate is True:
+            parts.append(Predicate.predicate())
+        elif predicate is None:
+            parts.append(PatternBuilder.zero_or_one(Predicate.predicate()))
+
+        parts.append(OpCode.mod(opcode=opcode or OpCode.OPCODE, modifiers=modifiers))
+
+        parts.append(cls.build_pattern_operands(operands=operands))
+
+        return SEPARATOR.join(filter(None, parts))
+
+    @classmethod
+    def build_pattern_operands(cls, operands: typing.Iterable[str | ZeroOrOne] | None = None, *, captured: bool = True) -> str | None:
+        """
+        Build an operands pattern. Join multiple operands with a :py:const:`reprospect.test.sass.instruction.instruction.OPERAND_SEPARATOR`
+        separator. Operands wrapped in a :py:class:`ZeroOrOne` instance are matched optionally.
+        """
+        if operands is not None:
+            parts: list[str] = []
+            for opnd in operands:
+                if not opnd:
+                    continue
+                if isinstance(opnd, ZeroOrOne):
+                    parts.append(PatternBuilder.zero_or_one(PatternBuilder.group(opnd.cmpnt, group="operands") if captured else str(opnd.cmpnt)))
+                else:
+                    parts.append(PatternBuilder.group(opnd, group="operands") if captured else str(opnd))
+            return OPERAND_SEPARATOR.join(parts)
+        opnd = Operand.operand() if captured else Operand.OPERAND
+        return PatternBuilder.zero_or_one(
+            opnd + PatternBuilder.zero_or_more(OPERAND_SEPARATOR + opnd),
+        )
+
     @override
     @typing.final
     def match(self, inst: Instruction | str) -> InstructionMatch | None:
@@ -171,19 +225,24 @@ def floating_point_add_pattern(*, ftype: typing.Literal['F', 'D']) -> regex.Patt
     """
     Helper for:
 
-    * :py:class:reprospect.test.sass.instruction.Fp32AddMatcher`.
-    * :py:class:reprospect.test.sass.instruction.Fp64AddMatcher`.
+    * :py:class:`reprospect.test.sass.instruction.Fp32AddMatcher`.
+    * :py:class:`reprospect.test.sass.instruction.Fp64AddMatcher`.
     """
-    return regex.compile(
-        OpCode.mod(f'{ftype}ADD', modifiers=(ZeroOrOne('FTZ'),)) + r'\s+' +
-        Register.dst() + r'\s*,\s*' +
-        Operand.mod(Register.REGZ, math=None) + r'\s*,\s*' +
-        PatternBuilder.any(
-            Operand.mod(Register.REGZ, math=None), Register.ureg(),
-            Constant.address(),
-            Immediate.floating(),
+    return regex.compile(PatternMatcher.build_pattern(
+        opcode=f'{ftype}ADD',
+        modifiers=(ZeroOrOne('FTZ'),),
+        operands=(
+            Register.dst(captured=False),
+            Operand.mod(Register.REGZ, math=None, captured=False),
+            PatternBuilder.any(
+                Operand.mod(Register.REGZ, math=None, captured=False),
+                Register.UREG,
+                Constant.ADDRESS,
+                Immediate.FLOATING,
+            ),
         ),
-    )
+        predicate=False,
+    ))
 
 class Fp32AddMatcher(PatternMatcher):
     """
@@ -286,7 +345,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         readonly: bool | None = None,
         memory: MemorySpace | str = MemorySpace.GLOBAL,
         extend: ExtendBitsMethod | None = None,
-    ):
+    ) -> None:
         """
         :param size: Optional bit size (*e.g.*, 32, 64, 128).
         :param readonly: Whether to append ``.CONSTANT`` modifier. If `None`, the modifier is matched optionally.
@@ -393,7 +452,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
         size: int | None = None,
         memory: MemorySpace | str = MemorySpace.GLOBAL,
         extend: ExtendBitsMethod | None = None,
-    ):
+    ) -> None:
         """
         :param size: Optional bit size (*e.g.*, 32, 64, 128).
         """
@@ -493,7 +552,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
         scope: ThreadScope | None = None,
         consistency: str = 'STRONG',
         dtype: tuple[str, int] | None = None,
-    ):
+    ) -> None:
         """
         :param dtype: For instance, `('F', 64)` for a 64-bit floating-point or `(S, 32)` for a signed 32-bit integer.
         """
@@ -578,7 +637,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
         dtype: tuple[str | None, int] | None = None,
         memory: MemorySpace | str = MemorySpace.GLOBAL,
         version: semantic_version.Version | None = None,
-    ):
+    ) -> None:
         """
         :param dtype: For instance, `('F', 64)` for a 64-bit floating-point or `(S, 32)` for a signed 32-bit integer.
         """
@@ -665,15 +724,12 @@ class OpcodeModsMatcher(PatternMatcher):
         modifiers: typing.Iterable[str | int | ZeroOrOne] | None = None,
         operands: bool = True,
     ) -> None:
-        pattern = OpCode.mod(opcode, modifiers)
-
-        if operands:
-            pattern_operands = PatternBuilder.zero_or_one(
-                Operand.operand() + PatternBuilder.zero_or_more(r'\s*,\s*' + Operand.operand()),
-            )
-            pattern += r'\s+' + pattern_operands
-
-        super().__init__(pattern=pattern)
+        super().__init__(pattern=self.build_pattern(
+            opcode=opcode,
+            modifiers=modifiers,
+            operands=None if operands is True else (),
+            predicate=False,
+        ))
 
 class OpcodeModsWithOperandsMatcher(PatternMatcher):
     """
@@ -700,36 +756,29 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
 
         Some operands can be optionally matched.
 
-        >>> from reprospect.test.sass.instruction import OpcodeModsWithOperandsMatcher, PatternBuilder
+        >>> from reprospect.test.sass.instruction import OpcodeModsWithOperandsMatcher, PatternBuilder, ZeroOrOne
         >>> matcher = OpcodeModsWithOperandsMatcher(opcode = 'WHATEVER', operands = (
-        ...     PatternBuilder.zero_or_one('R0'),
-        ...     PatternBuilder.zero_or_one('R9'),
+        ...     ZeroOrOne('R0'),
+        ...     ZeroOrOne('R9'),
         ... ))
         >>> matcher.match('WHATEVER')
-        InstructionMatch(opcode='WHATEVER', modifiers=(), operands=('',), predicate=None, additional=None)
+        InstructionMatch(opcode='WHATEVER', modifiers=(), operands=(), predicate=None, additional=None)
         >>> matcher.match('WHATEVER R0')
         InstructionMatch(opcode='WHATEVER', modifiers=(), operands=('R0',), predicate=None, additional=None)
         >>> matcher.match('WHATEVER R0, R9')
         InstructionMatch(opcode='WHATEVER', modifiers=(), operands=('R0', 'R9'), predicate=None, additional=None)
     """
-    SEPARATOR: typing.Final[str] = r',\s+'
-
-    @classmethod
-    def operand(cls, *, op: str) -> str:
-        pattern = PatternBuilder.group(op, group='operands')
-        if op.startswith('(') and op.endswith(')?'):
-            return PatternBuilder.zero_or_more(cls.SEPARATOR + pattern)
-        return cls.SEPARATOR + pattern
-
     def __init__(self, *,
         opcode: str,
-        operands: typing.Iterable[str],
         modifiers: typing.Iterable[str | int | ZeroOrOne] | None = None,
+        operands: typing.Iterable[str | ZeroOrOne] | None = None,
     ) -> None:
-        ops_iter = iter(operands)
-        ops: str = PatternBuilder.group(next(ops_iter), group='operands')
-        ops += ''.join(self.operand(op=op) for op in ops_iter)
-        super().__init__(pattern=rf'{OpCode.mod(opcode, modifiers)}\s*{ops}')
+        super().__init__(pattern=self.build_pattern(
+            opcode=opcode,
+            modifiers=modifiers,
+            operands=operands,
+            predicate=False,
+        ))
 
 class AnyMatcher(PatternMatcher):
     """
@@ -753,17 +802,9 @@ class AnyMatcher(PatternMatcher):
     >>> AnyMatcher().match(inst = 'RET.REL.NODEC R4 0x0')
     InstructionMatch(opcode='RET', modifiers=('REL', 'NODEC'), operands=('R4', '0x0'), predicate=None, additional=None)
     """
-    TEMPLATE: typing.Final[str] = r'{predicate}{opcode}{modifiers}\s*{operands}{operand}'
+    PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(PatternMatcher.build_pattern())
 
-    PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(
-        predicate=PatternBuilder.zero_or_one(Predicate.predicate() + r'\s*'),
-        opcode=   PatternBuilder.group(r'[A-Z0-9]+', group='opcode'),  # noqa: E251
-        modifiers=PatternBuilder.zero_or_more(r'\.' + PatternBuilder.group(s=r'[A-Z0-9_]+', group='modifiers')),
-        operands= PatternBuilder.zero_or_more(PatternBuilder.group(s=r'[^,\s]+', group='operands') + PatternBuilder.any(r'\s*,\s*', r'\s+')),  # noqa: E251
-        operand=  PatternBuilder.zero_or_one(PatternBuilder.group(s=r'[^,\s]+', group='operands')),  # noqa: E251
-    ))
-
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(pattern=self.PATTERN)
 
 class BranchMatcher(PatternMatcher):
@@ -774,13 +815,20 @@ class BranchMatcher(PatternMatcher):
 
         @!UP5 BRA 0x456
     """
-    BRA: typing.Final[str] = rf"{OpCode.mod('BRA', modifiers=())}\s*{PatternBuilder.hex()}"
+    PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(PatternMatcher.build_pattern(
+        opcode='BRA',
+        modifiers=(),
+        operands=(PatternBuilder.HEX,),
+        predicate=None,
+    ))
 
-    PREDICATE: typing.Final[str] = PatternBuilder.zero_or_one(Predicate.predicate())
-
-    TEMPLATE: typing.Final[str] = rf'{{predicate}}\s*{BRA}'
-
-    PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(TEMPLATE.format(predicate=PREDICATE))
-
-    def __init__(self, predicate: str | None = None):
-        super().__init__(pattern=self.PATTERN if predicate is None else self.TEMPLATE.format(predicate=PatternBuilder.group(predicate, group='predicate')))
+    def __init__(self, offset: str | None = None, predicate: str | None = None) -> None:
+        super().__init__(pattern=self.PATTERN
+            if not (offset or predicate)
+            else self.build_pattern(
+                opcode='BRA',
+                modifiers=(),
+                operands=(offset or PatternBuilder.HEX,),
+                predicate=predicate,
+            ),
+        )

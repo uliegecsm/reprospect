@@ -54,11 +54,12 @@ class TestAnyMatcher:
 
     def test_pattern(self) -> None:
         assert self.MATCHER.pattern.pattern == (
-            r'(?:(?P<predicate>@!?U?P(?:T|[0-9]+))\s*)?'
+            r'(?:(?P<predicate>@!?U?P(?:T|[0-9]+)))?'
+            r'\s*'
             r'(?P<opcode>[A-Z0-9]+)'
-            r'(?:\.(?P<modifiers>[A-Z0-9_]+))*\s*'
-            r'(?:(?P<operands>[^,\s]+)(?:\s*,\s*|\s+))*'
-            r'(?:(?P<operands>[^,\s]+))?'
+            r'(?:\.(?P<modifiers>[A-Z0-9_]+))*'
+            r'\s*'
+            r'(?:(?P<operands>[\w!\.\[\]\+\-\|~]+)(?:,?\s*(?P<operands>[\w!\.\[\]\+\-\|~]+))*)?'
         )
 
     @pytest.mark.parametrize(('instruction', 'expected'), INSTRUCTIONS.items())

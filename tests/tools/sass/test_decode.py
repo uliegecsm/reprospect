@@ -2,6 +2,7 @@ import logging
 import os
 import pathlib
 import re
+import typing
 
 import pytest
 
@@ -132,6 +133,18 @@ class TestDecoder:
                 control=sass.ControlCode(stall_count=2, yield_flag=True, read=7, write=7, wait=[False] * 6, reuse={'A': True, 'B': False, 'C': False, 'D': False}),
             ),
         ], decoder.instructions
+
+    def test_fixit(self) -> None:
+        """
+        Check that :py:meth:`reprospect.tools.sass.decode.Decoder.fixit` works as expected.
+        """
+        SAMPLES: typing.Final[dict[str, str]] = {
+            'HADD2.F32 R10, -RZ, c[0x0] [0x160].H0_H0': 'HADD2.F32 R10, -RZ, c[0x0][0x160].H0_H0',
+            'FSETP.GEU.AND P1, PT, |R151|, +INF , PT': 'FSETP.GEU.AND P1, PT, |R151|, +INF, PT',
+        }
+
+        for sample, expected in SAMPLES.items():
+            assert sass.Decoder.fixit(instruction=sample) == expected
 
     def test_from_source(self) -> None:
         """
@@ -266,13 +279,9 @@ class TestDecoder:
         cublas = CuBLAS(cmake_file_api=cmake_file_api)
 
         try:
-            [cubin] = cublas.extract(arch=parameters.arch, cwd=workdir, randomly=True)
+            cuobjdump = cublas.cubin(arch=parameters.arch, cwd=workdir, sass=True)
         except IndexError:
             pytest.skip(f'The library {cublas.libcublas} does not contain any CUDA binary file for {parameters.arch}.')
-
-        assert cubin.is_file()
-
-        cuobjdump = binaries.CuObjDump(file=cubin, arch=parameters.arch, sass=True)
 
         for name, function in cuobjdump.functions.items():
             decoder = sass.Decoder(code=function.code)

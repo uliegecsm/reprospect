@@ -187,7 +187,7 @@ class TestDecoder:
         """
         decoder = sass.Decoder()
 
-        decoder.instructions = [
+        decoder.instructions.extend((
             sass.Instruction(
                 offset=int('00f0', base=16),
                 instruction='LDC R1, c[0x0][0x37c]',
@@ -206,7 +206,7 @@ class TestDecoder:
                 hex='0x000000000000094d',
                 control=sass.ControlCode(stall_count=5, yield_flag=True, read=2, write=7, wait=[True, False, False, False, False, False], reuse={'A': False, 'B': False, 'C': False, 'D': False}),
             ),
-        ]
+        ))
 
         assert str(decoder) == """\
 ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━┳━━━━┳━━━━┳━━━━┳━━━━┓

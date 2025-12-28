@@ -202,6 +202,8 @@ class Decoder(rich_helpers.TableMixin):
 
     The disassembled :py:attr:`instructions` are collected, and the associated control codes are decoded.
     """
+    __slots__ = ('code', 'instructions', 'source')
+
     OFFSET: typing.Final[str] = r'[a-f0-9]+'
 
     HEX: typing.Final[str] = r'0x[a-f0-9]+'
@@ -237,9 +239,9 @@ class Decoder(rich_helpers.TableMixin):
         """
         Initialize the decoder with the SASS contained in `source` or `code`.
         """
-        self.source = source
-        self.code   = code
-        self.instructions: list[Instruction] = [] #: The parsed instructions.
+        self.source: typing.Final[pathlib.Path | None] = source
+        self.code: typing.Final[str | None] = code
+        self.instructions: typing.Final[list[Instruction]] = [] #: The parsed instructions.
         if source or code:
             self._parse(skip_until_headerflags=skip_until_headerflags)
 

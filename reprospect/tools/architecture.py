@@ -137,6 +137,8 @@ class NVIDIAFamily(StrEnum):
             case _:
                 raise ValueError(f"unsupported compute capability {cc}")
 
+NVIDIA_ARCH_PATTERN: typing.Final[re.Pattern[str]] = re.compile(r'^([A-Za-z]+)([0-9]+)$')
+
 @dataclasses.dataclass(frozen=True, eq=True, match_args=True, slots=True)
 class NVIDIAArch:
     """
@@ -188,6 +190,6 @@ class NVIDIAArch:
         >>> NVIDIAArch.from_str('AMPERE86')
         NVIDIAArch(family=<NVIDIAFamily.AMPERE: 'AMPERE'>, compute_capability=ComputeCapability(major=8, minor=6))
         """
-        if (matched := re.match(r'^([A-Za-z]+)([0-9]+)$', arch)) is None:
+        if (matched := NVIDIA_ARCH_PATTERN.match(arch)) is None:
             raise ValueError(f'unsupported architecture {arch}')
         return NVIDIAArch(family=NVIDIAFamily(matched.group(1).upper()), compute_capability=ComputeCapability.from_int(int(matched.group(2))))

@@ -6,7 +6,7 @@ import typing
 
 from reprospect.test.environment import EnvironmentField
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries import CuppFilt, LlvmCppFilt
+from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
 from reprospect.utils import cmake
 from reprospect.utils.compile_command import get_arch_from_compile_command
 

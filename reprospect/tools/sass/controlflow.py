@@ -2,6 +2,7 @@ import dataclasses
 import re
 import typing
 
+from reprospect.test.sass.instruction.instruction import Predicate
 from reprospect.tools.sass.decode import Decoder, Instruction
 
 
@@ -217,7 +218,7 @@ class ControlFlow:
                         cfg.add_edge(block, offset_to_block[target_offset])
 
                 # RET, EXIT, BRA etc. don't fall-through, except if there is an instruction predicate.
-                if re.search(r'@!?U?P(?:T|\d+)', block.instructions[-1].instruction):
+                if re.search(Predicate.PREDICATE, block.instructions[-1].instruction):
                     pass
                 else:
                     add_fallthrough = False

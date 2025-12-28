@@ -3,7 +3,7 @@ import pathlib
 
 from reprospect.test.cmake import CMakeMixin
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries import CuppFilt, LlvmCppFilt
+from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
 
 
 class TestCase(abc.ABC):

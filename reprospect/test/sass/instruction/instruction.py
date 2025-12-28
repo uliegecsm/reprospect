@@ -19,7 +19,7 @@ from reprospect.test.sass.instruction.operand import Operand
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.sass import Instruction
+from reprospect.tools.sass.decode import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

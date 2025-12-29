@@ -104,8 +104,19 @@ RUN --mount=target=/requirements/requirements.txt,type=bind,source=requirements/
     python3 -m pip install pytest build
 EOF
 
+# Rust requirements.
+FROM python-requirements AS rust-requirements
+
+ARG RUST_VERSION=0.0.0
+
+ADD https://sh.rustup.rs rustup.sh
+
+RUN sh rustup.sh -y --profile minimal --default-toolchain ${RUST_VERSION}
+
+ENV PATH=/root/.cargo/bin:${PATH}
+
 # Install Nsight Systems.
-FROM python-requirements AS nsight-systems
+FROM rust-requirements AS nsight-systems
 
 RUN --mount=target=/reprospect/installers/nsight_systems.py,type=bind,source=reprospect/installers/nsight_systems.py \
     --mount=target=/reprospect/utils/nvcc.py,type=bind,source=reprospect/utils/nvcc.py <<EOF

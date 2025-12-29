@@ -238,6 +238,7 @@ jobs:
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
             - uses: docker/build-push-action@v6.18.0
+              if  : ${{ matrix.build_image_examples }}
               with:
                   context: .
                   platforms: ${{ matrix.platform }}

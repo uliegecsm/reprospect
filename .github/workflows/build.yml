@@ -303,7 +303,7 @@ jobs:
                   if-no-files-found: error
 
     build-package:
-        needs: [setup-job-matrix, build-images]
+        needs: [setup-job-matrix, build-images, mypy]
         runs-on: ${{ matrix.runs-on }}
         strategy:
             fail-fast: false

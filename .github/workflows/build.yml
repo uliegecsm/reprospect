@@ -494,7 +494,7 @@ jobs:
 
             - if : steps.changed-files.outputs.any_changed == 'true'
               run: |
-                cd papers/joss
+                cd papers/joss/2025
                 inara -o pdf -p -v paper.md
 
             - if: steps.changed-files.outputs.any_changed == 'true'

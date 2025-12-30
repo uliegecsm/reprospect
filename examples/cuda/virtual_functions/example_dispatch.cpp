@@ -3,7 +3,6 @@
 #include <random>
 #include <ranges>
 #include <stdexcept>
-#include <vector>
 
 #include "cuda.h"
 
@@ -43,7 +42,7 @@ struct DeviceDeleter
     template <typename T>
     void operator()(T* const ptr) const
     {
-        delete_kernel<<<1, 1>>>(ptr);
+        delete_kernel<<<1, 1, 0, nullptr>>>(ptr);
         REPROSPECT_CHECK_CUDART_CALL(cudaStreamSynchronize(nullptr));
         REPROSPECT_CHECK_CUDART_CALL(cudaFree(ptr));
     }
@@ -133,15 +132,6 @@ __global__ void dynamic_bar_kernel(const Base* const base, const unsigned int si
     }
 }
 
-__global__ void dynamic_foo_bar_kernel(const Base* const base, const unsigned int size)
-{
-    const auto index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < size) {
-        base->foo(index);
-        base->bar(index);
-    }
-}
-
 class Dispatch
 {
 public:
@@ -207,24 +197,13 @@ public:
         check(stream, use_a ? 0xab : 0xbb);
     }
 
-    void run_dynamic_foo_bar(cudaStream_t stream) const
-    {
-        const bool use_a = draw();
-        {
-            nvtx3::scoped_range range("dynamic_foo_bar");
-            const base_t* const base_rdptr = use_a ? derived_a_sdptr.get() : derived_b_sdptr.get();
-            dynamic_foo_bar_kernel<<<1, size, 0, stream>>>(base_rdptr, size);
-        }
-        check(stream, use_a ? 0xaf + 0xab : 0xbf + 0xbb);
-    }
-
     bool draw() const {
         return std::bernoulli_distribution{0.5}(generator);
     }
 
     void check(cudaStream_t stream, const value_t expt_val) const
     {
-        std::vector<value_t> x_h(size);
+        std::array<value_t, size> x_h;
         REPROSPECT_CHECK_CUDART_CALL(
             cudaMemcpyAsync(x_h.data(), x, size * sizeof(value_t), cudaMemcpyDeviceToHost, stream)
         );
@@ -253,10 +232,9 @@ int main()
     {
         nvtx3::scoped_range range("dispatch");
 
-        Dispatch{stream}.run_static_foo     (stream);
-        Dispatch{stream}.run_dynamic_foo    (stream);
-        Dispatch{stream}.run_dynamic_bar    (stream);
-        Dispatch{stream}.run_dynamic_foo_bar(stream);
+        Dispatch{stream}.run_static_foo (stream);
+        Dispatch{stream}.run_dynamic_foo(stream);
+        Dispatch{stream}.run_dynamic_bar(stream);
     }
 
     REPROSPECT_CHECK_CUDART_CALL(cudaStreamDestroy(stream));

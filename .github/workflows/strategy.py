@@ -6,7 +6,7 @@ import logging
 import pprint
 import typing
 
-from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.architecture import ComputeCapability, NVIDIAArch
 
 LANGUAGE = typing.Literal['CUDA', 'CXX']
 PLATFORM = typing.Literal['linux/amd64', 'linux/arm64']
@@ -71,9 +71,9 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     """
     logging.info(f'Completing job {partial}.')
 
-    assert isinstance(partial['nvidia_compute_capability'], int)
+    assert isinstance(partial['nvidia_compute_capability'], ComputeCapability)
     assert isinstance(partial['compilers'], dict)
-    assert all(k in LANGUAGE and isinstance(v, Compiler) for k, v in partial['compilers'].items())
+    assert all(k in typing.get_args(LANGUAGE) and isinstance(v, Compiler) for k, v in partial['compilers'].items())
 
     # Complete CXX compiler.
     match partial['compilers']['CXX'].ID:
@@ -102,7 +102,7 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
 
     # We always compile for the 'real' CUDA architecture, see also
     # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
-    partial['cmake_cuda_architectures'] = f"{partial['nvidia_compute_capability']}-real"
+    partial['cmake_cuda_architectures'] = f"{partial['nvidia_compute_capability'].as_int}-real"
 
     # Kokkos SHA.
     partial['kokkos_sha'] = KOKKOS_SHA
@@ -190,7 +190,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '12.8.1',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='13'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': 70,
+        'nvidia_compute_capability': ComputeCapability(major=7, minor=0),
         'platforms': ('linux/amd64', 'linux/arm64'),
     }, args=args))
 
@@ -198,7 +198,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '12.8.1',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': 90,
+        'nvidia_compute_capability': ComputeCapability(major=9, minor=0),
         'platforms': ('linux/amd64',),
     }, args=args))
 
@@ -206,7 +206,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '13.1.0',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': 120,
+        'nvidia_compute_capability': ComputeCapability(major=12, minor=0),
         'platforms': ('linux/amd64', 'linux/arm64'),
     }, args=args))
 
@@ -214,7 +214,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '12.6.3',
         'ubuntu_version': '22.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='12'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': 75,
+        'nvidia_compute_capability': ComputeCapability(major=7, minor=5),
         'platforms': ('linux/amd64',),
     }, args=args))
 
@@ -222,7 +222,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '12.6.3',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='13'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': 89,
+        'nvidia_compute_capability': ComputeCapability(major=8, minor=9),
         'platforms': ('linux/amd64',),
     }, args=args))
 
@@ -230,7 +230,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '13.0.0',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': 86,
+        'nvidia_compute_capability': ComputeCapability(major=8, minor=6),
         'platforms': ('linux/amd64',),
     }, args=args))
 
@@ -238,7 +238,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '12.8.1',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='clang', version='19'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': 70,
+        'nvidia_compute_capability': ComputeCapability(major=7, minor=0),
         'platforms': ('linux/amd64',),
     }, args=args))
 
@@ -246,7 +246,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '13.1.0',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': 100,
+        'nvidia_compute_capability': ComputeCapability(major=10, minor=0),
         'platforms': ('linux/amd64',),
     }, args=args))
 
@@ -254,7 +254,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '13.0.0',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='clang', version='20'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': 120,
+        'nvidia_compute_capability': ComputeCapability(major=12, minor=0),
         'platforms': ('linux/amd64',),
     }, args=args))
 
@@ -262,7 +262,7 @@ def main(*, args: argparse.Namespace) -> None:
         'cuda_version': '12.8.1',
         'ubuntu_version': '24.04',
         'compilers': {'CXX': Compiler(ID='clang', version='21')},
-        'nvidia_compute_capability': 120,
+        'nvidia_compute_capability': ComputeCapability(major=12, minor=0),
         'platforms': ('linux/amd64',),
     }, args=args))
 

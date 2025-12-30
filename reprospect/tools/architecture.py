@@ -180,8 +180,12 @@ class NVIDIAArch:
         return f"{self.family.name}{self.compute_capability.as_int}"
 
     @staticmethod
-    def from_compute_capability(cc: str | int) -> NVIDIAArch:
-        return NVIDIAArch(family=NVIDIAFamily.from_compute_capability(cc=int(cc)), compute_capability=ComputeCapability.from_int(int(cc)))
+    def from_compute_capability(cc: str | int | ComputeCapability) -> NVIDIAArch:
+        tmp = cc if isinstance(cc, ComputeCapability) else ComputeCapability.from_int(value=int(cc))
+        return NVIDIAArch(
+            family=NVIDIAFamily.from_compute_capability(cc=tmp),
+            compute_capability=tmp,
+        )
 
     @staticmethod
     def from_str(arch: str) -> NVIDIAArch:

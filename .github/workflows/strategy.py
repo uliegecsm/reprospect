@@ -48,6 +48,7 @@ class Config:
     compilers: dict[LANGUAGE, Compiler]
     compute_capability: ComputeCapability
     platforms: tuple[PLATFORM, ...]
+    build_image_examples: bool = True
     enable_tests: bool | None = None
     enable_examples: bool | None = None
 
@@ -62,6 +63,11 @@ class Config:
                 pass
             case _:
                 raise ValueError
+
+        if self.build_image_examples is False:
+            if self.enable_examples is True:
+                raise RuntimeError('Examples enabled, but examples image not built.')
+            self.enable_examples = False
 
     def jobs(self) -> typing.Generator[JobDict, None, None]:
         """
@@ -83,6 +89,7 @@ class Config:
                 'compilers': self.compilers,
                 'compute_capability': self.compute_capability,
                 'platform': platform,
+                'build_image_examples': self.build_image_examples,
                 'enable_tests': enable_tests,
                 'enable_examples': enable_examples,
             }
@@ -313,6 +320,15 @@ def main(*, args: argparse.Namespace) -> None:
         compilers={'CXX': Compiler(ID='Clang', version='20'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=('linux/amd64',),
+    ), args=args))
+
+    matrix.extend(from_config(Config(
+        cuda_version='13.1.0',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=10, minor=3),
+        platforms=('linux/amd64',),
+        build_image_examples=False,
     ), args=args))
 
     matrix.extend(from_config(Config(

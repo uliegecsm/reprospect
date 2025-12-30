@@ -9,6 +9,7 @@ import typing
 from reprospect.tools.architecture import NVIDIAArch
 
 LANGUAGE = typing.Literal['CUDA', 'CXX']
+PLATFORM = typing.Literal['linux/amd64', 'linux/arm64']
 
 AVAILABLE_RUNNER_ARCHES: typing.Final[tuple[NVIDIAArch, ...]] = (
     NVIDIAArch.from_str('VOLTA70'),
@@ -49,7 +50,7 @@ class Compiler:
     version: str | None = None
     path: str | None = None
 
-def full_image(*, name: str, tag: str, platform: str, args: argparse.Namespace) -> str:
+def full_image(*, name: str, tag: str, platform: PLATFORM, args: argparse.Namespace) -> str:
     """
     Full image from its `name` and `tag`, with remote.
 
@@ -62,7 +63,7 @@ def full_image(*, name: str, tag: str, platform: str, args: argparse.Namespace) 
         case 'linux/arm64':
             return value + '-arm64'
         case _:
-            raise ValueError(f'unsupported platform {platform!r}')
+            raise ValueError(platform)
 
 def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     """

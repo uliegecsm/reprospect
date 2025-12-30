@@ -48,6 +48,8 @@ class Config:
     compilers: dict[LANGUAGE, Compiler]
     compute_capability: ComputeCapability
     platforms: tuple[PLATFORM, ...]
+    enable_tests: bool | None = None
+    enable_examples: bool | None = None
 
     def __post_init__(self) -> None:
         if 'CUDA' not in self.compilers:
@@ -66,12 +68,23 @@ class Config:
         Each platform is a separate job, because multi-arch builds are too slow due to emulation.
         """
         for platform in self.platforms:
+            # We don't run tests and examples for 'linux/arm64'.
+            if platform == 'linux/arm64':
+                if self.enable_tests is True or self.enable_examples is True:
+                    raise RuntimeError(f'Running tests or examples for {platform} is not supported yet.')
+                enable_tests = enable_examples = False
+            else:
+                enable_tests    = self.enable_tests    is not False
+                enable_examples = self.enable_examples is not False
+
             yield {
                 'cuda_version': self.cuda_version,
                 'ubuntu_version': self.ubuntu_version,
                 'compilers': self.compilers,
                 'compute_capability': self.compute_capability,
                 'platform': platform,
+                'enable_tests': enable_tests,
+                'enable_examples': enable_examples,
             }
 
 def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[str, str, str]:
@@ -113,6 +126,38 @@ def full_image(*, name: str, tag: str, platform: PLATFORM, args: argparse.Namesp
         case _:
             raise ValueError(platform)
 
+def require_arch(arch: NVIDIAArch) -> dict[str, str]:
+    """
+    If the `arch` is available in the runner fleet, enforce GPU compute capability with `NVIDIA_REQUIRE_ARCH`.
+    See also
+    https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-require-constraints.
+
+    Otherwise, any runner can pick up this job, even those with incompatible CUDA drivers.
+    Since no executable will actually run, we allow such runners to proceed.
+    To prevent any GPU-related issues or convoluted conditional skips based on driver version in the tests,
+    we explicitly hide all GPUs.
+    """
+    if arch in AVAILABLE_RUNNER_ARCHES:
+        return {'NVIDIA_REQUIRE_ARCH': f'arch={arch.compute_capability.major}.{arch.compute_capability.minor}'}
+    return {'NVIDIA_VISIBLE_DEVICES': ''}
+
+def runs_on(arch: NVIDIAArch, jtype: typing.Literal['tests', 'examples']) -> tuple[str, ...]:
+    """
+    We do require the architecture as a label if the architecture is part of our
+    available runner fleet.
+
+    Example jobs for which we don't have a runner available run on the provider runners.
+    """
+    if arch in AVAILABLE_RUNNER_ARCHES:
+        return SELF_HOSTED + (f'{arch}'.lower(), 'gpu:0')
+    match jtype:
+        case 'tests':
+            return SELF_HOSTED
+        case 'examples':
+            return ('ubuntu-latest',)
+        case _:
+            raise ValueError
+
 def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     """
     Add fields to a job.
@@ -148,6 +193,18 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     partial[     'image'] = full_image(platform=partial['platform'], args=args, name=name,                          tag=base_tag)
     partial[    'kokkos'] = full_image(platform=partial['platform'], args=args, name=f'{name}-kokkos-{KOKKOS_SHA}', tag=f'{base_tag}-{arch}'.lower())
 
+    # Name of the job.
+    # See also https://futurestud.io/tutorials/github-actions-customize-the-job-name.
+    partial['name'] = ', '.join((
+        arch.as_sm,
+        partial['cuda_version'],
+        partial['compilers']['CXX'].ID,
+        partial['compilers']['CXX'].version,
+        partial['compilers']['CUDA'].ID,
+        partial['ubuntu_version'],
+        partial['platform'],
+    ))
+
     # Write compilers as dictionaries.
     for lang in partial['compilers']:
         partial['compilers'][lang] = dataclasses.asdict(partial['compilers'][lang])
@@ -156,42 +213,17 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     # Environment of the job.
     partial['environment'] = {'REGISTRY': args.registry}
 
-    # Specifics to the 'tests' and 'examples' jobs.
-    # Testing is opt-out.
-    # We only test for 'linux/amd64'.
-    if ('tests' not in partial or partial['tests']) and partial['platform'] == 'linux/amd64':
-        partial['tests'   ] = {'container': {'image': partial['image']}}
+    # Specifics to the 'tests' jobs.
+    if partial['enable_tests']:
+        partial['tests'] = {'container': {'image': partial['image']}}
+        partial['tests']['container']['env'] = require_arch(arch=arch)
+        partial['tests']['runs-on'] = runs_on(arch=arch, jtype='tests')
+
+    # Specifics to the 'examples' jobs.
+    if partial['enable_examples']:
         partial['examples'] = {'container': {'image': partial['kokkos']}}
-
-        if arch in AVAILABLE_RUNNER_ARCHES:
-            # Enforce GPU compute capability. See also
-            # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html#nvidia-require-constraints.
-            env = {'NVIDIA_REQUIRE_ARCH': f'arch={arch.compute_capability.major}.{arch.compute_capability.minor}'}
-            partial['tests'   ]['container']['env'] = env
-            partial['examples']['container']['env'] = env
-        else:
-            # Any runner can pick up this job, even those with incompatible CUDA drivers.
-            # Since no executable will actually run, we allow such runners to proceed.
-            # To prevent any GPU-related issues or convoluted conditional skips based on driver version in the tests,
-            # we explicitly hide all GPUs.
-            env = {'NVIDIA_VISIBLE_DEVICES': ''}
-            partial['tests'   ]['container']['env'] = env
-            partial['examples']['container']['env'] = env
-
-        # We do require the architecture as a label if the architecture is part of our
-        # available runner fleet.
-        # All test jobs are still self-hosted.
-        # Example jobs for which we don't have a runner available run on the provider runners.
-        if arch not in AVAILABLE_RUNNER_ARCHES:
-            partial['tests'   ]['runs-on'] = SELF_HOSTED
-            partial['examples']['runs-on'] = ('ubuntu-latest',)
-        else:
-            runs_on = SELF_HOSTED + (f'{arch}'.lower(), 'gpu:0')
-            partial['tests'   ]['runs-on'] = runs_on
-            partial['examples']['runs-on'] = runs_on
-    else:
-        for name in ('tests', 'examples'):
-            partial[name] = None
+        partial['examples']['container']['env'] = require_arch(arch=arch)
+        partial['examples']['runs-on'] = runs_on(arch=arch, jtype='examples')
 
     partial['build-images'] = {
         'runs-on': ['self-hosted', 'linux', 'docker', partial['platform'].split('/')[1]],
@@ -296,8 +328,8 @@ def main(*, args: argparse.Namespace) -> None:
     # All jobs in the matrix build an image.
     print(f"matrix_images={json.dumps(matrix, default = str)}")
 
-    # But some jobs in the matrix don't require running the tests, because we don't have resources for them.
-    print(f"matrix_tests={json.dumps([x for x in matrix if x['tests']], default = str)}")
+    print(f"matrix_examples={json.dumps([x for x in matrix if 'examples' in x], default = str)}")
+    print(f"matrix_tests={json.dumps([x for x in matrix if 'tests' in x], default = str)}")
 
     print(f"deploy_image={matrix[0]['image']}")
     print(f"doc_image={matrix[0]['kokkos']}")

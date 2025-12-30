@@ -138,6 +138,7 @@ jobs:
         outputs:
             deploy_image: ${{ steps.strategy.outputs.deploy_image }}
             doc_image: ${{ steps.strategy.outputs.doc_image }}
+            matrix_examples: ${{ steps.strategy.outputs.matrix_examples }}
             matrix_images: ${{ steps.strategy.outputs.matrix_images }}
             matrix_tests: ${{ steps.strategy.outputs.matrix_tests }}
         if: ${{ ! failure() && ! cancelled() }}
@@ -201,6 +202,7 @@ jobs:
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_images) }}
         env: ${{ matrix.environment }}
+        name: build-images (${{ matrix.name }})
         if: ${{ ! failure() && ! cancelled() && needs.setup-skips.outputs.build-images == 'true' }}
         steps:
             - uses: actions/checkout@v6
@@ -262,6 +264,7 @@ jobs:
             matrix:
                 include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
         env: ${{ matrix.environment }}
+        name: tests (${{ matrix.name }})
         runs-on: ${{ matrix.tests.runs-on }}
         container: ${{ matrix.tests.container }}
         if: ${{ ! failure() && ! cancelled() }}
@@ -362,8 +365,9 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_tests) }}
+                include: ${{ fromJSON(needs.setup-job-matrix.outputs.matrix_examples) }}
         env: ${{ matrix.environment }}
+        name: examples (${{ matrix.name }})
         runs-on: ${{ matrix.examples.runs-on }}
         container: ${{ matrix.examples.container }}
         if: ${{ ! failure() && ! cancelled() }}

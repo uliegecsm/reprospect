@@ -96,7 +96,7 @@ def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[st
             digest = 'sha256:7f32ae6e575abb29f2dacf6c75fe94a262bb48dcc5196ac833ced59d9fde8107'
         case _:
             raise ValueError((cuda_version, ubuntu_version))
-    return ('nvidia/cuda', tag, digest)
+    return ('nvcr.io/nvidia/cuda', tag, digest)
 
 def full_image(*, name: str, tag: str, platform: PLATFORM, args: argparse.Namespace) -> str:
     """

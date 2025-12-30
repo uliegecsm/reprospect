@@ -23,7 +23,7 @@ from tests.test.sass.test_instruction import get_decoder
 @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestAtomicMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.instruction.AtomicMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.atomic.AtomicMatcher`.
     """
     CODE_ADD_BASED_ON_CAS = """\
 __global__ void cas({type}* __restrict__ const dst, const {type}* __restrict__ const src)

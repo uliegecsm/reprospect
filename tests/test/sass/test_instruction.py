@@ -79,7 +79,7 @@ def get_decoder(*, cwd: pathlib.Path, arch: NVIDIAArch, file: pathlib.Path, cmak
 @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestReductionMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.instruction.ReductionMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.atomic.ReductionMatcher`.
     """
     CODE_ADD = """\
 __global__ void add({type}* __restrict__ const dst, const {type}* __restrict__ const src)

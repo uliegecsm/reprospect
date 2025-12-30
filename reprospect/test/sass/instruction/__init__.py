@@ -39,13 +39,13 @@ from .address import (
     LocalAddressMatch,
     SharedAddressMatch,
 )
+from .branch import BranchMatcher
 from .constant import ConstantMatch, ConstantMatcher
 from .instruction import (
     AnyMatcher,
     ArchitectureAndVersionAwarePatternMatcher,
     ArchitectureAwarePatternMatcher,
     AtomicMatcher,
-    BranchMatcher,
     Fp32AddMatcher,
     Fp64AddMatcher,
     InstructionMatch,

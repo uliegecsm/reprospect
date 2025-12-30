@@ -107,13 +107,17 @@ EOF
 # Rust requirements.
 FROM python-requirements AS rust-requirements
 
+ENV CARGO_HOME=/opt/cargo
+ENV RUSTUP_HOME=/opt/rustup
+ENV PATH=${CARGO_HOME}/bin:${PATH}
+
+ADD --checksum=sha256:17247e4bcacf6027ec2e11c79a72c494c9af69ac8d1abcc1b271fa4375a106c2 \
+    https://sh.rustup.rs \
+    /tmp/rustup-init.sh
+
 ARG RUST_VERSION=0.0.0
 
-ADD https://sh.rustup.rs rustup.sh
-
-RUN sh rustup.sh -y --profile minimal --default-toolchain ${RUST_VERSION}
-
-ENV PATH=/root/.cargo/bin:${PATH}
+RUN sh /tmp/rustup-init.sh -y --profile minimal --no-modify-path --default-toolchain ${RUST_VERSION}
 
 # Install Nsight Systems.
 FROM rust-requirements AS nsight-systems

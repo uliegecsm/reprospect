@@ -8,6 +8,7 @@ import typing
 
 from reprospect.tools.architecture import ComputeCapability, NVIDIAArch
 
+COMPILER_ID = typing.Literal['Clang', 'GNU', 'NVIDIA']
 LANGUAGE = typing.Literal['CUDA', 'CXX']
 PLATFORM = typing.Literal['linux/amd64', 'linux/arm64']
 
@@ -20,7 +21,58 @@ SELF_HOSTED: typing.Final[tuple[str, ...]] = ('self-hosted', 'linux', 'docker', 
 
 KOKKOS_SHA: typing.Final[str] = '5.0.0'
 
+@dataclasses.dataclass(frozen=False, slots=True)
+class Compiler:
+    ID: COMPILER_ID
+    version: str | None = None
+    path: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.path is None:
+            match self.ID:
+                case 'GNU':
+                    self.path = 'g++'
+                case 'Clang':
+                    self.path = 'clang++'
+                case 'NVIDIA':
+                    self.path = 'nvcc'
+                case _:
+                    raise ValueError
+
 JobDict: typing.TypeAlias = dict[str, typing.Any]
+
+@dataclasses.dataclass(frozen=False, slots=True)
+class Config:
+    cuda_version: str
+    ubuntu_version: str
+    compilers: dict[LANGUAGE, Compiler]
+    compute_capability: ComputeCapability
+    platforms: tuple[PLATFORM, ...]
+
+    def __post_init__(self) -> None:
+        if 'CUDA' not in self.compilers:
+            self.compilers['CUDA'] = copy.deepcopy(self.compilers['CXX'])
+
+        match self.compilers['CUDA'].ID:
+            case 'NVIDIA':
+                self.compilers['CUDA'].version = self.cuda_version
+            case 'Clang':
+                pass
+            case _:
+                raise ValueError
+
+    def jobs(self) -> typing.Generator[JobDict, None, None]:
+        """
+        Each platform is a separate job, because multi-arch builds are too slow due to emulation.
+        """
+        for platform in self.platforms:
+            yield {
+                'cuda_version': self.cuda_version,
+                'ubuntu_version': self.ubuntu_version,
+                'compilers': self.compilers,
+                'compute_capability': self.compute_capability,
+                'platform': platform,
+            }
 
 def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[str, str, str]:
     """
@@ -46,12 +98,6 @@ def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[st
             raise ValueError((cuda_version, ubuntu_version))
     return ('nvidia/cuda', tag, digest)
 
-@dataclasses.dataclass(frozen=False, slots=True)
-class Compiler:
-    ID: str
-    version: str | None = None
-    path: str | None = None
-
 def full_image(*, name: str, tag: str, platform: PLATFORM, args: argparse.Namespace) -> str:
     """
     Full image from its `name` and `tag`, with remote.
@@ -73,48 +119,29 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     """
     logging.info(f'Completing job {partial}.')
 
-    assert isinstance(partial['nvidia_compute_capability'], ComputeCapability)
-    assert isinstance(partial['compilers'], dict)
-    assert all(k in typing.get_args(LANGUAGE) and isinstance(v, Compiler) for k, v in partial['compilers'].items())
-
-    # Complete CXX compiler.
-    match partial['compilers']['CXX'].ID:
-        case 'gnu':
-            partial['compilers']['CXX'].path = 'g++'
-        case 'clang':
-            partial['compilers']['CXX'].path = 'clang++'
-        case _:
-            raise ValueError(f"unsupported CXX compiler ID {partial['compilers']['CXX'].ID}")
-
-    # Complete CUDA compiler.
-    if 'CUDA' not in partial['compilers']:
-        partial['compilers']['CUDA'] = copy.deepcopy(partial['compilers']['CXX'])
-
-    match partial['compilers']['CUDA'].ID:
-        case 'nvidia':
-            partial['compilers']['CUDA'].path    = 'nvcc'
-            partial['compilers']['CUDA'].version = partial['cuda_version']
-        case 'clang':
-            pass
-        case _:
-            raise ValueError(f"unsupported CUDA compiler ID {partial['compilers']['CUDA'].ID}")
-
-    # CMake preset.
-    partial['cmake_preset'] = '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CUDA'].ID])))
+    # CMake preset (lower case).
+    partial['cmake_preset'] = ('-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CUDA'].ID])))).lower()
 
     # We always compile for the 'real' CUDA architecture, see also
     # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
-    partial['cmake_cuda_architectures'] = f"{partial['nvidia_compute_capability'].as_int}-real"
+    partial['cmake_cuda_architectures'] = f"{partial['compute_capability'].as_int}-real"
 
     # Kokkos SHA.
     partial['kokkos_sha'] = KOKKOS_SHA
 
-    # Name and tag of the image.
-    name = 'cuda-' + '-'.join(list(dict.fromkeys([partial['compilers']['CXX'].ID, partial['compilers']['CXX'].version, partial['compilers']['CUDA'].ID])))
+    # Name and tag of the image (lower case).
+    name = ('-'.join((
+        'cuda',
+        *list(dict.fromkeys([
+            partial['compilers']['CXX'].ID,
+            partial['compilers']['CXX'].version,
+            partial['compilers']['CUDA'].ID,
+        ])),
+    ))).lower()
 
     base_name, base_tag, base_digest = get_base_name_tag_digest(cuda_version=partial['cuda_version'], ubuntu_version=partial['ubuntu_version'])
 
-    arch = NVIDIAArch.from_compute_capability(cc=partial.pop('nvidia_compute_capability'))
+    arch = NVIDIAArch.from_compute_capability(cc=partial.pop('compute_capability'))
     partial['nvidia_arch'] = str(arch)
 
     partial['base_image'] = f'{base_name}:{base_tag}@{base_digest}'
@@ -124,6 +151,7 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     # Write compilers as dictionaries.
     for lang in partial['compilers']:
         partial['compilers'][lang] = dataclasses.asdict(partial['compilers'][lang])
+        partial['compilers'][lang]['ID_lower'] = partial['compilers'][lang]['ID'].lower()
 
     # Environment of the job.
     partial['environment'] = {'REGISTRY': args.registry}
@@ -165,26 +193,17 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
         for name in ('tests', 'examples'):
             partial[name] = None
 
+    partial['build-images'] = {
+        'runs-on': ['self-hosted', 'linux', 'docker', partial['platform'].split('/')[1]],
+    }
+
     return partial
 
-def complete_job(partial: JobDict, args: argparse.Namespace) -> list[JobDict]:
-    """
-    Each platform is a separate job, because multi-arch builds are too slow due to emulation.
-    """
-    jobs: list[JobDict] = []
-
-    for platform in partial.pop('platforms'):
-        job = copy.deepcopy(partial)
-        job['platform'] = platform
-
-        job = complete_job_impl(partial=job, args=args)
-        job['build-images'] = {
-            'runs-on': ['self-hosted', 'linux', 'docker', platform.split('/')[1]],
-        }
-
-        jobs.append(job)
-
-    return jobs
+def from_config(config: Config, args: argparse.Namespace) -> list[JobDict]:
+    return [
+        complete_job_impl(partial=copy.deepcopy(job), args=args)
+        for job in config.jobs()
+    ]
 
 def main(*, args: argparse.Namespace) -> None:
     """
@@ -192,85 +211,85 @@ def main(*, args: argparse.Namespace) -> None:
     """
     matrix = []
 
-    matrix.extend(complete_job({
-        'cuda_version': '12.8.1',
-        'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID='gnu', version='13'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': ComputeCapability(major=7, minor=0),
-        'platforms': ('linux/amd64', 'linux/arm64'),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='12.8.1',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=7, minor=0),
+        platforms=('linux/amd64', 'linux/arm64'),
+    ), args=args))
 
-    matrix.extend(complete_job({
-        'cuda_version': '12.8.1',
-        'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': ComputeCapability(major=9, minor=0),
-        'platforms': ('linux/amd64',),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='12.8.1',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=9, minor=0),
+        platforms=('linux/amd64',),
+    ), args=args))
 
-    matrix.extend(complete_job({
-        'cuda_version': '13.1.0',
-        'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': ComputeCapability(major=12, minor=0),
-        'platforms': ('linux/amd64', 'linux/arm64'),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='13.1.0',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=12, minor=0),
+        platforms=('linux/amd64', 'linux/arm64'),
+    ), args=args))
 
-    matrix.extend(complete_job({
-        'cuda_version': '12.6.3',
-        'ubuntu_version': '22.04',
-        'compilers': {'CXX': Compiler(ID='gnu', version='12'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': ComputeCapability(major=7, minor=5),
-        'platforms': ('linux/amd64',),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='12.6.3',
+        ubuntu_version='22.04',
+        compilers={'CXX': Compiler(ID='GNU', version='12'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=7, minor=5),
+        platforms=('linux/amd64',),
+    ), args=args))
 
-    matrix.extend(complete_job({
-        'cuda_version': '12.6.3',
-        'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID='gnu', version='13'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': ComputeCapability(major=8, minor=9),
-        'platforms': ('linux/amd64',),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='12.6.3',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=8, minor=9),
+        platforms=('linux/amd64',),
+    ), args=args))
 
-    matrix.extend(complete_job({
-        'cuda_version': '13.0.0',
-        'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': ComputeCapability(major=8, minor=6),
-        'platforms': ('linux/amd64',),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='13.0.0',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=8, minor=6),
+        platforms=('linux/amd64',),
+    ), args=args))
 
-    matrix.extend(complete_job({
-        'cuda_version': '12.8.1',
-        'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID='clang', version='19'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': ComputeCapability(major=7, minor=0),
-        'platforms': ('linux/amd64',),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='12.8.1',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='Clang', version='19'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=7, minor=0),
+        platforms=('linux/amd64',),
+    ), args=args))
 
-    matrix.extend(complete_job({
-        'cuda_version': '13.1.0',
-        'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID='gnu', version='14'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': ComputeCapability(major=10, minor=0),
-        'platforms': ('linux/amd64',),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='13.1.0',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=10, minor=0),
+        platforms=('linux/amd64',),
+    ), args=args))
 
-    matrix.extend(complete_job({
-        'cuda_version': '13.0.0',
-        'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID='clang', version='20'), 'CUDA': Compiler(ID='nvidia')},
-        'nvidia_compute_capability': ComputeCapability(major=12, minor=0),
-        'platforms': ('linux/amd64',),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='13.0.0',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='Clang', version='20'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=12, minor=0),
+        platforms=('linux/amd64',),
+    ), args=args))
 
-    matrix.extend(complete_job({
-        'cuda_version': '12.8.1',
-        'ubuntu_version': '24.04',
-        'compilers': {'CXX': Compiler(ID='clang', version='21')},
-        'nvidia_compute_capability': ComputeCapability(major=12, minor=0),
-        'platforms': ('linux/amd64',),
-    }, args=args))
+    matrix.extend(from_config(Config(
+        cuda_version='12.8.1',
+        ubuntu_version='24.04',
+        compilers={'CXX': Compiler(ID='Clang', version='21')},
+        compute_capability=ComputeCapability(major=12, minor=0),
+        platforms=('linux/amd64',),
+    ), args=args))
 
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')
 

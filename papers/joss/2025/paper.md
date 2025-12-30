@@ -52,28 +52,27 @@ enabling others to reproduce the work and build upon it more effectively.
 
 HPC software development strives to achieve performance and sustain it over time, while hardware and software evolve.
 However, the modern programming landscape relies on complex software stacks and compiler toolchains.
-Therefore, tools are needed to support developers in understanding, analysing and optimising the interaction of their code with other layers across the stack and ultimately with the hardware:
-application runtime behaviour, individual kernel performance, and generated machine code.
+Therefore, tools are needed to support developers in analysing the interaction of their code with other layers across the stack and ultimately with the hardware.
 
 The ability to carry out the analysis fully programmatically ensures reproducibility of the results by others while opening a range of new use cases that can be integrated in the development cycle.
 For instance, whereas test suites traditionally check output correctness of public functionalities,
-they could also check API calls, hardware utilization, or generated machine code.
+they could also verify application runtime events, kernel performance, or generated machine code.
 
 For the CUDA stack, NVIDIA provides a set of proprietary tools, guaranteed to be up-to-date with their software and hardware.
 The runtime analysis tools Nsight Systems [@nsys2025] and Nsight Compute [@ncu2025] are designed for API tracing and kernel profiling.
-They both provide a GUI for *ad hoc* exploratory understanding of the results, as well as a low-level Python API for accessing the raw data.
+They both provide a GUI for exploring the results, as well as a low-level Python API for accessing the raw data.
 The CUDA binary tools [@binary2025] provide command-line access to machine code (SASS or PTX [@ptx2025]) and other information embedded in the binaries.
-However, these tools are designed to extract raw data and
+However, while these tools allow raw data to be extracted, they
 do not themselves provide the infrastructure for effective programmatic analysis.
 
-Several well-established open-source analysis tools are already available.
+Several well-established open-source tools are already available.
 The Lawrence Livermore National Laboratory (LLNL) provides a suite of tools.
 Caliper [@boehme2016] can intercept CUDA API calls through the NVIDIA CUPTI library [@cupti2025].
 It can interface with the Python package Hatchet [@bhatele2019] to organize results into a hierarchical data structure.
 Thicket [@brink2023] adds kernel profiling support through Nsight Compute, with a primary focus on exploratory data analysis of multi-run performance experiments.
 HPCToolkit [@zhou2021] is another comprehensive suite designed for large-scale parallel systems.
 It includes CUDA API tracing through CUPTI and kernel profiling through PAPI [@terpstra2010], and it has binary analysis capabilities to aid with attributing performance data to calling contexts.
-It has a visual interface for *ad hoc* exploration, and it can output raw performance data for programmatic analysis,
+It has a visual interface, and it can output raw performance data for programmatic analysis,
 *e.g.* using Hatchet.
 Score-P [@knupfer2012] integrates multiple performance analysis tools in a common infrastructure.
 It can record CUDA API calls and GPU activities through CUPTI and provides standardized data formats.
@@ -84,8 +83,7 @@ Also, `ReProspect` goes significantly beyond runtime analysis and introduces new
 # Key features
 
 `ReProspect` is organized into three main components:
-API tracing and kernel profiling for runtime analysis,
-and binary tools for static analysis (\ref{fig:overview}).
+API tracing, kernel profiling, and binary analysis (\autoref{fig:overview}).
 
 Each component is designed to allow the entire analysis to be encapsulated into a concise Python script.
 This includes launching the underlying analysis tool,
@@ -94,7 +92,7 @@ and performing the subsequent analysis.
 
 ![Overview of `ReProspect`.\label{fig:overview}](overview.svg){width="12cm"}
 
-## Runtime analysis
+## API tracing and kernel profiling
 
 The `ReProspect` `Command` and `Session` classes streamline launching
 NSight Systems and Nsight Compute to collect
@@ -105,31 +103,30 @@ readily amenable to test assertions.
 To avoid unnecessary re-runs,
 `ReProspect` provides a `Cacher` that can serve the `Report` from a database.
 
-## Static analysis
+## Binary analysis
 
-`ReProspect` provides a set of tools for extracting and analysing the content of CUDA binaries (CUBIN).
+`ReProspect` provides a set of tools for extracting and analysing the content of CUDA binaries.
 
-The `CuObjDump` and `NVDisasm` classes drive and parse the output of the underlying CUDA utilities [@binary2025]
-to retrieve the SASS code and resource usage of kernels (*e.g.* register count, constant memory).
+The `CuObjDump` and `NVDisasm` classes drive and parse the output of the underlying CUDA binary tools
+to retrieve the SASS code and resource usage of kernels (*e.g.* registers, constant memory).
 
-The `ReProspect` `ELF` class can extract complementary information by decoding ELF-formatted sections,
-such as the symbol table, the used toolchain (from the *.note.nv.tkinfo* section) or
-kernel attributes (*e.g.* launch bounds, from the *.nv.info.\<kernel\>* section) [@hayes-2019-decoding-cubin].
+The `ELF` class decodes ELF-formatted sections to extract complementary information,
+including the symbol table, toolchain metadata (from the *.note.nv.tkinfo* section), and
+kernel attributes such as launch bounds (from the *.nv.info.\<kernel\>* section) [@hayes-2019-decoding-cubin].
 
 Beyond data extraction, `ReProspect` provides an extensible framework for
-inspecting machine code for expected instruction sequence patterns.
+inspecting machine code for expected instruction patterns.
 This framework is structured as a hierarchy of matchers.
 At the lowest levels, matchers analyse instructions and their components (opcodes, modifiers, and operands).
 These matchers can be composed into instruction sequence matchers,
 enabling the identification of more intricate patterns.
 
 One of the key challenges with SASS matching is the evolution of the CUDA instruction set and compiler toolchains.
-`ReProspect` addresses this challenge by abstracting away architecture- and toolchain-specific details at each level in the hierarchy of matchers.
+`ReProspect` addresses this challenge by abstracting away architecture- and toolchain-specific details at each level of the matcher hierarchy.
 For example, `AddressMatcher` matches a memory address operand, adjusting the expected address format for the target architecture.
-Then, at the instruction level, `LoadMatcher` matches a load from memory; it leverages `AddressMatcher`
-for tracking address specificities and need only adjust the opcode and modifiers for the target architecture.
-Building up this hierarchical design to instruction sequence matchers and basic block matchers,
-`ReProspect` ultimately enables robust, composable matching across multiple CUDA architectures and compiler versions.
+Then, at the instruction level, `LoadMatcher` matches loads from memory; it uses `AddressMatcher` for the memory address and thus needs only to adjust the opcode and modifiers for the target architecture.
+By extending this hierarchical design to instruction sequence and basic block matchers,
+`ReProspect` enables robust, composable matching across CUDA architectures and compiler toolchains.
 
 The following snippet illustrates how matchers can be composed to
 assert the presence or absence of a 16-bit floating-point code path, *e.g.* in the SASS codes in \autoref{table:hfmax}:
@@ -171,8 +168,7 @@ matched_hmnmx2 = matcher_hmnmx2.match(blk.instructions[matcher_ldg.next_index:])
 | ```                                  | ```                              |
 +--------------------------------------+----------------------------------+
 Table: Comparison of the SASS code generated for the `sm_100` architecture
-       for the maximum function
-       for 16-bit `__half` (left) *vs* 32-bit `float` (right) type.
+       for the 16-bit `__half` (left) *vs* 32-bit `float` (right) maximum function.
        \label{table:hfmax}
 
 # Case studies
@@ -195,13 +191,13 @@ See [online example](https://github.com/uliegecsm/reprospect/blob/v0.0.12/exampl
 
 ## Atomics with `desul`
 
-Kokkos provides extended atomic support through the `desul` library [@ctrott-2022].
-`desul` maps atomic operations to one of several methods with varying performance.
+Kokkos provides extended atomic support through the `desul` library [@ctrott-2022],
+which maps atomic operations to one of several methods with varying performance.
 The choice of the method depends on intricate logic, and must be tested.
-A micro-benchmarking approach is feasible but requires the physical device,
+A micro-benchmarking approach is feasible, but requires the physical device
 and suffers from runtime variability.
 Yet, the machine code already contains information about the selected code paths.
-This case study demonstrates the feasibility of testing the choice logic
+This case study demonstrates how to verify which method is chosen
 by matching an instruction sequence pattern.
 
 See [online example](https://github.com/uliegecsm/reprospect/blob/v0.0.12/examples/kokkos/atomic/desul.py).

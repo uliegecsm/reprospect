@@ -62,7 +62,7 @@
     \node[box, left = 2.25cm of profiling] (tracing) {
         \textbf{\textcolor{NavyBlue}{API tracing}}\\
         {\small \emph{Nsight Systems}}\\
-        {\small Records}
+        {\small Event records}
     };
 
     % Analysis results.

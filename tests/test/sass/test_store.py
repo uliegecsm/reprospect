@@ -5,8 +5,8 @@ import pytest
 
 from reprospect.test import features
 from reprospect.test.sass.composite import findall
-from reprospect.test.sass.instruction import StoreGlobalMatcher, StoreMatcher
 from reprospect.test.sass.instruction.memory import MemorySpace
+from reprospect.test.sass.instruction.store import StoreGlobalMatcher, StoreMatcher
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 
@@ -21,8 +21,8 @@ from tests.test.sass.test_instruction import (
 
 class TestStoreMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.instruction.StoreMatcher`
-    and :py:class:`reprospect.test.sass.instruction.StoreGlobalMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.store.StoreMatcher`
+    and :py:class:`reprospect.test.sass.instruction.store.StoreGlobalMatcher`.
     """
     def test(self) -> None:
         matcher = StoreMatcher(arch=NVIDIAArch.from_compute_capability(86), size=64, memory=MemorySpace.GENERIC)

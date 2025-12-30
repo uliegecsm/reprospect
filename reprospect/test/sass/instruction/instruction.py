@@ -21,6 +21,11 @@ from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass.decode import Instruction
 
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum.strenum import StrEnum
+
 if sys.version_info >= (3, 12):
     from typing import override
 else:
@@ -298,12 +303,15 @@ class ArchitectureAndVersionAwarePatternMatcher(ArchitectureAwarePatternMatcher)
         self.version = version if version is not None else semantic_version.Version(os.environ['CUDA_VERSION'])
         super().__init__(arch=arch)
 
-ExtendBitsMethod: typing.TypeAlias = typing.Literal['U', 'S']
-"""
-How bits must be extended, see https://www.cs.fsu.edu/~hawkes/cda3101lects/chap4/extension.htm.
+class ExtendBitsMethod(StrEnum):
+    """
+    How bits must be extended, see https://www.cs.fsu.edu/~hawkes/cda3101lects/chap4/extension.htm.
+    """
+    U = 'U'
+    """Zero extension."""
 
-`U` and `S` stand for *zero extension* and *sign extension*, respectively.
-"""
+    S = 'S'
+    """Sign extension."""
 
 def check_memory_instruction_word_size(*, size: int) -> None:
     """
@@ -314,6 +322,13 @@ def check_memory_instruction_word_size(*, size: int) -> None:
     ALLOWABLE_SIZES: typing.Final[tuple[int, ...]] = (1, 2, 4, 8, 16, 32) # pylint: disable=invalid-name
     if size not in ALLOWABLE_SIZES:
         raise RuntimeError(f'{size} is not an allowable memory instruction word size ({ALLOWABLE_SIZES} (in bytes)).')
+
+def memory_op_get_size(*, size: int | None, extend: ExtendBitsMethod | None) -> int | str | None:
+    if size is not None and size < 32:
+        return f'{extend}{size}'
+    if size is not None and size > 32:
+        return size
+    return None
 
 class LoadMatcher(ArchitectureAwarePatternMatcher):
     """
@@ -344,7 +359,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         size: int | None = None,
         readonly: bool | None = None,
         memory: MemorySpace | str = MemorySpace.GLOBAL,
-        extend: ExtendBitsMethod | None = None,
+        extend: ExtendBitsMethod | str | None = None,
     ) -> None:
         """
         :param size: Optional bit size (*e.g.*, 32, 64, 128).
@@ -356,7 +371,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         self.size: int | None = size
         self.cache: str | ZeroOrOne | None = None if readonly is False else ('CONSTANT' if readonly is True else ZeroOrOne('CONSTANT'))
         self.memory: typing.Final[MemorySpace] = MemorySpace(memory)
-        self.extend: typing.Final[ExtendBitsMethod | None] = extend
+        self.extend: typing.Final[ExtendBitsMethod | None] = ExtendBitsMethod(extend) if extend is not None else None
 
         super().__init__(arch=arch)
 
@@ -371,7 +386,7 @@ class LoadMatcher(ArchitectureAwarePatternMatcher):
         return filter(None, (
             'E',
             *(('ENL2',) if self.size is not None and self.size == 256 else ()),
-            self._get_size(),
+            memory_op_get_size(size=self.size, extend=self.extend),
             self.cache,
             *(('SYS',) if self.arch.compute_capability.as_int in {70, 75} else ()),
         ))
@@ -390,7 +405,7 @@ class LoadGlobalMatcher(LoadMatcher):
     """
     Specialization of :py:class:`LoadMatcher` for global memory (``LDG``).
     """
-    def __init__(self, arch: NVIDIAArch, *, size: int | None = None, readonly: bool | None = None, extend: ExtendBitsMethod | None = None) -> None:
+    def __init__(self, arch: NVIDIAArch, *, size: int | None = None, readonly: bool | None = None, extend: ExtendBitsMethod | str | None = None) -> None:
         super().__init__(arch=arch, size=size, readonly=readonly, memory=MemorySpace.GLOBAL, extend=extend)
 
 class LoadConstantMatcher(PatternMatcher):
@@ -430,71 +445,6 @@ class LoadConstantMatcher(PatternMatcher):
             ),
             dest=PatternBuilder.group(dest, group='operands'),
         ))
-
-class StoreMatcher(ArchitectureAwarePatternMatcher):
-    """
-    Architecture-dependent matcher for global store instructions, such as::
-
-        STG.E desc[UR6][R6.64], R15
-        ST.E.64 R4.64, R2
-
-    Starting from `BLACKWELL`, 256-bit store instructions are available, such as::
-
-        STG.E.ENL2.256 desc[UR4][R4.64], R8, R12
-    """
-    __slots__ = ('extend', 'memory', 'size')
-
-    TEMPLATE:     typing.Final[str] = f'{{opcode}} {{address}}, {Register.reg()}'
-    TEMPLATE_256: typing.Final[str] = f'{{opcode}} {{address}}, {Register.reg()}, {Register.reg()}'
-
-    def __init__(self,
-        arch: NVIDIAArch,
-        size: int | None = None,
-        memory: MemorySpace | str = MemorySpace.GLOBAL,
-        extend: ExtendBitsMethod | None = None,
-    ) -> None:
-        """
-        :param size: Optional bit size (*e.g.*, 32, 64, 128).
-        """
-        if size is not None:
-            check_memory_instruction_word_size(size=size // 8)
-
-        self.size = size
-        self.memory: typing.Final[MemorySpace] = MemorySpace(memory)
-        self.extend: typing.Final[ExtendBitsMethod | None] = extend
-        super().__init__(arch=arch)
-
-    def _get_size(self) -> int | str | None:
-        if self.size is not None and self.size < 32:
-            return f'{self.extend}{self.size}'
-        if self.size is not None and self.size > 32:
-            return self.size
-        return None
-
-    def _get_modifiers(self) -> typing.Iterable[str | int]:
-        return filter(None, (
-            'E',
-            *(('ENL2',) if self.size is not None and self.size == 256 else ()),
-            self._get_size(),
-            *(('SYS',) if self.arch.compute_capability.as_int in {70, 75} else ()),
-        ))
-
-    @override
-    def _build_pattern(self) -> str:
-        return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
-            opcode=OpCode.mod(
-                opcode=f'ST{self.memory}',
-                modifiers=self._get_modifiers(),
-            ),
-            address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch, memory=self.memory), groups=('operands', 'address')),
-        )
-
-class StoreGlobalMatcher(StoreMatcher):
-    """
-    Specialization of :py:class:`StoreMatcher` for global memory (``STG``).
-    """
-    def __init__(self, arch: NVIDIAArch, size: int | None = None, extend: ExtendBitsMethod | None = None) -> None:
-        super().__init__(arch=arch, size=size, memory=MemorySpace.GLOBAL, extend=extend)
 
 ThreadScope = typing.Literal['BLOCK', 'DEVICE', 'THREADS']
 """

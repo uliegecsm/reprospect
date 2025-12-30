@@ -57,13 +57,11 @@ from .instruction import (
     OpcodeModsWithOperandsMatcher,
     PatternMatcher,
     ReductionMatcher,
-    StoreGlobalMatcher,
-    StoreMatcher,
     ZeroOrOne,
 )
-from .memory import MemorySpace
 from .pattern import PatternBuilder
 from .register import RegisterMatch, RegisterMatcher
+from .store import StoreGlobalMatcher, StoreMatcher
 
 __all__ = (
     'AddressMatcher',
@@ -83,7 +81,6 @@ __all__ = (
     'LoadGlobalMatcher',
     'LoadMatcher',
     'LocalAddressMatch',
-    'MemorySpace',
     'OpcodeModsMatcher',
     'OpcodeModsWithOperandsMatcher',
     'PatternBuilder',

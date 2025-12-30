@@ -12,10 +12,10 @@ from reprospect.test.sass.instruction import (
     AtomicMatcher,
     InstructionMatch,
     LoadGlobalMatcher,
-    MemorySpace,
     RegisterMatch,
     RegisterMatcher,
 )
+from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.matchers.move32 import Move32Matcher
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass.controlflow import Graph

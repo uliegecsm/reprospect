@@ -13,6 +13,8 @@ AVAILABLE_RUNNER_ARCHES: typing.Final[tuple[NVIDIAArch, ...]] = (
     NVIDIAArch.from_str('BLACKWELL120'),
 )
 
+SELF_HOSTED: typing.Final[tuple[str, ...]] = ('self-hosted', 'linux', 'docker', 'amd64')
+
 KOKKOS_SHA: typing.Final[str] = '5.0.0'
 
 JobDict: typing.TypeAlias = dict[str, typing.Any]
@@ -147,11 +149,15 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
 
         # We do require the architecture as a label if the architecture is part of our
         # available runner fleet.
-        runs_on = ['self-hosted', 'linux', 'docker', 'amd64']
-        if arch in AVAILABLE_RUNNER_ARCHES:
-            runs_on += [f'{arch}'.lower(), 'gpu:0']
-        for name in ('tests', 'examples'):
-            partial[name]['runs-on'] = runs_on
+        # All test jobs are still self-hosted.
+        # Example jobs for which we don't have a runner available run on the provider runners.
+        if arch not in AVAILABLE_RUNNER_ARCHES:
+            partial['tests'   ]['runs-on'] = SELF_HOSTED
+            partial['examples']['runs-on'] = ('ubuntu-latest',)
+        else:
+            runs_on = SELF_HOSTED + (f'{arch}'.lower(), 'gpu:0')
+            partial['tests'   ]['runs-on'] = runs_on
+            partial['examples']['runs-on'] = runs_on
     else:
         for name in ('tests', 'examples'):
             partial[name] = None

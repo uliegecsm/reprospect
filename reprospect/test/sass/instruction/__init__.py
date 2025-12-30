@@ -39,13 +39,13 @@ from .address import (
     LocalAddressMatch,
     SharedAddressMatch,
 )
+from .atomic import AtomicMatcher, ReductionMatcher
 from .branch import BranchMatcher
 from .constant import ConstantMatch, ConstantMatcher
 from .instruction import (
     AnyMatcher,
     ArchitectureAndVersionAwarePatternMatcher,
     ArchitectureAwarePatternMatcher,
-    AtomicMatcher,
     Fp32AddMatcher,
     Fp64AddMatcher,
     InstructionMatch,
@@ -56,7 +56,6 @@ from .instruction import (
     OpcodeModsMatcher,
     OpcodeModsWithOperandsMatcher,
     PatternMatcher,
-    ReductionMatcher,
     ZeroOrOne,
 )
 from .pattern import PatternBuilder

@@ -225,7 +225,7 @@ jobs:
                   cache-to: type=inline
                   build-args: |
                       BASE_IMAGE=${{ matrix.base_image }}
-                      CXX_COMPILER_ID=${{ matrix.compilers.CXX.ID }}
+                      CXX_COMPILER_ID=${{ matrix.compilers.CXX.ID_lower }}
                       CXX_COMPILER_VERSION=${{ matrix.compilers.CXX.version }}
                       CXX_COMPILER=${{ matrix.compilers.CXX.path }}
                       DOXYGEN_VERSION=1_14_0

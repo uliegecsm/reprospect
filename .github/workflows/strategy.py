@@ -8,6 +8,8 @@ import typing
 
 from reprospect.tools.architecture import NVIDIAArch
 
+LANGUAGE = typing.Literal['CUDA', 'CXX']
+
 AVAILABLE_RUNNER_ARCHES: typing.Final[tuple[NVIDIAArch, ...]] = (
     NVIDIAArch.from_str('VOLTA70'),
     NVIDIAArch.from_str('BLACKWELL120'),
@@ -70,7 +72,7 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
 
     assert isinstance(partial['nvidia_compute_capability'], int)
     assert isinstance(partial['compilers'], dict)
-    assert all(k in {'CXX', 'CUDA'} and isinstance(v, Compiler) for k, v in partial['compilers'].items())
+    assert all(k in LANGUAGE and isinstance(v, Compiler) for k, v in partial['compilers'].items())
 
     # Complete CXX compiler.
     match partial['compilers']['CXX'].ID:

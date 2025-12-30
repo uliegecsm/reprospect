@@ -4,12 +4,13 @@ import typing
 from reprospect.test.sass.instruction.address import AddressMatcher
 from reprospect.test.sass.instruction.instruction import (
     ArchitectureAwarePatternMatcher,
-    ExtendBitsMethod,
     OpCode,
-    check_memory_instruction_word_size,
-    memory_op_get_size,
 )
-from reprospect.test.sass.instruction.memory import MemorySpace
+from reprospect.test.sass.instruction.memory import (
+    ExtendBitsMethod,
+    MemoryOp,
+    MemorySpace,
+)
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
@@ -31,7 +32,7 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
 
         STG.E.ENL2.256 desc[UR4][R4.64], R8, R12
     """
-    __slots__ = ('extend', 'memory', 'size')
+    __slots__ = ('mop',)
 
     TEMPLATE:     typing.Final[str] = f'{{opcode}} {{address}}, {Register.reg()}'
     TEMPLATE_256: typing.Final[str] = f'{{opcode}} {{address}}, {Register.reg()}, {Register.reg()}'
@@ -45,30 +46,27 @@ class StoreMatcher(ArchitectureAwarePatternMatcher):
         """
         :param size: Optional bit size (*e.g.*, 32, 64, 128).
         """
-        if size is not None:
-            check_memory_instruction_word_size(size=size // 8)
+        self.mop: typing.Final[MemoryOp] = MemoryOp(
+            size=size,
+            memory=MemorySpace(memory),
+            extend=ExtendBitsMethod(extend) if extend is not None else None,
+        )
 
-        self.size: typing.Final[int | None] = size
-        self.memory: typing.Final[MemorySpace] = MemorySpace(memory)
-        self.extend: typing.Final[ExtendBitsMethod | None] = ExtendBitsMethod(extend) if extend is not None else None
         super().__init__(arch=arch)
 
     def _get_modifiers(self) -> typing.Iterable[str | int]:
-        return filter(None, (
-            'E',
-            *(('ENL2',) if self.size is not None and self.size == 256 else ()),
-            memory_op_get_size(size=self.size, extend=self.extend),
-            *(('SYS',) if self.arch.compute_capability.as_int in {70, 75} else ()),
+        return filter(None, self.mop.get_modifiers() + (
+            self.mop.get_sys(arch=self.arch),
         ))
 
     @override
     def _build_pattern(self) -> str:
-        return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
+        return (self.TEMPLATE_256 if self.mop.size is not None and self.mop.size == 256 else self.TEMPLATE).format(
             opcode=OpCode.mod(
-                opcode=f'ST{self.memory}',
+                opcode=f'ST{self.mop.memory}',
                 modifiers=self._get_modifiers(),
             ),
-            address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch, memory=self.memory), groups=('operands', 'address')),
+            address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch, memory=self.mop.memory), groups=('operands', 'address')),
         )
 
 class StoreGlobalMatcher(StoreMatcher):

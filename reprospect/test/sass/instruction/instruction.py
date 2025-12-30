@@ -10,19 +10,10 @@ import mypy_extensions
 import regex
 import semantic_version
 
-from reprospect.test.sass.instruction.address import AddressMatcher
-from reprospect.test.sass.instruction.constant import ConstantMatcher
-from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.operand import Operand
 from reprospect.test.sass.instruction.pattern import PatternBuilder
-from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass.decode import Instruction
-
-if sys.version_info >= (3, 11):
-    from enum import StrEnum
-else:
-    from backports.strenum.strenum import StrEnum
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -90,7 +81,9 @@ class OpCode:
     @classmethod
     def mod(cls, opcode: str, modifiers: typing.Iterable[str | int | ZeroOrOne] | None = None, *, captured: bool = True) -> str:
         """
-        Append each modifier with a `.` separator. Modifiers wrapped in a :py:class:`ZeroOrOne` instance are matched optionally.
+        Append each modifier with a `.` separator.
+
+        Modifiers wrapped in a :py:class:`reprospect.test.sass.instruction.instruction.ZeroOrOne` instance are matched optionally.
         """
         pattern: str = PatternBuilder.group(opcode, group='opcode') if captured else opcode
 
@@ -196,8 +189,10 @@ class PatternMatcher(InstructionMatcher):
     @classmethod
     def build_pattern_operands(cls, operands: typing.Iterable[str | ZeroOrOne] | None = None, *, captured: bool = True) -> str | None:
         """
-        Build an operands pattern. Join multiple operands with a :py:const:`reprospect.test.sass.instruction.instruction.OPERAND_SEPARATOR`
-        separator. Operands wrapped in a :py:class:`ZeroOrOne` instance are matched optionally.
+        Build an operands pattern.
+
+        Join multiple operands with a :py:const:`reprospect.test.sass.instruction.instruction.OPERAND_SEPARATOR` separator.
+        Operands wrapped in a :py:class:`reprospect.test.sass.instruction.instruction.ZeroOrOne` instance are matched optionally.
         """
         if operands is not None:
             parts: list[str] = []
@@ -260,149 +255,6 @@ class ArchitectureAndVersionAwarePatternMatcher(ArchitectureAwarePatternMatcher)
         self.version = version if version is not None else semantic_version.Version(os.environ['CUDA_VERSION'])
         super().__init__(arch=arch)
 
-class ExtendBitsMethod(StrEnum):
-    """
-    How bits must be extended, see https://www.cs.fsu.edu/~hawkes/cda3101lects/chap4/extension.htm.
-    """
-    U = 'U'
-    """Zero extension."""
-
-    S = 'S'
-    """Sign extension."""
-
-def check_memory_instruction_word_size(*, size: int) -> None:
-    """
-    From https://docs.nvidia.com/cuda/cuda-c-programming-guide/#device-memory-accesses:
-
-        Global memory instructions support reading or writing words of size equal to 1, 2, 4, 8, or 16 bytes.
-    """
-    ALLOWABLE_SIZES: typing.Final[tuple[int, ...]] = (1, 2, 4, 8, 16, 32) # pylint: disable=invalid-name
-    if size not in ALLOWABLE_SIZES:
-        raise RuntimeError(f'{size} is not an allowable memory instruction word size ({ALLOWABLE_SIZES} (in bytes)).')
-
-def memory_op_get_size(*, size: int | None, extend: ExtendBitsMethod | None) -> int | str | None:
-    if size is not None and size < 32:
-        return f'{extend}{size}'
-    if size is not None and size > 32:
-        return size
-    return None
-
-class LoadMatcher(ArchitectureAwarePatternMatcher):
-    """
-    Architecture-dependent matcher for load instructions, such as::
-
-        LDG.E R2, desc[UR6][R2.64]
-        LD.E.64 R2, R4.64
-
-    Starting from `BLACKWELL`, 256-bit load instructions are available, such as::
-
-        LDG.E.ENL2.256.CONSTANT R12, R8, desc[UR4][R2.64]
-
-    References:
-
-    * https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html?highlight=__ldg#global-memory-5-x
-    * https://github.com/AdaptiveCpp/AdaptiveCpp/issues/848
-    * https://docs.nvidia.com/gameworks/content/developertools/desktop/analysis/report/cudaexperiments/kernellevel/memorystatisticsglobal.htm
-    * https://developer.nvidia.com/blog/whats-new-and-important-in-cuda-toolkit-13-0/#updated_vector_types
-    """
-    __slots__ = ('cache', 'extend', 'memory', 'size')
-
-    TEMPLATE:     typing.Final[str] = f'{{opcode}} {Register.reg()}, {{address}}'
-    TEMPLATE_256: typing.Final[str] = f'{{opcode}} {Register.reg()}, {Register.reg()}, {{address}}'
-
-    def __init__(self,
-        arch: NVIDIAArch,
-        *,
-        size: int | None = None,
-        readonly: bool | None = None,
-        memory: MemorySpace | str = MemorySpace.GLOBAL,
-        extend: ExtendBitsMethod | str | None = None,
-    ) -> None:
-        """
-        :param size: Optional bit size (*e.g.*, 32, 64, 128).
-        :param readonly: Whether to append ``.CONSTANT`` modifier. If `None`, the modifier is matched optionally.
-        """
-        if size is not None:
-            check_memory_instruction_word_size(size=size // 8)
-
-        self.size: int | None = size
-        self.cache: str | ZeroOrOne | None = None if readonly is False else ('CONSTANT' if readonly is True else ZeroOrOne('CONSTANT'))
-        self.memory: typing.Final[MemorySpace] = MemorySpace(memory)
-        self.extend: typing.Final[ExtendBitsMethod | None] = ExtendBitsMethod(extend) if extend is not None else None
-
-        super().__init__(arch=arch)
-
-    def _get_size(self) -> int | str | None:
-        if self.size is not None and self.size < 32:
-            return f'{self.extend}{self.size}'
-        if self.size is not None and self.size > 32:
-            return self.size
-        return None
-
-    def _get_modifiers(self) -> typing.Iterable[str | int | ZeroOrOne]:
-        return filter(None, (
-            'E',
-            *(('ENL2',) if self.size is not None and self.size == 256 else ()),
-            memory_op_get_size(size=self.size, extend=self.extend),
-            self.cache,
-            *(('SYS',) if self.arch.compute_capability.as_int in {70, 75} else ()),
-        ))
-
-    @override
-    def _build_pattern(self) -> str:
-        return (self.TEMPLATE_256 if self.size is not None and self.size == 256 else self.TEMPLATE).format(
-            opcode=OpCode.mod(
-                opcode=f'LD{self.memory.value}',
-                modifiers=self._get_modifiers(),
-            ),
-            address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch, memory=self.memory), groups=('operands', 'address')),
-        )
-
-class LoadGlobalMatcher(LoadMatcher):
-    """
-    Specialization of :py:class:`LoadMatcher` for global memory (``LDG``).
-    """
-    def __init__(self, arch: NVIDIAArch, *, size: int | None = None, readonly: bool | None = None, extend: ExtendBitsMethod | str | None = None) -> None:
-        super().__init__(arch=arch, size=size, readonly=readonly, memory=MemorySpace.GLOBAL, extend=extend)
-
-class LoadConstantMatcher(PatternMatcher):
-    """
-    Matcher for constant load (``LDC``) instructions, like:
-
-    * ``LDC.64 R2, c[0x0][0x388]``
-    * ``LDC R4, c[0x3][R0]``
-    * ``LDCU UR4, c[0x3][UR0]``
-    """
-    CONSTANT: typing.Final[str] = ConstantMatcher.build_pattern(captured=True, capture_bank=True, capture_offset=True)
-
-    TEMPLATE: typing.Final[str] = f'{{opcode}} {{dest}}, {CONSTANT}'
-
-    def __init__(self, *, uniform: bool | None = None, size: int | None = None) -> None:
-        """
-        :param size: Optional bit size (*e.g.*, 32, 64, 128).
-        :param uniform: Optionally require uniformness.
-        """
-        if size is not None:
-            check_memory_instruction_word_size(size=size // 8)
-
-        if uniform is None:
-            opcode = PatternBuilder.any('LDC', 'LDCU')
-            dest   = PatternBuilder.any(Register.REG, Register.UREG)
-        elif uniform is True:
-            opcode = 'LDCU'
-            dest   = Register.UREG
-        else:
-            opcode = 'LDC'
-            dest   = Register.REG
-
-        super().__init__(pattern=self.TEMPLATE.format(
-            opcode=OpCode.mod(
-                opcode=opcode,
-                modifiers=(size,) if size else (),
-            ),
-            dest=PatternBuilder.group(dest, group='operands'),
-        ))
-
 class OpcodeModsMatcher(PatternMatcher):
     """
     Matcher that will collect all operands of an instruction.
@@ -452,7 +304,8 @@ class OpcodeModsWithOperandsMatcher(PatternMatcher):
 
         Some operands can be optionally matched.
 
-        >>> from reprospect.test.sass.instruction import OpcodeModsWithOperandsMatcher, PatternBuilder, ZeroOrOne
+        >>> from reprospect.test.sass.instruction import OpcodeModsWithOperandsMatcher, PatternBuilder
+        >>> from reprospect.test.sass.instruction.instruction import ZeroOrOne
         >>> matcher = OpcodeModsWithOperandsMatcher(opcode = 'WHATEVER', operands = (
         ...     ZeroOrOne('R0'),
         ...     ZeroOrOne('R9'),

@@ -6,11 +6,11 @@ import typing
 
 import regex
 
-from reprospect.test.sass.instruction import (
+from reprospect.test.sass.instruction.instruction import (
     OpcodeModsWithOperandsMatcher,
-    PatternBuilder,
     PatternMatcher,
 )
+from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 

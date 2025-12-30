@@ -3,9 +3,6 @@
 #include <random>
 #include <ranges>
 #include <stdexcept>
-#include <vector>
-
-#include "cuda.h"
 
 #include "cuda/runtime_helper.hpp"
 #include "nvtx3/nvtx3.hpp"
@@ -43,7 +40,7 @@ struct DeviceDeleter
     template <typename T>
     void operator()(T* const ptr) const
     {
-        delete_kernel<<<1, 1>>>(ptr);
+        delete_kernel<<<1, 1, 0, nullptr>>>(ptr);
         REPROSPECT_CHECK_CUDART_CALL(cudaStreamSynchronize(nullptr));
         REPROSPECT_CHECK_CUDART_CALL(cudaFree(ptr));
     }
@@ -54,7 +51,7 @@ __global__ void __launch_bounds__(1, 1) copy_construct_kernel(Derived* const ptr
 {
     if (blockIdx.x == 0)
     {
-#if defined(__NVCC__) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ == 700
+#if defined(__NVCC__) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 700)
         const Derived copy = derived;
         new (ptr) Derived(copy);
 #else
@@ -80,7 +77,7 @@ struct Base
     __device__ virtual void foo(const unsigned int /* */) const = 0;
     __device__ virtual void bar(const unsigned int /* */) const = 0;
 
-#if defined (__NVCC__) and (CUDA_VERSION >= 13000)
+#if defined(__NVCC__) && (__CUDACC_VER_MAJOR__ >= 13)
     __host__ __device__
 #endif
     virtual ~Base() = default;
@@ -129,15 +126,6 @@ __global__ void dynamic_bar_kernel(const Base* const base, const unsigned int si
 {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < size) {
-        base->bar(index);
-    }
-}
-
-__global__ void dynamic_foo_bar_kernel(const Base* const base, const unsigned int size)
-{
-    const auto index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < size) {
-        base->foo(index);
         base->bar(index);
     }
 }
@@ -207,24 +195,13 @@ public:
         check(stream, use_a ? 0xab : 0xbb);
     }
 
-    void run_dynamic_foo_bar(cudaStream_t stream) const
-    {
-        const bool use_a = draw();
-        {
-            nvtx3::scoped_range range("dynamic_foo_bar");
-            const base_t* const base_rdptr = use_a ? derived_a_sdptr.get() : derived_b_sdptr.get();
-            dynamic_foo_bar_kernel<<<1, size, 0, stream>>>(base_rdptr, size);
-        }
-        check(stream, use_a ? 0xaf + 0xab : 0xbf + 0xbb);
-    }
-
     bool draw() const {
         return std::bernoulli_distribution{0.5}(generator);
     }
 
     void check(cudaStream_t stream, const value_t expt_val) const
     {
-        std::vector<value_t> x_h(size);
+        std::array<value_t, size> x_h;
         REPROSPECT_CHECK_CUDART_CALL(
             cudaMemcpyAsync(x_h.data(), x, size * sizeof(value_t), cudaMemcpyDeviceToHost, stream)
         );
@@ -253,10 +230,9 @@ int main()
     {
         nvtx3::scoped_range range("dispatch");
 
-        Dispatch{stream}.run_static_foo     (stream);
-        Dispatch{stream}.run_dynamic_foo    (stream);
-        Dispatch{stream}.run_dynamic_bar    (stream);
-        Dispatch{stream}.run_dynamic_foo_bar(stream);
+        Dispatch{stream}.run_static_foo (stream);
+        Dispatch{stream}.run_dynamic_foo(stream);
+        Dispatch{stream}.run_dynamic_bar(stream);
     }
 
     REPROSPECT_CHECK_CUDART_CALL(cudaStreamDestroy(stream));

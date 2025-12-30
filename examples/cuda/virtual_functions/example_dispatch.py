@@ -1,5 +1,5 @@
 """
-CUDA supports polymorphic classes in device code, but virtual function dispatch incurs overhead:
+CUDA supports polymorphic classes in device code. However, virtual function dispatch incurs overhead:
 
 - Direct overhead:
     - vtable lookups (additional instructions and memory traffic)
@@ -40,13 +40,20 @@ from reprospect.test.sass.controlflow.block import BasicBlockMatcher
 from reprospect.test.sass.instruction import (
     AddressMatcher,
     ConstantMatcher,
+    Fp32AddMatcher,
     LoadConstantMatcher,
     LoadGlobalMatcher,
     LoadMatcher,
-    MemorySpace,
     OpcodeModsMatcher,
 )
-from reprospect.tools.binaries import ELF, CuObjDump, Function, NVDisasm
+from reprospect.test.sass.instruction.memory import MemorySpace
+from reprospect.tools.binaries import (
+    ELF,
+    CuObjDump,
+    DetailedRegisterUsage,
+    Function,
+    NVDisasm,
+)
 from reprospect.tools.sass import ControlFlow, Decoder
 from reprospect.tools.sass.controlflow import BasicBlock, Graph
 from reprospect.tools.sass.decode import RegisterType
@@ -62,9 +69,13 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-class DispatchType(StrEnum):
-    STATIC  = 'static_foo'
-    DYNAMIC = 'dynamic_foo'
+class Dispatch(StrEnum):
+    STATIC  = 'static'
+    DYNAMIC = 'dynamic'
+
+class MemberFunction(StrEnum):
+    FOO = 'foo'
+    BAR = 'bar'
 
 class TestDispatch(CMakeAwareTestCase):
     @classmethod
@@ -73,100 +84,83 @@ class TestDispatch(CMakeAwareTestCase):
         return 'examples_cuda_virtual_functions_dispatch'
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
-    def test(self) -> None:
-        """
-        Run the executable.
-        """
+    def test_run(self) -> None:
         subprocess.check_call(self.executable)
 
 class TestBinaryAnalysis(TestDispatch):
-    """
-    Binary analysis.
-    """
-    BANK_VTABLE: typing.Final[str] = '0x2'
-
-    SIGNATURE: typing.Final[dict[DispatchType, re.Pattern[str]]] = {
-        DispatchType.STATIC:  re.compile(r'static_foo_kernel'),
-        DispatchType.DYNAMIC: re.compile(r'dynamic_foo_kernel'),
+    SIGNATURE: typing.Final[dict[tuple[Dispatch, MemberFunction], re.Pattern[str]]] = {
+        (Dispatch.STATIC, MemberFunction.FOO):  re.compile(rf'{Dispatch.STATIC}_{MemberFunction.FOO}_kernel'),
+        (Dispatch.DYNAMIC, MemberFunction.FOO): re.compile(rf'{Dispatch.DYNAMIC}_{MemberFunction.FOO}_kernel'),
+        (Dispatch.DYNAMIC, MemberFunction.BAR): re.compile(rf'{Dispatch.DYNAMIC}_{MemberFunction.BAR}_kernel'),
     }
 
+    BANK_VTABLE: typing.Final[str] = '0x2'
+
     @property
-    def cubin_name(self) -> str:
-        """
-        Name of the cubin file to extract.
-        """
-        return f'examples_cuda_virtual_functions_dispatch.1.{self.arch.as_sm}.cubin'
+    def cubin(self) -> pathlib.Path:
+        return self.cwd / f'{self.get_target_name()}.1.{self.arch.as_sm}.cubin'
 
     @pytest.fixture(scope='class')
-    def cuobjdump_and_cubin(self) -> tuple[CuObjDump, pathlib.Path]:
+    def cuobjdump(self) -> CuObjDump:
         """
         Extract the cubin from the executable, and dump the SASS code and resource usage information.
         """
-        return CuObjDump.extract(file=self.executable, arch=self.arch, sass=True, cwd=self.cwd, cubin=self.cubin_name, demangler=self.demangler)
+        return CuObjDump.extract(
+            file=self.executable, arch=self.arch,
+            sass=True,
+            cwd=self.cwd, cubin=self.cubin.name,
+            demangler=self.demangler,
+        )[0]
 
     @pytest.fixture(scope='class')
-    def cuobjdump(self, cuobjdump_and_cubin: tuple[CuObjDump, pathlib.Path]) -> CuObjDump:
+    def function(self, cuobjdump: CuObjDump) -> dict[tuple[Dispatch, MemberFunction], Function]:
         """
-        :py:class:`reprospect.tools.binaries.cuobjdump.CuObjDump` instance with SASS code and resource usage information.
+        Collect the SASS code and parse the resource usage information for the kernels of interest.
         """
-        return cuobjdump_and_cubin[0]
-
-    @pytest.fixture(scope='class')
-    def cubin(self, cuobjdump_and_cubin: tuple[CuObjDump, pathlib.Path]) -> pathlib.Path:
-        """
-        Path to the extracted cubin file.
-        """
-        return cuobjdump_and_cubin[1]
-
-    @pytest.fixture(scope='class')
-    def function(self, cuobjdump: CuObjDump) -> dict[DispatchType, Function]:
-        """
-        Collect the SASS code and parse the resource usage information for the kernels of interest,
-        identified by their signature pattern.
-        """
-        def get_function(dispatch_type: DispatchType) -> Function:
-            pattern = self.SIGNATURE[dispatch_type]
-            fctn = cuobjdump.functions[next(sig for sig in cuobjdump.functions if re.search(pattern, sig) is not None)]
-            logging.info(f'SASS code and resource usage from CuObjDump for {dispatch_type} dispatch type:\n{fctn}.')
+        def get_function(dispatch: Dispatch, member_function: MemberFunction) -> Function:
+            pattern = self.SIGNATURE[dispatch, member_function]
+            fctn = cuobjdump.functions[next(sig for sig in cuobjdump.functions if pattern.search(sig) is not None)]
+            logging.info(f'SASS code and resource usage from CuObjDump for {dispatch} {member_function} kernel:\n{fctn}')
             return fctn
-        return {dispatch_type: get_function(dispatch_type) for dispatch_type in DispatchType}
+        return {(dispatch, member_function): get_function(dispatch, member_function)
+                for (dispatch, member_function) in self.SIGNATURE}
 
     @pytest.fixture(scope='class')
-    def decoder(self, function: dict[DispatchType, Function]) -> dict[DispatchType, Decoder]:
+    def decoder(self, function: dict[tuple[Dispatch, MemberFunction], Function]) -> dict[tuple[Dispatch, MemberFunction], Decoder]:
         """
         Parse the SASS code for the kernels of interest.
         """
-        def get_decoder(dispatch_type: DispatchType) -> Decoder:
-            decoder = Decoder(code=function[dispatch_type].code)
-            logging.info(f'Decoded SASS code for {dispatch_type} dispatch type:\n{decoder}.')
+        def get_decoder(dispatch: Dispatch, member_function: MemberFunction) -> Decoder:
+            decoder = Decoder(code=function[dispatch, member_function].code)
+            logging.info(f'Decoded SASS code for {dispatch} {member_function} kernel:\n{decoder}.')
             return decoder
-        return {dispatch_type: get_decoder(dispatch_type) for dispatch_type in DispatchType}
+        return {(dispatch, member_function): get_decoder(dispatch, member_function)
+                for (dispatch, member_function) in self.SIGNATURE}
 
 class TestResourceUsage(TestBinaryAnalysis):
-    """
-    Resource usage.
-    """
+    MEMBER_FUNCTION: typing.Final[MemberFunction] = MemberFunction.FOO
+
     @pytest.fixture(scope='class')
-    def nvdisasm(self, cubin: pathlib.Path) -> NVDisasm:
+    def nvdisasm(self, cuobjdump: CuObjDump) -> NVDisasm:
         """
         :py:class:`reprospect.tools.binaries.nvdisasm.NVDisasm` instance.
         """
-        return NVDisasm(file=cubin, arch=self.arch)
+        return NVDisasm(file=cuobjdump.file, arch=self.arch)
 
     @pytest.fixture(scope='class')
-    def detailed_register_usage(self, function: dict[DispatchType, Function], nvdisasm: NVDisasm) -> dict[DispatchType, typing.Any]:
+    def detailed_register_usage(self, function: dict[tuple[Dispatch, MemberFunction], Function], nvdisasm: NVDisasm) -> dict[Dispatch, DetailedRegisterUsage]:
         """
         Extract detailed register usage information for the kernels of interest.
         """
-        def get_registers(dispatch_type: DispatchType) -> typing.Any:
-            assert (symbol := function[dispatch_type].symbol) is not None
+        def get_registers(dispatch: Dispatch) -> DetailedRegisterUsage:
+            assert (symbol := function[dispatch, self.MEMBER_FUNCTION].symbol) is not None
             nvdisasm.extract_register_usage_from_liveness_range_info(mangled=(symbol,))
             assert (registers := nvdisasm.functions[symbol].registers) is not None
-            logging.info(f'Detailed register usage from NVDisasm for {dispatch_type} dispatch type:\n{nvdisasm.functions[symbol]}.')
+            logging.info(f'Detailed register usage from NVDisasm for {dispatch} {self.MEMBER_FUNCTION} kernel:\n{nvdisasm.functions[symbol]}.')
             return registers
-        return {dispatch_type: get_registers(dispatch_type) for dispatch_type in DispatchType}
+        return {dispatch: get_registers(dispatch) for dispatch in Dispatch}
 
-    def test_resource_usage(self, function: dict[DispatchType, Function]) -> None:
+    def test_resource_usage(self, function: dict[tuple[Dispatch, MemberFunction], Function]) -> None:
         """
         Verify that dynamic dispatch uses more resources than static dispatch:
 
@@ -174,15 +168,15 @@ class TestResourceUsage(TestBinaryAnalysis):
         - stack (for spill/fill)
         - additional constant memory (for vtable)
         """
-        assert (resource_usage_static  := function[DispatchType.STATIC ].ru) is not None
-        assert (resource_usage_dynamic := function[DispatchType.DYNAMIC].ru) is not None
+        assert (resource_usage_static  := function[Dispatch.STATIC,  self.MEMBER_FUNCTION].ru) is not None
+        assert (resource_usage_dynamic := function[Dispatch.DYNAMIC, self.MEMBER_FUNCTION].ru) is not None
 
         # General purpose registers.
         registers_static  = resource_usage_static .register
         registers_dynamic = resource_usage_dynamic.register
 
-        logging.info(f'Register usage for static dispatch type:  {registers_static}.')
-        logging.info(f'Register usage for dynamic dispatch type: {registers_dynamic}.')
+        logging.info(f'General purpose register usage for {Dispatch.STATIC}  dispatch: {registers_static}.')
+        logging.info(f'General purpose register usage for {Dispatch.DYNAMIC} dispatch: {registers_dynamic}.')
 
         assert registers_dynamic > registers_static
 
@@ -190,8 +184,8 @@ class TestResourceUsage(TestBinaryAnalysis):
         stack_static  = resource_usage_static .stack
         stack_dynamic = resource_usage_dynamic.stack
 
-        logging.info(f'Stack usage for static dispatch type:  {stack_static}.')
-        logging.info(f'Stack usage for dynamic dispatch type: {stack_dynamic}.')
+        logging.info(f'Stack usage for {Dispatch.STATIC}  dispatch: {stack_static}.')
+        logging.info(f'Stack usage for {Dispatch.DYNAMIC} dispatch: {stack_dynamic}.')
 
         assert stack_static  == 0
         assert stack_dynamic == 8
@@ -200,14 +194,14 @@ class TestResourceUsage(TestBinaryAnalysis):
         banks_static  = resource_usage_static .constant
         banks_dynamic = resource_usage_dynamic.constant
 
-        logging.info(f'Constant bank usage for static dispatch type:  {banks_static}.')
-        logging.info(f'Constant bank usage for dynamic dispatch type: {banks_dynamic}.')
+        logging.info(f'Constant bank usage for {Dispatch.STATIC}  dispatch: {banks_static}.')
+        logging.info(f'Constant bank usage for {Dispatch.DYNAMIC} dispatch: {banks_dynamic}.')
 
         BANK_VTABLE = int(self.BANK_VTABLE, base=16)
         assert banks_static[0] == banks_dynamic[0]
         assert BANK_VTABLE not in banks_static and BANK_VTABLE in banks_dynamic
 
-    def test_detailed_register_usage(self, detailed_register_usage: dict[DispatchType, typing.Any]) -> None:
+    def test_detailed_register_usage(self, detailed_register_usage: dict[Dispatch, DetailedRegisterUsage]) -> None:
         """
         Check detailed register usage (GPR, PRED, UGPR, UPRED) against architecture-dependent expected values.
 
@@ -235,24 +229,25 @@ class TestResourceUsage(TestBinaryAnalysis):
             case _:
                 raise ValueError(f'unsupported {self.arch.compute_capability}')
 
-        assert detailed_register_usage[DispatchType.STATIC]  == expt_static
-        assert detailed_register_usage[DispatchType.DYNAMIC] == expt_dynamic
+        assert detailed_register_usage[Dispatch.STATIC]  == expt_static
+        assert detailed_register_usage[Dispatch.DYNAMIC] == expt_dynamic
 
-class TestSASSDynamic(TestBinaryAnalysis):
+class TestDynamicDispatchInstructionSequence(TestBinaryAnalysis):
     """
-    SASS for dynamic dispatch.
+    Assert the presence of the dynamic dispatch instruction sequence in the generated code.
     """
-    DYNAMIC_DISPATCH_TYPE: typing.Final[DispatchType] = DispatchType.DYNAMIC
+    DISPATCH: typing.Final[Dispatch] = Dispatch.DYNAMIC
+    MEMBER_FUNCTION: typing.Final[MemberFunction] = MemberFunction.FOO
 
     @pytest.fixture(scope='class')
-    def control_flow(self, decoder: dict[DispatchType, Decoder]) -> Graph:
+    def cfg(self, decoder: dict[tuple[Dispatch, MemberFunction], Decoder]) -> Graph:
         """
         Partition SASS into basic blocks.
 
         The partitioning is expected to result in a basic block that contains the dynamic dispatch instruction
         sequence and separate basic blocks with the function implementations, among possibly other blocks.
         """
-        cfg = ControlFlow.analyze(instructions=decoder[self.DYNAMIC_DISPATCH_TYPE].instructions)
+        cfg = ControlFlow.analyze(instructions=decoder[self.DISPATCH, self.MEMBER_FUNCTION].instructions)
         logging.info(f'Partitioned SASS into {len(cfg.blocks)} basic blocks.')
 
         # Write out control flow graph as Mermaid diagram.
@@ -264,20 +259,20 @@ class TestSASSDynamic(TestBinaryAnalysis):
         return cfg
 
     @pytest.fixture(scope='class')
-    def basic_block_dynamic_call(self, control_flow: Graph) -> BasicBlock:
+    def basic_block_dynamic_call(self, cfg: Graph) -> BasicBlock:
         """
         Find the basic block that contains the dynamic dispatch instruction sequence by looking
         for a basic block that contains an indirect call instruction.
         """
         matcher_call_rel_noinc = OpcodeModsMatcher(opcode='CALL', modifiers=('REL', 'NOINC'))
-        block, _ = BasicBlockMatcher(matcher=matcher_call_rel_noinc).assert_matches(control_flow)
+        block, _ = BasicBlockMatcher(matcher=matcher_call_rel_noinc).assert_matches(cfg)
         block_offset = block.instructions[0].offset
         block_size = len(block.instructions)
         logging.info(f'Found basic block with dynamic call at offset {block_offset} with size {block_size}.')
         return block
 
     @pytest.fixture(scope='class')
-    def basic_blocks_function_implementations(self, control_flow: Graph) -> list[BasicBlock]:
+    def basic_blocks_function_implementations(self, cfg: Graph) -> list[BasicBlock]:
         """
         Find the basic blocks that contain the function implementations by looking
         for basic blocks that contain a FADD instruction with the expected operand.
@@ -292,20 +287,20 @@ class TestSASSDynamic(TestBinaryAnalysis):
             matcher = instructions_contain(
                 matcher=instruction_is(OpcodeModsMatcher(opcode='FADD')).with_operand(index=-1, operand=str(operand)),
             )
-            block, _ = BasicBlockMatcher(matcher=matcher).assert_matches(control_flow)
+            block, _ = BasicBlockMatcher(matcher=matcher).assert_matches(cfg)
             logging.info(f'Found basic block with {name} implementation at offset {block.instructions[0].offset} with size {len(block.instructions)}.')
             blocks.append(block)
 
         return blocks
 
     @pytest.fixture(scope='class')
-    def constant_bank_vtable(self, cubin: pathlib.Path, function: dict[DispatchType, Function]) -> bytes:
+    def constant_bank_vtable(self, cuobjdump: CuObjDump, function: dict[tuple[Dispatch, MemberFunction], Function]) -> bytes:
         """
         Read the constant memory bank expected to hold the function address that the dynamic
         dispatch resolves to.
         """
-        assert (symbol := function[self.DYNAMIC_DISPATCH_TYPE].symbol) is not None
-        with ELF(file=cubin) as elf:
+        assert (symbol := function[self.DISPATCH, self.MEMBER_FUNCTION].symbol) is not None
+        with ELF(file=cuobjdump.file) as elf:
             section_name = f'.nv.constant{int(self.BANK_VTABLE, base=16)}.{symbol}'
             section = elf.elf.get_section_by_name(section_name)
             assert section is not None
@@ -320,11 +315,11 @@ class TestSASSDynamic(TestBinaryAnalysis):
 
             LDC.64 R2, c[0x0][0x380] ;      # Load object pointer (this)
             LDG.E.64 R2, desc[UR4][R2.64] ; # Load vtable pointer (dereference this)
-            LD.E R8, desc[UR4][R2.64] ;     # Load function offset from vtable entry
+            LD.E R8, desc[UR4][R2.64] ;     # Load function offset from vtable
             ...
             LDC.64 R8, c[0x2][R8] ;         # Resolve kernel-specific function address via constant bank
             ...
-            CALL.REL.NOINC R8 0x0           # Indirect call
+            CALL.REL.NOINC R8 0x0 ;         # Indirect call
         """
         instructions = basic_block_dynamic_call.instructions
 
@@ -381,7 +376,7 @@ class TestSASSDynamic(TestBinaryAnalysis):
         """
         Show that the kernel-specific function address resolution via the constant bank as in::
 
-            LDC.64 R8, c[0x2][R8] ;
+            LDC.64 R8, c[0x2][R8]
 
         may indeed resolve the indirect call as in::
 
@@ -398,14 +393,68 @@ class TestSASSDynamic(TestBinaryAnalysis):
             block_offset = block.instructions[0].offset
             assert block_offset in entries
 
-    def test_bar_implementations_in_dynamic_foo_kernel(self, control_flow: Graph) -> None:
+class TestVtableLookupFooVsBar(TestBinaryAnalysis):
+    """
+    Compare the instructions generated for :code:`dynamic_foo_kernel` and :code:`dynamic_bar_kernel`.
+    """
+    DISPATCH: typing.Final[Dispatch] = Dispatch.DYNAMIC
+
+    def test_all_instructions_identical_except_load_function_offset(self, decoder: dict[tuple[Dispatch, MemberFunction], Decoder]) -> None:
         """
-        The SASS code for the :code:`dynamic_foo_kernel` contains not only basic blocks with the implementations
-        of :code:`DerivedA::foo(unsigned int)` and :code:`DerivedB::foo(unsigned int)`, but also basic blocks with the
-        implementations of :code:`DerivedA::bar(unsigned int)` and :code:`DerivedB::bar(unsigned int)`, even though the
-        latter are not called in the kernel. In fact, in the SASS code, each kernel appears to contain the implementations
-        of all virtual functions of all derived classes in the compile unit, even those for which the compiler could be
-        expected to be able to deduce that they are not called.
+        All instructions are identical between the two kernels, except for the instruction that
+        loads the function offset from the vtable, which differs by an 8-byte memory address offset.
+
+        Whereas the instruction that loads the function offset from vtable looks for :code:`dynamic_foo_kernel` like::
+
+            LD.E R8, desc[UR4][R2.64]
+
+        it looks for :code:`dynamic_bar_kernel` like::
+
+            LD.E R8, desc[UR4][R2.64+0x8]
+        """
+        instructions_foo = decoder[self.DISPATCH, MemberFunction.FOO].instructions
+        instructions_bar = decoder[self.DISPATCH, MemberFunction.BAR].instructions
+
+        assert len(instructions_foo) == len(instructions_bar)
+
+        # There is exactly one instruction that differs.
+        [(instr_foo, instr_bar)] = [(instr_foo, instr_bar) for instr_foo, instr_bar in zip(instructions_foo, instructions_bar, strict=True) if instr_foo != instr_bar]
+
+        # The differing instruction is a load from generic memory.
+        matcher_load = LoadMatcher(arch=self.arch, readonly=False, memory=MemorySpace.GENERIC)
+        assert (matched_load_foo := matcher_load.match(instr_foo)) is not None
+        assert (matched_load_bar := matcher_load.match(instr_bar)) is not None
+
+        # The memory address differs by an 8-byte offset.
+        matcher_address = AddressMatcher(arch=self.arch, memory=MemorySpace.GENERIC)
+        assert (matched_address_load_foo := matcher_address.match(matched_load_foo.operands[1])) is not None
+        assert (matched_address_load_bar := matcher_address.match(matched_load_bar.operands[1])) is not None
+
+        assert matched_address_load_foo.reg == matched_address_load_bar.reg
+
+        assert matched_address_load_foo.offset is None
+        assert isinstance(matched_address_load_bar.offset, str)
+        assert matched_address_load_bar.offset == '0x8'
+
+class TestAllImplementationsInAllKernels(TestBinaryAnalysis):
+    """
+    The :py:meth:`TestVtableLookupFooVsBar.test_all_instructions_identical_except_load_function_offset` test shows
+    the instructions generated for :code:`dynamic_foo_kernel` and :code:`dynamic_bar_kernel` are identical except
+    for the instruction that loads the function offset from the vtable. This finding is surprising because it
+    indicates that the SASS codes for each kernel must each contain the implementations of both virtual functions, even
+    though each kernel only calls one of the virtual functions.
+
+    In fact, when inspecting the SASS code, it can be observed that the SASS code for each kernel contains the implementations
+    of all virtual functions of all derived classes in the compile unit, even those for which the compiler could be
+    expected to be able to deduce that they are not called.
+    """
+    DISPATCH: typing.Final[Dispatch] = Dispatch.DYNAMIC
+
+    def test(self, decoder: dict[tuple[Dispatch, MemberFunction], Decoder]) -> None:
+        """
+        Assert that the implementations of :code:`DerivedA::foo(unsigned int)`, :code:`DerivedB::foo(unsigned int)`,
+        :code:`DerivedA::bar(unsigned int)`, and :code:`DerivedB::bar(unsigned int)` are present in the SASS code
+        of each kernel.
         """
         implementations = (
             ('DerivedA::foo', 0xaf),
@@ -414,11 +463,20 @@ class TestSASSDynamic(TestBinaryAnalysis):
             ('DerivedB::bar', 0xbb),
         )
 
-        matcher_fadd = OpcodeModsMatcher(opcode='FADD')
+        block_offsets: set[int] = set()
+        matcher_fadd = Fp32AddMatcher()
 
-        for _, operand in implementations:
-            BasicBlockMatcher(
-                matcher=instructions_contain(
-                    matcher=instruction_is(matcher_fadd).with_operand(index=-1, operand=str(operand)),
-                ),
-            ).assert_matches(control_flow)
+        for member_function in MemberFunction:
+            cfg = ControlFlow.analyze(instructions=decoder[self.DISPATCH, member_function].instructions)
+
+            for _, operand in implementations:
+                block, _ = BasicBlockMatcher(
+                    matcher=instructions_contain(
+                        matcher=instruction_is(matcher_fadd).with_operand(index=-1, operand=str(operand)),
+                    ),
+                ).assert_matches(cfg)
+                block_offset = block.instructions[0].offset
+                block_offsets.add(block_offset)
+                logging.info(f'Found function implementation with operand {operand:#x} in basic block at offset {block_offset} in {self.DISPATCH} {member_function} kernel.')
+
+        assert len(block_offsets) == len(implementations)

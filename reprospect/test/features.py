@@ -80,7 +80,7 @@ class Memory:
 
         .. seealso::
 
-            :py:const:`reprospect.test.sass.instruction.instruction.ExtendBitsMethod`.
+            :py:const:`reprospect.test.sass.instruction.memory.ExtendBitsMethod`.
         """
         match compiler_id:
             case 'NVIDIA':

@@ -52,13 +52,14 @@ from .instruction import (
     ArchitectureAwarePatternMatcher,
     InstructionMatch,
     InstructionMatcher,
-    LoadConstantMatcher,
-    LoadGlobalMatcher,
-    LoadMatcher,
     OpcodeModsMatcher,
     OpcodeModsWithOperandsMatcher,
     PatternMatcher,
-    ZeroOrOne,
+)
+from .load import (
+    LoadConstantMatcher,
+    LoadGlobalMatcher,
+    LoadMatcher,
 )
 from .pattern import PatternBuilder
 from .register import RegisterMatch, RegisterMatcher
@@ -92,5 +93,4 @@ __all__ = (
     'SharedAddressMatch',
     'StoreGlobalMatcher',
     'StoreMatcher',
-    'ZeroOrOne',
 )

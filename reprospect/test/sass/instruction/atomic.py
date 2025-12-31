@@ -9,9 +9,11 @@ from reprospect.test.sass.instruction.instruction import (
     ArchitectureAwarePatternMatcher,
     OpCode,
     ZeroOrOne,
+)
+from reprospect.test.sass.instruction.memory import (
+    MemorySpace,
     check_memory_instruction_word_size,
 )
-from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch

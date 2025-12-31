@@ -37,7 +37,7 @@ from tests.test.sass.test_instruction import (
 
 class TestLoadConstantMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.instruction.LoadConstantMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.load.LoadConstantMatcher`.
     """
     INSTRUCTIONS: typing.Final[dict[str, tuple[LoadConstantMatcher, InstructionMatch]]] = {
         'LDC R1, c[0x0][0x37c]': (
@@ -108,8 +108,8 @@ __global__ __launch_bounds__(128, 1) void ldc({type}* __restrict__ const out)
 
 class TestLoadMatcher:
     """
-    Tests for :py:class:`reprospect.test.sass.instruction.LoadMatcher`
-    and :py:class:`reprospect.test.sass.instruction.LoadGlobalMatcher`.
+    Tests for :py:class:`reprospect.test.sass.instruction.load.LoadMatcher`
+    and :py:class:`reprospect.test.sass.instruction.load.LoadGlobalMatcher`.
     """
     CODE_ELEMENTWISE_ADD = """\
 __global__ void elementwise_add(int* const dst, const int* const src) {

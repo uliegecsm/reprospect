@@ -26,6 +26,7 @@ def enable_mypyc(dist: Distribution) -> None:
             'reprospect/test/sass/instruction/atomic.py',
             'reprospect/test/sass/instruction/branch.py',
             'reprospect/test/sass/instruction/constant.py',
+            'reprospect/test/sass/instruction/floating.py',
             'reprospect/test/sass/instruction/half.py',
             'reprospect/test/sass/instruction/instruction.py',
             'reprospect/test/sass/instruction/integer.py',

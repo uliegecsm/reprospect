@@ -11,8 +11,7 @@ import regex
 import semantic_version
 
 from reprospect.test.sass.instruction.address import AddressMatcher
-from reprospect.test.sass.instruction.constant import Constant, ConstantMatcher
-from reprospect.test.sass.instruction.immediate import Immediate
+from reprospect.test.sass.instruction.constant import ConstantMatcher
 from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.operand import Operand
 from reprospect.test.sass.instruction.pattern import PatternBuilder
@@ -224,47 +223,6 @@ class PatternMatcher(InstructionMatcher):
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(pattern={self.pattern})'
-
-def floating_point_add_pattern(*, ftype: typing.Literal['F', 'D']) -> regex.Pattern[str]:
-    """
-    Helper for:
-
-    * :py:class:`reprospect.test.sass.instruction.Fp32AddMatcher`.
-    * :py:class:`reprospect.test.sass.instruction.Fp64AddMatcher`.
-    """
-    return regex.compile(PatternMatcher.build_pattern(
-        opcode=f'{ftype}ADD',
-        modifiers=(ZeroOrOne('FTZ'),),
-        operands=(
-            Register.dst(captured=False),
-            Operand.mod(Register.REGZ, math=None, captured=False),
-            PatternBuilder.any(
-                Operand.mod(Register.REGZ, math=None, captured=False),
-                Register.UREG,
-                Constant.ADDRESS,
-                Immediate.FLOATING,
-            ),
-        ),
-        predicate=False,
-    ))
-
-class Fp32AddMatcher(PatternMatcher):
-    """
-    Matcher for 32-bit floating-point add (``FADD``) instructions.
-    """
-    PATTERN: typing.Final[regex.Pattern[str]] = floating_point_add_pattern(ftype='F')
-
-    def __init__(self) -> None:
-        super().__init__(pattern=self.PATTERN)
-
-class Fp64AddMatcher(PatternMatcher):
-    """
-    Matcher for 64-bit floating-point add (``DADD``) instructions.
-    """
-    PATTERN: typing.Final[regex.Pattern[str]] = floating_point_add_pattern(ftype='D')
-
-    def __init__(self) -> None:
-        super().__init__(pattern=self.PATTERN)
 
 class ArchitectureAwarePatternMatcher(PatternMatcher):
     """

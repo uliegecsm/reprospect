@@ -18,7 +18,7 @@ while reducing the need to track low-level details of the evolving CUDA instruct
 
 .. doctest::
 
-    >>> from reprospect.tools.architecture    import NVIDIAArch
+    >>> from reprospect.tools.architecture import NVIDIAArch
     >>> from reprospect.test.sass.instruction import LoadGlobalMatcher
     >>> LoadGlobalMatcher(arch = NVIDIAArch.from_str('VOLTA70')).match(inst = 'LDG.E.SYS R15, [R8+0x10]')
     InstructionMatch(opcode='LDG', modifiers=('E', 'SYS'), operands=('R15', '[R8+0x10]'), predicate=None, additional={'address': ['[R8+0x10]']})
@@ -42,12 +42,14 @@ from .address import (
 from .atomic import AtomicMatcher, ReductionMatcher
 from .branch import BranchMatcher
 from .constant import ConstantMatch, ConstantMatcher
+from .floating import (
+    Fp32AddMatcher,
+    Fp64AddMatcher,
+)
 from .instruction import (
     AnyMatcher,
     ArchitectureAndVersionAwarePatternMatcher,
     ArchitectureAwarePatternMatcher,
-    Fp32AddMatcher,
-    Fp64AddMatcher,
     InstructionMatch,
     InstructionMatcher,
     LoadConstantMatcher,

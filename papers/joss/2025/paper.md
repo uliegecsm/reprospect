@@ -45,7 +45,7 @@ It supports collaborative code development by enabling developers to share conci
 reproducible analyses that motivate design decisions and help reviewers grasp the impact of proposed changes.
 It also enables new types of tests that go beyond traditional output-correctness validation in CI/CD pipelines,
 such as validating the presence of instruction patterns in binaries or confirming expected API call sequences for key library functionalities.
-Additionally, `ReProspect` can act as a framework for structuring research artifacts that document analyses,
+Additionally, `ReProspect` can act as a framework for structuring research artifacts and documenting analyses,
 enabling others to reproduce the work and build upon it more effectively.
 
 # Statement of need
@@ -58,7 +58,7 @@ The ability to carry out the analysis fully programmatically ensures reproducibi
 For instance, whereas test suites traditionally check output correctness of public functionalities,
 they could also verify application runtime events, kernel performance, or generated machine code.
 
-For the CUDA stack, NVIDIA provides a set of proprietary tools, guaranteed to be up-to-date with their software and hardware.
+For the CUDA stack, NVIDIA provides a set of proprietary tools guaranteed to be up-to-date with their software and hardware.
 The runtime analysis tools Nsight Systems [@nsys2025] and Nsight Compute [@ncu2025] are designed for API tracing and kernel profiling.
 They both provide a GUI for exploring the results, as well as a low-level Python API for accessing the raw data.
 The CUDA binary tools [@binary2025] provide command-line access to machine code (SASS or PTX [@ptx2025]) and other information embedded in the binaries.
@@ -95,7 +95,7 @@ and performing the subsequent analysis.
 ## API tracing and kernel profiling
 
 The `ReProspect` `Command` and `Session` classes streamline launching
-NSight Systems and Nsight Compute to collect
+Nsight Systems and Nsight Compute to collect
 a focused set of metrics most relevant for the analysis.
 The collected data are gathered in a `Report`, queryable by NVTX range annotations [@nvtx],
 readily amenable to test assertions.
@@ -173,21 +173,22 @@ Table: Comparison of the SASS code generated for the `sm_100` architecture
 
 # Case studies
 
-`ReProspect` has been successfully used as a support for contributions to Kokkos [@ctrott-2022].
+`ReProspect` has been successfully used as a support for contributions to Kokkos [@ctrott-2022]
+and computational modeling research [@arnst-24] [@tomasetti-24].
 The repository contains several case studies inspired by these contributions.
 
 ## `Kokkos::View` allocation
 
 CUDA API tracing is used to gain insight into microbenchmarking results assessing the behavior of `Kokkos::View` allocation.
 
-See [online example](https://github.com/uliegecsm/reprospect/blob/v0.0.12/examples/kokkos/view/example_allocation_tracing.py).
+See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/view/example_allocation_tracing.py).
 
 ## Impact of `Kokkos::complex` alignment
 
 Kernel profiling and SASS analysis are combined to assess how aligning `Kokkos::complex<double>` to 8 or 16 bytes
 impacts memory instructions and traffic.
 
-See [online example](https://github.com/uliegecsm/reprospect/blob/v0.0.12/examples/kokkos/complex/example_alignment.py).
+See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/complex/example_alignment.py).
 
 ## Atomics with `desul`
 
@@ -200,7 +201,7 @@ Yet, the machine code already contains information about the selected code paths
 This case study demonstrates how to verify which method is chosen
 by matching an instruction sequence pattern.
 
-See [online example](https://github.com/uliegecsm/reprospect/blob/v0.0.12/examples/kokkos/atomic/desul.py).
+See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/atomic/desul.py).
 
 # Code availability
 

@@ -1,5 +1,5 @@
 ---
-title: 'ReProspect - A Framework for Reproducible prospecting of CUDA applications'
+title: 'ReProspect - A framework for reproducible prospecting of CUDA applications'
 tags:
   - CUDA
   - reproducible
@@ -29,14 +29,13 @@ bibliography: paper.bib
 
 # Summary
 
-`ReProspect` is a Python framework designed to support reproducible prospecting of
-CUDA code, libraries, and software components.
-It builds on NVIDIA tools:
-Nsight Systems for API tracing,
-Nsight Compute for kernel profiling, and
-CUDA binary tools for binary analysis.
+`ReProspect` is a Python framework designed to support reproducible prospecting of CUDA code---that is, the systematic analysis of CUDA-based libraries and software components through API tracing, kernel profiling, and binary analysis.
 
-`ReProspect` streamlines data collection and extraction using these tools,
+`ReProspect` builds on NVIDIA tools:
+Nsight Systems,
+Nsight Compute, and
+the CUDA binary utilities.
+It streamlines data collection and extraction using these tools,
 and it complements them with new functionalities for a fully programmatic analysis of these data,
 thus making it possible to encapsulate the entire prospecting analysis in a single Python script.
 
@@ -59,9 +58,9 @@ For instance, whereas test suites traditionally check output correctness of publ
 they could also verify application runtime events, kernel performance, or generated machine code.
 
 For the CUDA stack, NVIDIA provides a set of proprietary tools guaranteed to be up-to-date with their software and hardware.
-The runtime analysis tools Nsight Systems [@nsys2025] and Nsight Compute [@ncu2025] are designed for API tracing and kernel profiling.
+The runtime analysis tools Nsight Systems [@nsys2025] and Nsight Compute [@ncu2025] are designed for API tracing and kernel profiling, respectively.
 They both provide a GUI for exploring the results, as well as a low-level Python API for accessing the raw data.
-The CUDA binary tools [@binary2025] provide command-line access to machine code (SASS or PTX [@ptx2025]) and other information embedded in the binaries.
+The CUDA binary utilities [@binary2025] provide command-line access to machine code (SASS or PTX [@ptx2025]) and other information embedded in the binaries.
 However, while these tools allow raw data to be extracted, they
 do not themselves provide the infrastructure for effective programmatic analysis.
 
@@ -107,7 +106,7 @@ To avoid unnecessary re-runs,
 
 `ReProspect` provides a set of tools for extracting and analysing the content of CUDA binaries.
 
-The `CuObjDump` and `NVDisasm` classes drive and parse the output of the underlying CUDA binary tools
+The `CuObjDump` and `NVDisasm` classes drive and parse the output of the underlying CUDA binary utilities
 to retrieve the SASS code and resource usage of kernels (*e.g.* registers, constant memory).
 
 The `ELF` class decodes ELF-formatted sections to extract complementary information,

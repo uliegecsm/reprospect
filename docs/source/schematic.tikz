@@ -83,10 +83,6 @@
         ] (reprospect) {};
     \end{scope}
 
-    \node[draw = black, fill = white, anchor = west] at ($(reprospect.south west)!0.5!(reprospect.south)$) {
-        \texttt{ReProspect} - Framework for ReProducible CUDA prospecting
-    };
-
     % Generate arrow.
     \draw[arrow] (sources) -- node[above, font = \small, text = NavyBlue] {Generate} (build);
 

@@ -3,7 +3,7 @@
 Overview
 ========
 
-`ReProspect` provides a framework and tools for reproducible prospecting of CUDA applications.
+`ReProspect` provides a framework for reproducible prospecting of CUDA applications.
 It is implemented in `Python` and builds on the NVIDIA tools:
 `Nsight Systems`_ for API tracing :cite:`nvidia-nsight-systems`,
 `Nsight Compute`_ for kernel profiling :cite:`nvidia-nsight-compute`,
@@ -14,7 +14,7 @@ It also provides assertion functions to verify that the collected data match exp
 
 `ReProspect` allows the entire prospecting workflow to be encoded in a `Python` script,
 thus making it reproducible, integrable into automated workflows, as well as easily shareable.
-One of the objectives of `ReProspect` is to allow new use cases for CUDA prospecting to be developed and explored,
+One of the objectives of `ReProspect` is to allow new use cases for CUDA code prospecting to be developed and explored,
 such as the integration of such analyses in CI/CD pipelines and their increased use in collaborative code reviews to help motivate development decisions.
 
 `ReProspect` supports three complementary forms of analysis:

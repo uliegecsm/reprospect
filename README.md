@@ -12,6 +12,6 @@
 
 # reprospect
 
-`ReProspect` provides a framework and tools for reproducible prospecting of CUDA applications.
+`ReProspect` provides a framework for reproducible prospecting of CUDA applications.
 
 See [the documentation](https://uliegecsm.github.io/reprospect/) for more information.

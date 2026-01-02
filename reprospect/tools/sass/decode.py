@@ -206,19 +206,19 @@ class Decoder(rich_helpers.TableMixin):
 
     OFFSET: typing.Final[str] = r'[a-f0-9]+'
 
-    HEX: typing.Final[str] = r'0x[a-f0-9]+'
+    HEXADECIMAL: typing.Final[str] = r'0x[a-f0-9]+'
     """
     Matcher for an hex-like string, such as `0x00000a0000017a02`.
     """
 
-    MATCHER_CONTROL: typing.Final[re.Pattern[str]] = re.compile(rf'\/\* ({HEX}) \*\/')
+    MATCHER_CONTROL: typing.Final[re.Pattern[str]] = re.compile(rf'\/\* ({HEXADECIMAL}) \*\/')
 
     MATCHER: typing.Final[re.Pattern[str]] = re.compile(
         rf'/\*({OFFSET})\*/'
         r'\s+'
         r'(.*?)(?=\s{2,}|[;?&])'
         r'.*?'
-        rf'/\*\s*({HEX})\s*\*/',
+        rf'/\*\s*({HEXADECIMAL})\s*\*/',
     )
     """
     Matcher for the full SASS line. It focuses on the offset, instruction and trailing hex encoding.

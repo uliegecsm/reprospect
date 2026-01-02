@@ -52,7 +52,7 @@ class TestDecoder:
         """
         Simple tests for the matchers.
         """
-        assert re.match(sass.Decoder.HEX, '0x00000a0000017a02') is not None
+        assert re.match(sass.Decoder.HEXADECIMAL, '0x00000a0000017a02') is not None
 
         # Complete SASS line (offset, instruction and hex), without noise.
         matched = re.match(sass.Decoder.MATCHER, '/*0090*/                   ISETP.GE.U32.AND P0, PT, R0, UR9, PT ;           /* 0x0000000900007c0c */')

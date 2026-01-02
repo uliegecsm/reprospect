@@ -323,7 +323,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
 
             matcher_prmt = instructions_contain(matcher=instruction_is(OpcodeModsWithOperandsMatcher(
                 opcode='PRMT',
-                operands=(Register.REG, Register.REG, PatternBuilder.HEX, Register.REGZ),
+                operands=(Register.REG, Register.REG, PatternBuilder.HEXADECIMAL, Register.REGZ),
             )).with_operand(index=1, operand=matched_u16_ro.operands[0]))
             matcher_prmt.assert_matches(decoder_u16.instructions[matcher_u16_ro.next_index::])
         else:

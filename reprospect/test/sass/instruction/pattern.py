@@ -5,14 +5,7 @@ class PatternBuilder:
     """
     Helper class to build patterns for instruction components.
     """
-    HEX: typing.Final[str] = r'0x[0-9A-Fa-f]+'
-
-    @classmethod
-    def hex(cls) -> str:
-        """
-        :py:attr:`HEX` with `operands` group.
-        """
-        return cls.group(cls.HEX, group='operands')
+    HEXADECIMAL: typing.Final[str] = r'0x[0-9A-Fa-f]+'
 
     @staticmethod
     def zero_or_one(s: str) -> str:

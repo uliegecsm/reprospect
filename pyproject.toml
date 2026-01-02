@@ -233,3 +233,7 @@ build = []
 archs = []
 
 build-verbosity = 1
+
+[tool.cibuildwheel.windows]
+# Improve cl.exe error messages for debugging mypyc-generated C code.
+environment = { CL = "/diagnostics:caret" }

@@ -3,7 +3,8 @@ import re
 import typing
 
 from reprospect.test.sass.instruction.instruction import Predicate
-from reprospect.tools.sass.decode import Decoder, Instruction
+from reprospect.test.sass.instruction.pattern import PatternBuilder
+from reprospect.tools.sass.decode import Instruction
 
 
 @dataclasses.dataclass(frozen=True, slots=True, repr=False)
@@ -129,7 +130,7 @@ class ControlFlow:
         >>> ControlFlow.get_target(instruction = Instruction(offset = '0160', instruction = f'@!P0 BRA {hex(400)}', hex = '0x0000000000088947', control = ControlCode.decode(code = '0x000fea0003800000')))
         400
         """
-        if (target := re.search(rf'({Decoder.HEX})', instruction.instruction)) is not None:
+        if (target := re.search(rf'({PatternBuilder.HEXADECIMAL})', instruction.instruction)) is not None:
             return int(target.group(1), 16)
         return None
 

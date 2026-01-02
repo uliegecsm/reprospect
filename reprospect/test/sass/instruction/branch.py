@@ -17,7 +17,7 @@ class BranchMatcher(PatternMatcher):
     PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(PatternMatcher.build_pattern(
         opcode='BRA',
         modifiers=(),
-        operands=(PatternBuilder.HEX,),
+        operands=(PatternBuilder.HEXADECIMAL,),
         predicate=None,
     ))
 
@@ -27,7 +27,7 @@ class BranchMatcher(PatternMatcher):
             else self.build_pattern(
                 opcode='BRA',
                 modifiers=(),
-                operands=(offset or PatternBuilder.HEX,),
+                operands=(offset or PatternBuilder.HEXADECIMAL,),
                 predicate=predicate,
             ),
         )

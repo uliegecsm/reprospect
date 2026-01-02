@@ -313,12 +313,14 @@ jobs:
             fail-fast: false
             matrix:
                 pyver: [cp310, cp311, cp312, cp313, cp314]
-                arch : [x86_64, aarch64]
+                build: [manylinux_x86_64, manylinux_aarch64, win_amd64]
                 include:
                     - runs-on: ubuntu-24.04
-                      arch: x86_64
+                      build: manylinux_x86_64
                     - runs-on: ubuntu-24.04-arm
-                      arch: aarch64
+                      build: manylinux_aarch64
+                    - runs-on: windows-latest
+                      build: win_amd64
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v6
@@ -328,11 +330,10 @@ jobs:
             - run: python -m pip install -U cibuildwheel
             - run: python -m cibuildwheel --config-file pyproject.toml --output-dir wheelhouse
               env:
-                  CIBW_ARCHS: ${{ matrix.arch }}
-                  CIBW_BUILD: "${{ matrix.pyver }}-manylinux*"
+                  CIBW_BUILD: "${{ matrix.pyver }}-${{ matrix.build }}"
             - uses: actions/upload-artifact@v6
               with:
-                  name: package-${{ matrix.pyver }}-${{ matrix.arch }}
+                  name: package-${{ matrix.pyver }}-${{ matrix.build }}
                   path: wheelhouse/
                   retention-days: 1
                   if-no-files-found: error

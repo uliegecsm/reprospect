@@ -21,7 +21,7 @@ class Constant:
     BANK: typing.Final[str] = r'0x[0-9]+'
     """Constant memory bank."""
 
-    OFFSET: typing.Final[str] = PatternBuilder.any(PatternBuilder.HEX, Register.REGZ, Register.UREG)
+    OFFSET: typing.Final[str] = PatternBuilder.any(PatternBuilder.HEXADECIMAL, Register.REGZ, Register.UREG)
     """Constant memory offset."""
 
     ADDRESS: typing.Final[str] = r'c\[' + BANK + r'\]\[' + OFFSET + r'\]'

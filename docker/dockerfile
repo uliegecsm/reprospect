@@ -119,6 +119,17 @@ ARG RUST_VERSION=0.0.0
 
 RUN sh /tmp/rustup-init.sh -y --profile minimal --no-modify-path --default-toolchain ${RUST_VERSION}
 
+RUN <<EOF
+    set -ex
+
+    cargo new --lib /tmp/pyo3-fetch
+    printf '\npyo3 = { version = "0.27.2"}\n' >> /tmp/pyo3-fetch/Cargo.toml
+    cargo fetch --manifest-path /tmp/pyo3-fetch/Cargo.toml
+    rm -rf /tmp/pyo3-fetch
+EOF
+
+ENV CARGO_NET_OFFLINE=true
+
 # Install Nsight Systems.
 FROM rust-requirements AS nsight-systems
 

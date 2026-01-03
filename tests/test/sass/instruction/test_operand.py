@@ -51,7 +51,7 @@ class TestOperand:
             opcode='FSETP',
             modifiers=('GEU', 'AND'),
             operands=(Register.PREDT, Register.PREDT, Operand.mod(Register.REG, math=None), Immediate.FLOATING_OR_LIMIT, Register.PREDT),
-        ).match('FSETP.GEU.AND P1, PT, |R151|, +INF , PT') is not None
+        ).match('FSETP.GEU.AND P1, PT, |R151|, +INF, PT') is not None
 
     @pytest.mark.parametrize('opnd', OPERANDS)
     def test_any(self, opnd: str) -> None:

@@ -1,6 +1,7 @@
 [build-system]
 requires = [
     "setuptools",
+    "setuptools-rust==1.12.0",
     "mypy[mypyc]==1.19.1",
 
     # mypyc requires that runtime dependencies are also installed
@@ -81,6 +82,11 @@ warn_unused_configs = true
 warn_unused_ignores = true
 
 packages = ["reprospect"]
+
+[[tool.setuptools-rust.ext-modules]]
+target = "reprospect._impl"
+path = "src/Cargo.toml"
+binding = "PyO3"
 
 [tool.ruff]
 preview = true
@@ -234,6 +240,22 @@ archs = []
 
 build-verbosity = 1
 
+test-command = [
+    "python -m pytest {package}/tests/test_extensibility.py",
+]
+test-requires = "pytest"
+
+[tool.cibuildwheel.linux]
+# Proper caching strategy is probably required.
+before-all = [
+    "curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal --default-toolchain 1.92.0",
+    "rustup show",
+]
+environment = { PATH = "$HOME/.cargo/bin:$PATH" }
+
 [tool.cibuildwheel.windows]
+# Rust is already installed on the GitHub hosted Windows runners, see
+# https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md.
+
 # Improve cl.exe error messages for debugging mypyc-generated C code.
 environment = { CL = "/diagnostics:caret" }

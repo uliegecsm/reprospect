@@ -18,4 +18,5 @@ For a quick introduction to `ReProspect`, see :ref:`overview`.
 
    examples
    tests
+   development
    bibliography

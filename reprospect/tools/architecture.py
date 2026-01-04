@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import dataclasses
-import functools
 import re
 import sys
 import typing
@@ -42,7 +41,6 @@ References:
     as :py:data:`typing.Final` within :py:class:`ComputeCapability`.
 """
 
-@functools.total_ordering
 @dataclasses.dataclass(frozen=True, slots=True, kw_only=True)
 class ComputeCapability:
     """
@@ -51,6 +49,12 @@ class ComputeCapability:
     References:
 
     * https://docs.nvidia.com/cuda/cuda-c-programming-guide/#compute-capability
+
+    .. note::
+
+        Explicitly implements all ordering methods as a workaround for https://github.com/mypyc/mypyc/issues/1176.
+        This requires also implementing `__hash__` explicitly, since `mypyc` loses automatic
+        hashability when comparison methods are defined, see https://github.com/mypyc/mypyc/issues/1173.
     """
     major: int
     minor: int
@@ -68,6 +72,11 @@ class ComputeCapability:
         return f'{self.major}.{self.minor}'
 
     def __eq__(self, other: object) -> bool:
+        """
+        >>> from reprospect.tools.architecture import ComputeCapability
+        >>> ComputeCapability(major=8, minor=6) == 86
+        True
+        """
         if isinstance(other, ComputeCapability):
             return (self.major, self.minor) == (other.major, other.minor)
         if isinstance(other, int):
@@ -75,11 +84,45 @@ class ComputeCapability:
         return NotImplemented
 
     def __lt__(self, other: int | ComputeCapability) -> bool:
+        """
+        >>> from reprospect.tools.architecture import ComputeCapability
+        >>> ComputeCapability(major=8, minor=6) < 80
+        False
+        """
         if isinstance(other, ComputeCapability):
             return (self.major, self.minor) < (other.major, other.minor)
         if isinstance(other, int):
             return self.as_int < other
         return NotImplemented
+
+    def __le__(self, other: int | ComputeCapability) -> bool:
+        """
+        >>> from reprospect.tools.architecture import ComputeCapability
+        >>> ComputeCapability(major=8, minor=6) <= 89
+        True
+        """
+        if isinstance(other, ComputeCapability):
+            return (self.major, self.minor) <= (other.major, other.minor)
+        if isinstance(other, int):
+            return self.as_int <= other
+        return NotImplemented
+
+    def __gt__(self, other: int | ComputeCapability) -> bool:
+        if isinstance(other, ComputeCapability):
+            return (self.major, self.minor) > (other.major, other.minor)
+        if isinstance(other, int):
+            return self.as_int > other
+        return NotImplemented
+
+    def __ge__(self, other: int | ComputeCapability) -> bool:
+        if isinstance(other, ComputeCapability):
+            return (self.major, self.minor) >= (other.major, other.minor)
+        if isinstance(other, int):
+            return self.as_int >= other
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((self.major, self.minor))
 
     @staticmethod
     def from_int(value: int) -> ComputeCapability:

@@ -399,14 +399,7 @@ jobs:
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
             - run: test -d reprospect && rm -rf reprospect
 
-            - name: Extensibility.
-              run: |
-                  python3 -m pytest \
-                      --config-file=${GITHUB_WORKSPACE}/tests/.pytest.ini \
-                      ${GITHUB_WORKSPACE}/tests/test_extensibility.py
-
-            - name: Examples.
-              run: |
+            - run: |
                 cmake -S . --preset=${{ matrix.cmake_preset }} \
                     -DCMAKE_CUDA_ARCHITECTURES=${{ matrix.cmake_cuda_architectures }} \
                     -DReProspect_ENABLE_DOCS=OFF \

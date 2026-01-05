@@ -234,6 +234,11 @@ archs = []
 
 build-verbosity = 1
 
+test-command = [
+    "python -m pytest {package}/tests/test_extensibility.py",
+]
+test-requires = "pytest==9.0.2"
+
 [tool.cibuildwheel.windows]
 # Improve cl.exe error messages for debugging mypyc-generated C code.
 environment = { CL = "/diagnostics:caret" }

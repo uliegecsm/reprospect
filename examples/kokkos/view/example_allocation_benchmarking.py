@@ -103,7 +103,6 @@ class TestAllocation(CMakeAwareTestCase):
 
         assert match is not None
         assert len(match.groups()) == 5
-        assert match.group(1) in Framework
         assert match.group(2) in {'true', 'false'}
 
         framework = Framework(match.group(1))

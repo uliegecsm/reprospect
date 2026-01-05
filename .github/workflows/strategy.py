@@ -45,6 +45,7 @@ JobDict: typing.TypeAlias = dict[str, typing.Any]
 class Config:
     cuda_version: str
     ubuntu_version: str
+    python_version: str
     compilers: dict[LANGUAGE, Compiler]
     compute_capability: ComputeCapability
     platforms: tuple[PLATFORM, ...]
@@ -86,6 +87,7 @@ class Config:
             yield {
                 'cuda_version': self.cuda_version,
                 'ubuntu_version': self.ubuntu_version,
+                'python_version': self.python_version,
                 'compilers': self.compilers,
                 'compute_capability': self.compute_capability,
                 'platform': platform,
@@ -184,11 +186,10 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     # Name and tag of the image (lower case).
     name = ('-'.join((
         'cuda',
-        *list(dict.fromkeys([
-            partial['compilers']['CXX'].ID,
-            partial['compilers']['CXX'].version,
-            partial['compilers']['CUDA'].ID,
-        ])),
+        partial['compilers']['CXX'].ID,
+        partial['compilers']['CXX'].version,
+        partial['compilers']['CUDA'].ID,
+        f"py{partial['python_version']}",
     ))).lower()
 
     base_name, base_tag, base_digest = get_base_name_tag_digest(cuda_version=partial['cuda_version'], ubuntu_version=partial['ubuntu_version'])
@@ -209,6 +210,7 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
         partial['compilers']['CXX'].version,
         partial['compilers']['CUDA'].ID,
         partial['ubuntu_version'],
+        partial['python_version'],
         partial['platform'],
     ))
 
@@ -253,6 +255,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='12.8.1',
         ubuntu_version='24.04',
+        python_version='3.12',
         compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=0),
         platforms=('linux/amd64', 'linux/arm64'),
@@ -261,6 +264,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='12.8.1',
         ubuntu_version='24.04',
+        python_version='3.13',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=9, minor=0),
         platforms=('linux/amd64',),
@@ -269,6 +273,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='13.1.0',
         ubuntu_version='24.04',
+        python_version='3.13',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=('linux/amd64', 'linux/arm64'),
@@ -277,6 +282,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='12.6.3',
         ubuntu_version='22.04',
+        python_version='3.10',
         compilers={'CXX': Compiler(ID='GNU', version='12'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=5),
         platforms=('linux/amd64',),
@@ -285,6 +291,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='12.6.3',
         ubuntu_version='24.04',
+        python_version='3.12',
         compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=8, minor=9),
         platforms=('linux/amd64',),
@@ -293,6 +300,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='13.0.0',
         ubuntu_version='24.04',
+        python_version='3.11',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=8, minor=6),
         platforms=('linux/amd64',),
@@ -301,6 +309,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='12.8.1',
         ubuntu_version='24.04',
+        python_version='3.12',
         compilers={'CXX': Compiler(ID='Clang', version='19'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=0),
         platforms=('linux/amd64',),
@@ -309,6 +318,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='13.1.0',
         ubuntu_version='24.04',
+        python_version='3.14',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=10, minor=0),
         platforms=('linux/amd64',),
@@ -317,6 +327,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='13.0.0',
         ubuntu_version='24.04',
+        python_version='3.12',
         compilers={'CXX': Compiler(ID='Clang', version='20'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=('linux/amd64',),
@@ -325,6 +336,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='13.1.0',
         ubuntu_version='24.04',
+        python_version='3.14',
         compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=10, minor=3),
         platforms=('linux/amd64',),
@@ -334,6 +346,7 @@ def main(*, args: argparse.Namespace) -> None:
     matrix.extend(from_config(Config(
         cuda_version='12.8.1',
         ubuntu_version='24.04',
+        python_version='3.11',
         compilers={'CXX': Compiler(ID='Clang', version='21')},
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=('linux/amd64',),

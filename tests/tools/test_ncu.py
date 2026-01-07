@@ -58,6 +58,19 @@ class TestProfilingResults:
         assert isinstance(metrics_A_kernel, ncu.ProfilingMetrics)
         assert metrics_A_kernel['smsp__inst_executed.sum'] == 100.
 
+    def test_query_filter(self, results: ncu.ProfilingResults) -> None:
+        """
+        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_filter`.
+        """
+        results_filtered_no_A = results.query_filter(('nvtx_range_name',), lambda k: k != 'nvtx_push_region_A')
+        results_filtered_no_B = results.query_filter(('nvtx_range_name',), lambda k: k != 'nvtx_push_region_B')
+        assert isinstance(results_filtered_no_A, ncu.ProfilingResults)
+        assert isinstance(results_filtered_no_B, ncu.ProfilingResults)
+        assert len(results_filtered_no_A) == 1
+        assert len(results_filtered_no_B) == 1
+        assert 'nvtx_push_region_A' in results_filtered_no_B.data
+        assert 'nvtx_push_region_B' in results_filtered_no_A.data
+
     def test_query_metrics(self, results: ncu.ProfilingResults) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_metrics`.

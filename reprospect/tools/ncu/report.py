@@ -87,6 +87,13 @@ class ProfilingResults(rich_helpers.TreeMixin):
 
     .. note::
 
+        Using a hierarchical data structure from a package such as `hatchet`_
+        could be a direction to explore in the future.
+
+    .. _hatchet: https://hatchet.readthedocs.io/
+
+    .. note::
+
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
     __slots__ = ('data',)
@@ -105,6 +112,17 @@ class ProfilingResults(rich_helpers.TreeMixin):
                 raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r} instead.')
             current = current.data[accessor]
         return current
+
+    def query_filter(self, accessors: typing.Iterable[str], predicate: typing.Callable[[str], bool]) -> ProfilingResults:
+        """
+        Query the accessor path `accessors`, check that it leads to an internal node,
+        and return a new :py:class:`ProfilingResults` with only the entries
+        whose key satisfies `predicate`.
+        """
+        current = self.query(accessors=accessors)
+        if not isinstance(current, ProfilingResults):
+            raise TypeError(f'Expecting internal node at {accessors}, got {type(current).__name__!r} instead.')
+        return ProfilingResults(data={k: v for k, v in current.data.items() if predicate(k)})
 
     def query_metrics(self, accessors: typing.Iterable[str]) -> ProfilingMetrics:
         """

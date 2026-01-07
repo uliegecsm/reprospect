@@ -77,6 +77,10 @@ class MemberFunction(StrEnum):
     FOO = 'foo'
     BAR = 'bar'
 
+class Derived(StrEnum):
+    DERIVED_A = 'DerivedA'
+    DERIVED_B = 'DerivedB'
+
 class TestDispatch(CMakeAwareTestCase):
     @classmethod
     @override
@@ -92,6 +96,13 @@ class TestBinaryAnalysis(TestDispatch):
         (Dispatch.STATIC, MemberFunction.FOO):  re.compile(rf'{Dispatch.STATIC}_{MemberFunction.FOO}_kernel'),
         (Dispatch.DYNAMIC, MemberFunction.FOO): re.compile(rf'{Dispatch.DYNAMIC}_{MemberFunction.FOO}_kernel'),
         (Dispatch.DYNAMIC, MemberFunction.BAR): re.compile(rf'{Dispatch.DYNAMIC}_{MemberFunction.BAR}_kernel'),
+    }
+
+    MARKER: typing.Final[dict[tuple[Derived, MemberFunction], int]] = {
+        (Derived.DERIVED_A, MemberFunction.FOO): 0xaf,
+        (Derived.DERIVED_B, MemberFunction.FOO): 0xbf,
+        (Derived.DERIVED_A, MemberFunction.BAR): 0xab,
+        (Derived.DERIVED_B, MemberFunction.BAR): 0xbb,
     }
 
     BANK_VTABLE: typing.Final[str] = '0x2'
@@ -272,26 +283,23 @@ class TestDynamicDispatchInstructionSequence(TestBinaryAnalysis):
         return block
 
     @pytest.fixture(scope='class')
-    def basic_blocks_function_implementations(self, cfg: Graph) -> list[BasicBlock]:
+    def basic_blocks_function_implementations(self, cfg: Graph) -> tuple[BasicBlock, ...]:
         """
         Find the basic blocks that contain the function implementations by looking
         for basic blocks that contain a FADD instruction with the expected operand.
         """
-        implementations = (
-            ('DerivedA::foo', 0xaf),
-            ('DerivedB::foo', 0xbf),
-        )
-
-        blocks = []
-        for name, operand in implementations:
+        def get_basic_block(derived: Derived) -> BasicBlock:
+            marker = self.MARKER[derived, self.MEMBER_FUNCTION]
             matcher = instructions_contain(
-                matcher=instruction_is(OpcodeModsMatcher(opcode='FADD')).with_operand(index=-1, operand=str(operand)),
+                matcher=instruction_is(OpcodeModsMatcher(opcode='FADD')).with_operand(index=-1, operand=str(marker)),
             )
             block, _ = BasicBlockMatcher(matcher=matcher).assert_matches(cfg)
-            logging.info(f'Found basic block with {name} implementation at offset {block.instructions[0].offset} with size {len(block.instructions)}.')
-            blocks.append(block)
-
-        return blocks
+            logging.info(
+                f'Found basic block with {derived}::{self.MEMBER_FUNCTION} implementation '
+                f'at offset {block.instructions[0].offset} with size {len(block.instructions)}.',
+            )
+            return block
+        return tuple(get_basic_block(derived) for derived in Derived)
 
     @pytest.fixture(scope='class')
     def constant_bank_vtable(self, cuobjdump: CuObjDump, function: dict[tuple[Dispatch, MemberFunction], Function]) -> bytes:
@@ -372,7 +380,7 @@ class TestDynamicDispatchInstructionSequence(TestBinaryAnalysis):
         matched_indirect_call = matcher_indirect_call.assert_matches(instructions[offset:])
         logging.info(f'Matched indirect call: {matched_indirect_call}')
 
-    def test_constant_bank_vtable(self, basic_blocks_function_implementations: list[BasicBlock], constant_bank_vtable: bytes) -> None:
+    def test_constant_bank_vtable(self, basic_blocks_function_implementations: tuple[BasicBlock, ...], constant_bank_vtable: bytes) -> None:
         """
         Show that the kernel-specific function address resolution via the constant bank as in::
 
@@ -456,27 +464,20 @@ class TestAllImplementationsInAllKernels(TestBinaryAnalysis):
         :code:`DerivedA::bar(unsigned int)`, and :code:`DerivedB::bar(unsigned int)` are present in the SASS code
         of each kernel.
         """
-        implementations = (
-            ('DerivedA::foo', 0xaf),
-            ('DerivedB::foo', 0xbf),
-            ('DerivedA::bar', 0xab),
-            ('DerivedB::bar', 0xbb),
-        )
-
-        block_offsets: set[int] = set()
         matcher_fadd = Fp32AddMatcher()
 
         for member_function in MemberFunction:
             cfg = ControlFlow.analyze(instructions=decoder[self.DISPATCH, member_function].instructions)
 
-            for _, operand in implementations:
+            block_offsets: set[int] = set()
+            for marker in self.MARKER.values():
                 block, _ = BasicBlockMatcher(
                     matcher=instructions_contain(
-                        matcher=instruction_is(matcher_fadd).with_operand(index=-1, operand=str(operand)),
+                        matcher=instruction_is(matcher_fadd).with_operand(index=-1, operand=str(marker)),
                     ),
                 ).assert_matches(cfg)
                 block_offset = block.instructions[0].offset
                 block_offsets.add(block_offset)
-                logging.info(f'Found function implementation with operand {operand:#x} in basic block at offset {block_offset} in {self.DISPATCH} {member_function} kernel.')
+                logging.info(f'Found function implementation with operand {marker:#x} in basic block at offset {block_offset} in {self.DISPATCH} {member_function} kernel.')
 
-        assert len(block_offsets) == len(implementations)
+            assert len(block_offsets) == len(self.MARKER)

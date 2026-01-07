@@ -150,7 +150,7 @@ public:
 
         REPROSPECT_CHECK_CUDART_CALL(cudaMemsetAsync(x, 0, size * sizeof(value_t), stream));
 
-        //! Create host and device objects.
+        //! Create device objects.
         derived_a_sdptr = copy_to_device(stream, derived_a_t(x));
         derived_b_sdptr = copy_to_device(stream, derived_b_t(x));
     }

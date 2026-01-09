@@ -36,8 +36,3 @@ be installed likewise via ``pip``.
 Note that `ReProspect` provides a helper script, :py:mod:`reprospect.installers.cuda_bindings`,
 which can be used or whose logic can be followed to conveniently install the appropriate package
 with the appropriate version.
-
-Getting started
-===============
-
-To get started with `ReProspect`, the notebook :doc:`examples/cuda/example_atomics` is a good starting point.

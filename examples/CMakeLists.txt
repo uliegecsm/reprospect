@@ -40,6 +40,9 @@ function(add_one_example FILE)
     test_environment(${EXECUTABLE} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
     test_environment(${EXECUTABLE} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
 
+    # Directory for artifacts.
+    test_environment(${EXECUTABLE} ARTIFACT_DIR set ${CMAKE_SOURCE_DIR}/artifacts/${gprr_PARENT_RELPATH}/${FILE_NAME})
+
     if(aoe_args_EXTRA_TEST_ENV)
         list(GET aoe_args_EXTRA_TEST_ENV 0 ENV_NAME)
         list(GET aoe_args_EXTRA_TEST_ENV 1 ENV_OP)
@@ -49,4 +52,5 @@ function(add_one_example FILE)
 
 endfunction()
 
+add_subdirectory(cuda)
 add_subdirectory(kokkos)

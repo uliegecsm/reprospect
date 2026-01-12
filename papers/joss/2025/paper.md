@@ -64,6 +64,8 @@ The CUDA binary utilities [@binary2025] provide command-line access to machine c
 However, while these tools allow raw data to be extracted, they
 do not themselves provide the infrastructure for effective programmatic analysis.
 
+# State of the field
+
 Several well-established open-source tools are already available.
 The Lawrence Livermore National Laboratory (LLNL) provides a suite of tools.
 Caliper [@boehme2016] can intercept CUDA API calls through the NVIDIA CUPTI library [@cupti2025].
@@ -79,7 +81,14 @@ It can record CUDA API calls and GPU activities through CUPTI and provides stand
 As compared with these well-established tools, `ReProspect` targets different and new use cases: enabling concise, reproducible, script-driven analysis of individual units of functionality.
 Also, `ReProspect` goes significantly beyond runtime analysis and introduces new binary analysis functionalities to inspect machine code for expected instruction sequence patterns.
 
-# Key features
+# Software Design
+
+# An explanation of the trade-offs you weighed, the design/architecture you chose, and why it matters for your research application.
+
+Consiness -> small shareable scripts for discussion with always the same structure (launch - extract - assert)
+with reusable fixtures to focus must of the text on explaning docstrings and valuable assertion insights.
+
+# Old
 
 `ReProspect` is organized into three main components:
 API tracing, kernel profiling, and binary analysis (\autoref{fig:overview}).
@@ -170,15 +179,21 @@ Table: Comparison of the SASS code generated for the `sm_100` architecture
        for the 16-bit `__half` (left) *vs* 32-bit `float` (right) maximum function.
        \label{table:hfmax}
 
-# Case studies
+# Research Impact Statement
 
 `ReProspect` has been successfully used as a support for contributions to Kokkos [@ctrott-2022]
 and computational modeling research [@arnst-24] [@tomasetti-24].
 The repository contains several case studies inspired by these contributions.
 
+Renomer 'examples' pour faire paraître plus fortement que ce ne sont pas de simples examples
+mais clairement des case d'étude de recherche, toujours motivés par des questions de recherche de HELM.
+
 ## `Kokkos::View` allocation
 
 CUDA API tracing is used to gain insight into microbenchmarking results assessing the behavior of `Kokkos::View` allocation.
+
+Pas vraiment d'impact concret pour le moment mais PR dans Kokkos:
+- https://github.com/kokkos/kokkos/pull/8440
 
 See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/view/example_allocation_tracing.py).
 
@@ -187,7 +202,15 @@ See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf35
 Kernel profiling and SASS analysis are combined to assess how aligning `Kokkos::complex<double>` to 8 or 16 bytes
 impacts memory instructions and traffic.
 
+HELM FEM electromagnestic avec Complex -> super important
+
 See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/complex/example_alignment.py).
+
+## Virtual function
+
+lien concret avec research artifacts
+
+et aussi abandon du virtual sur device dans HELm (impact performance negatif + présentation maarten)
 
 ## Atomics with `desul`
 
@@ -200,6 +223,8 @@ Yet, the machine code already contains information about the selected code paths
 This case study demonstrates how to verify which method is chosen
 by matching an instruction sequence pattern.
 
+HELM FEM gather / scatter
+
 See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/atomic/desul.py).
 
 # Code availability
@@ -210,5 +235,11 @@ See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf35
 
 This work was supported by the Fonds de la Recherche Scientifique (F.R.S.-FNRS, Belgium) through a
 Research Fellowship.
+
+# AI usage disclosure
+
+- Github copilot for PR reviews but we always decide if we really want to apply the modifications. It is like an additional
+  human reviewer mostly for typos and incoherencies.
+- Claude for paper reformulation of paragraphs or refactoring of small portions of code.
 
 # References

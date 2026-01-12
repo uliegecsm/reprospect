@@ -9,6 +9,7 @@ For a quick introduction to `ReProspect`, see :ref:`overview`.
 
    overview
    install
+   getting-started
    analysis
    caching
    api/modules

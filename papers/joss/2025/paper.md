@@ -72,28 +72,25 @@ Caliper [@boehme2016] can intercept CUDA API calls through the NVIDIA CUPTI libr
 It can interface with the Python package Hatchet [@bhatele2019] to organize results into a hierarchical data structure.
 Thicket [@brink2023] adds kernel profiling support through Nsight Compute, with a primary focus on exploratory data analysis of multi-run performance experiments.
 HPCToolkit [@zhou2021] is another comprehensive suite designed for large-scale parallel systems.
-It includes CUDA API tracing through CUPTI and kernel profiling through PAPI [@terpstra2010], and it has binary analysis capabilities to aid with attributing performance data to calling contexts.
+It includes CUDA API tracing through CUPTI and kernel profiling through PAPI [@terpstra2010], and it has binary analysis capabilities to attribute performance data to calling contexts.
 It has a visual interface, and it can output raw performance data for programmatic analysis,
 *e.g.* using Hatchet.
 Score-P [@knupfer2012] integrates multiple performance analysis tools in a common infrastructure.
 It can record CUDA API calls and GPU activities through CUPTI and provides standardized data formats.
 
-As compared with these well-established tools, `ReProspect` targets different and new use cases: enabling concise, reproducible, script-driven analysis of individual units of functionality.
-Also, `ReProspect` goes significantly beyond runtime analysis and introduces new binary analysis functionalities to inspect machine code for expected instruction sequence patterns.
+Although script-driven runtime analysis is also possible with these well-established tools,
+developing `ReProspect` as an independent package enables a design optimised for our use cases:
+concise, reproducible, low-overhead, easy-to-adopt, script-driven analysis of individual units of functionality.
+Beyond runtime analysis, `ReProspect` introduces new binary analysis functionalities to inspect machine code for expected instruction sequence patterns.
+To the best of our knowledge, these functionalities are not covered by existing tools.
 
-# Software Design
-
-# An explanation of the trade-offs you weighed, the design/architecture you chose, and why it matters for your research application.
-
-Consiness -> small shareable scripts for discussion with always the same structure (launch - extract - assert)
-with reusable fixtures to focus must of the text on explaning docstrings and valuable assertion insights.
-
-# Old
+# Software design
 
 `ReProspect` is organized into three main components:
 API tracing, kernel profiling, and binary analysis (\autoref{fig:overview}).
 
-Each component is designed to allow the entire analysis to be encapsulated into a concise Python script.
+Each component design originates from the identification, organisation and implementation of functionalities common to many analyses,
+yielding modules and classes from which concise analysis scripts can be written.
 This includes launching the underlying analysis tool,
 collecting the output into Python data structures,
 and performing the subsequent analysis.
@@ -179,38 +176,36 @@ Table: Comparison of the SASS code generated for the `sm_100` architecture
        for the 16-bit `__half` (left) *vs* 32-bit `float` (right) maximum function.
        \label{table:hfmax}
 
-# Research Impact Statement
+# Research impact statement
 
-`ReProspect` has been successfully used as a support for contributions to Kokkos [@ctrott-2022]
-and computational modeling research [@arnst-24] [@tomasetti-24].
-The repository contains several case studies inspired by these contributions.
+`ReProspect` has evolved from conducting analyses in support of contributions
+to the open-source Kokkos library [@ctrott-2022] and the development of an in-house finite element
+code built on top of the open-source Trilinos library [@mayr-2025] [@arnst-24] [@tomasetti-24].
 
-Renomer 'examples' pour faire paraître plus fortement que ce ne sont pas de simples examples
-mais clairement des case d'étude de recherche, toujours motivés par des questions de recherche de HELM.
+The [`examples` directory](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/)
+contains several case studies inspired by these research efforts.
 
 ## `Kokkos::View` allocation
 
-CUDA API tracing is used to gain insight into microbenchmarking results assessing the behavior of `Kokkos::View` allocation.
+CUDA API tracing provides insight into microbenchmarking results assessing the behavior of `Kokkos::View` allocation.
 
-Pas vraiment d'impact concret pour le moment mais PR dans Kokkos:
-- https://github.com/kokkos/kokkos/pull/8440
-
-See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/view/example_allocation_tracing.py).
+See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/view/example_allocation_tracing.py)
+and [Kokkos issue](https://github.com/kokkos/kokkos/issues/8441).
 
 ## Impact of `Kokkos::complex` alignment
 
-Kernel profiling and SASS analysis are combined to assess how aligning `Kokkos::complex<double>` to 8 or 16 bytes
-impacts memory instructions and traffic.
-
-HELM FEM electromagnestic avec Complex -> super important
+Our in-house finite element code uses complex arithmetic for frequency-domain electromagnetism simulations.
+This example combines kernel profiling and SASS analysis to assess how aligning `Kokkos::complex<double>`
+to 8 or 16 bytes impacts memory instructions and traffic.
 
 See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/complex/example_alignment.py).
 
-## Virtual function
+## Dynamic dispatch for virtual functions on device
 
-lien concret avec research artifacts
+This example uses `ReProspect` to create a research artifact that reproduces the dynamic dispatch instruction pattern
+identified by [@zhang-2021].
 
-et aussi abandon du virtual sur device dans HELm (impact performance negatif + présentation maarten)
+See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/cuda/virtual_functions/example_dispatch.py).
 
 ## Atomics with `desul`
 
@@ -222,8 +217,6 @@ and suffers from runtime variability.
 Yet, the machine code already contains information about the selected code paths.
 This case study demonstrates how to verify which method is chosen
 by matching an instruction sequence pattern.
-
-HELM FEM gather / scatter
 
 See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/atomic/desul.py).
 
@@ -238,8 +231,9 @@ Research Fellowship.
 
 # AI usage disclosure
 
-- Github copilot for PR reviews but we always decide if we really want to apply the modifications. It is like an additional
-  human reviewer mostly for typos and incoherencies.
-- Claude for paper reformulation of paragraphs or refactoring of small portions of code.
+No AI was used for the design of the code.
+Alongside traditional tools such as `pylint` and `mypy`, `Claude` and `CoPilot` were used as assistants
+to improve implementation details of individual functions.
+AI helped improve the clarity of the manuscript.
 
 # References

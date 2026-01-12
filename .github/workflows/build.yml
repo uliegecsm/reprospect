@@ -410,6 +410,12 @@ jobs:
 
             - run: ctest --preset=${{ matrix.cmake_preset }}
 
+            - uses: actions/upload-artifact@v6
+              with:
+                  name: examples-${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
+                  path: artifacts
+                  retention-days: 1
+
     coverage:
         needs: [
             setup-job-matrix,
@@ -446,6 +452,7 @@ jobs:
             setup-job-matrix,
             build-images,
             tests,
+            examples
         ]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
@@ -465,6 +472,11 @@ jobs:
             - uses: actions/download-artifact@v7
               with:
                   name: tests-gnu-nvidia-BLACKWELL120
+                  path: artifacts
+
+            - uses: actions/download-artifact@v7
+              with:
+                  name: examples-gnu-nvidia-BLACKWELL120
                   path: artifacts
 
             - run: cd docs && make -j4 doctest

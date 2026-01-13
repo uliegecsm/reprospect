@@ -88,7 +88,7 @@ To the best of our knowledge, these functionalities are not covered by existing 
 `ReProspect` is organized into three main components:
 API tracing, kernel profiling, and binary analysis (\autoref{fig:overview}).
 
-Each component design originates from the identification, organisation and implementation of functionalities common to many analyses,
+Each component design stems from the identification, organisation and implementation of reccuring functionalities,
 yielding modules and classes from which concise analysis scripts can be written.
 This includes launching the underlying analysis tool,
 collecting the output into Python data structures,

@@ -51,7 +51,7 @@ enabling others to reproduce the work and build upon it more effectively.
 
 HPC software development strives to achieve performance and sustain it over time, while hardware and software evolve.
 However, the modern programming landscape relies on complex software stacks and compiler toolchains.
-Therefore, tools are needed to support developers in analysing the interaction of their code with other layers across the stack and ultimately with the hardware.
+Therefore, tools are needed to analyse the interaction of the code with other layers across the stack and ultimately with the hardware.
 
 The ability to carry out the analysis fully programmatically ensures reproducibility of the results by others while opening a range of new use cases that can be integrated in the development cycle.
 For instance, whereas test suites traditionally check output correctness of public functionalities,
@@ -64,22 +64,26 @@ The CUDA binary utilities [@binary2025] provide command-line access to machine c
 However, while these tools allow raw data to be extracted, they
 do not themselves provide the infrastructure for effective programmatic analysis.
 
+# State of the field
+
 Several well-established open-source tools are already available.
-The Lawrence Livermore National Laboratory (LLNL) provides a suite of tools.
 Caliper [@boehme2016] can intercept CUDA API calls through the NVIDIA CUPTI library [@cupti2025].
 It can interface with the Python package Hatchet [@bhatele2019] to organize results into a hierarchical data structure.
 Thicket [@brink2023] adds kernel profiling support through Nsight Compute, with a primary focus on exploratory data analysis of multi-run performance experiments.
 HPCToolkit [@zhou2021] is another comprehensive suite designed for large-scale parallel systems.
-It includes CUDA API tracing through CUPTI and kernel profiling through PAPI [@terpstra2010], and it has binary analysis capabilities to aid with attributing performance data to calling contexts.
+It includes CUDA API tracing through CUPTI and kernel profiling through PAPI [@terpstra2010], and it has binary analysis capabilities to attribute performance data to calling contexts.
 It has a visual interface, and it can output raw performance data for programmatic analysis,
 *e.g.* using Hatchet.
 Score-P [@knupfer2012] integrates multiple performance analysis tools in a common infrastructure.
 It can record CUDA API calls and GPU activities through CUPTI and provides standardized data formats.
 
-As compared with these well-established tools, `ReProspect` targets different and new use cases: enabling concise, reproducible, script-driven analysis of individual units of functionality.
-Also, `ReProspect` goes significantly beyond runtime analysis and introduces new binary analysis functionalities to inspect machine code for expected instruction sequence patterns.
+Although script-driven runtime analysis is also possible with these well-established tools,
+developing `ReProspect` as an independent package enables a design optimised for our use cases:
+concise, reproducible, low-overhead, easy-to-adopt, script-driven analysis of individual units of functionality.
+Beyond runtime analysis, `ReProspect` introduces new binary analysis functionalities to inspect machine code for expected instruction sequence patterns.
+To the best of our knowledge, these functionalities are not covered by existing tools.
 
-# Key features
+# Software design
 
 `ReProspect` is organized into three main components:
 API tracing, kernel profiling, and binary analysis (\autoref{fig:overview}).
@@ -170,24 +174,36 @@ Table: Comparison of the SASS code generated for the `sm_100` architecture
        for the 16-bit `__half` (left) *vs* 32-bit `float` (right) maximum function.
        \label{table:hfmax}
 
-# Case studies
+# Research impact statement
 
-`ReProspect` has been successfully used as a support for contributions to Kokkos [@ctrott-2022]
-and computational modeling research [@arnst-24] [@tomasetti-24].
-The repository contains several case studies inspired by these contributions.
+`ReProspect` has been successfully used as a support for contributions
+to the open-source Kokkos library [@ctrott-2022] and the development of an in-house finite element
+code built on top of the open-source Trilinos library [@mayr-2025] [@arnst-24] [@tomasetti-24].
+
+The [`examples` directory](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/)
+contains several case studies inspired by these research efforts.
 
 ## `Kokkos::View` allocation
 
-CUDA API tracing is used to gain insight into microbenchmarking results assessing the behavior of `Kokkos::View` allocation.
+CUDA API tracing provides insight into microbenchmarking results assessing the behavior of `Kokkos::View` allocation.
 
-See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/view/example_allocation_tracing.py).
+See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/view/example_allocation_tracing.py)
+and [Kokkos issue](https://github.com/kokkos/kokkos/issues/8441).
 
 ## Impact of `Kokkos::complex` alignment
 
-Kernel profiling and SASS analysis are combined to assess how aligning `Kokkos::complex<double>` to 8 or 16 bytes
-impacts memory instructions and traffic.
+Our in-house finite element code uses complex arithmetic for frequency-domain electromagnetism simulations.
+This example combines kernel profiling and SASS analysis to assess how aligning `Kokkos::complex<double>`
+to 8 or 16 bytes impacts memory instructions and traffic.
 
 See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/kokkos/complex/example_alignment.py).
+
+## Dynamic dispatch for virtual functions on device
+
+This example uses `ReProspect` to create a research artifact that reproduces the dynamic dispatch instruction pattern
+identified by [@zhang-2021].
+
+See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/cuda/virtual_functions/example_dispatch.py).
 
 ## Atomics with `desul`
 
@@ -210,5 +226,12 @@ See [online example](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf35
 
 This work was supported by the Fonds de la Recherche Scientifique (F.R.S.-FNRS, Belgium) through a
 Research Fellowship.
+
+# AI usage disclosure
+
+No AI was used for the design of the code.
+Alongside traditional tools such as `pylint` and `mypy`, `Claude` and `CoPilot` were used as assistants
+to improve implementation details of individual functions.
+AI helped improve the clarity of the manuscript.
 
 # References

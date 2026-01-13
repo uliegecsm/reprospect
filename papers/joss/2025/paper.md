@@ -51,7 +51,7 @@ enabling others to reproduce the work and build upon it more effectively.
 
 HPC software development strives to achieve performance and sustain it over time, while hardware and software evolve.
 However, the modern programming landscape relies on complex software stacks and compiler toolchains.
-Therefore, tools are needed to support developers in analysing the interaction of their code with other layers across the stack and ultimately with the hardware.
+Therefore, tools are needed to analyse the interaction of the code with other layers across the stack and ultimately with the hardware.
 
 The ability to carry out the analysis fully programmatically ensures reproducibility of the results by others while opening a range of new use cases that can be integrated in the development cycle.
 For instance, whereas test suites traditionally check output correctness of public functionalities,
@@ -67,7 +67,6 @@ do not themselves provide the infrastructure for effective programmatic analysis
 # State of the field
 
 Several well-established open-source tools are already available.
-The Lawrence Livermore National Laboratory (LLNL) provides a suite of tools.
 Caliper [@boehme2016] can intercept CUDA API calls through the NVIDIA CUPTI library [@cupti2025].
 It can interface with the Python package Hatchet [@bhatele2019] to organize results into a hierarchical data structure.
 Thicket [@brink2023] adds kernel profiling support through Nsight Compute, with a primary focus on exploratory data analysis of multi-run performance experiments.

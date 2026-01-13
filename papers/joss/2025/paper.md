@@ -88,8 +88,7 @@ To the best of our knowledge, these functionalities are not covered by existing 
 `ReProspect` is organized into three main components:
 API tracing, kernel profiling, and binary analysis (\autoref{fig:overview}).
 
-Each component design stems from the identification, organisation and implementation of recurring functionalities,
-yielding modules and classes from which concise analysis scripts can be written.
+Each component is designed to allow the entire analysis to be encapsulated into a concise Python script.
 This includes launching the underlying analysis tool,
 collecting the output into Python data structures,
 and performing the subsequent analysis.
@@ -177,7 +176,7 @@ Table: Comparison of the SASS code generated for the `sm_100` architecture
 
 # Research impact statement
 
-`ReProspect` has evolved from conducting analyses in support of contributions
+`ReProspect` has been successfully used as a support for contributions
 to the open-source Kokkos library [@ctrott-2022] and the development of an in-house finite element
 code built on top of the open-source Trilinos library [@mayr-2025] [@arnst-24] [@tomasetti-24].
 

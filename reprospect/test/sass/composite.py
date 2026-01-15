@@ -118,6 +118,19 @@ def instruction_is(matcher: instruction.InstructionMatcher) -> Fluentizer:
     """
     return Fluentizer(matcher)
 
+def instruction_count_is(matcher: instruction.InstructionMatcher, count: int) -> composite_impl.CountInSequenceMatcher:
+    """
+    Match only if the `matcher` matches `count` times in the sequence.
+
+    >>> from reprospect.test.sass.composite import instruction_count_is
+    >>> from reprospect.test.sass.instruction import Fp32AddMatcher
+    >>> matcher = instruction_count_is(Fp32AddMatcher(), count=2)
+    >>> matcher.match(instructions=('FADD R2, R2, R3',))
+    >>> matcher.match(instructions=('FADD R2, R2, R3', 'FADD R4, R4, R5'))
+    [InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']}), InstructionMatch(opcode='FADD', modifiers=(), operands=('R4', 'R4', 'R5'), predicate=None, additional={'dst': ['R4']})]
+    """
+    return composite_impl.CountInSequenceMatcher(matcher=matcher, count=count)
+
 def instructions_are(*matchers: instruction.InstructionMatcher | composite_impl.SequenceMatcher) -> composite_impl.OrderedInSequenceMatcher:
     """
     Match a sequence of instructions against `matchers`.

@@ -6,6 +6,7 @@ import pytest
 from reprospect.test.sass.composite_impl import (
     AllInSequenceMatcher,
     AnyOfMatcher,
+    CountInSequenceMatcher,
     InSequenceAtMatcher,
     InSequenceMatcher,
     OneOrMoreInSequenceMatcher,
@@ -412,6 +413,22 @@ class TestUnorderedInterleavedInSequenceMatcher:
         assert len(matched) == 4
         assert all(x.opcode == 'DADD' for x in matched)
         assert matcher.next_index == 17
+
+class TestCountInSequenceMatcher:
+    """
+    Tests for :py:class:`reprospect.test.sass.composite_impl.CountInSequenceMatcher`.
+    """
+    INNER: typing.Final[OpcodeModsMatcher] = OpcodeModsMatcher(opcode='YIELD', operands=False)
+
+    def test_match(self) -> None:
+        matched = CountInSequenceMatcher(matcher=self.INNER, count=3).assert_matches(instructions=('YIELD', 'NOP', 'YIELD', 'NOP', 'YIELD'))
+        assert len(matched) == 3
+
+    def test_no_match(self) -> None:
+        assert CountInSequenceMatcher(matcher=self.INNER, count=4).match(instructions=('YIELD', 'NOP', 'YIELD', 'NOP', 'YIELD')) is None
+
+    def test_explain(self) -> None:
+        assert CountInSequenceMatcher(matcher=self.INNER, count=42).explain(instructions=DADD_NOP_DMUL) == f'{self.INNER!r} did not match 42 times in {DADD_NOP_DMUL!r}.'
 
 class TestAllInSequenceMatcher:
     """

@@ -137,6 +137,44 @@ class ZeroOrMoreInSequenceMatcher(OneOrMoreInSequenceMatcher):
     def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
         raise RuntimeError('It always matches.')
 
+class CountInSequenceMatcher(SequenceMatcher):
+    """
+    Count how many times it matches in a sequence.
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
+    """
+    __slots__ = ('_index', 'count', 'matcher')
+
+    def __init__(self, matcher: InstructionMatcher, count: int) -> None:
+        self._index: int = 0
+        self.count: typing.Final[int] = count
+        self.matcher: typing.Final[InstructionMatcher] = matcher
+
+    @override
+    def match(self, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch] | None:
+        matches: list[InstructionMatch] = []
+
+        for instruction in instructions:
+            if (matched := self.matcher.match(instruction)) is not None:
+                matches.append(matched)
+                if len(matches) > self.count:
+                    return None
+        if len(matches) != self.count:
+            return None
+        self._index = len(instructions)
+        return matches
+
+    @override
+    @property
+    def next_index(self) -> int:
+        return self._index
+
+    @override
+    def explain(self, *, instructions: typing.Sequence[Instruction | str]) -> str:
+        return f'{self.matcher!r} did not match {self.count} times in {instructions!r}.'
+
 class OrderedInSequenceMatcher(SequenceMatcher):
     """
     Match a sequence of :py:attr:`matchers` in the order they are provided.

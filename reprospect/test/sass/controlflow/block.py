@@ -42,7 +42,7 @@ class BasicBlockMatcher(BasicBlockMatcherBase):
     __slots__ = ('matcher',)
 
     def __init__(self, matcher: InstructionMatcher | SequenceMatcher) -> None:
-        self.matcher: typing.Final[InSequenceMatcher] = matcher if isinstance(matcher, InSequenceMatcher) else InSequenceMatcher(matcher)
+        self.matcher: typing.Final[SequenceMatcher] = matcher if isinstance(matcher, SequenceMatcher) else InSequenceMatcher(matcher)
 
     @override
     def match(self, cfg: Graph) -> tuple[BasicBlock, list[InstructionMatch]] | None:
@@ -53,7 +53,7 @@ class BasicBlockMatcher(BasicBlockMatcherBase):
 
     @override
     def explain(self, cfg: Graph) -> str:
-        return f'{self.matcher.matcher!r} did not match any block of {cfg!r}.'
+        return f'{self.matcher!r} did not match any block of {cfg!r}.'
 
 class BasicBlockWithParentMatcher(BasicBlockMatcherBase):
     """
@@ -67,7 +67,7 @@ class BasicBlockWithParentMatcher(BasicBlockMatcherBase):
     __slots__ = ('matcher', 'parent')
 
     def __init__(self, matcher: InstructionMatcher | SequenceMatcher, parent: BasicBlock) -> None:
-        self.matcher: typing.Final[InSequenceMatcher] = matcher if isinstance(matcher, InSequenceMatcher) else InSequenceMatcher(matcher)
+        self.matcher: typing.Final[SequenceMatcher] = matcher if isinstance(matcher, SequenceMatcher) else InSequenceMatcher(matcher)
         self.parent: typing.Final[BasicBlock] = parent
 
     @override
@@ -79,4 +79,4 @@ class BasicBlockWithParentMatcher(BasicBlockMatcherBase):
 
     @override
     def explain(self, cfg: Graph) -> str:
-        return f'{self.matcher.matcher!r} did not match any child of {self.parent!r}.'
+        return f'{self.matcher!r} did not match any child of {self.parent!r}.'

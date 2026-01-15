@@ -7,6 +7,7 @@ from reprospect.test.sass.composite import (
     any_of,
     findall,
     findunique,
+    instruction_count_is,
     instruction_is,
     instructions_are,
     instructions_contain,
@@ -16,6 +17,7 @@ from reprospect.test.sass.composite import (
 )
 from reprospect.test.sass.composite_impl import (
     AnyOfMatcher,
+    CountInSequenceMatcher,
     InSequenceAtMatcher,
     InSequenceMatcher,
     OneOrMoreInSequenceMatcher,
@@ -140,6 +142,14 @@ class TestInstructionIs:
         ))
         assert isinstance(matcher, Fluentizer)
         assert matcher.match(inst='UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
+
+class TestInstructionCountIs:
+    """
+    Tests for :py:func:`reprospect.test.sass.composite.instruction_count_is`.
+    """
+    def test(self) -> None:
+        matcher = instruction_count_is(Fp32AddMatcher(), count=4)
+        assert isinstance(matcher, CountInSequenceMatcher)
 
 class TestInstructionsAre:
     """

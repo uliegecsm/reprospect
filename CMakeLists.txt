@@ -11,9 +11,18 @@ project(
     LANGUAGES CXX CUDA
 )
 
+include(CMakeDependentOption)
+
 option(ReProspect_ENABLE_TESTS "Enable tests." OFF)
 option(ReProspect_ENABLE_COVERAGE "Enable tests coverage." OFF)
 option(ReProspect_ENABLE_EXAMPLES "Enable examples." OFF)
+cmake_dependent_option(
+    ReProspect_ENABLE_EXAMPLES_KOKKOS
+    "Enable Kokkos examples."
+    ON
+    "ReProspect_ENABLE_EXAMPLES"
+    OFF
+)
 
 set(CMAKE_CXX_STANDARD 20)
 

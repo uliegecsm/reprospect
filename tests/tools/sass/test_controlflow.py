@@ -73,9 +73,11 @@ class TestGraph:
         cfg.add_edge(src=block_0, dst=block_1)
         cfg.add_edge(src=block_1, dst=block_0)
 
-        assert cfg.to_mermaid() == f"""\
+        assert cfg.to_mermaid(frontmatter={'title': 'CFG', 'config': {'theme': 'dark'}}) == f"""\
 ---
-title : CFG
+config:
+  theme: dark
+title: CFG
 ---
 flowchart TD
 \tblock_{self.INSTRUCTIONS[0].offset}["{self.INSTRUCTIONS[0].instruction}<br/>{self.INSTRUCTIONS[1].instruction}"]:::myblock
@@ -134,10 +136,7 @@ class TestControlFlow:
         def test_analyse(self) -> None:
             cfg = ControlFlow.analyze(instructions=self.INSTRUCTIONS)
 
-            assert cfg.to_mermaid() == f"""\
----
-title : CFG
----
+            assert cfg.to_mermaid(frontmatter=None) == f"""\
 flowchart TD
 \tblock_{self.INSTRUCTIONS[ 0].offset}["{'<br/>'.join(instr.instruction for instr in self.INSTRUCTIONS[0:9])}"]:::myblock
 \tblock_{self.INSTRUCTIONS[ 9].offset}["{'<br/>'.join(instr.instruction for instr in self.INSTRUCTIONS[9:16])}"]:::myblock

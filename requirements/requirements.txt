@@ -6,6 +6,7 @@ ijson
 mypy_extensions
 pandas
 pyelftools==0.32
+pyyaml
 regex
 rich
 rich-tools

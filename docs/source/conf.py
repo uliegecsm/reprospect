@@ -96,6 +96,8 @@ rst_prolog = '''
 
 tikz_latex_preamble = r'\usepackage[dvipsnames]{xcolor}'
 
+mermaid_d3_zoom = True
+
 # 'unittest.TestCase' is implemented in 'unittest.test.TestCase' but is documented
 # as 'unittest.TestCase', thus confusing 'intersphinx'.
 import unittest

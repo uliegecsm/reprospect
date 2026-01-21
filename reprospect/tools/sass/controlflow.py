@@ -2,6 +2,8 @@ import dataclasses
 import re
 import typing
 
+import yaml
+
 from reprospect.test.sass.instruction.instruction import Predicate
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.sass.decode import Instruction
@@ -49,7 +51,7 @@ class Graph:
     def add_edge(self, src: BasicBlock, dst: BasicBlock) -> None:
         self.edges.setdefault(src, set()).add(dst)
 
-    def to_mermaid(self, title: str = 'CFG') -> str:
+    def to_mermaid(self, frontmatter: dict[str, typing.Any] | None = None) -> str:
         """
         Generate a Mermaid flowchart diagram.
 
@@ -57,12 +59,10 @@ class Graph:
 
         * https://mermaid.js.org/syntax/flowchart.html
         """
-        lines = [
-            '---',
-            f'title : {title}',
-            '---',
-            'flowchart TD',
-        ]
+        lines: list[str] = []
+        if frontmatter:
+            lines.append(f'---\n{yaml.dump(frontmatter)}---')
+        lines.append('flowchart TD')
 
         # Add blocks.
         for block in self.blocks:

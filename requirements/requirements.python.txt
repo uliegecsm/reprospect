@@ -7,12 +7,12 @@ pylint>=4.0.1
 ruff==0.14.13
 setuptools==80.9.0
 setuptools-rust==1.12.0
-sphinx>=8.1
+sphinx<=8.2.3
 sphinx-copybutton==0.5.2
 sphinx-rtd-theme>=3.0.2
 sphinx-github-style>=1.2.2
 sphinxcontrib-bibtex>=2.6.5
-sphinxcontrib-mermaid==1.2.3
+sphinxcontrib-mermaid==2.0.0
 sphinxcontrib-tikz>=0.4.20
 typeguard
 types-regex

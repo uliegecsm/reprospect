@@ -16,6 +16,6 @@ jobs:
             image: python:3.12
         steps:
             - uses: actions/checkout@v6
-            - uses: crate-ci/typos@v1.42.1
+            - uses: crate-ci/typos@v1.42.2
               with:
                   config: .github/config/typos.toml

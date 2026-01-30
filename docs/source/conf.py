@@ -109,6 +109,11 @@ import semantic_version
 semantic_version.SimpleSpec.__module__ = 'semantic_version'
 semantic_version.Version.__module__ = 'semantic_version'
 
+import pandas
+
+pandas.core.frame.DataFrame.__module__ = 'pandas'
+pandas.core.series.Series.__module__ = 'pandas'
+
 linkcode_url = 'https://github.com/uliegecsm/' + project.lower()
 
 # Some references are broken, or the package does not provide an object inventory file.

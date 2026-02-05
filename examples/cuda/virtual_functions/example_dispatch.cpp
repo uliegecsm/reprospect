@@ -51,7 +51,7 @@ __global__ void __launch_bounds__(1, 1) copy_construct_kernel(Derived* const ptr
 {
     if (blockIdx.x == 0)
     {
-#if defined(__NVCC__) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 700)
+#if defined(__NVCC__) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 700 || __CUDA_ARCH__ == 860)
         const Derived copy = derived;
         new (ptr) Derived(copy);
 #else

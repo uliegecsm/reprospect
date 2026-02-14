@@ -4,4 +4,5 @@ function(add_one_cuda_example FILE)
     )
 endfunction()
 
+add_subdirectory(instructions)
 add_subdirectory(virtual_functions)

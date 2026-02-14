@@ -216,7 +216,7 @@ class TestResourceUsage(TestBinaryAnalysis):
             case 89 | 90:
                 expt_static  = {RegisterType.GPR: (8, 7),   RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)}
                 expt_dynamic = {RegisterType.GPR: (24, 18), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)}
-            case 100:
+            case 100 | 103:
                 expt_static  = {RegisterType.GPR: (8, 7),   RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)}
                 expt_dynamic = {RegisterType.GPR: (24, 18), RegisterType.PRED: (1, 1), RegisterType.UGPR: (8, 4), RegisterType.UPRED: (1, 1)}
             case 120:

@@ -173,6 +173,10 @@ class TestSASS(TestDivision):
                 expt_ilogbscalbn =   {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
                 expt_logbscalbn =    {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
                 expt_norm_division = {RegisterType.GPR: (40, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+            case 103:
+                expt_ilogbscalbn =   {RegisterType.GPR: (45, 39), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                expt_logbscalbn =    {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
             case 120:
                 match self.toolchains['CUDA']['compiler']['id']:
                     case 'NVIDIA':

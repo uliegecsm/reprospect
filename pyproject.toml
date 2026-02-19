@@ -204,6 +204,7 @@ extend-select = [
 ignore = [
     "RUF005",
     "RUF018",
+    "RUF069",
 ]
 
 [tool.pylint.main]

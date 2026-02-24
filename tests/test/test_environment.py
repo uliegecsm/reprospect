@@ -139,7 +139,7 @@ class TestEnvironmentField:
         If no converter was provided, infer it from the type of the default value.
         """
         class Config:
-            var = EnvironmentField(default=float(42.666))
+            var = EnvironmentField(default=float(42.666)) # noqa: UP018
 
         config = Config()
 

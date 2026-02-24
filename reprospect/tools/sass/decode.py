@@ -270,9 +270,8 @@ class Decoder(rich_helpers.TableMixin):
                 continue
 
             # The line containing '..........' means the end of the SASS code.
-            if skip_until_headerflags:
-                if '..........' in line:
-                    break
+            if skip_until_headerflags and '..........' in line:
+                break
 
             # Skip lines until '.headerflags' is met.
             if skip_until_headerflags and not headerflags:

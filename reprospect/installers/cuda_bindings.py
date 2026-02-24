@@ -31,9 +31,9 @@ def get_candidate(*, target: packaging.version.Version, versions: list[packaging
         if version == target:
             return version
 
-        if version.major == target.major and version.minor == target.minor:
-            if version < target and (candidate is None or version > candidate):
-                candidate = version
+        if version.major == target.major and version.minor == target.minor \
+            and version < target and (candidate is None or version > candidate):
+            candidate = version
     return candidate
 
 def install_cuda_bindings(target: packaging.version.Version) -> None:

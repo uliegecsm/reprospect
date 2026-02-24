@@ -465,26 +465,24 @@ class TestCacher:
         """
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory=tmpdir) as cacher:
-                command = ncu.Command(opts=('--nvtx',), executable=bindir / self.GRAPH, args=('--bla=42',), output=pathlib.Path('I-dont-care'))
-                hash_a = cacher.hash(command=command)
-                hash_b = cacher.hash(command=command)
+        with tempfile.TemporaryDirectory() as tmpdir, ncu.Cacher(directory=tmpdir) as cacher:
+            command = ncu.Command(opts=('--nvtx',), executable=bindir / self.GRAPH, args=('--bla=42',), output=pathlib.Path('I-dont-care'))
+            hash_a = cacher.hash(command=command)
+            hash_b = cacher.hash(command=command)
 
-                assert hash_a.digest() == hash_b.digest()
+            assert hash_a.digest() == hash_b.digest()
 
     def test_hash_different(self, bindir) -> None:
         """
         Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
         """
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory=tmpdir) as cacher:
-                hash_a = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.GRAPH, args=('--bla=42',), output=pathlib.Path('i-dont-care')))
-                hash_b = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.SAXPY, args=('--bla=42',), output=pathlib.Path('i-dont-care')))
-                hash_c = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.SAXPY, args=('--bla=42',), output=pathlib.Path('i-dont-care'), env={'ONE': '2'}))
+        with tempfile.TemporaryDirectory() as tmpdir, ncu.Cacher(directory=tmpdir) as cacher:
+            hash_a = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.GRAPH, args=('--bla=42',), output=pathlib.Path('i-dont-care')))
+            hash_b = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.SAXPY, args=('--bla=42',), output=pathlib.Path('i-dont-care')))
+            hash_c = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.SAXPY, args=('--bla=42',), output=pathlib.Path('i-dont-care'), env={'ONE': '2'}))
 
-                assert hash_a.digest() != hash_b.digest()
-                assert hash_b.digest() != hash_c.digest()
+            assert hash_a.digest() != hash_b.digest()
+            assert hash_b.digest() != hash_c.digest()
 
     @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
     def test_cache_hit(self, bindir, workdir) -> None:
@@ -499,32 +497,31 @@ class TestCacher:
 
         FILES = ('report-cached.log', 'report-cached.ncu-rep')
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            with ncu.Cacher(directory=tmpdir) as cacher:
-                assert os.listdir(cacher.directory) == ['cache.db']
+        with tempfile.TemporaryDirectory() as tmpdir, ncu.Cacher(directory=tmpdir) as cacher:
+            assert os.listdir(cacher.directory) == ['cache.db']
 
-                command = ncu.Command(
-                    opts=('--launch-skip-before-match', '3'),
-                    executable=bindir / self.GRAPH,
-                    args=('--who-cares',),
-                    metrics=METRICS,
-                    output=workdir / 'report-cached',
-                )
+            command = ncu.Command(
+                opts=('--launch-skip-before-match', '3'),
+                executable=bindir / self.GRAPH,
+                args=('--who-cares',),
+                metrics=METRICS,
+                output=workdir / 'report-cached',
+            )
 
-                results_first = cacher.run(command=command, retries=5)
+            results_first = cacher.run(command=command, retries=5)
 
-                assert results_first.cached is False
+            assert results_first.cached is False
 
-                assert all(x in os.listdir(command.output.parent) for x in FILES)
+            assert all(x in os.listdir(command.output.parent) for x in FILES)
 
-                for file in FILES:
-                    (command.output.parent / file).unlink()
+            for file in FILES:
+                (command.output.parent / file).unlink()
 
-                assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
-                assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
+            assert sorted(os.listdir(cacher.directory)) == sorted(['cache.db', results_first.digest])
+            assert sorted(os.listdir(cacher.directory / results_first.digest)) == sorted(FILES)
 
-                results_second = cacher.run(command=command, retries=5)
+            results_second = cacher.run(command=command, retries=5)
 
-                assert results_second.cached is True
+            assert results_second.cached is True
 
-                assert all(x in os.listdir(command.output.parent) for x in FILES)
+            assert all(x in os.listdir(command.output.parent) for x in FILES)

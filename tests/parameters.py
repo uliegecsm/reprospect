@@ -13,7 +13,7 @@ class Parameters:
     arch: NVIDIAArch
 
 @functools.cache
-def architectures(version: semantic_version.Version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> tuple[NVIDIAArch, ...]:
+def architectures(version: semantic_version.Version | None = None) -> tuple[NVIDIAArch, ...]:
     """
     Get the list of architectures to test, that are supported by `version`.
     """
@@ -28,7 +28,8 @@ def architectures(version: semantic_version.Version = semantic_version.Version(o
             100,
             103,
             120,
-        ] if (arch := NVIDIAArch.from_compute_capability(cc=cc)).compute_capability.supported(version=version)
+        ] if (arch := NVIDIAArch.from_compute_capability(cc=cc)).compute_capability.supported(
+            version=version or semantic_version.Version(os.environ['CUDA_VERSION']))
     )
 
 PARAMETERS: typing.Final[tuple[Parameters, ...]] = tuple(Parameters(arch=arch) for arch in architectures())

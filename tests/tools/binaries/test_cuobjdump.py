@@ -288,7 +288,7 @@ class TestCuObjDump:
             # more than one embedded CUDA binary file. Hence, check that calling symtab raises.
             if cmake_file_api.toolchains['CUDA']['compiler']['id'] == 'NVIDIA':
                 with pytest.raises(RuntimeError, match=r'The host binary file contains more than one embedded CUDA binary file.'):
-                    cuobjdump.symtab # pylint: disable=pointless-statement
+                    cuobjdump.symtab # pylint: disable=pointless-statement # noqa: B018
 
             # Extract the embedded CUDA binary file and check that calling its symtab works.
             cuobjdump, _ = CuObjDump.extract(

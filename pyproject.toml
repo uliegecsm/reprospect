@@ -202,6 +202,7 @@ extend-select = [
     "YTT",
 ]
 ignore = [
+    "LOG015",
     "RUF005",
     "RUF018",
     "RUF069",

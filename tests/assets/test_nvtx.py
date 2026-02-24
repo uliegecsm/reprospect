@@ -71,7 +71,7 @@ class TestNVTX:
         """
         Build a situation with many intricate ranges.
         """
-        with start_end_range(domain=domain, message='start-end-level-0'):
+        with start_end_range(domain=domain, message='start-end-level-0'): # noqa: SIM117
             with push_pop_range(domain=domain, message='push-pop-level-1'):
                 with push_pop_range(domain=domain, message='push-pop-level-2'):
                     for _ in range(3):

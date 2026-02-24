@@ -252,7 +252,7 @@ class UnorderedInSequenceMatcher(SequenceMatcher):
             if isinstance(matcher, InstructionMatcher) and (single := matcher.match(instructions[offset])) is not None:
                 if (inner := cls.search(instructions=instructions, offset=offset + 1, matchers=matchers[:index] + matchers[index + 1:])) is not None:
                     return inner[0], [single] + inner[1]
-            elif isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions=instructions[offset:])) is not None:
+            elif isinstance(matcher, SequenceMatcher) and (many := matcher.match(instructions=instructions[offset:])) is not None: # noqa: SIM102
                 if (inner := cls.search(instructions=instructions, offset=offset + matcher.next_index, matchers=matchers[:index] + matchers[index + 1:])) is not None:
                     return inner[0], many + inner[1]
         return None

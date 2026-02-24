@@ -327,9 +327,8 @@ class CuObjDump:
         This function requires that :py:attr:`file` is either a host binary file containing
         only a single embedded CUDA binary file or itself a CUDA binary file.
         """
-        if not self.file_is_cubin:
-            if len(self.embedded_cubins) != 1:
-                raise RuntimeError('The host binary file contains more than one embedded CUDA binary file.')
+        if not self.file_is_cubin and len(self.embedded_cubins) != 1:
+            raise RuntimeError('The host binary file contains more than one embedded CUDA binary file.')
         return get_symbol_table(file=self.file)
 
     @functools.cached_property

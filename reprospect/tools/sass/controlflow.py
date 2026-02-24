@@ -87,7 +87,7 @@ class ControlFlow:
     """
     Analyze SASS instructions from a :py:class:`reprospect.tools.sass.Decoder` to construct a :py:class:`reprospect.tools.sass.controlflow.Graph`.
     """
-    BRANCHING: typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join((
+    BRANCHING: typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join(( # noqa: FLY002
         'BPT',
         'BRA',
         'BREAK',
@@ -103,7 +103,7 @@ class ControlFlow:
     Branching instructions that create a new basic block.
     """
 
-    SYNCHRONIZATION: typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join((
+    SYNCHRONIZATION: typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join(( # noqa: FLY002
         'BSSY',
     )) + ')')
 
@@ -214,7 +214,7 @@ class ControlFlow:
             # Check if the last instruction is a branching instruction.
             if cls.BRANCHING.search(block.instructions[-1].instruction) is not None:
                 # Add edge to branch target.
-                if(target_offset := cls.get_target(block.instructions[-1])) is not None:
+                if(target_offset := cls.get_target(block.instructions[-1])) is not None: # noqa: SIM102
                     if target_offset in offset_to_block:
                         cfg.add_edge(block, offset_to_block[target_offset])
 

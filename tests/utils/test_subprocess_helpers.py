@@ -80,17 +80,17 @@ class TestPopenStream:
         """
         The command fails.
         """
-        with unittest.mock.patch('subprocess.Popen', return_value=self.mocker(wait=42)):
-            with pytest.raises(subprocess.CalledProcessError, match=r"Command '\('false',\)' returned non-zero exit status 42."):
-                next(popen_stream(args=('false',)))
+        with unittest.mock.patch('subprocess.Popen', return_value=self.mocker(wait=42)), \
+            pytest.raises(subprocess.CalledProcessError, match=r"Command '\('false',\)' returned non-zero exit status 42."):
+            next(popen_stream(args=('false',)))
 
     def test_command_not_found(self) -> None:
         """
         The command is not found.
         """
-        with unittest.mock.patch('subprocess.Popen', side_effect=FileNotFoundError("[Errno 2] No such file or directory: 'nonexistent_command_12345'")):
-            with pytest.raises(FileNotFoundError, match='nonexistent_command_12345'):
-                next(popen_stream(args=('nonexistent_command_12345',)))
+        with unittest.mock.patch('subprocess.Popen', side_effect=FileNotFoundError("[Errno 2] No such file or directory: 'nonexistent_command_12345'")), \
+            pytest.raises(FileNotFoundError, match='nonexistent_command_12345'):
+            next(popen_stream(args=('nonexistent_command_12345',)))
 
     def test_empty_output(self) -> None:
         """

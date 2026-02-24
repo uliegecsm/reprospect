@@ -42,7 +42,7 @@ html_theme_options = {
 }
 html_static_path = ['_static']
 html_logo = '_static/logo.svg'
-html_last_updated_fmt = str()
+html_last_updated_fmt = ''
 
 # To the best of our knowledge, NVIDIA does not provide an object inventory.
 extlinks = {

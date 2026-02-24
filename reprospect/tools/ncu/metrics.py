@@ -262,7 +262,7 @@ class L1TEXCacheGlobalLoadRequests:
             qualifier='pipe_lsu_mem_global_op_ld',
         )
 
-        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'requests'))
+        pretty_name = f'{L1TEXCache.NAME} {L1TEXCache.GlobalLoad.NAME} requests'
 
         return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
@@ -323,7 +323,7 @@ class L1TEXCacheGlobalLoadWavefronts:
             qualifier='pipe_lsu_mem_global_op_ld',
         )
 
-        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'wavefronts'))
+        pretty_name = f'{L1TEXCache.NAME} {L1TEXCache.GlobalLoad.NAME} wavefronts'
 
         return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
@@ -378,7 +378,7 @@ class L1TEXCacheGlobalStoreSectors:
             qualifier='pipe_lsu_mem_global_op_st',
         )
 
-        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'sectors'))
+        pretty_name = f'{L1TEXCache.NAME} {L1TEXCache.GlobalStore.NAME} sectors'
 
         return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 

@@ -231,10 +231,10 @@ class NVDisasm:
                     #   .sectionflags
                     #   .sectioninfo
                     #   .align
-                    elif cls.SECTION_SKIP.match(line) is not None:
+                    elif cls.SECTION_SKIP.match(line) is not None: # noqa: SIM114
                         continue
                     # Skip empty lines.
-                    elif not line or line.isspace():
+                    elif not line or line.isspace(): # noqa: SIM114
                         continue
                     elif cls.HEADER_SEP.match(line) is not None:
                         continue

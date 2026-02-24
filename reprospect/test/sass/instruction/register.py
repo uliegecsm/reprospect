@@ -113,19 +113,16 @@ class RegisterMatch:
             raise ValueError(bits)
 
         index: int = -1
-        if (value := captured.get('index')) is not None:
-            if len(value) == 1:
-                index = int(value[0])
+        if (value := captured.get('index')) is not None and len(value) == 1:
+            index = int(value[0])
 
         reuse: bool = False
-        if (value := captured.get('reuse')) is not None:
-            if len(value) == 1:
-                reuse = True
+        if (value := captured.get('reuse')) is not None and len(value) == 1:
+            reuse = True
 
         math: MathModifier | None = None
-        if (value := captured.get('modifier_math')) is not None:
-            if len(value) == 1:
-                math = MathModifier(value[0])
+        if (value := captured.get('modifier_math')) is not None and len(value) == 1:
+            math = MathModifier(value[0])
 
         return cls(
             rtype=RegisterType(rtype[0]),

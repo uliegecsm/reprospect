@@ -151,6 +151,9 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         matcher = LoadGlobalMatcher(arch=NVIDIAArch.from_compute_capability(86), size=16, readonly=True, extend='S')
         assert matcher.match(inst='LDG.E.S16.CONSTANT R3, [R2.64]') is not None
 
+        matcher = LoadGlobalMatcher(arch=NVIDIAArch.from_compute_capability(70), size=32, readonly=True)
+        assert matcher.match(inst='LDG.E.CONSTANT.SYS R2, [R2]') is not None
+
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test_elementwise_add_restrict(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
         """

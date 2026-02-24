@@ -55,9 +55,8 @@ class ConstantMatch:
         offset = value[0]
 
         math: MathModifier | None = None
-        if (value := captured.get('modifier_math')) is not None:
-            if len(value) == 1:
-                math = MathModifier(value[0])
+        if (value := captured.get('modifier_math')) is not None and len(value) == 1:
+            math = MathModifier(value[0])
 
         return cls(bank=bank, offset=offset, math=math)
 

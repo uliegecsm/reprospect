@@ -104,7 +104,7 @@ class FileAPI:
 
         return configurations[0]
 
-    @functools.lru_cache(maxsize=128)
+    @functools.lru_cache(maxsize=128) # noqa: B019
     def target(self, name: str) -> TargetDict:
         """
         Retrieve the information available for the target `name`.

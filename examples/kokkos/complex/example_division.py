@@ -1,5 +1,40 @@
 """
-Some nice description comes here.
+Dividing complex numbers is a tricky task.
+Indeed, the naïve formula divides by the norm of the denominator,
+involving a sum of squares:
+
+.. math::
+   :label: naive-complex-div
+
+   \frac{a + bi}{c + di} = \frac{ac + bd}{c^2 + d^2} + \frac{bc - ad}{c^2 + d^2}\,i
+
+To increase the range of values that would not overflow, Kokkos historically
+implements a scaling approach, see 
+https://github.com/kokkos/kokkos/blob/9174877d49528ab293b6c7f4c6bd932a429b200a/core/src/Kokkos_Complex.hpp#L182-L206.
+
+However, there has been some issues about this:
+* https://github.com/kokkos/kokkos/issues/7618
+* https://github.com/kokkos/kokkos/issues/7742
+
+Therefore, we started working on it in:
+* https://github.com/kokkos/kokkos/issues/8924
+
+The first thing to acknowledge is that the naïve implementation may not be suitable in general,
+due to its poor behavior. To quote :cite:`baudin-2012-robust-complex-division-scilab`:
+
+    [...]correct in exact arithmetic, it may fail when we consider floating point numbers.
+    Hence, a naive implementation based on the previous formula can easily fail to produce
+    an accurate result, [...]
+
+For instance, the following example shows that the :eq:`naive-complex-div` fails at
+producing the expected result for:
+
+.. math::
+    :label: naive-complex-div-failure
+
+   \frac{1 + i}{1 + i \cdot 2^{1023}} \approx 2^{-1023} - i \cdot 2^{-1023}
+
+Need to scale both numerator and denominator !
 """
 
 import logging
@@ -52,55 +87,44 @@ class TestDivision(CMakeAwareTestCase):
     def get_target_name(cls) -> str:
         return 'examples_kokkos_complex_division'
 
-# class TestSASS(TestAlignment):
-#     """
-#     Binary analysis.
-#     """
-#     SIGNATURE: typing.Final[dict[Alignment, re.Pattern[str]]] = {
-#         Alignment.DEFAULT:   re.compile(r'MulAddFunctor<Kokkos::View<reprospect::examples::kokkos::complex::Complex<double>\s*\*, Kokkos::CudaSpace>>'),
-#         Alignment.SPECIFIED: re.compile(r'MulAddFunctor<Kokkos::View<Kokkos::complex<double>\s*\*, Kokkos::CudaSpace>>'),
-#     }
+class TestSASS(TestDivision):
+    """
+    Binary analysis.
+    """
+    SIGNATURE: typing.Final[dict[Method, re.Pattern[str]]] = {
+        Method.IEC559: re.compile(r'reprospect::examples::kokkos::complex::Iec559<Kokkos::View<Kokkos::complex<double> \[1024\], Kokkos::CudaSpace>>'),
+        Method.SCALING: re.compile(r'reprospect::examples::kokkos::complex::Scaling<\(bool\)0, Kokkos::View<Kokkos::complex<double> \[1024\], Kokkos::CudaSpace>>'),
+        Method.SCALING_BRANCH: re.compile(r'reprospect::examples::kokkos::complex::Scaling<\(bool\)1, Kokkos::View<Kokkos::complex<double> \[1024\], Kokkos::CudaSpace>>'),
+    }
 
-#     @property
-#     def cubin(self) -> pathlib.Path:
-#         return self.cwd / f'examples_kokkos_complex_alignment.1.{self.arch.as_sm}.cubin'
+    @property
+    def cubin(self) -> pathlib.Path:
+        return self.cwd / f'examples_kokkos_complex_division.1.{self.arch.as_sm}.cubin'
 
-#     @pytest.fixture(scope='class')
-#     def cuobjdump(self) -> CuObjDump:
-#         return CuObjDump.extract(file=self.executable, arch=self.arch, sass=True, cwd=self.cwd, cubin=self.cubin.name, demangler=self.demangler)[0]
+    @pytest.fixture(scope='class')
+    def cuobjdump(self) -> CuObjDump:
+        return CuObjDump.extract(file=self.executable, arch=self.arch, sass=True, cwd=self.cwd, cubin=self.cubin.name, demangler=self.demangler)[0]
 
-#     @pytest.fixture(scope='class')
-#     def decoder(self, cuobjdump: CuObjDump) -> dict[Alignment, Decoder]:
-#         def get_decoder(alignment: Alignment) -> Decoder:
-#             pattern = self.SIGNATURE[alignment]
-#             fctn = cuobjdump.functions[next(sig for sig in cuobjdump.functions if pattern.search(sig) is not None)]
-#             logging.info(f'SASS code and resource usage from CuObjDump for {alignment} alignment:\n{fctn}')
-#             decoder = Decoder(code=fctn.code)
-#             logging.info(f'Decoded SASS code for {alignment} alignment:\n{decoder}')
-#             return decoder
-#         return {alignment: get_decoder(alignment) for alignment in Alignment}
+    @pytest.fixture(scope='class')
+    def decoder(self, cuobjdump: CuObjDump) -> dict[Method, Decoder]:
+        # logging.info(list(cuobjdump.functions.keys()))
+        def get_decoder(method: Method) -> Decoder:
+            pattern = self.SIGNATURE[method]
+            fctn = cuobjdump.functions[next(sig for sig in cuobjdump.functions if pattern.search(sig) is not None)]
+            # logging.info(f'SASS code and resource usage from CuObjDump for {method}:\n{fctn}')
+            decoder = Decoder(code=fctn.code)
+            # logging.info(f'Decoded SASS code for {method}:\n{decoder}')
+            return decoder
+        return {method: get_decoder(method) for method in Method}
 
-#     def test_global_memory_instructions(self, decoder: dict[Alignment, Decoder]) -> None:
-#         """
-#         Check the type and count of global load and store instructions used.
+    def test_instruction_count(self, decoder: dict[Method, Decoder]) -> None:
+        """
+        Instruction count.
 
-#         +-----------+----------------------------------------------------------------------+
-#         | default   | Each element is loaded/stored with 2 instructions of 64 bits.        |
-#         +-----------+----------------------------------------------------------------------+
-#         | specified | Each element is loaded/stored with a single instruction of 128 bits. |
-#         +-----------+----------------------------------------------------------------------+
-#         """
-#         expt_ldg_count_specified = self.LOAD_COUNT
-#         expt_ldg_count_default   = expt_ldg_count_specified * 2
-
-#         assert sum(1 for inst in decoder[Alignment.DEFAULT]  .instructions if LoadGlobalMatcher(arch=self.arch, size=64 )(inst)) == expt_ldg_count_default
-#         assert sum(1 for inst in decoder[Alignment.SPECIFIED].instructions if LoadGlobalMatcher(arch=self.arch, size=128)(inst)) == expt_ldg_count_specified
-
-#         expt_stg_count_specified = self.STORE_COUNT
-#         expt_stg_count_default   = expt_stg_count_specified * 2
-
-#         assert sum(1 for inst in decoder[Alignment.DEFAULT]  .instructions if StoreGlobalMatcher(arch=self.arch, size=64 )(inst)) == expt_stg_count_default
-#         assert sum(1 for inst in decoder[Alignment.SPECIFIED].instructions if StoreGlobalMatcher(arch=self.arch, size=128)(inst)) == expt_stg_count_specified
+        The :py:data:`Method.IEC559` generates more instructions.
+        """
+        assert len(decoder[Method.IEC559].instructions) > len(decoder[Method.SCALING_BRANCH].instructions)
+        assert len(decoder[Method.SCALING_BRANCH].instructions) > len(decoder[Method.SCALING].instructions)
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestNCU(TestDivision):
@@ -119,6 +143,8 @@ class TestNCU(TestDivision):
         L1TEXCache.GlobalStore.Instructions.create(),
         L1TEXCache.LocalStore.Instructions.create(),
         Metric(name='gpc__cycles_elapsed.max'),
+        Metric(name='sm__inst_executed_pipe_fp64.sum'),
+        Metric(name='sm__pipe_fp64_cycles_active.sum'),
         MetricCounter(name='lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs=(MetricCounterRollUp.SUM,)),
     )
 
@@ -130,8 +156,8 @@ class TestNCU(TestDivision):
             command = Command(
                 output=self.cwd / 'ncu',
                 executable=self.executable,
-                # metrics=self.METRICS,
-                opts=('--set=full',),
+                metrics=self.METRICS,
+                # opts=('--set=full',),
                 nvtx_includes=self.NVTX_INCLUDES,
                 args=(
                     f'--kokkos-tools-libs={self.KOKKOS_TOOLS_NVTX_CONNECTOR_LIB}',
@@ -162,9 +188,44 @@ class TestNCU(TestDivision):
     def test_instruction_count(self, metrics: dict[Method, ProfilingMetrics]) -> None:
         logging.info(list(metrics[Method.IEC559].keys()))
         for method in Method:
-            logging.info(f"{method} inst executed: {metrics[method]['smsp__inst_executed.sum']}")
-            logging.info(f"{method} cycles elapsed: {metrics[method]['gpc__cycles_elapsed.max']}")
-            logging.info(f"{method} instructions per opcode: {metrics[method]['sass__inst_executed_per_opcode']}")
+            logging.info(f"{method} smsp__inst_executed: {metrics[method]['smsp__inst_executed.sum']}")
+            logging.info(f"{method} gpc__cycles_elapsed: {metrics[method]['gpc__cycles_elapsed.max']}")
+            logging.info(f"{method} sass__inst_executed_per_opcode: {metrics[method]['sass__inst_executed_per_opcode']}")
+            logging.info(f"{method} sm__inst_executed_pipe_fp64 {metrics[method]['sm__inst_executed_pipe_fp64.sum']}")
+            logging.info(f"{method} sm__pipe_fp64_cycles_active {metrics[method]['sm__pipe_fp64_cycles_active.sum']}")
+    
+        import pandas as pd
+        METRIC_KEYS = [
+            "smsp__inst_executed.sum",
+            "gpc__cycles_elapsed.max",
+            "sass__inst_executed_per_opcode",
+            "sm__inst_executed_pipe_fp64.sum",
+            "sm__pipe_fp64_cycles_active.sum",
+        ]
+
+        COLUMN_LABELS = {
+            "smsp__inst_executed.sum":          "Instructions Executed",
+            "gpc__cycles_elapsed.max":          "Cycles Elapsed (max)",
+            "sass__inst_executed_per_opcode":   "Inst / Opcode",
+            "sm__inst_executed_pipe_fp64.sum":  "FP64 Pipe Inst",
+            "sm__pipe_fp64_cycles_active.sum":  "FP64 Pipe Cycles Active",
+        }
+
+        rows = []
+        for method in Method:
+            row = {"Method": method.name}
+            for key in METRIC_KEYS:
+                row[COLUMN_LABELS[key]] = metrics[method].get(key, "N/A")
+            rows.append(row)
+
+        df = pd.DataFrame(rows).set_index("Method")
+
+        with open('/workspaces/cuda-helpers/test.html', 'w+') as html:
+            html.write(df.to_html(
+                classes="metrics-table",
+                border=1,
+                justify="center",
+            ))
     #     """
     #     With specified alignment, half the load/store instructions are executed.
     #     Other instruction counts remain unchanged.

@@ -27,36 +27,34 @@ class Division {
 
     void scaling_branch() const {
         reset();
-
-        const Kokkos::Profiling::ScopedRegion region("scaling_branch");
-
-        Kokkos::parallel_for(
-            Kokkos::RangePolicy(exec, 0, size),
-            Scaling<true, complex_view_t>{.src_a = src_a, .src_b = src_b, .dst_c = dst_c});
-
+        {
+            const Kokkos::Profiling::ScopedRegion region("scaling_branch");
+            Kokkos::parallel_for(
+                Kokkos::RangePolicy(exec, 0, size),
+                Scaling<true, complex_view_t>{.src_a = src_a, .src_b = src_b, .dst_c = dst_c});
+        }
         exec.fence();
     }
 
     void scaling() const {
         reset();
-
-        const Kokkos::Profiling::ScopedRegion region("scaling");
-
-        Kokkos::parallel_for(
-            Kokkos::RangePolicy(exec, 0, size),
-            Scaling<false, complex_view_t>{.src_a = src_a, .src_b = src_b, .dst_c = dst_c});
-
+        {
+            const Kokkos::Profiling::ScopedRegion region("scaling");
+            Kokkos::parallel_for(
+                Kokkos::RangePolicy(exec, 0, size),
+                Scaling<false, complex_view_t>{.src_a = src_a, .src_b = src_b, .dst_c = dst_c});
+        }
         exec.fence();
     }
 
     void iec559() const {
         reset();
-
-        const Kokkos::Profiling::ScopedRegion region("iec559");
-
-        Kokkos::parallel_for(
-            Kokkos::RangePolicy(exec, 0, size), Iec559<complex_view_t>{.src_a = src_a, .src_b = src_b, .dst_c = dst_c});
-
+        {
+            const Kokkos::Profiling::ScopedRegion region("iec559");
+            Kokkos::parallel_for(
+                Kokkos::RangePolicy(exec, 0, size),
+                Iec559<complex_view_t>{.src_a = src_a, .src_b = src_b, .dst_c = dst_c});
+        }
         exec.fence();
     }
 

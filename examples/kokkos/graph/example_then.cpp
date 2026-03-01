@@ -8,11 +8,9 @@
  * Companion of @ref examples/kokkos/graph/example_then.py.
  */
 
-namespace reprospect::examples::kokkos::graph
-{
+namespace reprospect::examples::kokkos::graph {
 template <typename ViewType>
-struct Functor
-{
+struct Functor {
     ViewType data;
 
     KOKKOS_FUNCTION
@@ -21,18 +19,16 @@ struct Functor
     }
 };
 
-struct Then
-{
-public:
+struct Then {
+   public:
     using graph_t = Kokkos::Experimental::Graph<Kokkos::Cuda>;
-    using view_t  = Kokkos::View<int, Kokkos::SharedSpace>;
+    using view_t = Kokkos::View<int, Kokkos::SharedSpace>;
 
-public:
-    static void run(const Kokkos::Cuda& exec)
-    {
+   public:
+    static void run(const Kokkos::Cuda& exec) {
         const view_t data(Kokkos::view_alloc(exec, "data"));
 
-        const graph_t graph {exec};
+        const graph_t graph{exec};
 
         graph.root_node().then("then", exec, Functor<view_t>{.data = data});
 
@@ -40,17 +36,16 @@ public:
 
         exec.fence();
 
-        if(data() != 1)
+        if (data() != 1)
             throw std::runtime_error("Unexpected value.");
     }
 };
 } // namespace reprospect::examples::kokkos::graph
 
-int main(int argc, char* argv[])
-{
-    Kokkos::ScopeGuard guard {argc, argv};
+int main(int argc, char* argv[]) {
+    Kokkos::ScopeGuard guard{argc, argv};
     {
-        Kokkos::Profiling::ProfilingSection profiling_section {"then"};
+        Kokkos::Profiling::ProfilingSection profiling_section{"then"};
         profiling_section.start();
 
         reprospect::examples::kokkos::graph::Then::run(Kokkos::Cuda{});

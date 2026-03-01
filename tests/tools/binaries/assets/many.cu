@@ -11,11 +11,13 @@ __device__ float add(const float a, const float b) {
 }
 
 //! Basic parallel vector addition (with offset of 42) with bounds checking.
-__global__ void vector_atomic_add_42(const float* __restrict__ const a, const float* __restrict__ const b, float* __restrict__ const c, const unsigned int n)
-{
+__global__ void vector_atomic_add_42(
+    const float* __restrict__ const a,
+    const float* __restrict__ const b,
+    float* __restrict__ const c,
+    const unsigned int n) {
     const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < n)
-    {
+    if (idx < n) {
         c[idx] = add(a[idx], b[idx]);
         atomic_add_42(c, idx);
     }

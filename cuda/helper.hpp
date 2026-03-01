@@ -7,32 +7,26 @@
 
 #include "cuda.h"
 
-namespace reprospect::cuda
-{
+namespace reprospect::cuda {
 //! Check a CUDA driver call returns @c cudaError::cudaSuccess.
 inline void check_cuda_call(
     const cudaError_enum status,
     const char* const statement,
-    const std::source_location& loc = std::source_location::current())
-{
-    if (status!= cudaError_enum::CUDA_SUCCESS)
-    {
+    const std::source_location& loc = std::source_location::current()) {
+    if (status != cudaError_enum::CUDA_SUCCESS) {
         const char* status_name = nullptr;
         const char* status_string = nullptr;
-        cuGetErrorName  (status, &status_name);
+        cuGetErrorName(status, &status_name);
         cuGetErrorString(status, &status_string);
         std::ostringstream oss;
-        oss << statement << " failed: "
-            << status << " (" << status_name << ')'
-            << status_string
-            << " (" << loc.file_name() << ":" << loc.line() << ")";
+        oss << statement << " failed: " << status << " (" << status_name << ')' << status_string << " ("
+            << loc.file_name() << ":" << loc.line() << ")";
 
         throw std::runtime_error(oss.str());
     }
 }
 } // namespace reprospect::cuda
 
-#define REPROSPECT_CHECK_CUDA_CALL(statement) \
-    ::reprospect::cuda::check_cuda_call((statement), #statement)
+#define REPROSPECT_CHECK_CUDA_CALL(statement) ::reprospect::cuda::check_cuda_call((statement), #statement)
 
 #endif // REPROSPECT_CUDA_HELPER_HPP

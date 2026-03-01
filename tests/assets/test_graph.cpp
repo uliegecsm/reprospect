@@ -14,36 +14,38 @@
 using index_t = decltype(dim3::x);
 
 template <index_t Dst, index_t... Src>
-__global__ __launch_bounds__(1, 1) void add_and_increment_kernel(index_t* const counters)
-{
+__global__ __launch_bounds__(1, 1) void add_and_increment_kernel(index_t* const counters) {
     ((counters[Dst] += counters[Src]), ...);
     ++counters[Dst];
 }
 
 template <index_t Dst, size_t NumPredecessors, index_t... Src>
-cudaGraphNode_t add_node(const cudaGraph_t graph, index_t* const counters, const std::array<const cudaGraphNode_t, NumPredecessors> predecessors)
-{
+cudaGraphNode_t add_node(
+    const cudaGraph_t graph,
+    index_t* const counters,
+    const std::array<const cudaGraphNode_t, NumPredecessors> predecessors) {
     cudaGraphNode_t node = nullptr;
 
-    void* args[] = {(void*)&counters};
+    void* args[] = {(void*) &counters};
 
     const cudaKernelNodeParams params = {
-        .func = (void*)add_and_increment_kernel<Dst, Src...>,
+        .func = (void*) add_and_increment_kernel<Dst, Src...>,
         .gridDim = dim3(1),
         .blockDim = dim3(1),
         .sharedMemBytes = 0,
         .kernelParams = args,
-        .extra = nullptr
-    };
+        .extra = nullptr};
 
-    REPROSPECT_CHECK_CUDART_CALL(cudaGraphAddKernelNode(&node, graph, predecessors.empty() ? nullptr : predecessors.data(), predecessors.size(), &params));
+    REPROSPECT_CHECK_CUDART_CALL(cudaGraphAddKernelNode(
+        &node, graph, predecessors.empty() ? nullptr : predecessors.data(), predecessors.size(), &params));
     return node;
 }
 
-struct MyAppDomain{ static constexpr char const* name {"application_domain"}; };
+struct MyAppDomain {
+    static constexpr char const * name{"application_domain"};
+};
 
-int main()
-{
+int main() {
     //! Mark the start of the application.
     ::nvtx3::mark_in<MyAppDomain>("Starting my application.");
 
@@ -75,7 +77,8 @@ int main()
 
     /// Node D depends on nodes B and C. It increments index 3 and adds
     /// the values at indices 1 and 2 to index 3.
-    [[maybe_unused]] const auto node_D = add_node<3, 2, 1, 2>(graph, counters, {node_B, node_C});
+    [[maybe_unused]]
+    const auto node_D = add_node<3, 2, 1, 2>(graph, counters, {node_B, node_C});
 
     //! Instantiate and launch the graph.
     cudaGraphExec_t graph_exec = nullptr;
@@ -83,7 +86,8 @@ int main()
     REPROSPECT_CHECK_CUDART_CALL(cudaGraphLaunch(graph_exec, stream));
 
     std::vector<index_t> counters_h(4);
-    REPROSPECT_CHECK_CUDART_CALL(cudaMemcpyAsync(counters_h.data(), counters, 4 * sizeof(index_t), cudaMemcpyDeviceToHost, stream));
+    REPROSPECT_CHECK_CUDART_CALL(
+        cudaMemcpyAsync(counters_h.data(), counters, 4 * sizeof(index_t), cudaMemcpyDeviceToHost, stream));
 
     REPROSPECT_CHECK_CUDART_CALL(cudaFreeAsync(counters, stream));
 
@@ -93,10 +97,14 @@ int main()
     REPROSPECT_CHECK_CUDART_CALL(cudaGraphDestroy(graph));
     REPROSPECT_CHECK_CUDART_CALL(cudaStreamDestroy(stream));
 
-    if(counters_h.at(0) != 1) throw std::runtime_error("wrong value for node A");
-    if(counters_h.at(1) != 2) throw std::runtime_error("wrong value for node B");
-    if(counters_h.at(2) != 2) throw std::runtime_error("wrong value for node C");
-    if(counters_h.at(3) != 5) throw std::runtime_error("wrong value for node D");
+    if (counters_h.at(0) != 1)
+        throw std::runtime_error("wrong value for node A");
+    if (counters_h.at(1) != 2)
+        throw std::runtime_error("wrong value for node B");
+    if (counters_h.at(2) != 2)
+        throw std::runtime_error("wrong value for node C");
+    if (counters_h.at(3) != 5)
+        throw std::runtime_error("wrong value for node D");
 
     ::nvtx3::end_range_in<MyAppDomain>(outer);
 

@@ -13,8 +13,7 @@
  * Companion of @ref examples/cuda/virtual_functions/example_dispatch.py.
  */
 
-namespace reprospect::examples::cuda::virtual_functions
-{
+namespace reprospect::examples::cuda::virtual_functions {
 
 /**
  * @name Utilities for dispatching virtual functions in device kernels.
@@ -32,14 +31,13 @@ namespace reprospect::examples::cuda::virtual_functions
 ///@{
 template <typename T>
 __global__ void __launch_bounds__(1, 1) delete_kernel(T* const ptr) {
-    if (blockIdx.x == 0) ptr->~T();
+    if (blockIdx.x == 0)
+        ptr->~T();
 }
 
-struct DeviceDeleter
-{
+struct DeviceDeleter {
     template <typename T>
-    void operator()(T* const ptr) const
-    {
+    void operator()(T* const ptr) const {
         delete_kernel<<<1, 1, 0, nullptr>>>(ptr);
         REPROSPECT_CHECK_CUDART_CALL(cudaStreamSynchronize(nullptr));
         REPROSPECT_CHECK_CUDART_CALL(cudaFree(ptr));
@@ -47,10 +45,8 @@ struct DeviceDeleter
 };
 
 template <typename Derived>
-__global__ void __launch_bounds__(1, 1) copy_construct_kernel(Derived* const ptr, const Derived derived)
-{
-    if (blockIdx.x == 0)
-    {
+__global__ void __launch_bounds__(1, 1) copy_construct_kernel(Derived* const ptr, const Derived derived) {
+    if (blockIdx.x == 0) {
 #if defined(__NVCC__) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 700)
         const Derived copy = derived;
         new (ptr) Derived(copy);
@@ -61,8 +57,7 @@ __global__ void __launch_bounds__(1, 1) copy_construct_kernel(Derived* const ptr
 }
 
 template <typename Derived>
-std::shared_ptr<Derived> copy_to_device(const cudaStream_t stream, const Derived& derived)
-{
+std::shared_ptr<Derived> copy_to_device(const cudaStream_t stream, const Derived& derived) {
     Derived* ptr = nullptr;
     REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&ptr, sizeof(Derived), stream));
 
@@ -72,79 +67,83 @@ std::shared_ptr<Derived> copy_to_device(const cudaStream_t stream, const Derived
 }
 ///@}
 
-struct Base
-{
+struct Base {
     __device__ virtual void foo(const unsigned int /* */) const = 0;
     __device__ virtual void bar(const unsigned int /* */) const = 0;
 
 #if defined(__NVCC__) && (__CUDACC_VER_MAJOR__ >= 13)
     __host__ __device__
 #endif
-    virtual ~Base() = default;
+        virtual ~Base() = default;
 };
 
 template <typename T>
-struct DerivedA : public Base
-{
+struct DerivedA : public Base {
     T* x;
 
-    DerivedA(T* x_) : x(x_) {}
+    DerivedA(T* x_)
+        : x(x_) {
+    }
 
-    __device__ void foo(const unsigned int idx) const override { x[idx] += 0xaf; }
-    __device__ void bar(const unsigned int idx) const override { x[idx] += 0xab; }
+    __device__ void foo(const unsigned int idx) const override {
+        x[idx] += 0xaf;
+    }
+    __device__ void bar(const unsigned int idx) const override {
+        x[idx] += 0xab;
+    }
 };
 
 template <typename T>
-struct DerivedB : public Base
-{
+struct DerivedB : public Base {
     T* x;
 
-    DerivedB(T* x_) : x(x_) {}
+    DerivedB(T* x_)
+        : x(x_) {
+    }
 
-    __device__ void foo(const unsigned int idx) const override { x[idx] += 0xbf; }
-    __device__ void bar(const unsigned int idx) const override { x[idx] += 0xbb; }
+    __device__ void foo(const unsigned int idx) const override {
+        x[idx] += 0xbf;
+    }
+    __device__ void bar(const unsigned int idx) const override {
+        x[idx] += 0xbb;
+    }
 };
 
 template <typename Derived>
-__global__ void static_foo_kernel(const Base* const base, const unsigned int size)
-{
+__global__ void static_foo_kernel(const Base* const base, const unsigned int size) {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < size) {
         static_cast<const Derived*>(base)->Derived::foo(index);
     }
 }
 
-__global__ void dynamic_foo_kernel(const Base* const base, const unsigned int size)
-{
+__global__ void dynamic_foo_kernel(const Base* const base, const unsigned int size) {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < size) {
         base->foo(index);
     }
 }
 
-__global__ void dynamic_bar_kernel(const Base* const base, const unsigned int size)
-{
+__global__ void dynamic_bar_kernel(const Base* const base, const unsigned int size) {
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
     if (index < size) {
         base->bar(index);
     }
 }
 
-class Dispatch
-{
-public:
+class Dispatch {
+   public:
     using value_t = float;
 
     static constexpr unsigned int size = 128;
 
-    using base_t      = Base;
+    using base_t = Base;
     using derived_a_t = DerivedA<value_t>;
     using derived_b_t = DerivedB<value_t>;
 
-public:
+   public:
     Dispatch(const cudaStream_t stream)
-      : generator(std::random_device{}())
-    {
+        : generator(std::random_device{}()) {
         //! Create and initialize buffer.
         REPROSPECT_CHECK_CUDART_CALL(cudaMallocAsync(&x, size * sizeof(value_t), stream));
 
@@ -159,8 +158,7 @@ public:
         REPROSPECT_CHECK_CUDART_CALL(cudaFree(x));
     }
 
-    void run_static_foo(cudaStream_t stream) const
-    {
+    void run_static_foo(cudaStream_t stream) const {
         const bool use_a = draw();
         {
             nvtx3::scoped_range range("static_foo");
@@ -173,8 +171,7 @@ public:
         check(stream, use_a ? 0xaf : 0xbf);
     }
 
-    void run_dynamic_foo(cudaStream_t stream) const
-    {
+    void run_dynamic_foo(cudaStream_t stream) const {
         const bool use_a = draw();
         {
             nvtx3::scoped_range range("dynamic_foo");
@@ -184,8 +181,7 @@ public:
         check(stream, use_a ? 0xaf : 0xbf);
     }
 
-    void run_dynamic_bar(cudaStream_t stream) const
-    {
+    void run_dynamic_bar(cudaStream_t stream) const {
         const bool use_a = draw();
         {
             nvtx3::scoped_range range("dynamic_bar");
@@ -199,20 +195,20 @@ public:
         return std::bernoulli_distribution{0.5}(generator);
     }
 
-    void check(cudaStream_t stream, const value_t expt_val) const
-    {
+    void check(cudaStream_t stream, const value_t expt_val) const {
         std::array<value_t, size> x_h;
         REPROSPECT_CHECK_CUDART_CALL(
-            cudaMemcpyAsync(x_h.data(), x, size * sizeof(value_t), cudaMemcpyDeviceToHost, stream)
-        );
+            cudaMemcpyAsync(x_h.data(), x, size * sizeof(value_t), cudaMemcpyDeviceToHost, stream));
         REPROSPECT_CHECK_CUDART_CALL(cudaStreamSynchronize(stream));
 
-        if (!std::ranges::all_of(x_h | std::views::take(size), [expt_val](const auto& val) { return val == expt_val; })) {
+        if (!std::ranges::all_of(x_h | std::views::take(size), [expt_val](const auto& val) {
+                return val == expt_val;
+            })) {
             throw std::runtime_error("buffer elements not as expected");
         }
     }
 
-protected:
+   protected:
     value_t* x;
     std::shared_ptr<const base_t> derived_a_sdptr, derived_b_sdptr;
     mutable std::mt19937 generator;
@@ -220,8 +216,7 @@ protected:
 
 } // namespace reprospect::examples::cuda::virtual_functions
 
-int main()
-{
+int main() {
     using namespace reprospect::examples::cuda::virtual_functions;
 
     cudaStream_t stream;
@@ -230,7 +225,7 @@ int main()
     {
         nvtx3::scoped_range range("dispatch");
 
-        Dispatch{stream}.run_static_foo (stream);
+        Dispatch{stream}.run_static_foo(stream);
         Dispatch{stream}.run_dynamic_foo(stream);
         Dispatch{stream}.run_dynamic_bar(stream);
     }

@@ -34,3 +34,14 @@ jobs:
 
             - run: |
                 nbstripout --verify $(find . -name *.ipynb)
+
+    clang-format:
+        runs-on: ubuntu-latest
+        container:
+            image: ghcr.io/${{ github.repository }}/cuda-clang-21-nvidia-py3.14:13.1.0-devel-ubuntu24.04
+        steps:
+            - uses: actions/checkout@v6
+            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+            - shell: bash
+              run: |
+                git ls-files '*.[ch]' '*.[ch]pp' '*.cu' '*.cuh' | xargs clang-format-21 --dry-run --Werror

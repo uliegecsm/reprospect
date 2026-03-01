@@ -1,5 +1,4 @@
-__global__ void ifs(int* __restrict__ const data, const unsigned int size)
-{
+__global__ void ifs(int* __restrict__ const data, const unsigned int size) {
     const unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (idx < size) {

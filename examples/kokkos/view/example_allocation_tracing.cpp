@@ -3,7 +3,7 @@
 #include "Kokkos_Profiling_ScopedRegion.hpp"
 
 #if !defined(KOKKOS_ENABLE_IMPL_CUDA_MALLOC_ASYNC)
-    #error "KOKKOS_ENABLE_IMPL_CUDA_MALLOC_ASYNC is not defined."
+#    error "KOKKOS_ENABLE_IMPL_CUDA_MALLOC_ASYNC is not defined."
 #endif
 
 /**
@@ -12,15 +12,14 @@
  * Companion of @ref examples/kokkos/view/example_allocation_tracing.py.
  */
 
-namespace reprospect::examples::kokkos::view
-{
+namespace reprospect::examples::kokkos::view {
 
-template <typename MemorySpace> requires Kokkos::is_memory_space_v<MemorySpace>
-class Allocation
-{
-public:
+template <typename MemorySpace>
+requires Kokkos::is_memory_space_v<MemorySpace>
+class Allocation {
+   public:
     using scalar_t = char;
-    using view_t   = Kokkos::View<scalar_t*, MemorySpace>;
+    using view_t = Kokkos::View<scalar_t*, MemorySpace>;
 
     /**
      * @name Sizes.
@@ -34,9 +33,8 @@ public:
     static constexpr size_t size_above_threshold = 41000;
     ///@}
 
-public:
-    bool run_impl(const Kokkos::Cuda& exec, const size_t size) const
-    {
+   public:
+    bool run_impl(const Kokkos::Cuda& exec, const size_t size) const {
         const Kokkos::Profiling::ScopedRegion outer(std::to_string(size));
 
         std::optional<view_t> data = std::nullopt;
@@ -62,22 +60,19 @@ public:
         return !data.has_value();
     }
 
-    bool run(const Kokkos::Cuda& exec) const
-    {
-        return this->run_impl(exec, size_below_threshold) &&
-               this->run_impl(exec, size_above_threshold);
+    bool run(const Kokkos::Cuda& exec) const {
+        return this->run_impl(exec, size_below_threshold) && this->run_impl(exec, size_above_threshold);
     }
 
-protected:
+   protected:
     //! @note The constructor of @c Kokkos::Profiling::ScopedRegion cannot be called with a @c std::string_view.
-    Kokkos::Profiling::ScopedRegion region {std::string(Kokkos::Impl::TypeInfo<MemorySpace>::name())};
+    Kokkos::Profiling::ScopedRegion region{std::string(Kokkos::Impl::TypeInfo<MemorySpace>::name())};
 };
 
 } // namespace reprospect::examples::kokkos::view
 
-int main(int argc, char* argv[])
-{
-    Kokkos::ScopeGuard guard {argc, argv};
+int main(int argc, char* argv[]) {
+    Kokkos::ScopeGuard guard{argc, argv};
     {
         cudaStream_t stream = nullptr;
         KOKKOS_IMPL_CUDA_SAFE_CALL(cudaStreamCreate(&stream));
@@ -85,10 +80,10 @@ int main(int argc, char* argv[])
         {
             const Kokkos::Cuda exec{stream};
 
-            Kokkos::Profiling::ProfilingSection profiling_section {"AllocationProfiling"};
+            Kokkos::Profiling::ProfilingSection profiling_section{"AllocationProfiling"};
             profiling_section.start();
 
-            reprospect::examples::kokkos::view::Allocation<Kokkos::CudaSpace  >{}.run(exec);
+            reprospect::examples::kokkos::view::Allocation<Kokkos::CudaSpace>{}.run(exec);
             reprospect::examples::kokkos::view::Allocation<Kokkos::SharedSpace>{}.run(exec);
 
             profiling_section.stop();

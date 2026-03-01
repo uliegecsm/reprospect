@@ -65,13 +65,18 @@ RUN <<EOF
     ./llvm.sh ${CXX_COMPILER_VERSION}
     rm llvm.sh
 
+    apt-helpers install-packages --clean   \
+        --update --packages                \
+        clang-${CXX_COMPILER_VERSION}      \
+        clang-tidy-${CXX_COMPILER_VERSION} \
+        clang-format-${CXX_COMPILER_VERSION}
+
     update-alternatives-helpers --prefix /usr/bin \
-        --display --level=10 \
-        --for-each-of clang=clang-${CXX_COMPILER_VERSION} clang++=clang++-${CXX_COMPILER_VERSION} llvm-cxxfilt=llvm-cxxfilt-${CXX_COMPILER_VERSION}
-
-    clang --version
-
-    apt-helpers clean
+        --display --level=10 --for-each-of \
+        clang=clang-${CXX_COMPILER_VERSION} \
+        clang++=clang++-${CXX_COMPILER_VERSION} \
+        clang-tidy=clang-tidy-${CXX_COMPILER_VERSION} \
+        llvm-cxxfilt=llvm-cxxfilt-${CXX_COMPILER_VERSION}
 EOF
 
 # Install GNU compilers.

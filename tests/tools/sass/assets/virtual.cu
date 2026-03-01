@@ -5,8 +5,12 @@ struct Base {
 };
 
 struct Derived : public Base {
-    __device__ bool guard() override { return true; }
-    __device__ void work(float& value) override { value += 42.; }
+    __device__ bool guard() override {
+        return true;
+    }
+    __device__ void work(float& value) override {
+        value += 42.;
+    }
 };
 
 __global__ void kernel(Base* const ptr, float* const data) {

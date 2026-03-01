@@ -6,13 +6,12 @@
  * Companion of @ref examples/kokkos/atomic/example_add_int128.py.
  */
 
-int main(int argc, char* argv[])
-{
-    Kokkos::ScopeGuard guard {argc, argv};
+int main(int argc, char* argv[]) {
+    Kokkos::ScopeGuard guard{argc, argv};
     {
         using scalar_t = __int128_t;
 
-        static_assert( sizeof(scalar_t) == 16);
+        static_assert(sizeof(scalar_t) == 16);
         static_assert(alignof(scalar_t) == 16);
 
         static_assert(std::is_trivially_copyable_v<scalar_t>);

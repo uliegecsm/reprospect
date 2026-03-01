@@ -9,11 +9,10 @@
  *  3. Run benchmarks.
  *  4. Finalize @c Kokkos.
  */
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv) {
     ::benchmark::MaybeReenterWithoutASLR(argc, argv);
 
-    Kokkos::ScopeGuard guard {argc, argv};
+    Kokkos::ScopeGuard guard{argc, argv};
     {
         ::benchmark::Initialize(&argc, argv);
         ::benchmark::RunSpecifiedBenchmarks();

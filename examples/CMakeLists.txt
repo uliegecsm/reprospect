@@ -50,6 +50,7 @@ function(add_one_example FILE)
         test_environment(${EXECUTABLE} ${ENV_NAME} ${ENV_OP} ${ENV_VALUE})
     endif()
 
+    set(aoe_EXECUTABLE "${EXECUTABLE}" PARENT_SCOPE)
 endfunction()
 
 add_subdirectory(cuda)

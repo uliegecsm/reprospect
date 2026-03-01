@@ -1,11 +1,5 @@
 add_one_kokkos_example(allocation_tracing)
 
-find_package(benchmark REQUIRED COMPONENTS benchmark)
-
-add_one_kokkos_example(allocation_benchmarking)
-target_link_libraries(examples_kokkos_view_allocation_benchmarking PRIVATE benchmark::benchmark)
-target_sources(examples_kokkos_view_allocation_benchmarking PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/example_allocation_benchmarking.main.cpp)
-
-set_source_files_properties(example_allocation_benchmarking.main.cpp PROPERTIES LANGUAGE CUDA)
+add_one_kokkos_example_benchmarking(allocation_benchmarking)
 
 add_one_kokkos_example(restrict)

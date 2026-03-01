@@ -1,1 +1,3 @@
 add_one_kokkos_example(alignment)
+add_one_kokkos_example(division)
+add_one_kokkos_example_benchmarking(division_benchmarking)

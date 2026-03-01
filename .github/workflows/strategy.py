@@ -19,7 +19,7 @@ AVAILABLE_RUNNER_ARCHES: typing.Final[tuple[NVIDIAArch, ...]] = (
 
 SELF_HOSTED: typing.Final[tuple[str, ...]] = ('self-hosted', 'linux', 'docker', 'amd64')
 
-KOKKOS_SHA: typing.Final[str] = '5.0.0'
+KOKKOS_SHA: typing.Final[str] = '5.0.2'
 
 @dataclasses.dataclass(frozen=False, slots=True)
 class Compiler:

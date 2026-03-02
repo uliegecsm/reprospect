@@ -14,7 +14,7 @@ namespace reprospect::examples::kokkos::complex {
 
 class Division {
    public:
-    static constexpr size_t size = 1024;
+    static constexpr size_t size = 128<<3;
 
     using complex_view_t = Kokkos::View<Kokkos::complex<double>[size], Kokkos::CudaSpace>;
 

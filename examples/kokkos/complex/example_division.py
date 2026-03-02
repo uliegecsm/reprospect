@@ -92,9 +92,9 @@ class TestSASS(TestDivision):
     Binary analysis.
     """
     SIGNATURE: typing.Final[dict[Method, re.Pattern[str]]] = {
-        Method.IEC559: re.compile(r'reprospect::examples::kokkos::complex::Iec559<Kokkos::View<Kokkos::complex<double> \[1024\], Kokkos::CudaSpace>>'),
-        Method.SCALING: re.compile(r'reprospect::examples::kokkos::complex::Scaling<\(bool\)0, Kokkos::View<Kokkos::complex<double> \[1024\], Kokkos::CudaSpace>>'),
-        Method.SCALING_BRANCH: re.compile(r'reprospect::examples::kokkos::complex::Scaling<\(bool\)1, Kokkos::View<Kokkos::complex<double> \[1024\], Kokkos::CudaSpace>>'),
+        Method.IEC559: re.compile(r'reprospect::examples::kokkos::complex::Iec559<Kokkos::View<Kokkos::complex<double> \[512\], Kokkos::CudaSpace>>'),
+        Method.SCALING: re.compile(r'reprospect::examples::kokkos::complex::Scaling<\(bool\)0, Kokkos::View<Kokkos::complex<double> \[512\], Kokkos::CudaSpace>>'),
+        Method.SCALING_BRANCH: re.compile(r'reprospect::examples::kokkos::complex::Scaling<\(bool\)1, Kokkos::View<Kokkos::complex<double> \[512\], Kokkos::CudaSpace>>'),
     }
 
     @property

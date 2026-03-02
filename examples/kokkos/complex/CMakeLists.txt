@@ -1,3 +1,10 @@
 add_one_kokkos_example(alignment)
 add_one_kokkos_example(division)
 add_one_kokkos_example_benchmarking(division_benchmarking)
+
+find_package(GTest REQUIRED)
+
+add_executable(examples_kokkos_complex_division_test example_division_test.cpp)
+target_link_libraries(examples_kokkos_complex_division_test PRIVATE Kokkos::kokkoscore GTest::gtest_main GTest::gmock)
+target_include_directories(examples_kokkos_complex_division_test PRIVATE ${CMAKE_SOURCE_DIR})
+set_source_files_properties(example_division_test.cpp PROPERTIES LANGUAGE CUDA)

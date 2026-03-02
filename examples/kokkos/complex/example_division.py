@@ -117,6 +117,19 @@ class TestSASS(TestDivision):
             return decoder
         return {method: get_decoder(method) for method in Method}
 
+    def test_dump(self, decoder: dict[Method, Decoder]) -> None:
+        with open('/workspaces/cuda-helpers/test-iec559.sass', 'w+') as f:
+            for instruction in decoder[Method.IEC559].instructions:
+                f.write(instruction.instruction + '\n')
+        with open('/workspaces/cuda-helpers/test-scaling-branch.sass', 'w+') as f:
+            for instruction in decoder[Method.SCALING_BRANCH].instructions:
+                f.write(instruction.instruction + '\n')
+
+        with open('/workspaces/cuda-helpers/test-iec559.html', 'w+') as f:
+            f.write(decoder[Method.IEC559].to_html())
+        with open('/workspaces/cuda-helpers/test-scaling-branch.html', 'w+') as f:
+            f.write(decoder[Method.SCALING_BRANCH].to_html())
+
     def test_instruction_count(self, decoder: dict[Method, Decoder]) -> None:
         """
         Instruction count.
@@ -137,15 +150,15 @@ class TestNCU(TestDivision):
         # Specific instruction counts (LDG and STG and others).
         MetricCorrelation(name='sass__inst_executed_per_opcode'),
         # Memory traffic.
-        L1TEXCache.GlobalLoad.Instructions.create(),
-        L1TEXCache.GlobalLoad.Sectors.create(),
-        L1TEXCache.GlobalLoad.SectorMisses.create(),
-        L1TEXCache.GlobalStore.Instructions.create(),
-        L1TEXCache.LocalStore.Instructions.create(),
+        # L1TEXCache.GlobalLoad.Instructions.create(),
+        # L1TEXCache.GlobalLoad.Sectors.create(),
+        # L1TEXCache.GlobalLoad.SectorMisses.create(),
+        # L1TEXCache.GlobalStore.Instructions.create(),
+        # L1TEXCache.LocalStore.Instructions.create(),
         Metric(name='gpc__cycles_elapsed.max'),
         Metric(name='sm__inst_executed_pipe_fp64.sum'),
         Metric(name='sm__pipe_fp64_cycles_active.sum'),
-        MetricCounter(name='lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs=(MetricCounterRollUp.SUM,)),
+        # MetricCounter(name='lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs=(MetricCounterRollUp.SUM,)),
     )
 
     NVTX_INCLUDES: typing.Final[tuple[str, ...]] = ('division',)
@@ -296,3 +309,25 @@ class TestNCU(TestDivision):
     #     for key in keys_sectors_lookup_misses:
     #         for alignment in (Alignment.DEFAULT, Alignment.SPECIFIED):
     #             assert metrics[alignment][key] == expt_sectors_lookup_misses
+
+
+From the profiling, we cannot tell that the IEC559 is faster.
+It actually uses more cycles/time on my laptop.
+However, we could demonstrate that though it uses more fp instructions,
+they are probably a less expensive mix.
+Indeed, we have fewer DFMA.
+
+We also have fewer divisions, which typically use MUFU. There are 3 MUFU in IEC559
+and 7 in the SCALING.
+
+To expand our matchers, we could add a new one for:
+
+__global__ __launch_bounds__(1) void division(double* const __restrict__ dst, const double* const src_a, const double* const __restrict__ src_b ) {
+    dst[0] = src_a[1] / src_b[2];
+}
+
+It generates maaany lines of codes but mostly to handle edges cases to be IEEE compliant.
+
+Looking at the nvdisams control flow graph is useful too.
+
+There is a clear "short path" for (I guess) easy values and a slow fallback.

@@ -10,7 +10,7 @@ namespace reprospect::examples::kokkos::complex {
  * 
  * todo link both cccl and llvm div3
  */
-template <typename T, bool EnableBranching = true>
+template <typename T, bool EnableBranching = false>
 KOKKOS_FUNCTION Kokkos::complex<T> iec559(const Kokkos::complex<T>& x, const Kokkos::complex<T>& y) {
     int __ilogbw = 0;
     T __a = x.real();
@@ -20,16 +20,12 @@ KOKKOS_FUNCTION Kokkos::complex<T> iec559(const Kokkos::complex<T>& x, const Kok
     T __logbw = Kokkos::logb(Kokkos::fmax(Kokkos::fabs(__c), Kokkos::fabs(__d)));
     if (Kokkos::isfinite(__logbw)) {
         __ilogbw = static_cast<int>(__logbw);
-        __a = scalbn(__a, -__ilogbw);
-        __b = scalbn(__b, -__ilogbw);
         __c = scalbn(__c, -__ilogbw);
         __d = scalbn(__d, -__ilogbw);
     }
     T __denom = __c * __c + __d * __d;
-    // T __x = scalbn((__a * __c + __b * __d) / __denom, -__ilogbw);
-    // T __y = scalbn((__b * __c - __a * __d) / __denom, -__ilogbw);
-    T __x = (__a * __c + __b * __d) / __denom;
-    T __y = (__b * __c - __a * __d) / __denom;
+    T __x = scalbn((__a * __c + __b * __d) / __denom, -__ilogbw);
+    T __y = scalbn((__b * __c - __a * __d) / __denom, -__ilogbw);
     if constexpr (EnableBranching) {
         if (Kokkos::isnan(__x) && Kokkos::isnan(__y)) {
             if ((__denom == T(0)) && (!Kokkos::isnan(__a) || !Kokkos::isnan(__b))) {

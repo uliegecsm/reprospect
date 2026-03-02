@@ -7,6 +7,8 @@ namespace reprospect::examples::kokkos::complex {
  * Similar to https://github.com/NVIDIA/cccl/blob/a91db6e2a022a7aa03b37873f0d4caf5ac81281d/libcudacxx/include/cuda/std/__complex/complex.h#L400-L496.
  *
  * Note that the scaling applies to both numerator and denominator to avoid underflow and overflow.
+ * 
+ * todo link both cccl and llvm div3
  */
 template <typename T, bool EnableBranching = true>
 KOKKOS_FUNCTION Kokkos::complex<T> iec559(const Kokkos::complex<T>& x, const Kokkos::complex<T>& y) {
@@ -18,14 +20,12 @@ KOKKOS_FUNCTION Kokkos::complex<T> iec559(const Kokkos::complex<T>& x, const Kok
     T __logbw = Kokkos::logb(Kokkos::fmax(Kokkos::fabs(__c), Kokkos::fabs(__d)));
     if (Kokkos::isfinite(__logbw)) {
         __ilogbw = static_cast<int>(__logbw);
-        __a = scalbn(__a, -__ilogbw);
-        __b = scalbn(__b, -__ilogbw);
         __c = scalbn(__c, -__ilogbw);
         __d = scalbn(__d, -__ilogbw);
     }
     T __denom = __c * __c + __d * __d;
-    T __x = (__a * __c + __b * __d) / __denom;
-    T __y = (__b * __c - __a * __d) / __denom;
+    T __x = scalbn((__a * __c + __b * __d) / __denom, -__ilogbw);
+    T __y = scalbn((__b * __c - __a * __d) / __denom, -__ilogbw);
     if constexpr (EnableBranching) {
         if (Kokkos::isnan(__x) && Kokkos::isnan(__y)) {
             if ((__denom == T(0)) && (!Kokkos::isnan(__a) || !Kokkos::isnan(__b))) {
@@ -56,11 +56,13 @@ KOKKOS_FUNCTION constexpr RealType norm(const Kokkos::complex<RealType>& value) 
 /**
  * Adapted from https://github.com/kokkos/kokkos/blob/9174877d49528ab293b6c7f4c6bd932a429b200a/core/src/Kokkos_Complex.hpp#L182-L206.
  * Similar to https://github.com/NVIDIA/thrust/blob/756c5afc0750f1413da05bd2b6505180e84c53d4/thrust/detail/complex/arithmetic.h#L119.
+ * 
+ * todo must be the same as in kokkos
  */
 template <bool EnableBranching, std::floating_point RealType>
 KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
     scaling(const Kokkos::complex<RealType>& x, const Kokkos::complex<RealType>& y) noexcept {
-    const RealType scale = Kokkos::fmax(Kokkos::fabs(y.real()), Kokkos::fabs(y.imag()));
+    const RealType scale = Kokkos::fabs(y.real()) + Kokkos::fabs(y.imag());
     if constexpr (EnableBranching) {
         if (scale == RealType(0)) {
             return {x.real() / scale, x.imag() / scale};

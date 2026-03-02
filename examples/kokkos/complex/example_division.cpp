@@ -14,7 +14,7 @@ namespace reprospect::examples::kokkos::complex {
 
 class Division {
    public:
-    static constexpr size_t size = 128<<3;
+    static constexpr size_t size = 128<<14;
 
     using complex_view_t = Kokkos::View<Kokkos::complex<double>[size], Kokkos::CudaSpace>;
 
@@ -75,10 +75,17 @@ int main(int argc, char* argv[]) {
     {
         using namespace reprospect::examples::kokkos::complex;
 
+        Division division{};
+
+        // some warmup
+        for(size_t i = 0; i < 10; ++i) {
+            division.scaling_branch();
+            division.scaling();
+            division.iec559();
+        }
+
         Kokkos::Profiling::ProfilingSection profiling_section{"division"};
         profiling_section.start();
-
-        Division division{};
 
         division.scaling_branch();
         division.scaling();

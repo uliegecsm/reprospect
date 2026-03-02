@@ -143,29 +143,36 @@ class TestDivision(CMakeAwareTestCase):
 
         # Make a nice plot.
         fig = matplotlib.pyplot.figure(figsize=(20, 10), layout='constrained')
-        ax  = fig.subplots(nrows=1, ncols=1)
+        axes  = fig.subplots(nrows=2, ncols=1)
 
         for method in Method:
             filtered = results[
                 (results['method'] == method)
             ].sort_values('size')
-            ax.plot(
-                filtered['size'], filtered['real_time'],
+            axes[0].plot(
+                filtered['size'][:4], filtered['real_time'][:4],
+                linestyle=LINESTYLES[method].get_linestyle(),
+                linewidth=LINESTYLES[method].get_linewidth(),
+                color=LINESTYLES[method].get_color(),
+                label=f'{method}',
+            )
+            axes[1].plot(
+                filtered['size'][4:], filtered['real_time'][4:],
                 linestyle=LINESTYLES[method].get_linestyle(),
                 linewidth=LINESTYLES[method].get_linewidth(),
                 color=LINESTYLES[method].get_color(),
                 label=f'{method}',
             )
 
-        ax.set_ylabel(f'time [{self.TIME_UNIT}]',   fontsize=FONTSIZE)
-        ax.set_xlabel(f'number of elements', fontsize=FONTSIZE)
-        ax.set_yscale('log')
-        ax.set_xscale('log')
-        ax.tick_params(axis='both', which='major', labelsize=FONTSIZE)
-        ax.tick_params(axis='both', which='minor', labelsize=FONTSIZE)
-
-        ax.grid(which='both')
-        ax.legend(fontsize=FONTSIZE)
+        for ax in axes:
+            ax.set_ylabel(f'time [{self.TIME_UNIT}]',   fontsize=FONTSIZE)
+            ax.set_xlabel(f'number of elements', fontsize=FONTSIZE)
+            ax.set_yscale('log')
+            ax.set_xscale('log')
+            ax.tick_params(axis='both', which='major', labelsize=FONTSIZE)
+            ax.tick_params(axis='both', which='minor', labelsize=FONTSIZE)
+            ax.grid(which='both')
+            ax.legend(fontsize=FONTSIZE)
 
         fname = self.cwd / 'results.svg'
         logging.info(f'Saving results in {fname}.')

@@ -295,7 +295,7 @@ TEST(ComplexDivision, failure_rate) {
     using rcomplex_t = std::complex<long double>;
     using reference_view_t = Kokkos::View<rcomplex_t*, Kokkos::HostSpace>;
 
-    constexpr size_t size = 1000;
+    constexpr size_t size = 1000; // set this higher for better sampling
 
     Kokkos::ScopeGuard guard{};
 

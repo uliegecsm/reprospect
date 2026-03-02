@@ -128,7 +128,7 @@ class TestDivision(CMakeAwareTestCase):
         """
         # Retrieve unique, sorted sizes.
         sizes = sorted(set(results['size'].values))
-        assert len(sizes) == 5
+        assert len(sizes) == 10
 
         logging.info(f'Sizes are {sizes}.')
 

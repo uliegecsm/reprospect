@@ -91,7 +91,16 @@ void parameters(::benchmark::internal::Benchmark* benchmark) {
         ->ArgName(
             "size"
     )
-        ->Arg(1024<<1)->Arg(1024<<4)->Arg(1024<<6)->Arg(1024<<8)->Arg(1024<<10);
+        ->Arg(1024<<1)
+        ->Arg(1024<<2)
+        ->Arg(1024<<3)
+        ->Arg(1024<<4)
+        ->Arg(1024<<5)
+        ->Arg(1024<<6)
+        ->Arg(1024<<7)
+        ->Arg(1024<<8)
+        ->Arg(1024<<9)
+        ->Arg(1024<<10);
 }
 
 #define REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION(_name_)                                          \

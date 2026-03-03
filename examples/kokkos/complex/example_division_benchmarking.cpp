@@ -6,6 +6,10 @@
 #include "examples/kokkos/benchmarking.hpp"
 #include "examples/kokkos/complex/example_division.hpp"
 
+#include <fstream>
+#include <type_traits>
+#include <iostream>
+
 /**
  * @file
  *
@@ -98,26 +102,53 @@ class Division : public ::benchmark::Fixture {
     complex_view_t src_a, src_b, dst_c;
 };
 
+template <class ViewType>
+void dump_view_binary(const ViewType& view,
+                      const std::string& filename)
+{
+    using value_type = typename ViewType::value_type;
+
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << "sizeof(value_type): " << sizeof(value_type) << std::endl;
+
+    auto view_h = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), view);
+
+    const size_t dim0 = view_h.extent(0);
+    const size_t dim1 = view_h.extent(1);
+
+    std::ofstream out(filename, std::ios::binary);
+    if (!out) {
+        throw std::runtime_error("Failed to open file");
+    }
+
+    out.write(reinterpret_cast<const char*>(&dim0), sizeof(size_t));
+    out.write(reinterpret_cast<const char*>(&dim1), sizeof(size_t));
+
+    out.write(reinterpret_cast<const char*>(view_h.data()), sizeof(value_type) * dim0 * dim1);
+
+    out.close();
+}
+
 template <typename Divisor>
 class NewtonFractal : public ::benchmark::Fixture {
 public:
     using complex_t = Kokkos::complex<double>;
     using view_t = Kokkos::View<unsigned int**, Kokkos::CudaSpace>;
-    using roots_t = Kokkos::View<complex_t[3], Kokkos::CudaSpace>;
+    using roots_t = Kokkos::View<complex_t[4], Kokkos::CudaSpace>;
 
     static constexpr unsigned short range_width = 0; //! Number of samples along the x axis.
-    static constexpr unsigned short range_height = 0; //! Number of samples along the y axis.
+    static constexpr unsigned short range_height = 1; //! Number of samples along the y axis.
 
-    //! Fuction, *e.g.* @c z^3-1.
+    //! Fuction, *e.g.* @c z^4-1.
     KOKKOS_FUNCTION
     static constexpr complex_t function(const complex_t z) {
-        return Kokkos::pow(z, 3) - complex_t{1, 0};
+        return Kokkos::pow(z, 4) - complex_t{1, 0};
     }
 
-    //! Derivative, *e.g.* @c 3*z^2.
+    //! Derivative, *e.g.* @c 4*z^3.
     KOKKOS_FUNCTION
     static constexpr complex_t derivative(const complex_t z) {
-        return 3 * z * z;
+        return 4 * z * z * z;
     }
 
     //! Assume that the domain is [-1, -1] x [-1, 1].
@@ -129,12 +160,12 @@ public:
 
         double dwidth = 2. / colors.extent(0);
         double dheight = 2. / colors.extent(1);
-        double tolerance = 1e-8;
+        double tolerance = 1e-12;
 
         template <std::integral T>
         KOKKOS_FUNCTION
         void operator()(const T iwidth, const T iheight) const noexcept {
-            complex_t z{iwidth * dwidth, iheight * dheight};
+            complex_t z{-1. + iwidth * dwidth, -1. + iheight * dheight};
             for(unsigned int iter = 0; iter < max_iters; ++iter) {
                 z -= Divisor{}(NewtonFractal::function(z), NewtonFractal::derivative(z));
                 for(unsigned int iroot = 0; iroot < roots.size(); ++iroot) {
@@ -155,18 +186,25 @@ public:
 
     void SetUp(const ::benchmark::State& state) {
         exec.emplace();
-        colors = view_t(Kokkos::view_alloc(Kokkos::WithoutInitializing, *exec), state.range(range_width), state.range(range_height));
-        iterations = view_t(Kokkos::view_alloc(Kokkos::WithoutInitializing, *exec), state.range(range_width), state.range(range_height));
+        const auto width = state.range(range_width);
+        const auto height = state.range(range_height);
+        std::cout << "> width x height: " << width << "x" << height << std::endl;
+        colors = view_t(Kokkos::view_alloc(Kokkos::WithoutInitializing, *exec), width, height);
+        iterations = view_t(Kokkos::view_alloc(Kokkos::WithoutInitializing, *exec), width, height);
         roots = roots_t(Kokkos::view_alloc(Kokkos::WithoutInitializing, *exec));
-        std::array<complex_t, 3> roots_h{
+        std::array<complex_t, 4> roots_h{
             complex_t{1., 0.},
-            complex_t{-0.5, std::sqrt(3.) / 2.},
-            complex_t{-0.5, - std::sqrt(3.) / 2.}
+            complex_t{-1., 0.},
+            complex_t{0., 1.},
+            complex_t{0., -1. }
         };
+        static_assert(roots_t::static_extent(0) == 4);
         Kokkos::deep_copy(*exec, roots, roots_t{roots_h.data()});
     }
 
     void TearDown(const ::benchmark::State&) {
+        dump_view_binary(colors, "colors.bin");
+        dump_view_binary(iterations, "iterations.bin");
         colors = view_t();
         iterations = view_t();
         roots = roots_t();
@@ -176,7 +214,7 @@ public:
     void run(const ::benchmark::State& state) const {
         Kokkos::parallel_for(
             Kokkos::MDRangePolicy<Kokkos::Rank<2>>(*exec, {0, 0}, {state.range(range_width), state.range(range_height)}),
-            ComputeColors{.colors = colors, .iterations = iterations, .roots = roots, .max_iters = 20}
+            ComputeColors{.colors = colors, .iterations = iterations, .roots = roots, .max_iters = 150}
         );
         exec->fence();
     }

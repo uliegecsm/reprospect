@@ -2,6 +2,8 @@ add_one_kokkos_example(alignment)
 add_one_kokkos_example(division)
 add_one_kokkos_example_benchmarking(division_benchmarking)
 
+target_compile_options(examples_kokkos_complex_division PRIVATE -lineinfo)
+
 find_package(GTest REQUIRED)
 
 add_executable(examples_kokkos_complex_division_test example_division_test.cpp)

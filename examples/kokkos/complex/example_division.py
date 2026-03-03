@@ -170,7 +170,7 @@ class TestNCU(TestDivision):
                 output=self.cwd / 'ncu',
                 executable=self.executable,
                 metrics=self.METRICS,
-                # opts=('--set=full',),
+                opts=('--set=full', '--import-source=1',),
                 nvtx_includes=self.NVTX_INCLUDES,
                 args=(
                     f'--kokkos-tools-libs={self.KOKKOS_TOOLS_NVTX_CONNECTOR_LIB}',
@@ -311,23 +311,23 @@ class TestNCU(TestDivision):
     #             assert metrics[alignment][key] == expt_sectors_lookup_misses
 
 
-From the profiling, we cannot tell that the IEC559 is faster.
-It actually uses more cycles/time on my laptop.
-However, we could demonstrate that though it uses more fp instructions,
-they are probably a less expensive mix.
-Indeed, we have fewer DFMA.
+# From the profiling, we cannot tell that the IEC559 is faster.
+# It actually uses more cycles/time on my laptop.
+# However, we could demonstrate that though it uses more fp instructions,
+# they are probably a less expensive mix.
+# Indeed, we have fewer DFMA.
 
-We also have fewer divisions, which typically use MUFU. There are 3 MUFU in IEC559
-and 7 in the SCALING.
+# We also have fewer divisions, which typically use MUFU. There are 3 MUFU in IEC559
+# and 7 in the SCALING.
 
-To expand our matchers, we could add a new one for:
+# To expand our matchers, we could add a new one for:
 
-__global__ __launch_bounds__(1) void division(double* const __restrict__ dst, const double* const src_a, const double* const __restrict__ src_b ) {
-    dst[0] = src_a[1] / src_b[2];
-}
+# __global__ __launch_bounds__(1) void division(double* const __restrict__ dst, const double* const src_a, const double* const __restrict__ src_b ) {
+#     dst[0] = src_a[1] / src_b[2];
+# }
 
-It generates maaany lines of codes but mostly to handle edges cases to be IEEE compliant.
+# It generates maaany lines of codes but mostly to handle edges cases to be IEEE compliant.
 
-Looking at the nvdisams control flow graph is useful too.
+# Looking at the nvdisams control flow graph is useful too.
 
-There is a clear "short path" for (I guess) easy values and a slow fallback.
+# There is a clear "short path" for (I guess) easy values and a slow fallback.

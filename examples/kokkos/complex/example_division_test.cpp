@@ -96,7 +96,7 @@ INSTANTIATE_TEST_SUITE_P(
             .num = {-3., -7.},
             .den = {-1., -2.},
             .expt_iec559 = kcomplex_t{3.4, 0.2},
-        .expt_scaling = kcomplex_t{3.4, std::nextafter(std::nextafter(0.2, 1), 1)}},
+            .expt_scaling = kcomplex_t{3.4, std::nextafter(std::nextafter(0.2, 1), 1)}},
 
         DivisionCase{
             .label = "general",

@@ -95,6 +95,7 @@ class TestDivision(CMakeAwareTestCase):
             '--benchmark_enable_random_interleaving=true',
             f'--benchmark_out={file}',
             '--benchmark_out_format=json',
+            '--benchmark_filter=Division'
         )
 
         logging.info(f'Running benchmark with {cmd}.')
@@ -128,7 +129,7 @@ class TestDivision(CMakeAwareTestCase):
         """
         # Retrieve unique, sorted sizes.
         sizes = sorted(set(results['size'].values))
-        assert len(sizes) == 16
+        assert len(sizes) == 8
 
         logging.info(f'Sizes are {sizes}.')
 

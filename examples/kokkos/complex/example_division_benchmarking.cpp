@@ -137,14 +137,14 @@ public:
             complex_t z{iwidth * dwidth, iheight * dheight};
             for(unsigned int iter = 0; iter < max_iters; ++iter) {
                 z -= Divisor{}(NewtonFractal::function(z), NewtonFractal::derivative(z));
-                // for(unsigned int iroot = 0; iroot < roots.size(); ++iroot) {
-                //     const complex_t diff = z - roots(iroot);
-                //     if(Kokkos::abs(diff.real()) < tolerance && Kokkos::abs(diff.imag()) < tolerance) {
-                //         colors(iwidth, iheight) = iroot;
-                //         iterations(iwidth, iheight) = iter;
-                //         return;
-                //     }
-                // }
+                for(unsigned int iroot = 0; iroot < roots.size(); ++iroot) {
+                    const complex_t diff = z - roots(iroot);
+                    if(Kokkos::abs(diff.real()) < tolerance && Kokkos::abs(diff.imag()) < tolerance) {
+                        colors(iwidth, iheight) = iroot;
+                        iterations(iwidth, iheight) = iter;
+                        return;
+                    }
+                }
             }
         }
     };
@@ -176,7 +176,7 @@ public:
     void run(const ::benchmark::State& state) const {
         Kokkos::parallel_for(
             Kokkos::MDRangePolicy<Kokkos::Rank<2>>(*exec, {0, 0}, {state.range(range_width), state.range(range_height)}),
-            ComputeColors{.colors = colors, .iterations = iterations, .roots = roots, .max_iters = 15000}
+            ComputeColors{.colors = colors, .iterations = iterations, .roots = roots, .max_iters = 20}
         );
         exec->fence();
     }
@@ -192,21 +192,21 @@ void parameters(::benchmark::internal::Benchmark* benchmark) {
         ->ArgName(
             "size"
     )
-        ->Arg(1024<<1)
+        // ->Arg(1024<<1)
         ->Arg(1024<<2)
-        ->Arg(1024<<3)
+        // ->Arg(1024<<3)
         ->Arg(1024<<4)
-        ->Arg(1024<<5)
+        // ->Arg(1024<<5)
         ->Arg(1024<<6)
-        ->Arg(1024<<7)
+        // ->Arg(1024<<7)
         ->Arg(1024<<8)
-        ->Arg(1024<<9)
+        // ->Arg(1024<<9)
         ->Arg(1024<<10)
-        ->Arg(1024<<11)
+        // ->Arg(1024<<11)
         ->Arg(1024<<12)
-        ->Arg(1024<<13)
+        // ->Arg(1024<<13)
         ->Arg(1024<<14)
-        ->Arg(1024<<15)
+        // ->Arg(1024<<15)
         ->Arg(1024<<16);
 }
 

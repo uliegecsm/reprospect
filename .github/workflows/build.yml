@@ -374,7 +374,7 @@ jobs:
         container: ${{ matrix.examples.container }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/download-artifact@v7
+            - uses: actions/download-artifact@v8
               with:
                   pattern: package-*
                   path: wheelhouse
@@ -429,7 +429,7 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
-            - uses: actions/download-artifact@v7
+            - uses: actions/download-artifact@v8
               with:
                   pattern: tests-coverage-*
                   path: coverage-data
@@ -469,12 +469,12 @@ jobs:
                     -DReProspect_ENABLE_TESTS=ON
                 cmake --build . --preset=gnu-nvidia --target=docs
 
-            - uses: actions/download-artifact@v7
+            - uses: actions/download-artifact@v8
               with:
                   name: tests-gnu-nvidia-BLACKWELL120
                   path: artifacts
 
-            - uses: actions/download-artifact@v7
+            - uses: actions/download-artifact@v8
               with:
                   name: examples-gnu-nvidia-BLACKWELL120
                   path: artifacts
@@ -643,7 +643,7 @@ jobs:
             packages: read
 
         steps:
-            - uses: actions/download-artifact@v7
+            - uses: actions/download-artifact@v8
               with:
                   pattern: package-*
                   path: wheelhouse

@@ -74,25 +74,24 @@ KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
     return (x_scaled * y_conj_scaled) / y_conj_scaled_norm;
 }
 
-template <typename ViewType>
-struct Iec559 {
-    typename ViewType::const_type src_a, src_b;
-    ViewType dst_c;
-
-    template <std::integral T>
-    KOKKOS_FUNCTION void operator()(const T idx) const {
-        dst_c(idx) = iec559(src_a(idx), src_b(idx));
+struct DivisorIec559 {
+    template <typename... Args>
+    KOKKOS_FUNCTION auto operator()(Args&&... args) const {
+        return iec559(std::forward<Args>(args)...);
     }
 };
 
-template <bool EnableBranching, typename ViewType>
-struct Scaling {
-    ViewType::const_type src_a, src_b;
-    ViewType dst_c;
+struct DivisorScaling {
+    template <typename... Args>
+    KOKKOS_FUNCTION auto operator()(Args&&... args) const {
+        return scaling<false>(std::forward<Args>(args)...);
+    }
+};
 
-    template <std::integral T>
-    KOKKOS_FUNCTION void operator()(const T index) const noexcept {
-        dst_c(index) = scaling<EnableBranching>(src_a(index), src_b(index));
+struct DivisorScalingBranch {
+    template <typename... Args>
+    KOKKOS_FUNCTION auto operator()(Args&&... args) const {
+        return scaling<true>(std::forward<Args>(args)...);
     }
 };
 

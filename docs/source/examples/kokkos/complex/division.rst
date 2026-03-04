@@ -27,5 +27,6 @@ per iteration per pixel.
 
     Newton fractal for :math:`z^4 - 1` with relaxation factor :math:`a = 1`.
 
+.. automodule:: examples.kokkos.complex.example_division
 .. automodule:: examples.kokkos.complex.example_division_benchmarking
 .. automodule:: examples.kokkos.complex.example_division_plot

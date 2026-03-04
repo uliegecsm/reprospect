@@ -111,10 +111,17 @@ struct Compliance {
         return failures;
     }
 
-    //! Sanity check: \f$ (1+i) / (1+i) = 1 \f$.
+    /**
+     * Sanity checks:
+     * * \f$ (1+i) / (1+i) = 1 \f$
+     * * \f$ (2+2i) / (2+2i) = 1 \f$
+     */
     static unsigned int test_sanity(unsigned int failures = 0) noexcept {
         const auto res_a = Divisor{}(complex_t{one, one}, complex_t{one, one});
         CHECK_STATEMENT((res_a == complex_t{one, zero}), res_a);
+
+        const auto res_b = Divisor{}(complex_t{real_t(2), real_t(2)}, complex_t{real_t(2), real_t(2)});
+        CHECK_STATEMENT((res_b == complex_t{one, zero}), res_b);
 
         return failures;
     }

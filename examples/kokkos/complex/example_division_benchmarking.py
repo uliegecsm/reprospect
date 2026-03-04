@@ -31,11 +31,11 @@ else:
 class Method(StrEnum):
     LogbScalbn = 'LogbScalbn'
     ILogbScalbn = 'ILogbScalbn'
-    Scaling = 'Scaling'
+    NormDivision = 'NormDivision'
 
     @property
-    def is_scaling(self) -> bool:
-        return self == Method.Scaling
+    def is_norm(self) -> bool:
+        return self == Method.NormDivision
 
     @property
     def is_ilog(self) -> bool:
@@ -58,7 +58,7 @@ class TestDivision(CMakeAwareTestCase):
     """
 
     PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(
-        r'^NewtonFractal<Divisor(?P<divisor>Scaling|LogbScalbn)(?:<(?:(?P<branching_or_compliance>true|false))?(?:[, ]*(?P<ilogb>true|false))?>)?>/(?P<full>[A-Za-z]+)/width:(?P<width>\d+)/height:(?P<height>\d+)',
+        r'^NewtonFractal<Divisor(?P<divisor>NormDivision|LogbScalbn)(?:<(?:(?P<branching_or_compliance>true|false))?(?:[, ]*(?P<ilogb>true|false))?>)?>/(?P<full>[A-Za-z]+)/width:(?P<width>\d+)/height:(?P<height>\d+)',
     )
 
     @classmethod
@@ -85,15 +85,15 @@ class TestDivision(CMakeAwareTestCase):
         match matched.captures('divisor')[0]:
             case 'LogbScalbn':
                 method = Method.ILogbScalbn if matched.captures('ilogb')[0] == 'true' else Method.LogbScalbn
-            case 'Scaling':
-                method = Method.Scaling
+            case 'NormDivision':
+                method = Method.NormDivision
             case _:
                 raise ValueError(matched.captures('divisor'))
 
         reconstructed = ''.join((
-            (f'NewtonFractal<Divisor{"Scaling" if method.is_scaling else "LogbScalbn"}'),
+            (f'NewtonFractal<Divisor{"NormDivision" if method.is_norm else "LogbScalbn"}'),
             ('<true' if branching_or_compliance else '<false'),
-            ('>>' if method.is_scaling else f', {"true" if method.is_ilog else "false"}>>'),
+            ('>>' if method.is_norm else f', {"true" if method.is_ilog else "false"}>>'),
             f'/{full}/width:{width}/height:{height}',
         ))
 
@@ -172,9 +172,9 @@ class TestDivision(CMakeAwareTestCase):
         }
 
         COLORS: typing.Final[dict[Method, matplotlib.lines.Line2D]] = {
-            Method.Scaling:     matplotlib.lines.Line2D((0,), (0,), color='blue', lw=LINEWIDTH, linestyle='solid', label='scaling'),
-            Method.LogbScalbn:  matplotlib.lines.Line2D((0,), (0,), color='red', lw=LINEWIDTH, linestyle='solid', label='logb-scalbn'),
-            Method.ILogbScalbn: matplotlib.lines.Line2D((0,), (0,), color='green', lw=LINEWIDTH, linestyle='solid', label='ilogb-scalbn'),
+            Method.NormDivision: matplotlib.lines.Line2D((0,), (0,), color='blue', lw=LINEWIDTH, linestyle='solid', label='norm-division'),
+            Method.LogbScalbn:   matplotlib.lines.Line2D((0,), (0,), color='red', lw=LINEWIDTH, linestyle='solid', label='logb-scalbn'),
+            Method.ILogbScalbn:  matplotlib.lines.Line2D((0,), (0,), color='green', lw=LINEWIDTH, linestyle='solid', label='ilogb-scalbn'),
         }
 
         # Make a nice plot.
@@ -186,7 +186,7 @@ class TestDivision(CMakeAwareTestCase):
                 (results['method'] == method) &
                 (results['branching_or_compliance'] == branching_or_compliance)
             ].sort_values('size')
-            marker = (method.is_scaling, branching_or_compliance)
+            marker = (method.is_norm, branching_or_compliance)
             ax.plot(
                 filtered['size'], filtered['real_time'],
                 marker=MARKERS[marker].get_marker(),

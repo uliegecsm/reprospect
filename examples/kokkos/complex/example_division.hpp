@@ -108,7 +108,7 @@ KOKKOS_FUNCTION constexpr RealType norm(const Kokkos::complex<RealType>& value) 
  */
 template <bool EnableBranching, typename RealType>
 KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
-    scaling(const Kokkos::complex<RealType>& x, const Kokkos::complex<RealType>& y) noexcept {
+    norm_division(const Kokkos::complex<RealType>& x, const Kokkos::complex<RealType>& y) noexcept {
     const RealType scale = Kokkos::fabs(y.real()) + Kokkos::fabs(y.imag());
     if constexpr (EnableBranching) {
         if (scale == RealType(0)) {
@@ -130,12 +130,12 @@ struct DivisorLogbScalbn {
     }
 };
 
-//! Adaptor for @ref scaling.
+//! Adaptor for @ref norm_division.
 template <bool EnableBranching>
-struct DivisorScaling {
+struct DivisorNormDivision {
     template <typename... Args>
     KOKKOS_FUNCTION constexpr auto operator()(Args&&... args) const {
-        return scaling<EnableBranching>(std::forward<Args>(args)...);
+        return norm_division<EnableBranching>(std::forward<Args>(args)...);
     }
 };
 

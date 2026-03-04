@@ -1,1 +1,2 @@
 add_one_kokkos_example(alignment)
+add_one_kokkos_example(division_plot)

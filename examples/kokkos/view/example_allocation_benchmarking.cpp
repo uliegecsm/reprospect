@@ -2,6 +2,8 @@
 
 #include "benchmark/benchmark.h"
 
+#include "examples/kokkos/benchmarking.hpp"
+
 #if !defined(KOKKOS_ENABLE_IMPL_CUDA_MALLOC_ASYNC)
 #    error "KOKKOS_ENABLE_IMPL_CUDA_MALLOC_ASYNC is not defined."
 #endif
@@ -11,17 +13,6 @@
  *
  *  Companion of @ref examples/kokkos/view/example_allocation_benchmarking.py.
  */
-
-//! These partial overrides are only needed by 'nvcc' (as of @c Cuda 12.8.0).
-#if defined(__NVCC__)
-//! Use this macro when only one @c __what__ method is overridden.
-#    define FIXME_PARTIAL_OVERRIDE_WARNING_NVCC(__what__)                                                              \
-        void __what__(::benchmark::State& state) override {                                                            \
-            this->__what__(static_cast<const ::benchmark::State&>(state));                                             \
-        }
-#else
-#    define FIXME_PARTIAL_OVERRIDE_WARNING_NVCC(...)
-#endif
 
 namespace reprospect::examples::kokkos::view {
 //! Type contained in allocated buffers.

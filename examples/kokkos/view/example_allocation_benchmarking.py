@@ -36,19 +36,17 @@ import subprocess
 import sys
 import typing
 
-import matplotlib.artist
-import matplotlib.legend
-import matplotlib.legend_handler
 import matplotlib.lines
 import matplotlib.pyplot
 import matplotlib.text
-import matplotlib.transforms
 import numpy
 import pandas
 import pytest
 
 from reprospect.test import CMakeAwareTestCase
 from reprospect.utils import detect
+
+from examples.kokkos.pyplot import HandlerText
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -267,19 +265,19 @@ class TestAllocation(CMakeAwareTestCase):
         ax.tick_params(axis='both', which='minor', labelsize=FONTSIZE)
 
         _ = fig.legend(handles=(
-                Subtitle(text='Framework'),
+                matplotlib.text.Text(text='Framework'),
                 *MARKERS.values(),
-                Subtitle(text=''),
+                matplotlib.text.Text(text=''),
                 *LINESTYLES.values(),
-                Subtitle(text=''),
-                Subtitle(text='Count'),
+                matplotlib.text.Text(text=''),
+                matplotlib.text.Text(text='Count'),
                 *COLORS.values(),
-                Subtitle(text=''),
+                matplotlib.text.Text(text=''),
                 threshold,
             ),
             loc='outside center left',
             frameon=False,
-            handler_map={Subtitle: HandleSubtitle()},
+            handler_map={matplotlib.text.Text: HandlerText()},
             fontsize=FONTSIZE,
         )
 
@@ -288,30 +286,3 @@ class TestAllocation(CMakeAwareTestCase):
         fname = self.cwd / 'results.svg'
         logging.info(f'Saving results in {fname}.')
         fig.savefig(fname=fname, bbox_inches='tight', transparent=False)
-
-class HandleSubtitle(matplotlib.legend_handler.HandlerBase):
-    @override
-    def create_artists(self,
-        legend: matplotlib.legend.Legend,
-        orig_handle: matplotlib.artist.Artist,
-        xdescent: float, ydescent: float,
-        width: float, height: float,
-        fontsize: float, trans: matplotlib.transforms.Transform,
-    ) -> list[matplotlib.artist.Artist]:
-        if not isinstance(orig_handle, Subtitle):
-            raise TypeError('Wrong usage.')
-
-        text = matplotlib.text.Text(
-            x=xdescent, y=ydescent,
-            text=orig_handle.text,
-            fontsize=fontsize, transform=trans,
-        )
-
-        return [text]
-
-class Subtitle:
-    def __init__(self, text: str):
-        self.text: typing.Final[str] = text
-
-    def get_label(self) -> str:
-        return ''

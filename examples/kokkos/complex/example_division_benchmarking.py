@@ -1,3 +1,4 @@
+import itertools
 import json
 import logging
 import pathlib
@@ -29,20 +30,20 @@ else:
 
 class Method(StrEnum):
     LogbScalbn = 'LogbScalbn'
-    LogbScalbnBranch = 'LogbScalbnBranch'
+    ILogbScalbn = 'ILogbScalbn'
     Scaling = 'Scaling'
-    ScalingBranch = 'ScalingBranch'
-
-    @property
-    def has_branching(self) -> bool:
-        return 'Branch' in self.name
 
     @property
     def is_scaling(self) -> bool:
-        return 'Scaling' in self.name
+        return self == Method.Scaling
+
+    @property
+    def is_ilog(self) -> bool:
+        return self == Method.ILogbScalbn
 
 class Parameters(typing.TypedDict):
     method: Method
+    branching_or_compliance: bool
     width: int
     height: int
 
@@ -57,7 +58,7 @@ class TestDivision(CMakeAwareTestCase):
     """
 
     PATTERN: typing.Final[regex.Pattern[str]] = regex.compile(
-        r'^NewtonFractal<Divisor(Scaling|LogbScalbn)<(true|false)>>/(?P<method>[A-Za-z]+)/width:(?P<width>[0-9]+)/height:(?P<height>[0-9]+)',
+        r'^NewtonFractal<Divisor(?P<divisor>Scaling|LogbScalbn)(?:<(?:(?P<branching_or_compliance>true|false))?(?:[, ]*(?P<ilogb>true|false))?>)?>/(?P<full>[A-Za-z]+)/width:(?P<width>\d+)/height:(?P<height>\d+)',
     )
 
     @classmethod
@@ -70,23 +71,39 @@ class TestDivision(CMakeAwareTestCase):
         """
         Parse the name of a case and return parameters.
         """
-        match = cls.PATTERN.search(name)
+        matched = cls.PATTERN.search(name)
 
-        assert match is not None
-        assert len(match.groups()) == 5
-        assert match.groups()[2].startswith(match.groups()[0])
+        assert matched is not None
 
-        method = Method(match.captures('method')[0])
-        branching = match.group(2) == 'true'
-        scaling = match.group(1) == 'Scaling'
+        full: typing.Final[str] = matched.captures('full')[0]
+        assert matched.captures('divisor')[0] in full
 
-        assert branching == method.has_branching
-        assert scaling == method.is_scaling
+        branching_or_compliance: typing.Final[bool] = matched.captures('branching_or_compliance')[0] == 'true'
+        height: typing.Final[int] = int(matched.captures('height')[0])
+        width: typing.Final[int] = int(matched.captures('width')[0])
+
+        match matched.captures('divisor')[0]:
+            case 'LogbScalbn':
+                method = Method.ILogbScalbn if matched.captures('ilogb')[0] == 'true' else Method.LogbScalbn
+            case 'Scaling':
+                method = Method.Scaling
+            case _:
+                raise ValueError(matched.captures('divisor'))
+
+        reconstructed = ''.join((
+            (f'NewtonFractal<Divisor{"Scaling" if method.is_scaling else "LogbScalbn"}'),
+            ('<true' if branching_or_compliance else '<false'),
+            ('>>' if method.is_scaling else f', {"true" if method.is_ilog else "false"}>>'),
+            f'/{full}/width:{width}/height:{height}',
+        ))
+
+        assert name == reconstructed
 
         return {
+            'branching_or_compliance': branching_or_compliance,
+            'height': height,
             'method': method,
-            'width': int(match.captures('width')[0]),
-            'height': int(match.captures('height')[0]),
+            'width': width,
         }
 
     @pytest.fixture(scope='class')
@@ -141,36 +158,43 @@ class TestDivision(CMakeAwareTestCase):
         # Add a column with the size, computed from width and height.
         results['size'] = results['width'] * results['height']
 
-        assert len(results) == len(Method) * 2
+        assert len(results) == len(Method) * 2 * 2
 
         # Legend.
         FONTSIZE = 22
         LINEWIDTH = 2
 
-        MARKERS: typing.Final[dict[bool, matplotlib.lines.Line2D]] = {
-            True:  matplotlib.lines.Line2D((0,), (0,), color='black', marker='s', linestyle='solid', lw=LINEWIDTH, markersize=10, markerfacecolor='grey', label='yes'),
-            False: matplotlib.lines.Line2D((0,), (0,), color='black', marker='o', linestyle='dotted', lw=LINEWIDTH, markersize=10, markerfacecolor='grey', label='no'),
+        MARKERS: typing.Final[dict[tuple[bool, bool], matplotlib.lines.Line2D]] = {
+            (False, True):  matplotlib.lines.Line2D((0,), (0,), color='black', marker='s', linestyle='solid', lw=LINEWIDTH, markersize=10, markerfacecolor='grey', label='compliant'),
+            (False, False): matplotlib.lines.Line2D((0,), (0,), color='black', marker='o', linestyle='dotted', lw=LINEWIDTH, markersize=10, markerfacecolor='grey', label='non-compliant'),
+            (True, True): matplotlib.lines.Line2D((0,), (0,), color='black', marker='h', linestyle='solid', lw=LINEWIDTH, markersize=10, markerfacecolor='grey', label='branching'),
+            (True, False): matplotlib.lines.Line2D((0,), (0,), color='black', marker='*', linestyle='dotted', lw=LINEWIDTH, markersize=10, markerfacecolor='grey', label='no branching'),
         }
 
-        COLORS: typing.Final[dict[bool, matplotlib.lines.Line2D]] = {
-            True:  matplotlib.lines.Line2D((0,), (0,), color='blue', lw=LINEWIDTH, linestyle='solid', label='scaling'),
-            False: matplotlib.lines.Line2D((0,), (0,), color='red', lw=LINEWIDTH, linestyle='solid', label='logb-scalbn'),
+        COLORS: typing.Final[dict[Method, matplotlib.lines.Line2D]] = {
+            Method.Scaling:     matplotlib.lines.Line2D((0,), (0,), color='blue', lw=LINEWIDTH, linestyle='solid', label='scaling'),
+            Method.LogbScalbn:  matplotlib.lines.Line2D((0,), (0,), color='red', lw=LINEWIDTH, linestyle='solid', label='logb-scalbn'),
+            Method.ILogbScalbn: matplotlib.lines.Line2D((0,), (0,), color='green', lw=LINEWIDTH, linestyle='solid', label='ilogb-scalbn'),
         }
 
         # Make a nice plot.
         fig = matplotlib.pyplot.figure(figsize=(20, 10), layout='constrained')
         ax = fig.subplots(nrows=1, ncols=1)
 
-        for method in Method:
-            filtered = results[(results['method'] == method)].sort_values('size')
+        for (method, branching_or_compliance) in itertools.product(Method,(True, False)):
+            filtered = results[
+                (results['method'] == method) &
+                (results['branching_or_compliance'] == branching_or_compliance)
+            ].sort_values('size')
+            marker = (method.is_scaling, branching_or_compliance)
             ax.plot(
                 filtered['size'], filtered['real_time'],
-                marker=MARKERS[method.has_branching].get_marker(),
-                markersize=MARKERS[method.has_branching].get_markersize(),
-                markerfacecolor=MARKERS[method.has_branching].get_markerfacecolor(),
-                linestyle=MARKERS[method.has_branching].get_linestyle(),
-                linewidth=MARKERS[method.has_branching].get_linewidth(),
-                color=COLORS[method.is_scaling].get_color(),
+                marker=MARKERS[marker].get_marker(),
+                markersize=MARKERS[marker].get_markersize(),
+                markerfacecolor=MARKERS[marker].get_markerfacecolor(),
+                linestyle=MARKERS[marker].get_linestyle(),
+                linewidth=MARKERS[marker].get_linewidth(),
+                color=COLORS[method].get_color(),
             )
 
         ax.set_ylabel(f'time [{self.TIME_UNIT}]', fontsize=FONTSIZE)
@@ -185,7 +209,6 @@ class TestDivision(CMakeAwareTestCase):
                 matplotlib.text.Text(text='Method'),
                 *COLORS.values(),
                 matplotlib.text.Text(text=''),
-                matplotlib.text.Text(text='Branching'),
                 *MARKERS.values(),
             ),
             loc='outside center left',

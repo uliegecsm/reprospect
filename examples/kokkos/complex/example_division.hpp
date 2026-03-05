@@ -6,29 +6,68 @@
 namespace reprospect::examples::kokkos::complex {
 
 /**
+ * @c std::ilogb produces @c FP_ILOGBNAN for a NaN input. Yet, it is implementation-defined whether it
+ * maps to @c INT_MIN or @c INT_MAX @cite cppreference-ilogb @cite iso-iec-9899-2024.
+ *
+ * However, @c std::ilogb outputs @c INT_MAX on infinite inputs. Thus, if @c FP_ILOGBNAN maps
+ * to @c INT_MAX, there is no way to distinguish between a NaN or an infinite input.
+ */
+#if !defined(FP_ILOGBNAN) || !defined(INT_MIN)
+#    error "Missing required macros FP_ILOGBNAN / INT_MIN."
+#endif
+
+#if FP_ILOGBNAN == INT_MIN
+#    define ILOGB_NAN_INF_DISTINGUISHABLE 1
+#endif
+
+/**
  * Adapted from https://github.com/jtravs/cuda_complex/blob/master/cuda_complex.hpp#L553.
  * Similar to https://github.com/NVIDIA/cccl/blob/a91db6e2a022a7aa03b37873f0d4caf5ac81281d/libcudacxx/include/cuda/std/__complex/complex.h#L400-L496.
  *
+ * @tparam EnableCompliance Enable ISO/IEC 60559 compliance.
+ * @tparam UseIlogb         Use @c ilogb instead of @c logb.
+ *                          Only available when @c ILOGB_NAN_INF_DISTINGUISHABLE is defined.
+ *
  * @todo Use @c Kokkos::scalbn and @c Kokkos::ilogb when available.
  */
-template <bool EnableBranching, typename RealType>
+template <bool EnableCompliance, bool UseIlogb, typename RealType>
 KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
     logb_scalbn(const Kokkos::complex<RealType>& x, const Kokkos::complex<RealType>& y) {
-    int ilogbw = 0;
+#if !defined(ILOGB_NAN_INF_DISTINGUISHABLE)
+    static_assert(!UseIlogb);
+#endif
+
     RealType a = x.real();
     RealType b = x.imag();
     RealType c = y.real();
     RealType d = y.imag();
-    RealType logbw = Kokkos::logb(Kokkos::fmax(Kokkos::fabs(c), Kokkos::fabs(d)));
-    if (Kokkos::isfinite(logbw)) {
-        ilogbw = static_cast<int>(logbw);
-        c = scalbn(c, -ilogbw);
-        d = scalbn(d, -ilogbw);
+
+    int ilogbw = 0;
+    [[maybe_unused]]
+    int iexp;
+    [[maybe_unused]]
+    RealType logbw{};
+
+    if constexpr (UseIlogb) {
+        iexp = ilogb(Kokkos::fmax(Kokkos::fabs(c), Kokkos::fabs(d)));
+        if (iexp != FP_ILOGB0 && iexp != FP_ILOGBNAN && iexp != INT_MAX) {
+            ilogbw = iexp;
+            c = scalbn(c, -ilogbw);
+            d = scalbn(d, -ilogbw);
+        }
+    } else {
+        logbw = Kokkos::logb(Kokkos::fmax(Kokkos::fabs(c), Kokkos::fabs(d)));
+        if (Kokkos::isfinite(logbw)) {
+            ilogbw = static_cast<int>(logbw);
+            c = scalbn(c, -ilogbw);
+            d = scalbn(d, -ilogbw);
+        }
     }
+
     RealType denom = c * c + d * d;
     RealType real = scalbn((a * c + b * d) / denom, -ilogbw);
     RealType imag = scalbn((b * c - a * d) / denom, -ilogbw);
-    if constexpr (EnableBranching) {
+    if constexpr (EnableCompliance) {
         if (Kokkos::isnan(real) && Kokkos::isnan(imag)) {
             if ((denom == RealType(0)) && (!Kokkos::isnan(a) || !Kokkos::isnan(b))) {
                 real = Kokkos::copysign(Kokkos::Experimental::infinity_v<RealType>, c) * a;
@@ -38,7 +77,15 @@ KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
                 b = Kokkos::copysign(Kokkos::isinf(b) ? RealType(1) : RealType(0), b);
                 real = Kokkos::Experimental::infinity_v<RealType> * (a * c + b * d);
                 imag = Kokkos::Experimental::infinity_v<RealType> * (b * c - a * d);
-            } else if (Kokkos::isinf(logbw) && Kokkos::isfinite(x.real()) && Kokkos::isfinite(x.imag())) {
+            } else if (
+                [&]() {
+                    if constexpr (UseIlogb) {
+                        return iexp == INT_MAX;
+                    } else {
+                        return Kokkos::isinf(logbw);
+                    }
+                }()
+                && Kokkos::isfinite(x.real()) && Kokkos::isfinite(x.imag())) {
                 c = Kokkos::copysign(Kokkos::isinf(c) ? RealType(1) : RealType(0), c);
                 d = Kokkos::copysign(Kokkos::isinf(d) ? RealType(1) : RealType(0), d);
                 real = RealType(0) * (a * c + b * d);
@@ -75,11 +122,11 @@ KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
 }
 
 //! Adaptor for @ref logb_scalbn.
-template <bool EnableBranching>
+template <bool EnableCompliance, bool UseIlogb = false>
 struct DivisorLogbScalbn {
     template <typename... Args>
     KOKKOS_FUNCTION constexpr auto operator()(Args&&... args) const {
-        return logb_scalbn<EnableBranching>(std::forward<Args>(args)...);
+        return logb_scalbn<EnableCompliance, UseIlogb>(std::forward<Args>(args)...);
     }
 };
 

@@ -38,9 +38,7 @@ KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
                 b = Kokkos::copysign(Kokkos::isinf(b) ? RealType(1) : RealType(0), b);
                 real = Kokkos::Experimental::infinity_v<RealType> * (a * c + b * d);
                 imag = Kokkos::Experimental::infinity_v<RealType> * (b * c - a * d);
-            } else if (
-                Kokkos::isinf(logbw) && logbw > RealType(0) && Kokkos::isfinite(x.real())
-                && Kokkos::isfinite(x.imag())) {
+            } else if (Kokkos::isinf(logbw) && Kokkos::isfinite(x.real()) && Kokkos::isfinite(x.imag())) {
                 c = Kokkos::copysign(Kokkos::isinf(c) ? RealType(1) : RealType(0), c);
                 d = Kokkos::copysign(Kokkos::isinf(d) ? RealType(1) : RealType(0), d);
                 real = RealType(0) * (a * c + b * d);

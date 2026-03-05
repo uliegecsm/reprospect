@@ -2,7 +2,7 @@ function(add_one_example FILE)
 
     cmake_parse_arguments(
         aoe_args
-        ""
+        "STANDALONE"
         ""
         "EXTRA_PRIVATE_LINK_LIBS;EXTRA_TEST_ENV"
         ${ARGN}
@@ -27,29 +27,32 @@ function(add_one_example FILE)
         target_link_libraries(${EXECUTABLE} PRIVATE ${aoe_args_EXTRA_PRIVATE_LINK_LIBS})
     endif()
 
-    add_test(
-        NAME ${EXECUTABLE}
-        COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/example_${FILE}.py
-                    --config-file=${CMAKE_SOURCE_DIR}/tests/.pytest.ini
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
+    if(aoe_args_STANDALONE)
+        add_test(NAME ${EXECUTABLE} COMMAND $<TARGET_FILE:${EXECUTABLE}>)
+    else()
+        add_test(
+            NAME ${EXECUTABLE}
+            COMMAND ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/example_${FILE}.py
+                        --config-file=${CMAKE_SOURCE_DIR}/tests/.pytest.ini
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        )
 
-    pytest_skip_mark(${EXECUTABLE})
+        pytest_skip_mark(${EXECUTABLE})
 
-    test_environment(${EXECUTABLE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
-    test_environment(${EXECUTABLE} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
-    test_environment(${EXECUTABLE} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
+        test_environment(${EXECUTABLE} PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
+        test_environment(${EXECUTABLE} CMAKE_BINARY_DIR set ${CMAKE_BINARY_DIR})
+        test_environment(${EXECUTABLE} CMAKE_CURRENT_BINARY_DIR set ${CMAKE_CURRENT_BINARY_DIR})
 
-    # Directory for artifacts.
-    test_environment(${EXECUTABLE} ARTIFACT_DIR set ${CMAKE_SOURCE_DIR}/artifacts/${gprr_PARENT_RELPATH}/${FILE_NAME})
+        # Directory for artifacts.
+        test_environment(${EXECUTABLE} ARTIFACT_DIR set ${CMAKE_SOURCE_DIR}/artifacts/${gprr_PARENT_RELPATH}/${FILE_NAME})
 
-    if(aoe_args_EXTRA_TEST_ENV)
-        list(GET aoe_args_EXTRA_TEST_ENV 0 ENV_NAME)
-        list(GET aoe_args_EXTRA_TEST_ENV 1 ENV_OP)
-        list(GET aoe_args_EXTRA_TEST_ENV 2 ENV_VALUE)
-        test_environment(${EXECUTABLE} ${ENV_NAME} ${ENV_OP} ${ENV_VALUE})
+        if(aoe_args_EXTRA_TEST_ENV)
+            list(GET aoe_args_EXTRA_TEST_ENV 0 ENV_NAME)
+            list(GET aoe_args_EXTRA_TEST_ENV 1 ENV_OP)
+            list(GET aoe_args_EXTRA_TEST_ENV 2 ENV_VALUE)
+            test_environment(${EXECUTABLE} ${ENV_NAME} ${ENV_OP} ${ENV_VALUE})
+        endif()
     endif()
-
 endfunction()
 
 add_subdirectory(cuda)

@@ -1,3 +1,4 @@
 add_one_kokkos_example(alignment)
+add_one_example(division_compliance STANDALONE EXTRA_PRIVATE_LINK_LIBS Kokkos::kokkoscore)
 add_one_kokkos_example(division_plot)
 add_one_kokkos_example_benchmarking(division)

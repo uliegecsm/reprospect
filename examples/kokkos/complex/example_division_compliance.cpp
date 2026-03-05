@@ -135,20 +135,27 @@ struct Compliance {
 int main() {
     using namespace reprospect::examples::kokkos::complex;
 
+    using logb_scalbn_t = DivisorLogbScalbn<true, false>;
+    using ilogb_scalbn_t = DivisorLogbScalbn<true, true>;
+
     CHECK_COMPLEX_COMPLIANT(sanity, std::complex, std::divides<void>)
-    CHECK_COMPLEX_COMPLIANT(sanity, Kokkos::complex, DivisorLogbScalbn<true>)
+    CHECK_COMPLEX_COMPLIANT(sanity, Kokkos::complex, logb_scalbn_t)
+    CHECK_COMPLEX_COMPLIANT(sanity, Kokkos::complex, ilogb_scalbn_t)
     CHECK_COMPLEX_COMPLIANT(sanity, Kokkos::complex, std::divides<void>)
 
     CHECK_COMPLEX_COMPLIANT(infinite_divided_by_finite, std::complex, std::divides<void>)
-    CHECK_COMPLEX_COMPLIANT(infinite_divided_by_finite, Kokkos::complex, DivisorLogbScalbn<true>)
+    CHECK_COMPLEX_COMPLIANT(infinite_divided_by_finite, Kokkos::complex, logb_scalbn_t)
+    CHECK_COMPLEX_COMPLIANT(infinite_divided_by_finite, Kokkos::complex, ilogb_scalbn_t)
     CHECK_COMPLEX_NOT_COMPLIANT(infinite_divided_by_finite, Kokkos::complex, std::divides<void>)
 
     CHECK_COMPLEX_COMPLIANT(finite_divided_by_infinite, std::complex, std::divides<void>)
-    CHECK_COMPLEX_COMPLIANT(finite_divided_by_infinite, Kokkos::complex, DivisorLogbScalbn<true>)
+    CHECK_COMPLEX_COMPLIANT(finite_divided_by_infinite, Kokkos::complex, logb_scalbn_t)
+    CHECK_COMPLEX_COMPLIANT(finite_divided_by_infinite, Kokkos::complex, ilogb_scalbn_t)
     CHECK_COMPLEX_NOT_COMPLIANT(finite_divided_by_infinite, Kokkos::complex, std::divides<void>)
 
     CHECK_COMPLEX_COMPLIANT(nonzero_divided_by_zero, std::complex, std::divides<void>)
-    CHECK_COMPLEX_COMPLIANT(nonzero_divided_by_zero, Kokkos::complex, DivisorLogbScalbn<true>)
+    CHECK_COMPLEX_COMPLIANT(nonzero_divided_by_zero, Kokkos::complex, logb_scalbn_t)
+    CHECK_COMPLEX_COMPLIANT(nonzero_divided_by_zero, Kokkos::complex, ilogb_scalbn_t)
     CHECK_COMPLEX_COMPLIANT(nonzero_divided_by_zero, Kokkos::complex, std::divides<void>)
 
     return EXIT_SUCCESS;

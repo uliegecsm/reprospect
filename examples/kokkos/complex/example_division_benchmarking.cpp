@@ -54,16 +54,18 @@ void parameters(::benchmark::internal::Benchmark* benchmark) {
     benchmark->ArgNames({"width", "height"})->Args({128, 128})->Args({512, 512});
 }
 
-#define REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(divisor, branching, name)                             \
-    BENCHMARK_TEMPLATE_DEFINE_F(NewtonFractal, name, divisor<branching>)(benchmark::State & state) {                   \
+#define REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(divisor, name, ...)                                   \
+    BENCHMARK_TEMPLATE_DEFINE_F(NewtonFractal, name, divisor<__VA_ARGS__>)(benchmark::State & state) {                 \
         for (auto _: state)                                                                                            \
             this->run(state);                                                                                          \
     }                                                                                                                  \
     BENCHMARK_REGISTER_F(NewtonFractal, name)->Apply(parameters);
 
-REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorLogbScalbn, false, LogbScalbn)
-REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorLogbScalbn, true, LogbScalbnBranch)
-REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorScaling, false, Scaling)
-REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorScaling, true, ScalingBranch)
+REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorLogbScalbn, ILogbScalbn, false, true)
+REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorLogbScalbn, ILogbScalbnCompliant, true, true)
+REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorLogbScalbn, LogbScalbn, false, false)
+REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorLogbScalbn, LogbScalbnCompliant, true, false)
+REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorScaling, Scaling, false)
+REPROSPECT_EXAMPLES_KOKKOS_COMPLEX_DIVISION_BENCHMARKING(DivisorScaling, ScalingBranch, true)
 
 } // namespace reprospect::examples::kokkos::complex

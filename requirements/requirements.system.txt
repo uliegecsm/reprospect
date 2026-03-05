@@ -1,5 +1,6 @@
 ccache
 git
+ghostscript
 pdf2svg
 texlive-latex-extra
 tree

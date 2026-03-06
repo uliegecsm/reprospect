@@ -1,6 +1,7 @@
 add_pytest(add_int128)
 add_pytest(add_int32)
 add_pytest(cas)
+add_pytest(convert_fp_to_int)
 add_pytest(convert_fp32_to_fp16)
 add_pytest(convert_int_to_fp)
 add_pytest(move32)

@@ -39,6 +39,7 @@ def enable_mypyc(dist: Distribution) -> None:
             'reprospect/test/sass/matchers/add_int128.py',
             'reprospect/test/sass/matchers/add_int32.py',
             'reprospect/test/sass/matchers/cas.py',
+            'reprospect/test/sass/matchers/convert_fp_to_int.py',
             'reprospect/test/sass/matchers/convert_fp32_to_fp16.py',
             'reprospect/test/sass/matchers/convert_int_to_fp.py',
             'reprospect/test/sass/matchers/move32.py',

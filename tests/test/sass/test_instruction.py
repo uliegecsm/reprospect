@@ -3,6 +3,7 @@ import logging
 import os
 import pathlib
 
+import numpy
 import pytest
 import semantic_version
 
@@ -115,7 +116,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='STRONG', dtype=('S', 32))
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='STRONG', dtype=numpy.int32)
         red = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
         assert len(red) == 1
 
@@ -128,7 +129,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         assert len(matched.operands) == 2
 
         # Another consistency would fail.
-        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='WEAK', dtype=('S', 32))
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='WEAK', dtype=numpy.int32)
         assert not any(matcher.match(inst) for inst in decoder.instructions)
 
     def test_add_strong_device_unsigned_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
@@ -141,7 +142,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='STRONG', dtype=('U', 32))
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', scope='DEVICE', consistency='STRONG', dtype=numpy.uint32)
         matched = findunique(matcher, decoder.instructions)
 
         assert {'ADD'}.issubset(matched.modifiers)
@@ -163,7 +164,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
             operation='ADD',
             scope='DEVICE',
             consistency='STRONG',
-            dtype=('U', 64),
+            dtype=numpy.uint64,
         )
         matched = findunique(matcher, decoder.instructions)
 
@@ -181,7 +182,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', dtype=('F', 32), scope='DEVICE', consistency='STRONG')
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', dtype=numpy.float32, scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'F32', 'FTZ', 'RN'}.issubset(matched.modifiers)
@@ -198,7 +199,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', dtype=('F', 64), scope='DEVICE', consistency='STRONG')
+        matcher = ReductionMatcher(arch=parameters.arch, operation='ADD', dtype=numpy.float64, scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'F64', 'RN'}.issubset(matched.modifiers)
@@ -236,7 +237,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
             matcher_type = AtomicMatcher
         else:
             matcher_type = ReductionMatcher
-        matcher = matcher_type(arch=parameters.arch, operation='MAX', dtype=('S', 64), scope='DEVICE', consistency='STRONG')
+        matcher = matcher_type(arch=parameters.arch, operation='MAX', dtype=numpy.int64, scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX', 'S64'}.issubset(matched.modifiers)
@@ -256,7 +257,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
             matcher_type = AtomicMatcher
         else:
             matcher_type = ReductionMatcher
-        matcher = matcher_type(arch=parameters.arch, operation='MAX', dtype=('U', 64), scope='DEVICE', consistency='STRONG')
+        matcher = matcher_type(arch=parameters.arch, operation='MAX', dtype=numpy.uint64, scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX', '64'}.issubset(matched.modifiers)
@@ -271,7 +272,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch=parameters.arch, operation='MAX', dtype=('S', 32), scope='DEVICE', consistency='STRONG')
+        matcher = ReductionMatcher(arch=parameters.arch, operation='MAX', dtype=numpy.int32, scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX', 'S32'}.issubset(matched.modifiers)
@@ -286,7 +287,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
         decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the reduction.
-        matcher = ReductionMatcher(arch=parameters.arch, operation='MAX', dtype=('U', 32), scope='DEVICE', consistency='STRONG')
+        matcher = ReductionMatcher(arch=parameters.arch, operation='MAX', dtype=numpy.uint32, scope='DEVICE', consistency='STRONG')
         matched = findunique(matcher, decoder.instructions)
 
         assert {'MAX'}.issubset(matched.modifiers)

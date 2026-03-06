@@ -181,7 +181,7 @@ class TestDivision(CMakeAwareTestCase):
         fig = matplotlib.pyplot.figure(figsize=(20, 10), layout='constrained')
         ax = fig.subplots(nrows=1, ncols=1)
 
-        for (method, branching_or_compliance) in itertools.product(Method,(True, False)):
+        for (method, branching_or_compliance) in itertools.product(Method, (True, False)):
             filtered = results[
                 (results['method'] == method) &
                 (results['branching_or_compliance'] == branching_or_compliance)

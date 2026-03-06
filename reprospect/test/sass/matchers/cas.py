@@ -76,7 +76,7 @@ class AtomicCASMatcher:
         matcher_cas = instructions_contain(instruction_is(AtomicMatcher(
             arch=self.arch,
             operation='CAS',
-            dtype=(None, self.size),
+            dtype=self.size,
             scope='DEVICE',
             consistency='STRONG',
             memory='',

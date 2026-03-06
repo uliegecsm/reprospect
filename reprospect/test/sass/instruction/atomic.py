@@ -17,6 +17,7 @@ from reprospect.test.sass.instruction.memory import (
 from reprospect.test.sass.instruction.pattern import PatternBuilder
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
+from reprospect.utils.types import ConvertibleTypeInfo, Kind, TypeInfo
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -89,18 +90,15 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
         operation: str = 'ADD',
         scope: ThreadScope | str | None = None,
         consistency: str = 'STRONG',
-        dtype: tuple[str, int] | None = None,
+        dtype: ConvertibleTypeInfo | None = None,
     ) -> None:
-        """
-        :param dtype: For instance, `('F', 64)` for a 64-bit floating-point or `(S, 32)` for a signed 32-bit integer.
-        """
-        if dtype is not None:
-            check_memory_instruction_word_size(size=int(dtype[1] / 8))
-
         self.operation: typing.Final[str] = operation
         self.scope: typing.Final[str | None] = ThreadScope(scope).convert(arch=arch) if scope else None
         self.consistency: typing.Final[str] = consistency
-        self.dtype: typing.Final[tuple[str, int] | None] = dtype
+        self.dtype: typing.Final[TypeInfo | None] = TypeInfo.normalize(dtype=dtype) if dtype else None
+
+        if self.dtype is not None:
+            check_memory_instruction_word_size(size=self.dtype.itemsize)
 
         super().__init__(arch=arch)
 
@@ -108,20 +106,20 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
     def _build_pattern(self) -> str:
         dtype: typing.Sequence[int | str | ZeroOrOne]
         if self.dtype is not None:
-            match self.dtype[0]:
-                case 'F':
+            match self.dtype.kind:
+                case Kind.FLOAT:
                     dtype = (
-                        f'{self.dtype[0]}{self.dtype[1]}',
+                        f'F{self.dtype.bits}',
                         ZeroOrOne('FTZ'),
                         ZeroOrOne('RN'),
                     )
-                case 'S':
+                case Kind.INT:
                     if self.operation == 'ADD':
                         dtype = ()
                     else:
-                        dtype = (f'{self.dtype[0]}{self.dtype[1]}',)
-                case 'U':
-                    dtype = (self.dtype[1],) if self.dtype[1] > 32 else ()
+                        dtype = (f'S{self.dtype.bits}',)
+                case Kind.UINT:
+                    dtype = (self.dtype.bits,) if self.dtype.bits > 32 else ()
                 case _:
                     raise ValueError(self.dtype)
         else:
@@ -173,26 +171,23 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
         operation: str = 'ADD',
         scope: ThreadScope | str | None = None,
         consistency: str = 'STRONG',
-        dtype: tuple[str | None, int] | None = None,
+        dtype: ConvertibleTypeInfo | None = None,
         memory: MemorySpace | str = MemorySpace.GLOBAL,
         version: semantic_version.Version | None = None,
     ) -> None:
-        """
-        :param dtype: For instance, `('F', 64)` for a 64-bit floating-point or `(S, 32)` for a signed 32-bit integer.
-        """
-        if dtype is not None:
-            check_memory_instruction_word_size(size=int(dtype[1] / 8))
-
         self.operation: typing.Final[str] = operation
         self.scope: typing.Final[str | None] = ThreadScope(scope).convert(arch=arch) if scope else None
         self.consistency: typing.Final[str] = consistency
         self.memory: typing.Final[MemorySpace] = MemorySpace(memory)
-        self.dtype: typing.Final[tuple[str | None, int] | None] = dtype
+        self.dtype: typing.Final[TypeInfo | None] = TypeInfo.normalize(dtype=dtype) if dtype else None
+
+        if self.dtype is not None:
+            check_memory_instruction_word_size(size=self.dtype.itemsize)
 
         super().__init__(arch=arch, version=version)
 
     @override
-    def _build_pattern(self) -> str: # pylint: disable=too-many-branches
+    def _build_pattern(self) -> str:
         """
         ``CAS`` has a different operand structure. For instance::
 
@@ -204,26 +199,24 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
         """
         dtype: typing.Sequence[int | str | ZeroOrOne]
         match self.operation:
-            case 'CAS':
-                dtype = (self.dtype[1],) if self.dtype is not None and self.dtype[1] > 32 else ()
+            case 'CAS' | 'EXCH':
+                dtype = (self.dtype.bits,) if self.dtype is not None and self.dtype.bits > 32 else ()
             case _:
-                if self.dtype is not None and self.operation == 'EXCH':
-                    dtype = (self.dtype[1],) if self.dtype[1] > 32 else ()
-                elif self.dtype is not None:
-                    match self.dtype[0]:
-                        case 'F':
+                if self.dtype is not None:
+                    match self.dtype.kind:
+                        case Kind.FLOAT:
                             dtype = (
-                                f'{self.dtype[0]}{self.dtype[1]}',
+                                f'F{self.dtype.bits}',
                                 ZeroOrOne('FTZ'),
                                 ZeroOrOne('RN'),
                             )
-                        case 'S':
+                        case Kind.INT:
                             if self.operation == 'ADD' and self.version in semantic_version.SimpleSpec('<12.8'):
                                 dtype = ()
                             else:
-                                dtype = (f'{self.dtype[0]}{self.dtype[1]}',)
-                        case 'U':
-                            dtype = (self.dtype[1],) if self.dtype[1] > 32 else ()
+                                dtype = (f'S{self.dtype.bits}',)
+                        case Kind.UINT:
+                            dtype = (self.dtype.bits,) if self.dtype.bits > 32 else ()
                         case _:
                             raise ValueError(self.dtype)
                 else:

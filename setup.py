@@ -59,6 +59,7 @@ def enable_mypyc(dist: Distribution) -> None:
             'reprospect/utils/ldd.py',
             'reprospect/utils/nvcc.py',
             'reprospect/utils/subprocess_helpers.py',
+            'reprospect/utils/types.py',
         ],
         verbose=True,
         strict_dunder_typing=True,

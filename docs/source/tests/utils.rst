@@ -20,3 +20,8 @@ Detect GPUs
 ------------------
 
 .. automodule:: tests.utils.test_subprocess_helpers
+
+Type information
+----------------
+
+.. automodule:: tests.utils.test_types

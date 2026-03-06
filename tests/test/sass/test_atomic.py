@@ -3,6 +3,7 @@ import pathlib
 import subprocess
 import typing
 
+import numpy
 import pytest
 import regex
 import semantic_version
@@ -169,7 +170,7 @@ __global__ void atomic_exch_kernel() {
             decoder=decoder,
             arch=parameters.arch,
             operation='CAS', consistency='STRONG', scope='DEVICE',
-            dtype=(None, word[0]),
+            dtype=word[0],
         )
 
         assert len(matched.additional['address']) == 1
@@ -209,7 +210,7 @@ __global__ void atomic_exch_kernel() {
             decoder=decoder,
             arch=parameters.arch,
             operation='CAS', consistency='STRONG', scope='DEVICE',
-            dtype=(None, 128),
+            dtype=128,
         )
 
         assert {'CAS', '128'}.issubset(matched.modifiers)
@@ -231,7 +232,7 @@ __global__ void atomic_exch_kernel() {
             operation='ADD',
             consistency='STRONG', scope='BLOCK',
             memory='',
-            dtype=('S', 32),
+            dtype=numpy.int32,
         )
 
         assert regex.match(Register.PREDT, matched.operands[0]) is not None
@@ -261,7 +262,7 @@ __global__ void atomic_exch_kernel() {
             operation='ADD',
             consistency='STRONG', scope='BLOCK',
             memory='',
-            dtype=('U', 64),
+            dtype=numpy.uint64,
         )
 
         assert regex.match(Register.PREDT, matched.operands[0]) is not None
@@ -288,7 +289,7 @@ __global__ void atomic_exch_kernel() {
             operation='ADD',
             consistency='STRONG', scope='BLOCK',
             memory='',
-            dtype=('F', 32),
+            dtype=numpy.float32,
         )
 
         assert regex.match(Register.PREDT, matched.operands[0]) is not None
@@ -315,7 +316,7 @@ __global__ void atomic_exch_kernel() {
             operation='ADD',
             consistency='STRONG', scope='BLOCK',
             memory='',
-            dtype=('F', 64),
+            dtype=numpy.float64,
         )
 
         assert regex.match(Register.PREDT, matched.operands[0]) is not None
@@ -342,7 +343,7 @@ __global__ void atomic_exch_kernel() {
             operation='MIN',
             consistency='STRONG', scope='DEVICE',
             memory='',
-            dtype=('S', 32),
+            dtype=numpy.int32,
         )
 
         assert regex.match(Register.PREDT, matched.operands[0]) is not None
@@ -370,7 +371,7 @@ __global__ void atomic_exch_kernel() {
             operation='MIN',
             consistency='STRONG', scope='DEVICE',
             memory='',
-            dtype=('S', 64),
+            dtype=numpy.int64,
         )
 
         assert regex.match(Register.PREDT, matched.operands[0]) is not None
@@ -398,7 +399,7 @@ __global__ void atomic_exch_kernel() {
             operation='MIN',
             consistency='STRONG', scope='DEVICE',
             memory='',
-            dtype=('U', 64),
+            dtype=numpy.uint64,
         )
 
         assert regex.match(Register.PREDT, matched.operands[0]) is not None
@@ -422,7 +423,7 @@ __global__ void atomic_exch_kernel() {
         # Find the atomic exchange.
         _, _, matched = self.match_one(
             decoder=decoder,
-            arch=parameters.arch, operation='EXCH', dtype=('S', 32), scope='DEVICE', consistency='STRONG',
+            arch=parameters.arch, operation='EXCH', dtype=numpy.int32, scope='DEVICE', consistency='STRONG',
         )
 
         assert {'EXCH'}.issubset(matched.modifiers)
@@ -439,7 +440,7 @@ __global__ void atomic_exch_kernel() {
         # Find the atomic exchange.
         _, _, matched = self.match_one(
             decoder=decoder,
-            arch=parameters.arch, operation='EXCH', dtype=('S', 64), scope='DEVICE', consistency='STRONG',
+            arch=parameters.arch, operation='EXCH', dtype=numpy.uint64, scope='DEVICE', consistency='STRONG',
         )
 
         assert {'EXCH', '64'}.issubset(matched.modifiers)
@@ -456,7 +457,7 @@ __global__ void atomic_exch_kernel() {
         # Find the atomic exchange.
         _, _, matched = self.match_one(
             decoder=decoder,
-            arch=parameters.arch, operation='EXCH', dtype=('F', 32), scope='DEVICE', consistency='STRONG',
+            arch=parameters.arch, operation='EXCH', dtype=numpy.float32, scope='DEVICE', consistency='STRONG',
         )
 
         assert {'EXCH'}.issubset(matched.modifiers)
@@ -491,7 +492,7 @@ __global__ void atomic_exch_kernel() {
 
         _, _, matched = self.match_one(
             decoder=decoder,
-            arch=parameters.arch, operation='EXCH', dtype=(None, 32), scope='DEVICE', consistency='STRONG',
+            arch=parameters.arch, operation='EXCH', dtype=32, scope='DEVICE', consistency='STRONG',
             memory=memory,
         )
 

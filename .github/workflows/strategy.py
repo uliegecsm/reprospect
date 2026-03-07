@@ -289,6 +289,15 @@ def main(*, args: argparse.Namespace) -> None:
     ), args=args))
 
     matrix.extend(from_config(Config(
+        cuda_version='12.8.1',
+        ubuntu_version='24.04',
+        python_version='3.12',
+        compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=8, minor=0),
+        platforms=('linux/amd64',),
+    ), args=args))
+
+    matrix.extend(from_config(Config(
         cuda_version='12.6.3',
         ubuntu_version='24.04',
         python_version='3.12',

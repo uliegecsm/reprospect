@@ -396,7 +396,7 @@ class TestSASS(TestRestrict):
         """
         logging.info(decoder[Method.RESTRICT_RECAST_LAMBDA])
         cfg = ControlFlow.analyze(instructions=decoder[Method.RESTRICT_RECAST_LAMBDA].instructions)
-        readonly = self.arch.compute_capability.as_int in {70, 75, 86, 89, 90}
+        readonly = self.arch.compute_capability.as_int in {70, 75, 80, 86, 89, 90}
         assert self.match_repeated(cfg=cfg) is False
         assert self.match_single(cfg=cfg, readonly=False) == (not readonly)
         assert self.match_single(cfg=cfg, readonly=True) == readonly

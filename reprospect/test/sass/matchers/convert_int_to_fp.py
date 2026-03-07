@@ -34,8 +34,8 @@ class ConvertIntToFp(InstructionMatcher):
         src: str = Register.REG,
     ) -> None:
         """
-        :param src_type: Type of the source integer value.
-        :param dst_type: Type of the destination floating-point value.
+        :param src_dtype: Type of the source integer value.
+        :param dst_dtype: Type of the destination floating-point value.
         """
         src_dtype = TypeInfo.normalize(dtype=src_dtype or 32)
         dst_dtype = TypeInfo.normalize(dtype=dst_dtype or 32)

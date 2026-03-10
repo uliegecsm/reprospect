@@ -8,8 +8,8 @@ Beyond the annotations, there are other differences, including:
 * **Alignment:** Whereas :code:`std::complex` is aligned to only the size of the underlying real type,
   :code:`Kokkos::complex` is aligned to twice the size of the underlying real type by default
   (`PR #2259 <https://github.com/kokkos/kokkos/pull/2259>`_).
-* **Division operator:** :code:`Kokkos::complex` carries out the complex number division in a special way
-  that provides better overflow protection (`Issue #7618 <https://github.com/kokkos/kokkos/issues/7618>`_).
+* **Division operator:** the scaling approach used by :code:`Kokkos::complex` to protect for overflow in :code:`operator=/`
+  differs from the approach used by :code:`std::complex` (`PR #8924 <https://github.com/kokkos/kokkos/pull/8924>`_).
 * **Operator overloads:** There are also differences in allowed member and non-member operator overloads
   (`PR #8212 <https://github.com/kokkos/kokkos/pull/8212>`_).
 

@@ -234,7 +234,6 @@ jobs:
                       GOOGLEBENCHMARK_VERSION=1.9.4
                       NVTX3_VERSION=3.4.0
                       PYTHON_VERSION=${{ matrix.python_version }}
-                      RUST_VERSION=1.92.0
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
             - uses: docker/build-push-action@v7.0.0

@@ -5,7 +5,10 @@
 #include <stdexcept>
 
 #include "cuda/runtime_helper.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include "nvtx3/nvtx3.hpp"
+#pragma GCC diagnostic pop
 
 /**
  * @file

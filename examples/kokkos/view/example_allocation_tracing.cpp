@@ -14,8 +14,7 @@
 
 namespace reprospect::examples::kokkos::view {
 
-template <typename MemorySpace>
-requires Kokkos::is_memory_space_v<MemorySpace>
+template <Kokkos::MemorySpace MemorySpace>
 class Allocation {
    public:
     using scalar_t = char;

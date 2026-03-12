@@ -29,12 +29,17 @@ class Dispatch {
     static void run(const Kokkos::Cuda& exec, const unsigned short nnodes) {
         const view_t data(Kokkos::view_alloc(exec, "data"), nnodes);
 
-        graph_t graph{exec};
+        const auto device_handle = Kokkos::Experimental::get_device_handle(exec);
+
+        graph_t graph{device_handle};
 
         const auto root = graph.root_node();
 
         for (unsigned short inode = 0; inode < nnodes; ++inode) {
-            root.then_parallel_for(Kokkos::RangePolicy(exec, 0, nnodes), Functor<view_t>{.data = data});
+            root.then_parallel_for(
+                Kokkos::Experimental::node_props(device_handle),
+                Kokkos::RangePolicy<Kokkos::Cuda>(0, nnodes),
+                Functor<view_t>{.data = data});
         }
 
         graph.instantiate();

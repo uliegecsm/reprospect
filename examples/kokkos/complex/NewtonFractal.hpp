@@ -6,8 +6,7 @@
 namespace reprospect::examples::kokkos::complex {
 
 //! Explicitly avoid @c Kokkos::pow.
-template <std::floating_point RealType, typename Mem>
-requires Kokkos::is_memory_space_v<Mem>
+template <std::floating_point RealType, Kokkos::MemorySpace Mem>
 struct ZPow4MinOne {
     using complex_t = Kokkos::complex<RealType>;
 
@@ -17,8 +16,7 @@ struct ZPow4MinOne {
 
     ZPow4MinOne() = default;
 
-    template <typename Exec>
-    requires Kokkos::is_execution_space_v<Exec>
+    template <Kokkos::ExecutionSpace Exec>
     ZPow4MinOne(const Exec& exec)
         : roots(Kokkos::view_alloc(Kokkos::WithoutInitializing, exec, "roots of z^4-1")) {
         std::array<complex_t, 4> roots_h{
@@ -39,8 +37,7 @@ struct ZPow4MinOne {
 };
 
 //! Assume that the domain is [-1, 1] x [-1, 1].
-template <std::floating_point RealType, typename Mem, typename Divisor, typename Function>
-requires Kokkos::is_memory_space_v<Mem>
+template <std::floating_point RealType, Kokkos::MemorySpace Mem, typename Divisor, typename Function>
 struct ComputeColors {
    public:
     using count_t = unsigned int;
@@ -49,8 +46,7 @@ struct ComputeColors {
     using count_view_t = Kokkos::View<count_t**, Mem>;
 
    public:
-    template <typename Exec>
-    requires Kokkos::is_execution_space_v<Exec>
+    template <Kokkos::ExecutionSpace Exec>
     ComputeColors(
         const Exec& exec,
         Function function_,
@@ -63,8 +59,7 @@ struct ComputeColors {
         , max_iters(max_iters_) {
     }
 
-    template <typename Exec>
-    requires Kokkos::is_execution_space_v<Exec>
+    template <Kokkos::ExecutionSpace Exec>
     void apply(const Exec& exec) const {
         Kokkos::parallel_for(
             Kokkos::MDRangePolicy<Kokkos::Rank<2>>(exec, {0, 0}, {colors.extent(0), colors.extent(1)}), *this);

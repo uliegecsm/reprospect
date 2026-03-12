@@ -73,6 +73,32 @@ struct FunctorRestrictViewMemoryTrait {
     }
 };
 
+template <typename T>
+struct FunctorRandomAccessViewMemoryTrait {
+    using view_t = Kokkos::View<T*, Kokkos::CudaSpace, Kokkos::MemoryTraits<Kokkos::RandomAccess>>;
+    using const_view_t = typename view_t::const_type;
+    using const_view_traits_t = typename const_view_t::traits;
+
+    //! From https://github.com/kokkos/kokkos/blob/bb06fac4eb23fec37394e57b30fe4cfa6ad9c1ba/core/src/Cuda/Kokkos_Cuda_View.hpp#L57-L69.
+    static_assert(std::is_trivially_copyable_v<typename const_view_traits_t::const_value_type>);
+    static_assert(
+        std::same_as<typename const_view_traits_t::const_value_type, typename const_view_traits_t::value_type>);
+    static_assert(
+        sizeof(typename const_view_traits_t::const_value_type) == 4
+        || sizeof(typename const_view_traits_t::const_value_type) == 8
+        || sizeof(typename const_view_traits_t::const_value_type) == 16);
+    static_assert(const_view_traits_t::memory_traits::is_random_access);
+
+    const_view_t src_a, src_b;
+    view_t dst;
+
+    template <std::integral U>
+    KOKKOS_FUNCTION void operator()(const U index) const {
+        OPERATION(dst, src_a, src_b, index)
+    }
+};
+
+
 //! Inspired by https://github.com/kokkos/kokkos/blob/37f70304dc3676691af88d3ac3ba50cddbfa337f/core/src/Cuda/Kokkos_Cuda_View.hpp#L17-L26.
 template <typename T>
 requires(sizeof(T) == 4)
@@ -202,6 +228,13 @@ class Restrict {
             FunctorRestrictViewMemoryTrait<scalar_t>{.src_a = src_a, .src_b = src_b, .dst = dst});
     }
 
+    void random_access_view_memory_trait(const Kokkos::Cuda& exec) const {
+        Kokkos::parallel_for(
+            "random_access_view_memory_trait",
+            Kokkos::RangePolicy(exec, 0, size),
+            FunctorRandomAccessViewMemoryTrait<scalar_t>{.src_a = src_a, .src_b = src_b, .dst = dst});
+    }
+
     void ldg_accessor(const Kokkos::Cuda& exec) const {
         Kokkos::parallel_for(
             "ldg_accessor",
@@ -239,6 +272,7 @@ int main(int argc, char* argv[]) {
         RUN_ONE_CASE(exec, restrict_accessor);
         RUN_ONE_CASE(exec, restrict_member);
         RUN_ONE_CASE(exec, restrict_view_memory_trait);
+        RUN_ONE_CASE(exec, random_access_view_memory_trait);
 
         RUN_ONE_CASE(exec, ldg_accessor);
 

@@ -11,6 +11,7 @@ import semantic_version
 from reprospect.test.sass.instruction import (
     AtomicMatcher,
     InstructionMatch,
+    ThreadScope,
 )
 from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.register import Register
@@ -68,7 +69,7 @@ __global__ void add({type}* __restrict__ const dst, const {type}* __restrict__ c
 __global__ void add({type}* __restrict__ const dst, const {type}* __restrict__ const src)
 {{
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
-    cuda::atomic_ref<{type}, cuda::thread_scope_device> ref(dst[index]);
+    cuda::atomic_ref<{type}, cuda::thread_scope_{scope}> ref(dst[index]);
     ref.fetch_min(src[index], cuda::memory_order_relaxed);
 }}
 """
@@ -78,6 +79,25 @@ __global__ void exch({type}* __restrict__ const dst, const {type}* __restrict__ 
 {{
     const auto index = blockIdx.x * blockDim.x + threadIdx.x;
     atomicExch(&dst[index], src[index]);
+}}
+"""
+
+    CODE_COMPARE_EXCHANGE = """\
+#include "cuda/atomic"
+
+__global__ void compare_exchange({type}* __restrict__ dst, const {type}* __restrict__ src)
+{{
+    const auto index = blockIdx.x * blockDim.x + threadIdx.x;
+    cuda::atomic_ref<{type}, cuda::thread_scope_{scope}> ref(dst[index]);
+
+    {type} old_val = ref.load(cuda::memory_order_relaxed);
+    {type} new_val;
+
+    do {{
+        new_val = min(old_val, src[index]);
+    }} while (!ref.compare_exchange_{consistency}(old_val, new_val,
+                                       cuda::memory_order_acquire,
+                                       cuda::memory_order_acquire));
 }}
 """
 
@@ -166,10 +186,15 @@ __global__ void atomic_exch_kernel() {
         decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the atomic CAS.
+        if cmake_file_api.toolchains['CUDA']['compiler']['id'] == 'Clang' and \
+            semantic_version.Version(cmake_file_api.toolchains['CUDA']['compiler']['version']) in semantic_version.SimpleSpec('>21'):
+            expt_scope = 'SYSTEM'
+        else:
+            expt_scope = 'DEVICE'
         _, _, matched = self.match_one(
             decoder=decoder,
             arch=parameters.arch,
-            operation='CAS', consistency='STRONG', scope='DEVICE',
+            operation='CAS', consistency='STRONG', scope=expt_scope,
             dtype=word[0],
         )
 
@@ -329,10 +354,10 @@ __global__ void atomic_exch_kernel() {
 
     def test_min_relaxed_device_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
-        Test with :py:attr:`CODE_MIN` for `int`.
+        Test with :py:attr:`CODE_MIN` for `int` and :py:data:`reprospect.test.sass.instruction.ThreadScope.DEVICE` scope.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MIN.format(type='int'))
+        FILE.write_text(self.CODE_MIN.format(type='int', scope='device'))
 
         decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
@@ -341,7 +366,7 @@ __global__ void atomic_exch_kernel() {
             decoder=decoder,
             arch=parameters.arch,
             operation='MIN',
-            consistency='STRONG', scope='DEVICE',
+            consistency='STRONG', scope=ThreadScope.DEVICE,
             memory='',
             dtype=numpy.int32,
         )
@@ -355,12 +380,40 @@ __global__ void atomic_exch_kernel() {
 
         assert 'atom.min.relaxed.gpu.s32' in result
 
-    def test_min_relaxed_device_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
+    def test_min_relaxed_system_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
-        Test with :py:attr:`CODE_MIN` for `long long int`.
+        Test with :py:attr:`CODE_MIN` for `int` and :py:data:`reprospect.test.sass.instruction.ThreadScope.SYSTEM` scope.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MIN.format(type='long long int'))
+        FILE.write_text(self.CODE_MIN.format(type='int', scope='system'))
+
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
+
+        # Find the atomic min.
+        _, _, matched = self.match_one(
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='MIN',
+            consistency='STRONG', scope=ThreadScope.SYSTEM,
+            memory='',
+            dtype=numpy.int32,
+        )
+
+        assert regex.match(Register.PREDT, matched.operands[0]) is not None
+        assert matched.operands[1] == 'RZ'
+        assert {'MIN', 'S32'}.issubset(matched.modifiers)
+
+        # In the PTX, we can see the '.relaxed'.
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
+
+        assert 'atom.min.relaxed.sys.s32' in result
+
+    def test_min_relaxed_device_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
+        """
+        Test with :py:attr:`CODE_MIN` for `long long int` and :py:data:`reprospect.test.sass.instruction.ThreadScope.DEVICE` scope.
+        """
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_MIN.format(type='long long int', scope='device'))
 
         decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
@@ -385,10 +438,10 @@ __global__ void atomic_exch_kernel() {
 
     def test_min_relaxed_device_unsigned_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
-        Test with :py:attr:`CODE_MIN` for `unsigned long long int`.
+        Test with :py:attr:`CODE_MIN` for `unsigned long long int` and :py:data:`reprospect.test.sass.instruction.ThreadScope.DEVICE` scope.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
-        FILE.write_text(self.CODE_MIN.format(type='unsigned long long int'))
+        FILE.write_text(self.CODE_MIN.format(type='unsigned long long int', scope='device'))
 
         decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
@@ -410,6 +463,38 @@ __global__ void atomic_exch_kernel() {
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
         assert 'atom.min.relaxed.gpu.u64' in result
+
+    @pytest.mark.parametrize('consistency', ['strong', 'weak'], ids=str)
+    def test_compare_exchange_system(self, request, consistency: str, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
+        """
+        Test with :py:attr:`CODE_COMPARE_EXCHANGE` for `unsigned long long int`, :py:data:`reprospect.test.sass.instruction.ThreadScope.SYSTEM` scope.
+
+        .. note::
+
+            Both *weak*  and *strong* lead to a `STRONG` consistency.
+        """
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(self.CODE_COMPARE_EXCHANGE.format(type='unsigned long long int', consistency=consistency, scope='system'))
+
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
+
+        # Find the atomic CAS.
+        _, _, matched = self.match_one(
+            decoder=decoder,
+            arch=parameters.arch,
+            operation='CAS',
+            consistency='STRONG', scope=ThreadScope.SYSTEM,
+            memory=MemorySpace.GENERIC,
+            dtype=numpy.uint64,
+        )
+
+        assert regex.match(Register.PREDT, matched.operands[0]) is not None
+        assert {'CAS', '64'}.issubset(matched.modifiers)
+
+        # In the PTX, we can see the '.acquire'.
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
+
+        assert 'atom.cas.acquire.sys.b64' in result
 
     def test_exch_strong_device_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """

@@ -38,6 +38,7 @@ class ThreadScope(StrEnum):
     """
     BLOCK = 'BLOCK'
     DEVICE = 'DEVICE'
+    SYSTEM = 'SYSTEM'
     THREADS = 'THREADS'
 
     def convert(self, *, arch: NVIDIAArch) -> str:
@@ -61,6 +62,8 @@ class ThreadScope(StrEnum):
                 return 'SM'
             case self.DEVICE:
                 return 'GPU'
+            case self.SYSTEM:
+                return 'SYS'
             case _:
                 raise ValueError(self)
 

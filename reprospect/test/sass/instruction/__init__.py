@@ -39,7 +39,7 @@ from .address import (
     LocalAddressMatch,
     SharedAddressMatch,
 )
-from .atomic import AtomicMatcher, ReductionMatcher
+from .atomic import AtomicMatcher, ReductionMatcher, ThreadScope
 from .branch import BranchMatcher
 from .constant import ConstantMatch, ConstantMatcher
 from .floating import (
@@ -93,4 +93,5 @@ __all__ = (
     'SharedAddressMatch',
     'StoreGlobalMatcher',
     'StoreMatcher',
+    'ThreadScope',
 )

@@ -28,9 +28,11 @@ struct Then {
     static void run(const Kokkos::Cuda& exec) {
         const view_t data(Kokkos::view_alloc(exec, "data"));
 
-        const graph_t graph{exec};
+        const auto device_handle = Kokkos::Experimental::get_device_handle(exec);
 
-        graph.root_node().then("then", exec, Functor<view_t>{.data = data});
+        const graph_t graph{device_handle};
+
+        graph.root_node().then(Kokkos::Experimental::node_props("then", device_handle), Functor<view_t>{.data = data});
 
         graph.submit(exec);
 

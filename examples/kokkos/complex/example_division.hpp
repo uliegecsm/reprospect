@@ -27,8 +27,6 @@ namespace reprospect::examples::kokkos::complex {
  * @tparam EnableCompliance Enable ISO/IEC 60559 compliance.
  * @tparam UseIlogb         Use @c ilogb instead of @c logb.
  *                          Only available when @c ILOGB_NAN_INF_DISTINGUISHABLE is defined.
- *
- * @todo Use @c Kokkos::scalbn and @c Kokkos::ilogb when available.
  */
 template <bool EnableCompliance, bool UseIlogb, typename RealType>
 KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
@@ -49,24 +47,24 @@ KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
     RealType logbw{};
 
     if constexpr (UseIlogb) {
-        iexp = ilogb(Kokkos::fmax(Kokkos::fabs(c), Kokkos::fabs(d)));
+        iexp = Kokkos::ilogb(Kokkos::fmax(Kokkos::fabs(c), Kokkos::fabs(d)));
         if (iexp != FP_ILOGB0 && iexp != FP_ILOGBNAN && iexp != INT_MAX) {
             ilogbw = iexp;
-            c = scalbn(c, -ilogbw);
-            d = scalbn(d, -ilogbw);
+            c = Kokkos::scalbn(c, -ilogbw);
+            d = Kokkos::scalbn(d, -ilogbw);
         }
     } else {
         logbw = Kokkos::logb(Kokkos::fmax(Kokkos::fabs(c), Kokkos::fabs(d)));
         if (Kokkos::isfinite(logbw)) {
             ilogbw = static_cast<int>(logbw);
-            c = scalbn(c, -ilogbw);
-            d = scalbn(d, -ilogbw);
+            c = Kokkos::scalbn(c, -ilogbw);
+            d = Kokkos::scalbn(d, -ilogbw);
         }
     }
 
     RealType denom = c * c + d * d;
-    RealType real = scalbn((a * c + b * d) / denom, -ilogbw);
-    RealType imag = scalbn((b * c - a * d) / denom, -ilogbw);
+    RealType real = Kokkos::scalbn((a * c + b * d) / denom, -ilogbw);
+    RealType imag = Kokkos::scalbn((b * c - a * d) / denom, -ilogbw);
     if constexpr (EnableCompliance) {
         if (Kokkos::isnan(real) && Kokkos::isnan(imag)) {
             if ((denom == RealType(0)) && (!Kokkos::isnan(a) || !Kokkos::isnan(b))) {
@@ -94,12 +92,6 @@ KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
         }
     }
     return {real, imag};
-}
-
-//! @todo Use @c Kokkos::norm when available.
-template <typename RealType>
-KOKKOS_FUNCTION constexpr RealType norm(const Kokkos::complex<RealType>& value) {
-    return value.real() * value.real() + value.imag() * value.imag();
 }
 
 /**

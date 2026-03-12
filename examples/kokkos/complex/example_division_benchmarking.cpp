@@ -50,7 +50,7 @@ class NewtonFractal : public ::benchmark::Fixture {
     std::optional<compute_t> compute = std::nullopt;
 };
 
-void parameters(::benchmark::internal::Benchmark* benchmark) {
+void parameters(::benchmark::Benchmark* benchmark) {
     benchmark->ArgNames({"width", "height"})->Args({128, 128})->Args({512, 512});
 }
 

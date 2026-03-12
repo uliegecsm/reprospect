@@ -85,7 +85,6 @@ class TestSASS(TestDivision):
 
     @pytest.fixture(scope='class')
     def function(self, cuobjdump: CuObjDump) -> dict[Method, Function]:
-        logging.info(list(cuobjdump.functions.keys()))
         def get_function(method: Method) -> Function:
             pattern = self.SIGNATURE[method]
             return cuobjdump.functions[next(sig for sig in cuobjdump.functions if pattern.search(sig) is not None)]
@@ -166,9 +165,17 @@ class TestSASS(TestDivision):
                 expt_logbscalbn =    {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
                 expt_norm_division = {RegisterType.GPR: (39, 30), RegisterType.PRED: (5, 5), RegisterType.UGPR: (8, 4)}
             case 90:
-                expt_ilogbscalbn =   {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
-                expt_logbscalbn =    {RegisterType.GPR: (40, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
-                expt_norm_division = {RegisterType.GPR: (40, 33), RegisterType.PRED: (5, 5), RegisterType.UGPR: (9, 5)}
+                match self.toolchains['CUDA']['compiler']['id']:
+                    case 'NVIDIA':
+                        expt_ilogbscalbn =   {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
+                        expt_logbscalbn =    {RegisterType.GPR: (40, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
+                        expt_norm_division = {RegisterType.GPR: (40, 33), RegisterType.PRED: (5, 5), RegisterType.UGPR: (9, 5)}
+                    case 'Clang':
+                        expt_ilogbscalbn =   {RegisterType.GPR: (45, 43), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                        expt_logbscalbn =    {RegisterType.GPR: (45, 41), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                        expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (5, 5), RegisterType.UGPR: (10, 6)}
+                    case _:
+                        raise ValueError
             case 100:
                 expt_ilogbscalbn =   {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
                 expt_logbscalbn =    {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}

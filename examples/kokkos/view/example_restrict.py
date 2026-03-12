@@ -111,6 +111,7 @@ import sys
 import typing
 
 import pytest
+import semantic_version
 
 from reprospect.test import CMakeAwareTestCase, environment
 from reprospect.test.sass.composite import (
@@ -398,11 +399,15 @@ class TestSASS(TestRestrict):
         Test for :py:attr:`Method.RESTRICT_RECAST_LAMBDA`.
 
         It generates a single loads/add/store sequence,
-        but misses the ``.CONSTANT`` modifier for recent architectures.
+        but the ``.CONSTANT`` modifier may be missing depending on the architecture/compiler.
         """
         logging.info(decoder[Method.RESTRICT_RECAST_LAMBDA])
         cfg = ControlFlow.analyze(instructions=decoder[Method.RESTRICT_RECAST_LAMBDA].instructions)
-        readonly = self.arch.compute_capability.as_int in {70, 75, 80, 86, 89, 90}
+        if self.toolchains['CUDA']['compiler']['id'] == 'Clang' and \
+            semantic_version.Version(self.toolchains['CUDA']['compiler']['version']) in semantic_version.SimpleSpec('>21'):
+            readonly = False
+        else:
+            readonly = self.arch.compute_capability.as_int in {70, 75, 80, 86, 89, 90}
         assert self.match_repeated(cfg=cfg) is False
         assert self.match_single(cfg=cfg, readonly=False) == (not readonly)
         assert self.match_single(cfg=cfg, readonly=True) == readonly

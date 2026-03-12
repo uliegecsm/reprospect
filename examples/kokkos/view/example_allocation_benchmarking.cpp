@@ -186,7 +186,7 @@ class WithKokkos : public Common {
     }
 };
 
-void parameters(::benchmark::internal::Benchmark* benchmark) {
+void parameters(::benchmark::Benchmark* benchmark) {
     static constexpr size_t threshold = 40000;
 
     benchmark

@@ -25,7 +25,8 @@ for the following implementations:
 4. :py:attr:`Method.RESTRICT_ACCESSOR`, see :py:meth:`TestSASS.test_restrict_accessor`
 5. :py:attr:`Method.RESTRICT_MEMBER`, see :py:meth:`TestSASS.test_restrict_member`
 6. :py:attr:`Method.RESTRICT_VIEW_MEMORY_TRAIT`, see :py:meth:`TestSASS.test_restrict_view_memory_trait`
-7. :py:attr:`Method.LDG_ACCESSOR`, see :py:meth:`TestSASS.test_ldg_accessor`
+7. :py:attr:`Method.RANDOM_ACCESS_VIEW_MEMORY_TRAIT`, see :py:meth:`TestSASS.test_random_access_view_memory_trait`
+8. :py:attr:`Method.LDG_ACCESSOR`, see :py:meth:`TestSASS.test_ldg_accessor`
 
 These implementations either generate a single sequence of loads/operation/store
 when the compiler figures out pointers do not alias (:py:meth:`TestSASS.match_single`),
@@ -179,6 +180,11 @@ class Method(StrEnum):
     RESTRICT_VIEW_MEMORY_TRAIT = 'FunctorRestrictViewMemoryTrait'
     """
     Use the :code:`Kokkos::Restrict` memory trait.
+    """
+
+    RANDOM_ACCESS_VIEW_MEMORY_TRAIT = 'FunctorRandomAccessViewMemoryTrait'
+    """
+    Use the :code:`Kokkos::RandomAccess` memory trait.
     """
 
     LDG_ACCESSOR = 'FunctorLDGAccessor'
@@ -457,6 +463,18 @@ class TestSASS(TestRestrict):
         assert self.match_single(cfg=cfg, readonly=False) is False
         assert self.match_single(cfg=cfg, readonly=True) is False
 
+    def test_random_access_view_memory_trait(self, decoder: dict[Method, Decoder]) -> None:
+        """
+        Test for :py:attr:`Method.RANDOM_ACCESS_VIEW_MEMORY_TRAIT`.
+
+        Unexpectedly, it generates two loads/add/store sequences, see https://github.com/kokkos/kokkos/issues/8964.
+        """
+        logging.info(decoder[Method.RANDOM_ACCESS_VIEW_MEMORY_TRAIT])
+        cfg = ControlFlow.analyze(instructions=decoder[Method.RANDOM_ACCESS_VIEW_MEMORY_TRAIT].instructions)
+        assert self.match_repeated(cfg=cfg) is True
+        assert self.match_single(cfg=cfg, readonly=False) is False
+        assert self.match_single(cfg=cfg, readonly=True) is False
+
     def test_ldg_accessor(self, decoder: dict[Method, Decoder]) -> None:
         """
         Test for :py:attr:`Method.LDG_ACCESSOR`.
@@ -534,7 +552,7 @@ class TestNCU(TestRestrict):
         match method:
             case Method.GLOBAL_KERNEL | Method.RESTRICT_RECAST_LAMBDA | Method.LDG_ACCESSOR:
                 factor = 1
-            case Method.RESTRICT_ACCESSOR | Method.RESTRICT_MEMBER | Method.RESTRICT_VIEW_MEMORY_TRAIT:
+            case Method.RESTRICT_ACCESSOR | Method.RESTRICT_MEMBER | Method.RESTRICT_VIEW_MEMORY_TRAIT | Method.RANDOM_ACCESS_VIEW_MEMORY_TRAIT:
                 factor = 2
             case Method.RESTRICT_RECAST_LOCAL:
                 factor = {

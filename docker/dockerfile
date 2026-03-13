@@ -58,16 +58,21 @@ ARG CXX_COMPILER_VERSION
 RUN <<EOF
     set -ex
 
-    apt-helpers install-packages --update --packages lsb-release wget software-properties-common gnupg
+    apt-helpers install-packages --update --packages wget gpg lsb-release
 
-    wget https://apt.llvm.org/llvm.sh
-    chmod +x llvm.sh
-    ./llvm.sh ${CXX_COMPILER_VERSION}
-    rm llvm.sh
+    wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
+        | gpg --dearmor \
+        | tee /usr/share/keyrings/llvm-archive-keyring.gpg > /dev/null
+
+    CODENAME=$(lsb_release -cs)
+
+    echo "deb [signed-by=/usr/share/keyrings/llvm-archive-keyring.gpg] https://apt.llvm.org/${CODENAME}/ llvm-toolchain-${CODENAME}-${CXX_COMPILER_VERSION} main" \
+        | tee /etc/apt/sources.list.d/llvm.list
 
     apt-helpers install-packages --clean   \
         --update --packages                \
         clang-${CXX_COMPILER_VERSION}      \
+        llvm-${CXX_COMPILER_VERSION}       \
         clang-tidy-${CXX_COMPILER_VERSION} \
         clang-format-${CXX_COMPILER_VERSION}
 

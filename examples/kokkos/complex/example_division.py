@@ -113,7 +113,12 @@ class TestSASS(TestDivision):
         * https://fp32.org/newton_raphson_division.html
         """
         matcher_mufu = OpcodeModsMatcher(opcode='MUFU', modifiers=('RCP64H',))
-        expt_mufu_norm_division = 7 if (self.arch.compute_capability < 100 or semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.0')) else 9
+        if self.arch.compute_capability < 100 or \
+            (semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.0') and self.toolchains['CUDA']['compiler']['id'] == 'NVIDIA') or \
+            self.toolchains['CUDA']['compiler']['id'] == 'Clang':
+            expt_mufu_norm_division = 7
+        else:
+            expt_mufu_norm_division = 9
         assert len(findall(matcher=matcher_mufu, instructions=decoder[Method.NormDivision].instructions)) == expt_mufu_norm_division
         assert len(findall(matcher=matcher_mufu, instructions=decoder[Method.LogbScalbn].instructions)) == 3
         assert len(findall(matcher=matcher_mufu, instructions=decoder[Method.ILogbScalbn].instructions)) == 3
@@ -142,7 +147,7 @@ class TestSASS(TestDivision):
         assert len(findall(matcher=matcher_fp64_to_int32, instructions=decoder[Method.NormDivision].instructions)) == 0
         assert len(findall(matcher=matcher_fp64_to_int32, instructions=decoder[Method.LogbScalbn].instructions)) == 1
 
-    def test_detailed_register_usage(self, detailed_register_usage: dict[Method, DetailedRegisterUsage]) -> None: # pylint: disable=too-many-branches
+    def test_detailed_register_usage(self, detailed_register_usage: dict[Method, DetailedRegisterUsage]) -> None: # pylint: disable=too-many-branches,too-many-statements
         match self.arch.compute_capability.as_int:
             case 70:
                 expt_ilogbscalbn =   {RegisterType.GPR: (40, 36), RegisterType.PRED: (4, 4)}
@@ -177,9 +182,17 @@ class TestSASS(TestDivision):
                     case _:
                         raise ValueError
             case 100:
-                expt_ilogbscalbn =   {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
-                expt_logbscalbn =    {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
-                expt_norm_division = {RegisterType.GPR: (40, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                match self.toolchains['CUDA']['compiler']['id']:
+                    case 'NVIDIA':
+                        expt_ilogbscalbn =   {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
+                        expt_logbscalbn =    {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
+                        expt_norm_division = {RegisterType.GPR: (40, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                    case 'Clang':
+                        expt_ilogbscalbn =   {RegisterType.GPR: (45, 41), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                        expt_logbscalbn =    {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                        expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (5, 5), RegisterType.UGPR: (10, 6)}
+                    case _:
+                        raise ValueError
             case 103:
                 expt_ilogbscalbn =   {RegisterType.GPR: (45, 39), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                 expt_logbscalbn =    {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}

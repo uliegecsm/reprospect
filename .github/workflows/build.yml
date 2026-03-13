@@ -288,7 +288,7 @@ jobs:
                 coverage combine --keep $(find coverage/ -type f -name "*.cov")
                 coverage report
                 test -f .coverage
-                mv .coverage coverage.${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
+                mv .coverage coverage.${{ matrix.cmake_preset }}-${{ matrix.cuda_version }}-${{ matrix.nvidia_arch }}
 
             - uses: actions/upload-artifact@v7
               with:
@@ -299,8 +299,8 @@ jobs:
 
             - uses: actions/upload-artifact@v7
               with:
-                  name: tests-coverage-${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
-                  path: coverage.${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
+                  name: tests-coverage-${{ matrix.cmake_preset }}-${{ matrix.cuda_version }}-${{ matrix.nvidia_arch }}
+                  path: coverage.${{ matrix.cmake_preset }}-${{ matrix.cuda_version }}-${{ matrix.nvidia_arch }}
                   retention-days: 1
                   if-no-files-found: error
 

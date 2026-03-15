@@ -1,11 +1,38 @@
+import functools
 import logging
+import os
 import pathlib
 import subprocess
+
+import semantic_version
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 
 QUALITY_FLAGS: tuple[str, ...] = ('-Wall', '-Wextra', '-Werror')
+
+@functools.cache
+def clang_cuda_fix_includes(*, implicit_includes: tuple[str], version: semantic_version.Version) -> tuple[pathlib.Path, ...]:
+    """
+    Return any missing include path for when `clang` is used to compile for CUDA 13 and above.
+
+    For instance, `clang` 22 omits `<cuda_root>/include/cccl` from its implicit search
+    directories, yet CUDA 13 ships headers such as `cuda/atomic` there.
+    """
+    if version not in semantic_version.SimpleSpec('>=13'):
+        return ()
+
+    cuda_includes = tuple(
+        p for p in map(pathlib.Path, implicit_includes)
+        if 'cuda' in p.parent.name
+    )
+
+    if len(cuda_includes) != 1:
+        raise RuntimeError(cuda_includes)
+
+    cccl = cuda_includes[0] / 'cccl'
+
+    return (cccl,) if cccl.is_dir() else ()
 
 def get_compilation_output(*, # pylint: disable=too-many-branches
     source: pathlib.Path,
@@ -15,6 +42,7 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
     object_file: bool = True,
     resource_usage: bool = False,
     ptx: bool = False,
+    version: semantic_version.Version | None = None,
 ) -> tuple[pathlib.Path, str]:
     """
     Compile the `source` in `cwd` for `arch`.
@@ -75,6 +103,12 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
 
     # Allow any include within the repository.
     cmd.append(f"-I{cmake_file_api.cache['reprospect_SOURCE_DIR']['value']}")
+
+    if cuda_compiler_id == 'Clang':
+        cmd.extend(f'-I{x}' for x in clang_cuda_fix_includes(
+            implicit_includes=tuple(cuda_toolchain['compiler']['implicit']['includeDirectories']),
+            version=version or semantic_version.Version(os.environ['CUDA_VERSION']),
+        ))
 
     # Append link flags if needed.
     if not object_file:

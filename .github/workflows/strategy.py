@@ -374,6 +374,15 @@ def main(*, args: argparse.Namespace) -> None:
         platforms=('linux/amd64',),
     ), args=args))
 
+    matrix.extend(from_config(Config(
+        cuda_version='13.1.0',
+        ubuntu_version='24.04',
+        python_version='3.13',
+        compilers={'CXX': Compiler(ID='Clang', version='22')},
+        compute_capability=ComputeCapability(major=10, minor=0),
+        platforms=('linux/amd64',),
+    ), args=args))
+
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')
 
     # All jobs in the matrix build an image.

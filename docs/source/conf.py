@@ -55,7 +55,7 @@ intersphinx_mapping = {
     'matplotlib': ('https://matplotlib.org/stable/', None),
     'numpy': ('https://numpy.org/doc/stable/', None),
     'packaging': ('https://packaging.pypa.io/en/stable/', None),
-    'pandas': ('https://pandas.pydata.org/pandas-docs/stable/', None),
+    'pandas': ('https://pandas.pydata.org/docs/', None),
     'python': ('https://docs.python.org/3', None),
     'rich': ('https://rich.readthedocs.io/en/stable/', None),
     'semantic_version': ('https://python-semanticversion.readthedocs.io/en/latest/', None),

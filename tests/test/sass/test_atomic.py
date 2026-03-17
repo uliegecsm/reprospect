@@ -7,6 +7,7 @@ import numpy
 import pytest
 import regex
 import semantic_version
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.test.sass.instruction import (
     AtomicMatcher,
@@ -172,7 +173,7 @@ __global__ void atomic_exch_kernel() {
             ( 32, 'float',     'unsigned int'),
             ( 64, 'double',    'unsigned long long int'),
     ], ids=str)
-    def test_atomicCAS(self, request, workdir, word, parameters: Parameters, cmake_file_api: cmake.FileAPI):
+    def test_atomicCAS(self, request, workdir, word, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler):
         """
         Test with :py:attr:`CODE_ADD_BASED_ON_CAS`.
         """
@@ -186,8 +187,8 @@ __global__ void atomic_exch_kernel() {
         decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
 
         # Find the atomic CAS.
-        if cmake_file_api.toolchains['CUDA']['compiler']['id'] == 'Clang' and \
-            semantic_version.Version(cmake_file_api.toolchains['CUDA']['compiler']['version']) in semantic_version.SimpleSpec('>21'):
+        if cmake_cuda_compiler.id == 'Clang' and \
+            semantic_version.Version(cmake_cuda_compiler.version) in semantic_version.SimpleSpec('>21'):
             expt_scope = 'SYSTEM'
         else:
             expt_scope = 'DEVICE'
@@ -202,7 +203,7 @@ __global__ void atomic_exch_kernel() {
         assert len(matched.operands) == 5
         assert matched.operands[0] == 'PT'
 
-    def test_atomicCAS_128(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
+    def test_atomicCAS_128(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler):
         """
         Supported from compute capability 9.x.
         """
@@ -211,7 +212,7 @@ __global__ void atomic_exch_kernel() {
 
         # Under some circumstances, 128-bit atomicCAS will not compile.
         expecting_failure = False
-        match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+        match cmake_cuda_compiler.id:
             case 'NVIDIA':
                 if parameters.arch.compute_capability < 90:
                     logging.warning('The 128-bit atomicCAS() is only supported by devices of compute capability 9.x and higher.')
@@ -220,7 +221,7 @@ __global__ void atomic_exch_kernel() {
                 logging.warning('The 128-bit atomicCAS() does not compile with Clang.')
                 expecting_failure = True
             case _:
-                raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
+                raise ValueError(f'unsupported compiler {cmake_cuda_compiler}')
 
         kwargs = {'cwd': workdir, 'arch': parameters.arch, 'file': FILE, 'cmake_file_api': cmake_file_api}
 
@@ -547,7 +548,7 @@ __global__ void atomic_exch_kernel() {
 
         assert {'EXCH'}.issubset(matched.modifiers)
 
-    def test_exch_device_ptr(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
+    def test_exch_device_ptr(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
         """
         This test demonstrates that while ``nvcc`` emits an ``ATOMG`` instruction for an atomic exchange using a device pointer marked with
         :code:`__constant__`, ``clang`` (as of 21.1.5) is not able to infer that the referenced memory resides in global memory and therefore falls back
@@ -567,13 +568,13 @@ __global__ void atomic_exch_kernel() {
 
         # Find the atomic exchange.
         memory: MemorySpace
-        match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+        match cmake_cuda_compiler.id:
             case 'NVIDIA':
                 memory = MemorySpace.GLOBAL
             case 'Clang':
                 memory = MemorySpace.GENERIC
             case _:
-                raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
+                raise ValueError(f'unsupported compiler {cmake_cuda_compiler}')
 
         _, _, matched = self.match_one(
             decoder=decoder,
@@ -586,10 +587,10 @@ __global__ void atomic_exch_kernel() {
         # In the PTX, we can see the '.global' for NVIDIA, but not for Clang.
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
-        match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+        match cmake_cuda_compiler.id:
             case 'NVIDIA':
                 assert 'atom.global.exch.b32' in result
             case 'Clang':
                 assert 'atom.exch.b32' in result
             case _:
-                raise ValueError(f"unsupported compiler {cmake_file_api.toolchains['CUDA']['compiler']}")
+                raise ValueError(f'unsupported compiler {cmake_cuda_compiler}')

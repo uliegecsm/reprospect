@@ -4,6 +4,7 @@ import random
 import typing
 
 import pytest
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump, CuppFilt, Function, ResourceUsage
@@ -70,7 +71,7 @@ class TestResourceUsage:
         FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'wide_load_store.cu'
         SIGNATURE: typing.Final[str] = '_Z22wide_load_store_kernelP15MyAlignedStructIdEPKS0_'
 
-        def test(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
+        def test(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
             output, compilation = get_compilation_output(
                 source=self.FILE,
                 cwd=workdir,
@@ -91,7 +92,7 @@ class TestResourceUsage:
                 expt_regs = {
                     'NVIDIA': 14,
                     'Clang': 12,
-                }[cmake_file_api.toolchains['CUDA']['compiler']['id']]
+                }[cmake_cuda_compiler.id]
                 assert f'Used {expt_regs} registers, used 0 barriers' in compilation, compilation
                 assert ru == ResourceUsage(register=expt_regs, constant={0: 544})
             else:
@@ -239,7 +240,7 @@ class TestCuObjDump:
 
             assert cuobjdump.functions[self.SIGNATURE].symbol == self.SYMBOL
 
-        def test_extract_cubin_from_file(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
+        def test_extract_cubin_from_file(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
             """
@@ -257,7 +258,7 @@ class TestCuObjDump:
                 arch=parameters.arch,
                 cwd=workdir,
                 cubin=get_cubin_name(
-                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    compiler=cmake_cuda_compiler,
                     file=output,
                     arch=parameters.arch,
                     object_file=False,
@@ -270,7 +271,7 @@ class TestCuObjDump:
             assert len(cuobjdump.functions) == 1
             assert self.SIGNATURE in cuobjdump.functions
 
-        def test_extract_symbol_table(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
+        def test_extract_symbol_table(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.
             """
@@ -286,7 +287,7 @@ class TestCuObjDump:
 
             # This binary is not compiled to an object file. With `nvcc` as the compiler, the binary then contains
             # more than one embedded CUDA binary file. Hence, check that calling symtab raises.
-            if cmake_file_api.toolchains['CUDA']['compiler']['id'] == 'NVIDIA':
+            if cmake_cuda_compiler.id == 'NVIDIA':
                 with pytest.raises(RuntimeError, match=r'The host binary file contains more than one embedded CUDA binary file.'):
                     cuobjdump.symtab # pylint: disable=pointless-statement # noqa: B018
 
@@ -296,7 +297,7 @@ class TestCuObjDump:
                 arch=parameters.arch,
                 cwd=workdir,
                 cubin=get_cubin_name(
-                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    compiler=cmake_cuda_compiler,
                     file=output,
                     arch=parameters.arch,
                     object_file=False,
@@ -346,7 +347,7 @@ class TestCuObjDump:
 
             assert all(cuobjdump.functions[signature].symbol == symbol for symbol, signature in self.FUNCTIONS.items())
 
-        def test_extract_cubin_from_file(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
+        def test_extract_cubin_from_file(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the `cubin` from it.
             """
@@ -363,7 +364,7 @@ class TestCuObjDump:
                 arch=parameters.arch,
                 cwd=workdir,
                 cubin=get_cubin_name(
-                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    compiler=cmake_cuda_compiler,
                     file=output,
                     arch=parameters.arch,
                     object_file=False,
@@ -374,7 +375,7 @@ class TestCuObjDump:
 
             assert set(cuobjdump.functions.keys()) == set(self.FUNCTIONS.values())
 
-        def test_extract_symbol_table(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
+        def test_extract_symbol_table(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, and extract the symbol table from it.
             """
@@ -391,7 +392,7 @@ class TestCuObjDump:
                 arch=parameters.arch,
                 cwd=workdir,
                 cubin=get_cubin_name(
-                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    compiler=cmake_cuda_compiler,
                     file=output,
                     arch=parameters.arch,
                     object_file=False,

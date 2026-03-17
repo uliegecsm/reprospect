@@ -4,6 +4,7 @@ import pathlib
 import typing
 
 import cmake_file_api.kinds
+import cmake_file_api.kinds.toolchains.v1
 import cmake_file_api.reply.v1
 import ijson
 
@@ -114,3 +115,10 @@ class FileAPI:
                 with (self.cmake_reply_path / target['jsonFile']).open() as file:
                     return json.load(file)
         raise ValueError(f'Target {name!r} not found.')
+
+    @functools.lru_cache(maxsize=128) # noqa: B019
+    def compiler(self, toolchain: str) -> cmake_file_api.kinds.toolchains.v1.CMakeToolchainCompiler:
+        """
+        Retrieve the compiler for a given toolchain.
+        """
+        return cmake_file_api.kinds.toolchains.v1.CMakeToolchainCompiler.from_dict(self.toolchains[toolchain]['compiler'])

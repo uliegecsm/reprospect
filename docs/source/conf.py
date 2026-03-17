@@ -127,6 +127,7 @@ nitpick_ignore_regex = [
     ('py:class', r'_regex.Pattern'),
     ('py:class', r'regex.Pattern'),
     ('py:class', r'elftools.*'),
+    ('py:class', r'cmake_file_api.*'),
 ]
 
 # Configuration for 'myst_nb', see also https://myst-nb.readthedocs.io/en/latest/configuration.html.

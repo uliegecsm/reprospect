@@ -9,6 +9,7 @@ import typing
 import elftools.elf.sections
 import pytest
 import semantic_version
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump
@@ -264,7 +265,7 @@ class TestSaxpy:
             assert elf.is_cuda
             assert elf.arch == parameters.arch
 
-    def test_embedded_cubin_cuinfo_and_tkinfo(self, parameters: Parameters, object_file: pathlib.Path, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI) -> None:
+    def test_embedded_cubin_cuinfo_and_tkinfo(self, parameters: Parameters, object_file: pathlib.Path, workdir: pathlib.Path, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
         """
         Retrieve the `cuinfo` and `tkinfo` note sections from a compiled output.
         """
@@ -283,7 +284,7 @@ class TestSaxpy:
             expt_tool_version = re.search(r'Cuda compilation tools, release [0-9.]+, V[0-9.]+', output).group()
             expt_tool_options = ['-v', f'-arch {parameters.arch.as_sm}', '-m 64']
 
-            match cmake_file_api.toolchains['CUDA']['compiler']['id']:
+            match cmake_cuda_compiler.id:
                 case 'Clang':
                     expt_tool_options.append('-O 3')
                 case _:
@@ -426,7 +427,7 @@ class TestNvInfo:
         return nvcc.get_version()
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
-    def test(self, version, parameters: Parameters, cmake_file_api: cmake.FileAPI, workdir: pathlib.Path) -> None:
+    def test(self, version, parameters: Parameters, cmake_file_api: cmake.FileAPI, workdir: pathlib.Path, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
         """
         Extract the `.nv.info.<mangled>` section of the kernel.
         """
@@ -446,7 +447,7 @@ class TestNvInfo:
             cwd=workdir,
             sass=False,
             cubin=get_cubin_name(
-                compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                compiler=cmake_cuda_compiler,
                 file=output,
                 arch=parameters.arch,
                 object_file=False,

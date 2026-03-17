@@ -76,7 +76,7 @@ class TestAtomicAddComplex128(add.TestCase):
         matched = desul.LockBasedAtomicMatcher(
             arch=self.arch,
             operation=AddComplex128(),
-            compiler_id=self.toolchains['CUDA']['compiler']['id'],
+            compiler=self.compiler(toolchain='CUDA'),
         ).match(instructions=decoder.instructions)
 
         if self.arch.compute_capability.as_int >= 90:

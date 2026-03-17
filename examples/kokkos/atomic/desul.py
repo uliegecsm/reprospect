@@ -39,6 +39,8 @@ import logging
 import sys
 import typing
 
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
+
 from reprospect.test.sass.composite import (
     instruction_is,
     instructions_are,
@@ -69,17 +71,17 @@ if sys.version_info >= (3, 12):
 else:
     from typing_extensions import override
 
-def get_atomic_memory_suffix(compiler_id: str) -> typing.Literal['G', '']:
+def get_atomic_memory_suffix(compiler: CMakeToolchainCompiler) -> typing.Literal['G', '']:
     """
     See :py:meth:`tests.test.sass.test_atomic.TestAtomicMatcher.test_exch_device_ptr`.
     """
-    match compiler_id:
+    match compiler.id:
         case 'NVIDIA':
             return 'G'
         case 'Clang':
             return ''
         case _:
-            raise ValueError(f'unsupported compiler ID {compiler_id}')
+            raise ValueError(f'unsupported compiler ID {compiler.id}')
 
 class AtomicAcquireMatcher:
     """
@@ -91,12 +93,12 @@ class AtomicAcquireMatcher:
     * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Array_CUDA.hpp#L83
     """
     @classmethod
-    def build(cls, arch: NVIDIAArch, compiler_id: str) -> OrderedInSequenceMatcher:
+    def build(cls, arch: NVIDIAArch, compiler: CMakeToolchainCompiler) -> OrderedInSequenceMatcher:
         return instructions_are(
             # Storing 1 in a register can be done in different ways.
             Move32Matcher(src='0x1'),
             AtomicMatcher(
-                memory=get_atomic_memory_suffix(compiler_id=compiler_id),
+                memory=get_atomic_memory_suffix(compiler=compiler),
                 arch=arch,
                 operation='EXCH',
                 scope='DEVICE',
@@ -114,9 +116,9 @@ class AtomicReleaseMatcher:
     * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Array_CUDA.hpp#L102
     """
     @classmethod
-    def build(cls, arch: NVIDIAArch, compiler_id: str) -> InstructionMatcher:
+    def build(cls, arch: NVIDIAArch, compiler: CMakeToolchainCompiler) -> InstructionMatcher:
         return instruction_is(AtomicMatcher(
-            memory=get_atomic_memory_suffix(compiler_id=compiler_id),
+            memory=get_atomic_memory_suffix(compiler=compiler),
             arch=arch,
             operation='EXCH',
             scope='DEVICE',
@@ -159,7 +161,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
     def __init__(self, *,
         arch: NVIDIAArch,
         operation: Operation,
-        compiler_id: str,
+        compiler: CMakeToolchainCompiler,
         size: int = 128,
         level: int = logging.INFO,
         load: SequenceMatcher | None = None,
@@ -167,7 +169,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
     ) -> None:
         self.arch: typing.Final[NVIDIAArch] = arch
         self.operation: typing.Final[Operation] = operation
-        self.compiler_id: typing.Final[str] = compiler_id
+        self.compiler: typing.Final[CMakeToolchainCompiler] = compiler
         self.level: typing.Final[int] = level
         self.load:  typing.Final[SequenceMatcher] = load  or InSequenceAtMatcher(matcher=LoadGlobalMatcher (arch=self.arch, size=size, readonly=False))
         self.store: typing.Final[SequenceMatcher] = store or InSequenceAtMatcher(matcher=StoreGlobalMatcher(arch=self.arch, size=size))
@@ -195,7 +197,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
         matched: list[InstructionMatch] = []
 
         # First, try to atomically acquire a lock.
-        matcher_start = instructions_contain(matcher=AtomicAcquireMatcher.build(arch=self.arch, compiler_id=self.compiler_id))
+        matcher_start = instructions_contain(matcher=AtomicAcquireMatcher.build(arch=self.arch, compiler=self.compiler))
         matched_atomic_acquire = matcher_start.match(instructions=instructions)
 
         if matched_atomic_acquire is None:
@@ -215,13 +217,13 @@ class LockBasedAtomicMatcher(SequenceMatcher):
 
         # Then, ISETP.NE.AND that reuses the register in which the atomic acquire put its result.
         modifiers: tuple[str, ...]
-        match self.compiler_id:
+        match self.compiler.id:
             case 'NVIDIA':
                 modifiers = ('NE', 'AND')
             case 'Clang':
                 modifiers = ('NE', 'U32', 'AND')
             case _:
-                raise ValueError(f'unsupported compiler ID {self.compiler_id}')
+                raise ValueError(f'unsupported compiler ID {self.compiler.id}')
         matcher_isetp_enter = OpcodeModsWithOperandsMatcher(
             opcode='ISETP', modifiers=modifiers,
             operands=(
@@ -314,7 +316,7 @@ class LockBasedAtomicMatcher(SequenceMatcher):
                 raise ValueError
 
         # Atomic release.
-        matched_atomic_release = AtomicReleaseMatcher.build(arch=self.arch, compiler_id=self.compiler_id).match(inst=instructions[offset])
+        matched_atomic_release = AtomicReleaseMatcher.build(arch=self.arch, compiler=self.compiler).match(inst=instructions[offset])
 
         if matched_atomic_release is None:
             return None

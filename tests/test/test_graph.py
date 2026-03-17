@@ -4,6 +4,7 @@ import sys
 import typing
 
 import pytest
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.test import CMakeAwareTestCase
 from reprospect.tools import ncu
@@ -56,11 +57,11 @@ class TestSASS(TestGraph):
         assert len(cuobjdump.functions) == 4
         logging.info(str(cuobjdump))
 
-    def test_instruction_count(self, cuobjdump: CuObjDump) -> None:
+    def test_instruction_count(self, cuobjdump: CuObjDump, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
         """
         Check how many instructions there are in the first graph node kernel.
         """
-        decoder = Decoder(code=cuobjdump.functions[self.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]].code)
+        decoder = Decoder(code=cuobjdump.functions[self.DEMANGLED_NODE_A[cmake_cuda_compiler.id]].code)
         assert len(decoder.instructions) >= 8
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
@@ -101,12 +102,12 @@ class TestNCU(TestGraph):
         assert report.report.num_ranges() == 1
         assert len(results) == 4
 
-    def test_launch_registers_per_thread_allocated_node_A(self, results: ncu.ProfilingResults) -> None:
+    def test_launch_registers_per_thread_allocated_node_A(self, results: ncu.ProfilingResults, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
         """
         Check metric `launch__registers_per_thread_allocated` for graph node A.
         """
         def matcher(value: tuple[str, ncu.ProfilingMetrics]) -> bool:
-            return value[1]['demangled'] == TestGraph.DEMANGLED_NODE_A[self.toolchains['CUDA']['compiler']['id']]
+            return value[1]['demangled'] == TestGraph.DEMANGLED_NODE_A[cmake_cuda_compiler.id]
 
         [(key, metrics)] = filter(matcher, results.iter_metrics(accessors=()))
 

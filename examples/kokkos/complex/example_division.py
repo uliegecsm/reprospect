@@ -114,8 +114,8 @@ class TestSASS(TestDivision):
         """
         matcher_mufu = OpcodeModsMatcher(opcode='MUFU', modifiers=('RCP64H',))
         if self.arch.compute_capability < 100 or \
-            (semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.0') and self.toolchains['CUDA']['compiler']['id'] == 'NVIDIA') or \
-            self.toolchains['CUDA']['compiler']['id'] == 'Clang':
+            (semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.0') and self.compiler(toolchain='CUDA').id == 'NVIDIA') or \
+            self.compiler(toolchain='CUDA').id == 'Clang':
             expt_mufu_norm_division = 7
         else:
             expt_mufu_norm_division = 9
@@ -170,7 +170,7 @@ class TestSASS(TestDivision):
                 expt_logbscalbn =    {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
                 expt_norm_division = {RegisterType.GPR: (39, 30), RegisterType.PRED: (5, 5), RegisterType.UGPR: (8, 4)}
             case 90:
-                match self.toolchains['CUDA']['compiler']['id']:
+                match self.compiler(toolchain='CUDA').id:
                     case 'NVIDIA':
                         expt_ilogbscalbn =   {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
                         expt_logbscalbn =    {RegisterType.GPR: (40, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
@@ -182,7 +182,7 @@ class TestSASS(TestDivision):
                     case _:
                         raise ValueError
             case 100:
-                match self.toolchains['CUDA']['compiler']['id']:
+                match self.compiler(toolchain='CUDA').id:
                     case 'NVIDIA':
                         expt_ilogbscalbn =   {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
                         expt_logbscalbn =    {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
@@ -198,7 +198,7 @@ class TestSASS(TestDivision):
                 expt_logbscalbn =    {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                 expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
             case 120:
-                match self.toolchains['CUDA']['compiler']['id']:
+                match self.compiler(toolchain='CUDA').id:
                     case 'NVIDIA':
                         if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.1'):
                             expt_ilogbscalbn = {RegisterType.GPR: (40, 33), RegisterType.PRED: (3, 3), RegisterType.UGPR: (14, 10)}
@@ -286,7 +286,7 @@ class TestNCU(TestDivision):
         """
         comp: typing.Callable
 
-        if self.arch.compute_capability == 120 and self.toolchains['CUDA']['compiler']['id'] == 'NVIDIA' and semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('=13.0'):
+        if self.arch.compute_capability == 120 and self.compiler(toolchain='CUDA').id == 'NVIDIA' and semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('=13.0'):
             comp = operator.eq
         else:
             comp = operator.gt
@@ -321,7 +321,7 @@ class TestNCU(TestDivision):
         inst_op: typing.Callable
         cycles_op: typing.Callable
 
-        if self.arch.compute_capability == 120 and self.toolchains['CUDA']['compiler']['id'] == 'NVIDIA' and semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<=13.0'):
+        if self.arch.compute_capability == 120 and self.compiler(toolchain='CUDA').id == 'NVIDIA' and semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<=13.0'):
             inst_op = cycles_op = operator.eq
         else:
             inst_op = cycles_op = operator.gt

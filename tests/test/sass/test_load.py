@@ -4,6 +4,7 @@ import re
 import typing
 
 import pytest
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.test import features
 from reprospect.test.sass.composite import (
@@ -292,7 +293,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         ).assert_matches(decoder.instructions)
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
-    def test_sign_extend_s16(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
+    def test_sign_extend_s16(self, request, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
         """
         Check when :py:attr:`CODE_EXTEND` leads to sign extension.
 
@@ -315,7 +316,7 @@ __global__ void extend({dst}* {restrict} const dst, {src}* {restrict} const src,
         matcher_s16_ro = LoadGlobalMatcher(arch=parameters.arch, size=16, readonly=True, extend='S')
         assert instructions_contain(matcher_s16).match(decoder_u16.instructions) is None
 
-        if not features.Memory(arch=parameters.arch).sign_extension(compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id']):
+        if not features.Memory(arch=parameters.arch).sign_extension(compiler_id=typing.cast(str, cmake_cuda_compiler.id)):
             assert instructions_contain(matcher_s16_ro).match(decoder_u16.instructions) is None
 
             # But it rather lead to zero extension with permutation.

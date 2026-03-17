@@ -205,7 +205,10 @@ class TestSASS(TestDivision):
                             expt_logbscalbn =  {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (11, 7)}
                         else:
                             expt_ilogbscalbn = {RegisterType.GPR: (45, 39), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
-                            expt_logbscalbn =  {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                            if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.2'):
+                                expt_logbscalbn = {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                            else:
+                                expt_logbscalbn = {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                         expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                     case 'Clang':
                         expt_ilogbscalbn =   {RegisterType.GPR: (45, 42), RegisterType.PRED: (4, 4), RegisterType.UGPR: (15, 11)}

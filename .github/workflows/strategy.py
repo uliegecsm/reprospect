@@ -112,6 +112,9 @@ def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[st
         case ('13.1.1', '24.04'):
             tag = '13.1.1-devel-ubuntu24.04'
             digest = 'sha256:010665864e7eaf8f054dd7097d3d1fdef44a2ee04c8755e6ab52ff85221461ba'
+        case ('13.2.0', '24.04'):
+            tag = '13.2.0-devel-ubuntu24.04'
+            digest = 'sha256:f9492f2eea77fbc3d0c14fa8738f35946b42da72917bf5959d284ca39b4f209a'
         case _:
             raise ValueError((cuda_version, ubuntu_version))
     return ('nvcr.io/nvidia/cuda', tag, digest)
@@ -380,6 +383,15 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.13',
         compilers={'CXX': Compiler(ID='Clang', version='22')},
         compute_capability=ComputeCapability(major=10, minor=0),
+        platforms=('linux/amd64',),
+    ), args=args))
+
+    matrix.extend(from_config(Config(
+        cuda_version='13.2.0',
+        ubuntu_version='24.04',
+        python_version='3.14',
+        compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=12, minor=0),
         platforms=('linux/amd64',),
     ), args=args))
 

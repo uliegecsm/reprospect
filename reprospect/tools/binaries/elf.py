@@ -52,6 +52,7 @@ class NvInfoEIATTR(enum.IntEnum):
     VRC_CTA_INIT_COUNT = 74
     SPARSE_MMA_MASK = 80
     MERCURY_ISA_VERSION = 95
+    LANGUAGE = 102
 
 class NvInfoEIFMT(enum.IntEnum):
     """

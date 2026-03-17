@@ -39,6 +39,7 @@ import logging
 import sys
 import typing
 
+import semantic_version
 from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.test.sass.composite import (
@@ -217,13 +218,10 @@ class LockBasedAtomicMatcher(SequenceMatcher):
 
         # Then, ISETP.NE.AND that reuses the register in which the atomic acquire put its result.
         modifiers: tuple[str, ...]
-        match self.compiler.id:
-            case 'NVIDIA':
-                modifiers = ('NE', 'AND')
-            case 'Clang':
-                modifiers = ('NE', 'U32', 'AND')
-            case _:
-                raise ValueError(f'unsupported compiler ID {self.compiler.id}')
+        if self.compiler.id == 'NVIDIA' and semantic_version.Version(self.compiler.version) in semantic_version.SimpleSpec('<13.2'):
+            modifiers = ('NE', 'AND')
+        else:
+            modifiers = ('NE', 'U32', 'AND')
         matcher_isetp_enter = OpcodeModsWithOperandsMatcher(
             opcode='ISETP', modifiers=modifiers,
             operands=(

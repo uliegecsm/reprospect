@@ -96,7 +96,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
         dtype: ConvertibleTypeInfo | None = None,
     ) -> None:
         self.operation: typing.Final[str] = operation
-        self.scope: typing.Final[str | None] = ThreadScope(scope).convert(arch=arch) if scope else None
+        self.scope: typing.Final[ThreadScope | None] = ThreadScope(scope) if scope else None
         self.consistency: typing.Final[str] = consistency
         self.dtype: typing.Final[TypeInfo | None] = TypeInfo.normalize(dtype=dtype) if dtype else None
 
@@ -139,7 +139,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
         return self.TEMPLATE.format(
             opcode=OpCode.mod(
                 opcode=opcode,
-                modifiers=filter(None, ('E', self.operation, *dtype, self.consistency, self.scope)),
+                modifiers=filter(None, ('E', self.operation, *dtype, self.consistency, self.scope.convert(arch=self.arch) if self.scope else None)),
             ),
             address=PatternBuilder.groups(AddressMatcher.build_pattern(arch=self.arch), groups=('operands', 'address')),
         )
@@ -179,7 +179,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
         version: semantic_version.Version | None = None,
     ) -> None:
         self.operation: typing.Final[str] = operation
-        self.scope: typing.Final[str | None] = ThreadScope(scope).convert(arch=arch) if scope else None
+        self.scope: typing.Final[ThreadScope | None] = ThreadScope(scope) if scope else None
         self.consistency: typing.Final[str] = consistency
         self.memory: typing.Final[MemorySpace] = MemorySpace(memory)
         self.dtype: typing.Final[TypeInfo | None] = TypeInfo.normalize(dtype=dtype) if dtype else None
@@ -236,7 +236,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
         return (self.TEMPLATE_CAS if self.operation == 'CAS' else self.TEMPLATE).format(
             opcode=OpCode.mod(
                 opcode=f'ATOM{self.memory}',
-                modifiers=filter(None, ('E', self.operation, *dtype, self.consistency, self.scope)),
+                modifiers=filter(None, ('E', self.operation, *dtype, self.consistency, self.scope.convert(arch=self.arch) if self.scope else None)),
             ),
             address=PatternBuilder.groups(address, groups=('operands', 'address')),
         )

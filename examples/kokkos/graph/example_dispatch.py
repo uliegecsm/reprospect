@@ -1,10 +1,12 @@
 import logging
+import os
 import pathlib
 import sys
 import typing
 
 import pandas
 import pytest
+import semantic_version
 
 from reprospect.test import CMakeAwareTestCase, environment
 from reprospect.tools import nsys
@@ -124,5 +126,8 @@ class TestNSYS(TestDispatch):
 
             assert sorted(streams_0) == sorted(streams_1)
 
-            # The first node actually got the stream ID of the stream passed to the graph launch API call.
-            assert stream_id in streams_0
+            # For CUDA prior to 13.2, the first node actually got the stream ID of the stream passed to the graph launch API call.
+            if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.2'):
+                assert stream_id in streams_0
+            else:
+                assert stream_id not in streams_0

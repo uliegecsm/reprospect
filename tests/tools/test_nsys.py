@@ -393,13 +393,17 @@ NVTX events
                 entry = cacher.run(command=command, cwd=workdir)
 
                 with Report(db=cacher.export_to_sqlite(command=command, entry=entry)) as report:
-                    assert len(report.nvtx_events.events) == 7
+                    if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.2'):
+                        assert len(report.nvtx_events.events) == 7
+                    else:
+                        assert len(report.nvtx_events.events) == 8
 
                     assert report.nvtx_events.get(
                         accessors=['start-end-level-0', 'push-pop-level-1', 'push-pop-level-2', 'push-pop-level-3'],
                     )['text'].tolist() == 3 * ['push-pop-level-3']
 
-                    assert str(report.nvtx_events) == """\
+                    if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.2'):
+                        assert str(report.nvtx_events) == """\
 NVTX events
 ├── intricate (NvtxDomainCreate)
 └── start-end-level-0 (NvtxStartEndRange)
@@ -408,4 +412,16 @@ NVTX events
             ├── push-pop-level-3 (NvtxPushPopRange)
             ├── push-pop-level-3 (NvtxPushPopRange)
             └── push-pop-level-3 (NvtxPushPopRange)
+"""
+                    else:
+                        assert str(report.nvtx_events) == """\
+NVTX events
+├── intricate (NvtxDomainCreate)
+├── start-end-level-0 (NvtxStartEndRange)
+│   └── push-pop-level-1 (NvtxPushPopRange)
+│       └── push-pop-level-2 (NvtxPushPopRange)
+│           ├── push-pop-level-3 (NvtxPushPopRange)
+│           ├── push-pop-level-3 (NvtxPushPopRange)
+│           └── push-pop-level-3 (NvtxPushPopRange)
+└── None (NvtxDomainDestroy)
 """

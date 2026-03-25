@@ -30,7 +30,7 @@ def ds_to_table(ds: pandas.Series) -> rich.table.Table:
     rt = rich.table.Table()
     for k in ds.index:
         rt.add_column(str(k))
-    rt.add_row(*(str(v) for v in ds.values))
+    rt.add_row(*ds.astype(str))
     return rt
 
 def df_to_table(

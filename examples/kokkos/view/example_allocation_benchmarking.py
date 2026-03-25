@@ -181,8 +181,8 @@ class TestAllocation(CMakeAwareTestCase):
         )
 
         # After the test, the current reserved/used memory is the same for everyone.
-        assert attributes['ReservedMemCurrent'].nunique(dropna=False) == 1
-        assert attributes[    'UsedMemCurrent'].nunique(dropna=False) == 1
+        assert attributes['ReservedMemCurrent'].nunique(dropna=False) == 1 # noqa: PD101
+        assert attributes[    'UsedMemCurrent'].nunique(dropna=False) == 1 # noqa: PD101
 
         logging.info(f"Default memory pool reserved size is always {attributes.loc[0, 'ReservedMemCurrent']}.")
         logging.info(f"Default memory pool used     size is always {attributes.loc[0,     'UsedMemCurrent']}.")

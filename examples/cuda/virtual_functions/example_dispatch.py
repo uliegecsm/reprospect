@@ -218,7 +218,7 @@ class TestResourceUsage(TestBinaryAnalysis):
                 expt_dynamic = {RegisterType.GPR: (24, 18), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)}
             case 100 | 103:
                 expt_static  = {RegisterType.GPR: (8, 7),   RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)}
-                match self.toolchains['CUDA']['compiler']['id']:
+                match self.compiler(toolchain='CUDA').id:
                     case 'NVIDIA':
                         expt_dynamic = {RegisterType.GPR: (24, 18), RegisterType.PRED: (1, 1), RegisterType.UGPR: (8, 4), RegisterType.UPRED: (1, 1)}
                     case 'Clang':

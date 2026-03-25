@@ -8,16 +8,13 @@ import typing
 import unittest.mock
 
 import pytest
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.test.cmake import get_demangler_for_compiler
 from reprospect.tools import ncu
 from reprospect.tools.ncu.metrics import MetricCorrelationData
 from reprospect.utils import detect
 
-
-@pytest.fixture(scope='session')
-def cmake_cuda_compiler(cmake_file_api) -> dict:
-    return cmake_file_api.toolchains['CUDA']['compiler']
 
 class TestProfilingResults:
     """
@@ -358,7 +355,7 @@ class TestSession:
         # The metric 'inst_executed' correlates instruction addresses with how many times they were executed.
         assert all(isinstance(key, int) and isinstance(value, int) for key, value in metrics_saxpy_kernel_0['inst_executed'].correlated.items())
 
-    def test_collect_basic_metrics_graph(self, bindir, workdir, cmake_cuda_compiler: dict) -> None:
+    def test_collect_basic_metrics_graph(self, bindir, workdir, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
         """
         Collect a few basic metrics for the :py:attr:`GRAPH` executable.
         """
@@ -380,14 +377,14 @@ class TestSession:
         assert report.report.num_ranges() == 1
 
         # Extract results.
-        results = report.extract_results_in_range(metrics=METRICS, demangler=get_demangler_for_compiler(cmake_cuda_compiler['id']))
+        results = report.extract_results_in_range(metrics=METRICS, demangler=get_demangler_for_compiler(cmake_cuda_compiler))
 
         logging.info(results)
 
         # There are 4 nodes.
         assert len(results) == 4
 
-        match cmake_cuda_compiler['id']:
+        match cmake_cuda_compiler.id:
             case 'NVIDIA':
                 NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0EJEEvPj'
                 metrics_node_A = results.query_metrics(accessors=('add_and_increment_kernel-0',))
@@ -396,7 +393,7 @@ class TestSession:
                 NODE_A_MANGLED = '_Z24add_and_increment_kernelILj0ETpTnjJEEvPj'
                 metrics_node_A = results.query_metrics(accessors=(f'{NODE_A_MANGLED}-0',))
             case _:
-                raise ValueError(f"unsupported compiler ID {cmake_cuda_compiler['id']}")
+                raise ValueError(f'unsupported compiler ID {cmake_cuda_compiler.id}')
 
         metrics_node_B = results.query_metrics(accessors=('add_and_increment_kernel-1',))
         metrics_node_C = results.query_metrics(accessors=('add_and_increment_kernel-2',))

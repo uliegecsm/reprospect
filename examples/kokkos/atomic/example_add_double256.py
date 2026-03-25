@@ -130,5 +130,5 @@ class TestAtomicAddDouble256(add.TestCase):
             load=Load256Matcher(arch=self.arch).build(),
             operation=AddDouble4(arch=self.arch),
             store=Store256Matcher(arch=self.arch).build(),
-            compiler_id=self.toolchains['CUDA']['compiler']['id'],
+            compiler=self.compiler(toolchain='CUDA'),
         ).assert_matches(instructions=decoder.instructions)

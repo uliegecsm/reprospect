@@ -3,8 +3,10 @@ import logging
 import os
 import pathlib
 import subprocess
+import typing
 
 import semantic_version
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
@@ -12,7 +14,7 @@ from reprospect.utils import cmake
 QUALITY_FLAGS: tuple[str, ...] = ('-Wall', '-Wextra', '-Werror')
 
 @functools.cache
-def clang_cuda_fix_cccl_include(*, implicit_includes: tuple[str], cuda_version: semantic_version.Version) -> tuple[pathlib.Path, ...]:
+def clang_cuda_fix_cccl_include(*, compiler: CMakeToolchainCompiler, cuda_version: semantic_version.Version) -> tuple[pathlib.Path, ...]:
     """
     Return any missing include path for when `clang` is used to compile for CUDA 13 and above.
 
@@ -22,8 +24,8 @@ def clang_cuda_fix_cccl_include(*, implicit_includes: tuple[str], cuda_version: 
     if cuda_version not in semantic_version.SimpleSpec('>=13'):
         return ()
 
-    cuda_includes = tuple(
-        p for p in map(pathlib.Path, implicit_includes)
+    cuda_includes: typing.Final[tuple[pathlib.Path, ...]] = tuple(
+        p for p in compiler.implicit.includeDirectories
         if 'cuda' in p.parent.name
     )
 
@@ -52,41 +54,40 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
 
     :param object_file: Whether to compile into an object file.
     """
-    cuda_toolchain = cmake_file_api.toolchains['CUDA']
-    cuda_compiler_id = cuda_toolchain['compiler']['id']
+    cuda_compiler = cmake_file_api.compiler(toolchain='CUDA')
 
     output = cwd / (source.stem + '.' + arch.as_sm + ('.o' if object_file else ''))
 
     cmd = [
         cmake_file_api.cache['CMAKE_CUDA_COMPILER_LAUNCHER']['value'],
-        cuda_toolchain['compiler']['path'],
+        cuda_compiler.path,
         '-std=c++20',
     ]
 
     # Code quality flags.
-    match cuda_compiler_id:
+    match cuda_compiler.id:
         case 'NVIDIA':
             cmd.extend(f'-Xcompiler={x}' for x in QUALITY_FLAGS)
         case 'Clang':
             cmd.extend(QUALITY_FLAGS)
             cmd.append('-Wno-error=unknown-cuda-version')
         case _:
-            raise ValueError(f'unsupported compiler ID {cuda_compiler_id}')
+            raise ValueError(f'unsupported compiler ID {cuda_compiler.id}')
 
     # For compiling an executable, if the source ends with '.cpp', we need '-x cu' for nvcc and '-x cuda' for clang.
     if not object_file and source.suffix == '.cpp':
-        match cuda_compiler_id:
+        match cuda_compiler.id:
             case 'NVIDIA':
                 cmd += ['-x', 'cu']
             case 'Clang':
                 cmd += ['-x', 'cuda']
             case _:
-                raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
+                raise ValueError(f'unsupported compiler ID {cuda_compiler.id}')
 
     # Clang tends to add a lot of debug code otherwise.
     cmd.append('-O3')
 
-    match cuda_compiler_id:
+    match cuda_compiler.id:
         case 'NVIDIA':
             cmd.append('--gpu-architecture=' + arch.as_compute)
             if ptx:
@@ -102,14 +103,14 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
             if resource_usage:
                 cmd += ['-Xcuda-ptxas', '-v']
         case _:
-            raise ValueError(f"unsupported compiler ID {cuda_compiler_id}")
+            raise ValueError(f'unsupported compiler ID {cuda_compiler.id}')
 
     # Allow any include within the repository.
     cmd.append(f"-I{cmake_file_api.cache['reprospect_SOURCE_DIR']['value']}")
 
-    if cuda_compiler_id == 'Clang':
+    if cuda_compiler.id == 'Clang':
         cmd.extend(f'-I{x}' for x in clang_cuda_fix_cccl_include(
-            implicit_includes=tuple(cuda_toolchain['compiler']['implicit']['includeDirectories']),
+            compiler=cuda_compiler,
             cuda_version=version or semantic_version.Version(os.environ['CUDA_VERSION']),
         ))
 
@@ -135,7 +136,7 @@ def get_compilation_output(*, # pylint: disable=too-many-branches
         stderr=subprocess.STDOUT,
     ).decode())
 
-def get_cubin_name(*, compiler_id: str, file: pathlib.Path, arch: NVIDIAArch, object_file: bool = False) -> str:
+def get_cubin_name(*, compiler: CMakeToolchainCompiler, file: pathlib.Path, arch: NVIDIAArch, object_file: bool = False) -> str:
     """
     When the compilation is *not* into an object file, the resulting file may contain:
 
@@ -147,10 +148,10 @@ def get_cubin_name(*, compiler_id: str, file: pathlib.Path, arch: NVIDIAArch, ob
     if object_file:
         return f'{file.stem}.1.{arch.as_sm}.cubin'
 
-    match compiler_id:
+    match compiler.id:
         case 'NVIDIA':
             return f'{file.stem}.2.{arch.as_sm}.cubin'
         case 'Clang':
             return f'{file.stem}.1.{arch.as_sm}.cubin'
         case _:
-            raise ValueError(f'unsupported compiler ID {compiler_id}')
+            raise ValueError(f'unsupported compiler ID {compiler.id}')

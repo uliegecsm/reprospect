@@ -3,6 +3,7 @@ import typing
 import unittest.mock
 
 import pytest
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump, CuppFilt, LlvmCppFilt, NVDisasm
@@ -137,7 +138,7 @@ class TestNVDisasm:
         CPP_FILE:  typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
         SYMBOLS:   typing.Final[tuple[str, ...]] = ('_Z6say_hiv', '_Z20vector_atomic_add_42PKfS0_Pfj')
 
-        def test_from_executable(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
+        def test_from_executable(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
             """
             Compile :py:attr:`CPP_FILE` as an executable, extract cubin and run ``nvdisasm``.
             """
@@ -154,7 +155,7 @@ class TestNVDisasm:
                 arch=parameters.arch,
                 cwd=workdir,
                 cubin=get_cubin_name(
-                    compiler_id=cmake_file_api.toolchains['CUDA']['compiler']['id'],
+                    compiler=cmake_cuda_compiler,
                     file=output,
                     arch=parameters.arch,
                     object_file=False,

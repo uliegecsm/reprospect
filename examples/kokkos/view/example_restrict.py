@@ -403,8 +403,8 @@ class TestSASS(TestRestrict):
         """
         logging.info(decoder[Method.RESTRICT_RECAST_LAMBDA])
         cfg = ControlFlow.analyze(instructions=decoder[Method.RESTRICT_RECAST_LAMBDA].instructions)
-        if self.toolchains['CUDA']['compiler']['id'] == 'Clang' and \
-            semantic_version.Version(self.toolchains['CUDA']['compiler']['version']) in semantic_version.SimpleSpec('>21'):
+        if self.compiler(toolchain='CUDA').id == 'Clang' and \
+            semantic_version.Version(self.compiler(toolchain='CUDA').version) in semantic_version.SimpleSpec('>21'):
             readonly = False
         else:
             readonly = self.arch.compute_capability.as_int in {70, 75, 80, 86, 89, 90}
@@ -422,7 +422,7 @@ class TestSASS(TestRestrict):
         """
         logging.info(decoder[Method.RESTRICT_RECAST_LOCAL])
         cfg = ControlFlow.analyze(instructions=decoder[Method.RESTRICT_RECAST_LOCAL].instructions)
-        match self.toolchains['CUDA']['compiler']['id']:
+        match self.compiler(toolchain='CUDA').id:
             case 'NVIDIA':
                 assert self.match_repeated(cfg=cfg) is False
                 assert self.match_single(cfg=cfg, readonly=False) is False
@@ -563,7 +563,7 @@ class TestNCU(TestRestrict):
                 factor = {
                     'NVIDIA': 1,
                     'Clang':  2,
-                }[self.toolchains['CUDA']['compiler']['id']]
+                }[self.compiler(toolchain='CUDA').id]
             case _:
                 raise ValueError(method)
 

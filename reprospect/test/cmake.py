@@ -4,6 +4,8 @@ import json
 import pathlib
 import typing
 
+from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
+
 from reprospect.test.environment import EnvironmentField
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
@@ -11,17 +13,17 @@ from reprospect.utils import cmake
 from reprospect.utils.compile_command import get_arch_from_compile_command
 
 
-def get_demangler_for_compiler(compiler_id: str) -> type[CuppFilt | LlvmCppFilt]:
+def get_demangler_for_compiler(compiler: CMakeToolchainCompiler) -> type[CuppFilt | LlvmCppFilt]:
     """
     Get demangler for compiler with given id.
     """
-    match compiler_id:
+    match compiler.id:
         case 'NVIDIA':
             return CuppFilt
         case 'Clang':
             return LlvmCppFilt
         case _:
-            raise ValueError(f'unsupported compiler ID {compiler_id}')
+            raise ValueError(f'unsupported compiler ID {compiler.id}')
 
 class CMakeMixin(abc.ABC):
     """
@@ -74,6 +76,10 @@ class CMakeMixin(abc.ABC):
         """
         return self.cmake_file_api.target(self.get_target_name())
 
+    @functools.lru_cache(maxsize=128) # noqa: B019
+    def compiler(self, *, toolchain: str) -> CMakeToolchainCompiler:
+        return self.cmake_file_api.compiler(toolchain=toolchain)
+
     @functools.cached_property
     def target_sources(self) -> typing.Generator[pathlib.Path, None, None]:
         """
@@ -89,12 +95,5 @@ class CMakeMixin(abc.ABC):
         return self.CMAKE_BINARY_DIR / self.target['paths']['build'] / self.target['nameOnDisk']
 
     @functools.cached_property
-    def toolchains(self) -> cmake.ToolchainDict:
-        """
-        Retrieve the toolchains information from the read CMake file API.
-        """
-        return self.cmake_file_api.toolchains
-
-    @functools.cached_property
     def demangler(self) -> type[CuppFilt | LlvmCppFilt]:
-        return get_demangler_for_compiler(self.toolchains['CUDA']['compiler']['id'])
+        return get_demangler_for_compiler(self.compiler(toolchain='CUDA'))

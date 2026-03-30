@@ -611,7 +611,7 @@ jobs:
 
         steps:
             - id  : deployment
-              uses: actions/deploy-pages@v4
+              uses: actions/deploy-pages@v5
 
     # Following instructions from
     # https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/#publishing-the-distribution-to-pypi.

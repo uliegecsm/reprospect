@@ -592,7 +592,6 @@ jobs:
             examples,
             mypy,
             pylint,
-            ruff,
             tests,
         ]
         runs-on: [self-hosted, linux, docker, amd64]
@@ -625,7 +624,6 @@ jobs:
             examples,
             mypy,
             pylint,
-            ruff,
             tests,
         ]
         runs-on: ubuntu-latest

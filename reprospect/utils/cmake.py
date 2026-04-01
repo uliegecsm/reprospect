@@ -26,7 +26,7 @@ References:
 * https://cmake.org/cmake/help/latest/manual/cmake-file-api.7.html#object-kind-toolchains
 """
 
-CodemodelDict: typing.TypeAlias = dict[str, list[typing.Any]]
+CodemodelDict: typing.TypeAlias = dict[str, str | list[typing.Any]]
 """
 The CMake code model is a dictionary.
 
@@ -110,7 +110,7 @@ class FileAPI:
         """
         Retrieve the information available for the target `name`.
         """
-        for target in self.codemodel_configuration['targets']:
+        for target in typing.cast(list[typing.Any], self.codemodel_configuration['targets']):
             if target['name'] == name:
                 with (self.cmake_reply_path / target['jsonFile']).open() as file:
                     return json.load(file)

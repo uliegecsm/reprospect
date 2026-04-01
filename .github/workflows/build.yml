@@ -30,16 +30,22 @@ permissions:
 
 jobs:
 
+    pre-commit:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v6
+        - uses: actions/setup-python@v6.2.0
+          with:
+            python-version: '3.14'
+        - uses: pre-commit/action@v3.0.1
+
     setup-skips:
-        runs-on: [self-hosted, linux, docker, amd64]
-        container:
-            image: alpine/git:2.49.1@sha256:26f8647ec43523c2511b99064cb45b48f4535bce956b9377a94b289fb021e819
+        runs-on: ubuntu-slim
         outputs:
             build-images: ${{ steps.build-images.outputs.build-images }}
             setup-job-matrix-image: ${{ steps.setup-job-matrix-image.outputs.setup-job-matrix-image }}
         steps:
             - uses: actions/checkout@v6
-            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             # Images generally need a rebuild either because of file changes or it was requested during the workflow dispatch.
             # Otherwise, the jobs can be skipped, thus speeding up the workflow.
@@ -153,8 +159,8 @@ jobs:
                       --repository=${{ github.repository }} >> $GITHUB_OUTPUT
 
     build-images-image:
-        needs: [setup-skips]
-        runs-on: [self-hosted, linux, docker, amd64]
+        needs: [pre-commit, setup-skips]
+        runs-on: ubuntu-latest
         container:
             image: docker:latest
         permissions:
@@ -163,7 +169,6 @@ jobs:
         if: ${{ needs.setup-skips.outputs.build-images == 'true' }}
         steps:
             - uses: actions/checkout@v6
-            - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - uses: docker/login-action@v4
               with:
@@ -187,7 +192,7 @@ jobs:
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     build-images:
-        needs: [setup-job-matrix, build-images-image, setup-skips]
+        needs: [pre-commit, setup-job-matrix, build-images-image, setup-skips]
         runs-on: ${{ matrix.build-images.runs-on }}
         container:
             image: ghcr.io/${{ github.repository }}/build-images:latest
@@ -257,7 +262,7 @@ jobs:
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     tests:
-        needs: [setup-job-matrix, build-images]
+        needs: [pre-commit, setup-job-matrix, build-images]
         strategy:
             fail-fast: false
             matrix:
@@ -305,7 +310,7 @@ jobs:
                   if-no-files-found: error
 
     build-package:
-        needs: [setup-job-matrix, build-images, mypy]
+        needs: [pre-commit, setup-job-matrix, build-images, mypy]
         runs-on: ${{ matrix.runs-on }}
         strategy:
             fail-fast: false
@@ -337,7 +342,7 @@ jobs:
                   if-no-files-found: error
 
     build-package-sdist:
-        needs: []
+        needs: [pre-commit]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ubuntu:24.04
@@ -357,6 +362,7 @@ jobs:
 
     examples:
         needs: [
+            pre-commit,
             setup-job-matrix,
             build-images,
             build-package,
@@ -416,6 +422,7 @@ jobs:
 
     coverage:
         needs: [
+            pre-commit,
             setup-job-matrix,
             build-images,
             tests,
@@ -447,6 +454,7 @@ jobs:
 
     documentation:
         needs: [
+            pre-commit,
             setup-job-matrix,
             build-images,
             tests,
@@ -485,7 +493,7 @@ jobs:
                   path: docs/build/html
 
     papers:
-        needs: []
+        needs: [pre-commit]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: openjournals/inara
@@ -516,7 +524,7 @@ jobs:
 
     pylint:
         runs-on: [self-hosted, linux, docker, amd64]
-        needs: [setup-job-matrix, build-images]
+        needs: [pre-commit, setup-job-matrix, build-images]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         if: ${{ ! failure() && ! cancelled() }}
@@ -547,7 +555,7 @@ jobs:
 
     mypy:
         runs-on: [self-hosted, linux, docker, amd64]
-        needs: [setup-job-matrix, build-images]
+        needs: [pre-commit, setup-job-matrix, build-images]
         container:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         if: ${{ ! failure() && ! cancelled() }}
@@ -573,18 +581,9 @@ jobs:
                 export PYTHONPATH="$PWD${PYTHONPATH+:}${PYTHONPATH}"
                 mypy --config-file tests/.mypy.ini --explicit-package-bases examples
 
-    ruff:
-        runs-on: [self-hosted, linux, docker, amd64]
-        needs: [setup-job-matrix, build-images]
-        container:
-            image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
-        if: ${{ ! failure() && ! cancelled() }}
-        steps:
-            - uses: actions/checkout@v6
-            - run: ruff check --config pyproject.toml
-
     deploy:
         needs: [
+            pre-commit,
             setup-job-matrix,
             build-images,
             build-package,
@@ -617,6 +616,7 @@ jobs:
     # https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/#publishing-the-distribution-to-pypi.
     publish-to-pypi:
         needs: [
+            pre-commit,
             setup-job-matrix,
             build-images,
             build-package,

@@ -34,4 +34,3 @@ From sources to binaries
 ------------------------
 
 * :py:class:`reprospect.utils.cmake.FileAPI`
-

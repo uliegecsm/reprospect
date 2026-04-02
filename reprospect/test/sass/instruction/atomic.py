@@ -131,7 +131,7 @@ class ReductionMatcher(ArchitectureAwarePatternMatcher):
         match self.arch.compute_capability.as_int:
             case 70 | 75 | 80 | 86 | 89:
                 opcode = 'RED'
-            case 90 | 100 | 103 | 120:
+            case 90 | 100 | 103 | 120 | 121:
                 opcode = 'REDG'
             case _:
                 raise ValueError(f'unsupported {self.arch}')
@@ -228,7 +228,7 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
         address: str = AddressMatcher.build_pattern(arch=self.arch, memory=self.memory)
 
         match self.arch.compute_capability.as_int:
-            case 80 | 86 | 89 | 90 | 100 | 103 | 120:
+            case 80 | 86 | 89 | 90 | 100 | 103 | 120 | 121:
                 address = PatternBuilder.any(AddressMatcher.build_reg_address(arch=self.arch), address)
             case _:
                 pass

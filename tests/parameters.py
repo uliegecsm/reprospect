@@ -28,6 +28,7 @@ def architectures(version: semantic_version.Version | None = None) -> tuple[NVID
             100,
             103,
             120,
+            121,
         ] if (arch := NVIDIAArch.from_compute_capability(cc=cc)).compute_capability.supported(
             version=version or semantic_version.Version(os.environ['CUDA_VERSION']))
     )

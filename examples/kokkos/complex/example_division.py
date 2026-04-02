@@ -193,7 +193,7 @@ class TestSASS(TestDivision):
                         expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (5, 5), RegisterType.UGPR: (10, 6)}
                     case _:
                         raise ValueError
-            case 103:
+            case 103 | 121:
                 expt_ilogbscalbn =   {RegisterType.GPR: (45, 39), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                 expt_logbscalbn =    {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                 expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}

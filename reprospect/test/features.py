@@ -126,5 +126,7 @@ class PTX:
                 return semantic_version.Version('9.0.0')
             case 120:
                 return semantic_version.Version('8.7.0')
+            case 121:
+                return semantic_version.Version('8.8.0')
             case _:
                 raise ValueError(self.arch)

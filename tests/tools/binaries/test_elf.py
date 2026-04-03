@@ -43,7 +43,7 @@ def check_version(version: int | str) -> None:
     """
     ver = nvcc_version()
 
-    expt_minor = 0 if ver in semantic_version.SimpleSpec('==13.1') else ver.minor
+    expt_minor = 0 if ver in semantic_version.SimpleSpec('>=13.1') else ver.minor
 
     if isinstance(version, int):
         assert version == int(f'{ver.major}{expt_minor}')
@@ -304,6 +304,7 @@ class TestNvInfo:
     DATA_1: typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\x0c\x00\x00\x00`\x01x\x00\x03\x19x\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x04\x00\x10\x00\x00\x00'
     DATA_2: typing.Final[bytes] = b'\x047\x04\x00\x82\x00\x00\x00\x015\x00\x00\x04\n\x08\x00\x0f\x00\x00\x00`\x01x\x00\x03\x19x\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\xe1\x01\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x04\x00\x10\x00\x00\x00'
     DATA_3: typing.Final[bytes] = b'\x046\x04\x00\x01\x00\x00\x00\x047\x04\x00\x80\x00\x00\x00\x04\n\x08\x00\x02\x00\x00\x00`\x01\x1c\x00\x03\x19\x1c\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x03\x00\x18\x00\x00\xf0\x11\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x02\x00\x10\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x01\x00\x08\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\x11\x00\x03\x1b\xff\x00\x041\x04\x00\x10\x00\x00\x00\x04\x1c\x08\x00`\x00\x00\x00\xe0\x00\x00\x00'
+    DATA_4: typing.Final[bytes] = b'\x04f\x04\x00\x03\x00\x00\x00\x046\x04\x00\x01\x00\x00\x00\x047\x04\x00\x84\x00\x00\x00\x04\n\x08\x00\x04\x00\x00\x00`\x01\x1c\x00\x03\x19\x1c\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x03\x00\x18\x00\x00\xf0\x11\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x02\x00\x10\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x01\x00\x08\x00\x00\xf0!\x00\x04\x17\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\x11\x00\x03\x1b\xff\x00\x03_\x00\x00\x04\x1c\x08\x00P\x00\x00\x00\xd0\x00\x00\x00'
 
     def test_parse_data_0(self) -> None:
         """
@@ -419,6 +420,25 @@ class TestNvInfo:
             NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MAXREG_COUNT,            value=int('0xff', base=16)),
             NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.WARP_WIDE_INSTR_OFFSETS, value=(int('0x10', base=16),)),
             NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.EXIT_INSTR_OFFSETS,      value=(int('0x60', base=16), int('0xe0', base=16))),
+        )
+
+    def test_parse_data_4(self) -> None:
+        """
+        Parse :py:attr:`DATA_4`.
+        """
+        assert NvInfo.parse(data=self.DATA_4).attributes == (
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.LANGUAGE,            value=(int('0x3', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.SW_WAR,              value=(int('0x1', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.CUDA_API_VERSION,    value=(int('0x84', base=16),)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.PARAM_CBANK,         value=(int('0x4', base=16), int('0x1c0160', base=16))),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.CBANK_PARAM_SIZE,    value=int('0x1c', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,         value=b'\x00\x00\x00\x00\x03\x00\x18\x00\x00\xf0\x11\x00'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,         value=b'\x00\x00\x00\x00\x02\x00\x10\x00\x00\xf0!\x00'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,         value=b'\x00\x00\x00\x00\x01\x00\x08\x00\x00\xf0!\x00'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.KPARAM_INFO,         value=b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0\x11\x00'),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MAXREG_COUNT,        value=int('0xff', base=16)),
+            NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MERCURY_ISA_VERSION, value=0),
+            NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.EXIT_INSTR_OFFSETS,  value=(int('0x50', base=16), int('0xd0', base=16))),
         )
 
     @pytest.fixture(scope='class')

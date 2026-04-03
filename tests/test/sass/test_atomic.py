@@ -16,6 +16,7 @@ from reprospect.test.sass.instruction import (
 )
 from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.register import Register
+from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import Instruction
 from reprospect.utils import cmake
 
@@ -153,6 +154,60 @@ __global__ void atomic_exch_kernel() {
 """
 
     @staticmethod
+    def get_atomicCAS_thread_scope(*, size: int, arch: NVIDIAArch, cuda_compiler: CMakeToolchainCompiler) -> ThreadScope:
+        """
+        Get the expected :py:data:`reprospect.test.sass.instruction.ThreadScope` for :code:`atomicCAS`.
+        """
+        cuda_compiler_version = semantic_version.Version(cuda_compiler.version)
+
+        if cuda_compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>21'):
+            return ThreadScope.SYSTEM
+
+        if cuda_compiler.id == 'NVIDIA' and cuda_compiler_version in semantic_version.SimpleSpec('>=13.2') and arch.compute_capability >= 100 and size >= 32:
+            return ThreadScope.SYSTEM
+
+        return ThreadScope.DEVICE
+
+    @staticmethod
+    def assert_atomicCAS_ptx(*, output: pathlib.Path, matcher: AtomicMatcher, cuda_compiler: CMakeToolchainCompiler) -> None:
+        """
+        Check for the expected PTX code in `output` given the :py:data:`reprospect.test.sass.instruction.ThreadScope`.
+
+        According to:
+
+        * https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#legacy-atomic-functions
+
+        it should generate :py:data:`reprospect.test.sass.instruction.ThreadScope.DEVICE` instructions. However, as noted in:
+
+        * https://github.com/uliegecsm/reprospect/issues/556
+
+        it may unexpectedly generate :py:data:`reprospect.test.sass.instruction.ThreadScope.SYSTEM` instructions.
+
+        .. note::
+
+            According to https://docs.nvidia.com/cuda/parallel-thread-execution/#state-spaces-state-spaces-tab,
+            `.global` is global memory shared by all threads.
+
+        .. note::
+
+            According to https://docs.nvidia.com/cuda/parallel-thread-execution/#id682,
+            `.sys` is the set of all threads in the current program, including all kernel grids invoked by the host program on all compute devices,
+            and all threads constituting the host program itself.
+        """
+        result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
+        if matcher.dtype.bits == 16 and cuda_compiler.id == 'Clang':
+            expt_bits = 32
+        else:
+            expt_bits = matcher.dtype.bits
+        match matcher.scope:
+            case ThreadScope.DEVICE:
+                assert regex.search(rf'atom(?:\.(relaxed|acquire))?(?:\.global)?\.cas\.b{expt_bits}', result) is not None
+            case ThreadScope.SYSTEM:
+                assert regex.search(rf'atom(?:\.(relaxed|acquire))?\.sys\.global\.cas\.b{expt_bits}', result) is not None
+            case _:
+                raise ValueError(matcher.scope)
+
+    @staticmethod
     def match_one(*, decoder, **kwargs) -> tuple[AtomicMatcher, Instruction, InstructionMatch]:
         """
         Match exactly one instruction.
@@ -169,39 +224,37 @@ __global__ void atomic_exch_kernel() {
 
     @pytest.mark.parametrize(
         'word', [
-            ( 16, 'short int', 'unsigned short int'),
-            ( 32, 'float',     'unsigned int'),
-            ( 64, 'double',    'unsigned long long int'),
+            (16, 'short int', 'unsigned short int'),
+            (32, 'float',     'unsigned int'),
+            (64, 'double',    'unsigned long long int'),
     ], ids=str)
     def test_atomicCAS(self, request, workdir, word, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler):
         """
         Test with :py:attr:`CODE_ADD_BASED_ON_CAS`.
         """
-        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}{word[0]}.cu'
+        FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.{word[0]}.cu'
         FILE.write_text(self.CODE_ADD_BASED_ON_CAS.format(
             size=int(word[0] / 8),
             type=word[1],
             integer=word[2],
         ))
 
-        decoder, _ = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api)
+        decoder, output = get_decoder(cwd=workdir, arch=parameters.arch, file=FILE, cmake_file_api=cmake_file_api, ptx=True)
 
         # Find the atomic CAS.
-        if cmake_cuda_compiler.id == 'Clang' and \
-            semantic_version.Version(cmake_cuda_compiler.version) in semantic_version.SimpleSpec('>21'):
-            expt_scope = 'SYSTEM'
-        else:
-            expt_scope = 'DEVICE'
-        _, _, matched = self.match_one(
+        matcher, _, matched = self.match_one(
             decoder=decoder,
             arch=parameters.arch,
-            operation='CAS', consistency='STRONG', scope=expt_scope,
+            operation='CAS', consistency='STRONG',
+            scope=self.get_atomicCAS_thread_scope(size=word[0], arch=parameters.arch, cuda_compiler=cmake_cuda_compiler),
             dtype=word[0],
         )
 
         assert len(matched.additional['address']) == 1
         assert len(matched.operands) == 5
         assert matched.operands[0] == 'PT'
+
+        self.assert_atomicCAS_ptx(output=output, matcher=matcher, cuda_compiler=cmake_cuda_compiler)
 
     def test_atomicCAS_128(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler):
         """
@@ -223,23 +276,26 @@ __global__ void atomic_exch_kernel() {
             case _:
                 raise ValueError(f'unsupported compiler {cmake_cuda_compiler}')
 
-        kwargs = {'cwd': workdir, 'arch': parameters.arch, 'file': FILE, 'cmake_file_api': cmake_file_api}
+        kwargs = {'cwd': workdir, 'arch': parameters.arch, 'file': FILE, 'cmake_file_api': cmake_file_api, 'ptx': True}
 
         if expecting_failure:
             with pytest.raises(subprocess.CalledProcessError):
                 get_decoder(**kwargs)
             return
-        decoder, _ = get_decoder(**kwargs)
+        decoder, output = get_decoder(**kwargs)
 
         # Find the atomic CAS.
-        _, _, matched = self.match_one(
+        matcher, _, matched = self.match_one(
             decoder=decoder,
             arch=parameters.arch,
-            operation='CAS', consistency='STRONG', scope='DEVICE',
+            operation='CAS', consistency='STRONG',
+            scope=self.get_atomicCAS_thread_scope(size=128, arch=parameters.arch, cuda_compiler=cmake_cuda_compiler),
             dtype=128,
         )
 
         assert {'CAS', '128'}.issubset(matched.modifiers)
+
+        self.assert_atomicCAS_ptx(output=output, matcher=matcher, cuda_compiler=cmake_cuda_compiler)
 
     def test_add_relaxed_block_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """

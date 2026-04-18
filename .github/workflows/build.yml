@@ -488,7 +488,7 @@ jobs:
             - run: cd docs && make -j4 doctest
             - run: cd docs && make -j4 html
 
-            - uses: actions/upload-pages-artifact@v4
+            - uses: actions/upload-pages-artifact@v5
               with:
                   path: docs/build/html
 

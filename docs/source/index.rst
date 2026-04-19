@@ -20,3 +20,4 @@ For a quick introduction to `ReProspect`, see :ref:`overview`.
    examples
    tests
    bibliography
+   contributing

@@ -22,7 +22,3 @@ Start a discussion by [opening an issue](https://github.com/uliegecsm/reprospect
 
 If you've created an example or demonstration that could help others, please share it by [opening a pull request](https://github.com/uliegecsm/reprospect/pulls).
 Be sure to include a short description and usage notes.
-
----
-
-Thank you for your interest in `ReProspect`!

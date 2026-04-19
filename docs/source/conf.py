@@ -38,6 +38,7 @@ extensions = [
 
 html_theme = 'sphinx_rtd_theme'
 html_theme_options = {
+    "navigation_depth": 8,
     "style_external_links": True,
 }
 html_static_path = ['_static']

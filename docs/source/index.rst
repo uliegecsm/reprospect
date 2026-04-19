@@ -8,11 +8,8 @@ For a quick introduction to `ReProspect`, see :ref:`overview`.
    :caption: Contents:
 
    overview
-   install
-   getting-started
-   analysis
-   caching
-   api/modules
+   user_guide
+   api_reference
 
 .. toctree::
    :maxdepth: 2

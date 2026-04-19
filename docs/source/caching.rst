@@ -1,5 +1,5 @@
-Caching
-=======
+Caching of API tracing and kernel profiling results
+===================================================
 
 Profiling runs with ``ncu`` and ``nsys`` are time-consuming.
 Since developers are encouraged to write profiling tests whose results remain stable across runs,

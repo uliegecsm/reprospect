@@ -21,7 +21,7 @@ class TestSaxpy(CMakeAwareTestCase):
     """
     NAME: typing.Final[str] = 'tests_assets_saxpy'
 
-    TARGET_SOURCE: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'test_saxpy.cpp'
+    TARGET_SOURCE: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'saxpy.cpp'
 
     @classmethod
     @override

@@ -24,7 +24,7 @@ class TestSASS:
     """
     Tests that combine different half-precision SASS instructions.
     """
-    FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'test_half.cu'
+    FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'half.cu'
 
     @pytest.fixture(scope='class')
     def cuobjdump(self, workdir: pathlib.Path, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> CuObjDump:

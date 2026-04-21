@@ -1,4 +1,4 @@
 Assets
 ======
 
-.. automodule:: tests.assets.test_nvtx
+.. automodule:: tests.assets.nvtx_annotations

@@ -1,11 +1,13 @@
 import logging
 import pathlib
 import random
+import sys
 import typing
 
 import pytest
 from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
+from reprospect.test.case import CMakeAwareTestCase
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump, CuppFilt, Function, ResourceUsage
 from reprospect.utils import cmake, rich_helpers
@@ -13,6 +15,11 @@ from reprospect.utils import cmake, rich_helpers
 from tests.compilation import get_compilation_output, get_cubin_name
 from tests.cublas import CuBLAS
 from tests.parameters import PARAMETERS, Parameters
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
 
 
 class TestResourceUsage:
@@ -306,6 +313,29 @@ class TestCuObjDump:
             )
 
             assert self.SYMBOL in cuobjdump.symtab['name'].values
+
+    class TestGraph(CMakeAwareTestCase):
+        """
+        Graph-based application with kernel nodes.
+        """
+        @classmethod
+        @override
+        def get_target_name(cls) -> str:
+            return 'tests_assets_graph'
+
+        def test_kernel_count(self) -> None:
+            """
+            Extract the SASS and check how many kernels were found (1 per graph node).
+            """
+            cuobjdump = CuObjDump.extract(
+                file=self.executable,
+                arch=self.arch,
+                sass=True,
+                cwd=self.cwd,
+                cubin=f'graph.1.{self.arch.as_sm}.cubin',
+            )[0]
+
+            assert len(cuobjdump.functions) == 4
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     class TestMany:

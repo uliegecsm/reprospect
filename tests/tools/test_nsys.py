@@ -109,7 +109,7 @@ class TestSession:
 
     def test_cuda_api_trace(self, bindir, workdir) -> None:
         """
-        Collect all CUDA API calls of :file:`tests/assets/test_saxpy.cpp`.
+        Collect all CUDA API calls of :file:`tests/assets/saxpy.cpp`.
         """
         ns = self.run(
             bindir=bindir, cwd=workdir,
@@ -380,7 +380,7 @@ NVTX events
 
         def test_intricate(self, workdir) -> None:
             """
-            Use :py:class:`tests.assets.test_nvtx.TestNVTX.intricate` to check that we can
+            Use :py:class:`tests.assets.nvtx_annotations.TestNVTX.intricate` to check that we can
             build the hierarchy of NVTX events for arbitrarily complicated situations.
             """
             with Cacher(directory=workdir) as cacher:
@@ -388,7 +388,7 @@ NVTX events
                     executable=pathlib.Path(sys.executable),
                     output=workdir / 'test-report-nvtx',
                     nvtx_capture='*',
-                    args=(pathlib.Path(__file__).parent.parent / 'assets' / 'test_nvtx.py',),
+                    args=(pathlib.Path(__file__).parent.parent / 'assets' / 'nvtx_annotations.py',),
                 )
                 entry = cacher.run(command=command, cwd=workdir)
 

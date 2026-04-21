@@ -1,6 +1,6 @@
 function(add_one_executable FILE)
 
-    set(FILENAME ${CMAKE_CURRENT_SOURCE_DIR}/test_${FILE}.cpp)
+    set(FILENAME ${CMAKE_CURRENT_SOURCE_DIR}/${FILE}.cpp)
 
     get_parent_relpath_repr(DIRECTORY ${CMAKE_SOURCE_DIR} FILENAME ${FILENAME})
 
@@ -23,14 +23,14 @@ add_one_executable(half)
 add_one_executable(saxpy)
 
 add_test(
-    NAME tests_assets_nvtx
+    NAME tests_assets_nvtx_annotations
     COMMAND nsys profile
                 --trace=nvtx
                 --sample=none
                 --backtrace=none
                 --cpuctxsw=none
-                ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/test_nvtx.py
+                ${Python_EXECUTABLE} -m pytest ${CMAKE_CURRENT_SOURCE_DIR}/nvtx_annotations.py
                     --config-file=${CMAKE_SOURCE_DIR}/tests/.pytest.ini
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
-test_environment(tests_assets_nvtx PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})
+test_environment(tests_assets_nvtx_annotations PYTHONPATH path_list_prepend ${CMAKE_SOURCE_DIR})

@@ -3,7 +3,7 @@
 #include "cuda/runtime_helper.hpp"
 #include "nvtx3/nvtx3.hpp"
 
-#include "test_half.cu"
+#include "half.cu"
 
 struct MyAppDomain {
     static constexpr char const * name{"half"};

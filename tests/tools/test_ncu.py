@@ -360,6 +360,8 @@ class TestSession:
         Collect a few basic metrics for the :py:attr:`GRAPH` executable.
         """
         METRICS = (
+            # Metric with full name provided.
+            ncu.Metric(name='launch__registers_per_thread_allocated'),
             # A few L1TEX cache metrics.
             ncu.L1TEXCache.GlobalLoad.Sectors.create(),
             ncu.L1TEXCache.GlobalStore.Sectors.create(),
@@ -421,15 +423,22 @@ class TestSession:
         assert metrics_node_A['L1/TEX cache global load sectors.sum']  == 1
         assert metrics_node_A['L1/TEX cache global store sectors.sum'] == 1
 
+        assert metrics_node_A['launch__registers_per_thread_allocated'] == 512
+
         # Nodes B and C make two loads and one store each.
         assert metrics_node_B['L1/TEX cache global load sectors.sum']  == 2
         assert metrics_node_B['L1/TEX cache global store sectors.sum'] == 1
         assert metrics_node_C['L1/TEX cache global load sectors.sum']  == 2
         assert metrics_node_C['L1/TEX cache global store sectors.sum'] == 1
 
+        assert metrics_node_B['launch__registers_per_thread_allocated'] == 512
+        assert metrics_node_C['launch__registers_per_thread_allocated'] == 512
+
         # Node D makes three loads and one store.
         assert metrics_node_D['L1/TEX cache global load sectors.sum']  == 3
         assert metrics_node_D['L1/TEX cache global store sectors.sum'] == 1
+
+        assert metrics_node_D['launch__registers_per_thread_allocated'] == 512
 
         assert metrics_aggregate == {
             'L1/TEX cache global load sectors.sum':  8,

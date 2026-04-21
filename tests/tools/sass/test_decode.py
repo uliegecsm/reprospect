@@ -2,9 +2,12 @@ import logging
 import os
 import pathlib
 import re
+import sys
+import typing
 
 import pytest
 
+from reprospect.test.case import CMakeAwareTestCase
 from reprospect.tools import binaries, sass
 from reprospect.tools.sass.decode import RegisterType
 from reprospect.utils import cmake
@@ -12,6 +15,12 @@ from reprospect.utils import cmake
 from tests.compilation import get_compilation_output
 from tests.cublas import CuBLAS
 from tests.parameters import PARAMETERS, Parameters
+
+if sys.version_info >= (3, 12):
+    from typing import override
+else:
+    from typing_extensions import override
+
 
 FFMA = \
 """\
@@ -278,3 +287,35 @@ class TestDecoder:
             decoder = sass.Decoder(code=function.code)
             assert len(decoder.instructions) > 1
             logging.info(f'Function {name} in {cublas.libcublas} has {len(decoder.instructions)} SASS instructions.')
+
+    class TestGraph(CMakeAwareTestCase):
+        """
+        Graph-based application with kernel nodes.
+        """
+        DEMANGLED_NODE_A: typing.Final[dict[str, str]] = {
+            'NVIDIA': 'void add_and_increment_kernel<(unsigned int)0, >(unsigned int *)',
+            'Clang':  'void add_and_increment_kernel<0u>(unsigned int*)',
+        }
+
+        @classmethod
+        @override
+        def get_target_name(cls) -> str:
+            return 'tests_assets_graph'
+
+        @pytest.fixture(scope='class')
+        def cuobjdump(self) -> binaries.CuObjDump:
+            return binaries.CuObjDump.extract(
+                file=self.executable,
+                arch=self.arch,
+                sass=True,
+                cwd=self.cwd,
+                cubin=f'graph.1.{self.arch.as_sm}.cubin',
+                demangler=self.demangler,
+            )[0]
+
+        def test_instruction_count(self, cuobjdump: binaries.CuObjDump) -> None:
+            """
+            Check how many instructions there are in the first graph node kernel.
+            """
+            decoder = sass.Decoder(code=cuobjdump.functions[self.DEMANGLED_NODE_A[self.compiler(toolchain='CUDA').id]].code)
+            assert len(decoder.instructions) >= 8

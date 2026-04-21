@@ -260,7 +260,7 @@ archs = []
 build-verbosity = 1
 
 test-command = [
-    "python -m pytest {package}/tests/test_extensibility.py",
+    "python -m pytest {package}/tests/test/sass/test_extensibility.py",
 ]
 test-requires = "pytest==9.0.2"
 

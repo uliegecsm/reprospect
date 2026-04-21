@@ -1,10 +1,19 @@
 """
-Ensure that the distributed package supports user extensions.
+Extensibility
+=============
 
 ``mypyc`` compilation can inadvertently seal classes, preventing inheritance.
-This module verifies that :py:mod:`reprospect` extension points (*e.g.*,
-:py:class:`reprospect.test.sass.instruction.InstructionMatcher`) remain
-subclassable after compilation, allowing users to extend :py:mod:`reprospect` capabilities.
+This module verifies that the following types remain
+subclassable after compilation, allowing users to extend :py:mod:`reprospect` capabilities:
+
+* :py:class:`reprospect.test.sass.instruction.InstructionMatcher` (see :py:class:`tests.test.sass.test_extensibility.NewInstructionMatcher`)
+* :py:class:`reprospect.test.sass.instruction.PatternMatcher` (see :py:class:`tests.test.sass.test_extensibility.NewPatternMatcher`)
+
+.. warning::
+
+    This test must be run with the compiled binary distribution of :py:mod:`reprospect`.
+    Using the source distribution makes :py:class:`tests.test.sass.test_extensibility.CannotBeExtended`
+    a valid extension.
 """
 
 import inspect

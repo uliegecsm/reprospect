@@ -11,7 +11,7 @@ Tests
 
    tests/compilation
    tests/cublas
-   tests/extensibility
+   tests/integration
    tests/parameters
    tests/test
    tests/tools

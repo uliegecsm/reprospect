@@ -273,6 +273,8 @@ class TestSession:
 
         logging.info(results)
 
+        assert len(results) == 4
+
         metrics_saxpy_kernel_0 = results.query_metrics(('saxpy_kernel-0',))
         metrics_saxpy_kernel_1 = results.query_metrics(('saxpy_kernel-1',))
         assert all(x in metrics_saxpy_kernel_0 for x in EXPT_METRICS_AND_METADATA)

@@ -148,7 +148,7 @@ class TestDecoder:
         """
         Read SASS dumped from ``cuobjdump``.
         """
-        CUDA_FILE = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
+        CUDA_FILE = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'saxpy.cu'
         output, _ = get_compilation_output(
             source=CUDA_FILE,
             cwd=workdir,

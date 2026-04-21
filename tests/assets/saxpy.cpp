@@ -4,23 +4,13 @@
 #include "cuda/runtime_helper.hpp"
 #include "nvtx3/nvtx3.hpp"
 
+#include "saxpy.cu"
+
 /**
  * @file
  *
  * Inspired by https://developer.nvidia.com/blog/easy-introduction-cuda-c-and-c/.
  */
-
-using index_t = decltype(dim3::x);
-
-__global__ void saxpy_kernel(
-    const index_t size,
-    const float factor,
-    const float* __restrict__ const vec_x,
-    float* __restrict__ const vec_y) {
-    const index_t index = blockIdx.x * blockDim.x + threadIdx.x;
-    if (index < size)
-        vec_y[index] += factor * vec_x[index];
-}
 
 struct MyAppDomain {
     static constexpr char const * name{"application_domain"};

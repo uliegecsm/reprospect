@@ -101,8 +101,8 @@ class TestResourceUsage:
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     class TestSaxpy:
-        FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'tools' / 'assets' / 'saxpy.cu'
-        SIGNATURE: typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
+        FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'saxpy.cu'
+        SIGNATURE: typing.Final[str] = '_Z12saxpy_kerneljfPKfPf'
 
         def test(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
             output, compilation = get_compilation_output(
@@ -119,14 +119,14 @@ class TestResourceUsage:
             ru = CuObjDump(file=output, arch=parameters.arch, demangler=None).functions[self.SIGNATURE].ru
 
             if parameters.arch.compute_capability < 90:
-                assert 'Used 10 registers, used 0 barriers, 380 bytes cmem[0]' in compilation, compilation
-                assert ru == ResourceUsage(register=10, constant={0: 380})
+                assert 'Used 10 registers, used 0 barriers, 376 bytes cmem[0]' in compilation, compilation
+                assert ru == ResourceUsage(register=10, constant={0: 376})
             elif parameters.arch.compute_capability < 100:
                 assert 'Used 10 registers, used 0 barriers' in compilation, compilation
-                assert ru == ResourceUsage(register=10, constant={0: 556})
+                assert ru == ResourceUsage(register=10, constant={0: 552})
             else:
                 assert 'Used 10 registers, used 0 barriers' in compilation, compilation
-                assert ru == ResourceUsage(register=10, constant={0: 924})
+                assert ru == ResourceUsage(register=10, constant={0: 920})
 
 class TestFunction:
     """
@@ -198,9 +198,9 @@ class TestCuObjDump:
         """
         When the kernel performs a `saxpy`.
         """
-        CPP_FILE:  typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
-        CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
-        SYMBOL:    typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
+        CPP_FILE:  typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'saxpy_nil.cpp'
+        CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'saxpy.cu'
+        SYMBOL:    typing.Final[str] = '_Z12saxpy_kerneljfPKfPf'
         SIGNATURE: typing.Final[str] = CuppFilt.demangle(SYMBOL)
 
         def test_sass_from_object(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI) -> None:
@@ -227,11 +227,11 @@ class TestCuObjDump:
             assert len(cuobjdump.functions) == 1
 
             if parameters.arch.compute_capability < 90:
-                cst = 380
+                cst = 376
             elif parameters.arch.compute_capability < 100:
-                cst = 556
+                cst = 552
             else:
-                cst = 924
+                cst = 920
 
             assert cuobjdump.functions[self.SIGNATURE].ru == ResourceUsage(
                 register=10,

@@ -223,7 +223,7 @@ class TestSaxpy:
     """
     Tests for :py:class:`reprospect.tools.binaries.elf.ELF` using an object file.
     """
-    FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
+    FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'saxpy.cu'
 
     @pytest.fixture
     def object_file(self, parameters: Parameters, cmake_file_api: cmake.FileAPI, workdir: pathlib.Path) -> pathlib.Path:
@@ -451,7 +451,7 @@ class TestNvInfo:
         """
         Extract the `.nv.info.<mangled>` section of the kernel.
         """
-        FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cpp'
+        FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'saxpy_nil.cpp'
 
         output, _ = get_compilation_output(
             source=FILE,
@@ -476,6 +476,6 @@ class TestNvInfo:
         with ELF(file=cubin) as elf:
             assert {
                 NvInfoEntry(eifmt=NvInfoEIFMT.SVAL, eiattr=NvInfoEIATTR.CUDA_API_VERSION, value=(int(f'{version.major}{version.minor}'),)),
-                NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.CBANK_PARAM_SIZE, value=int('0x1c', base=16)),
+                NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.CBANK_PARAM_SIZE, value=int('0x18', base=16)),
                 NvInfoEntry(eifmt=NvInfoEIFMT.HVAL, eiattr=NvInfoEIATTR.MAXREG_COUNT,     value=int('0xff', base=16)),
-            }.issubset(elf.nvinfo(mangled='_Z12saxpy_kernelfPKfPfj').attributes)
+            }.issubset(elf.nvinfo(mangled='_Z12saxpy_kerneljfPKfPf').attributes)

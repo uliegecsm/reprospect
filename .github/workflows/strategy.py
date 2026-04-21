@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import argparse
 import copy
 import dataclasses
+import enum
 import json
 import logging
 import pprint
@@ -10,14 +13,44 @@ from reprospect.tools.architecture import ComputeCapability, NVIDIAArch
 
 COMPILER_ID = typing.Literal['Clang', 'GNU', 'NVIDIA']
 LANGUAGE = typing.Literal['CUDA', 'CXX']
-PLATFORM = typing.Literal['linux/amd64', 'linux/arm64']
 
-AVAILABLE_RUNNER_ARCHES: typing.Final[tuple[NVIDIAArch, ...]] = (
-    NVIDIAArch.from_str('VOLTA70'),
-    NVIDIAArch.from_str('BLACKWELL120'),
+class OS(enum.StrEnum):
+    LINUX = 'linux'
+
+class Architecture(enum.StrEnum):
+    AMD64 = 'amd64'
+    ARM64 = 'arm64'
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class Platform:
+    """
+    Inspired by https://docs.docker.com/reference/cli/docker/manifest/#inspect-an-images-manifest-and-get-the-osarch-info.
+    """
+    os: OS
+    architecture: Architecture
+
+    def __repr__(self) -> str:
+        return f'{self.os}/{self.architecture}'
+
+    @classmethod
+    def from_str(cls, value: str) -> Platform:
+        os, architecture = value.split('/')
+        return Platform(os=OS(os), architecture=Architecture(architecture))
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class Runner:
+    """
+    Describe a runner configuration.
+    """
+    platform: Platform
+    arch: NVIDIAArch
+
+AVAILABLE_RUNNERS: typing.Final[tuple[Runner, ...]] = (
+    Runner(platform=Platform(os=OS('linux'), architecture=Architecture('amd64')), arch=NVIDIAArch.from_str('VOLTA70')),
+    Runner(platform=Platform(os=OS('linux'), architecture=Architecture('amd64')), arch=NVIDIAArch.from_str('BLACKWELL120')),
 )
 
-SELF_HOSTED: typing.Final[tuple[str, ...]] = ('self-hosted', 'linux', 'docker', 'amd64')
+SELF_HOSTED: typing.Final[tuple[str, ...]] = ('self-hosted', 'linux', 'docker')
 
 KOKKOS_SHA: typing.Final[str] = '5.1.0'
 
@@ -48,7 +81,7 @@ class Config:
     python_version: str
     compilers: dict[LANGUAGE, Compiler]
     compute_capability: ComputeCapability
-    platforms: tuple[PLATFORM, ...]
+    platforms: tuple[Platform, ...]
     enable_tests: bool | None = None
     enable_examples: bool | None = None
 
@@ -69,13 +102,13 @@ class Config:
         Each platform is a separate job, because multi-arch builds are too slow due to emulation.
         """
         for platform in self.platforms:
-            # We don't run tests and examples for 'linux/arm64'.
-            if platform == 'linux/arm64':
-                if self.enable_tests is True or self.enable_examples is True:
-                    raise RuntimeError(f'Running tests or examples for {platform} is not supported yet.')
-                enable_tests = enable_examples = False
+            enable_tests = self.enable_tests is not False
+            # We don't run examples for 'linux/arm64'.
+            if platform.os == 'linux' and platform.architecture == 'arm64':
+                if self.enable_examples is True:
+                    raise RuntimeError(f'Running examples for {platform} is not supported yet.')
+                enable_examples = False
             else:
-                enable_tests    = self.enable_tests    is not False
                 enable_examples = self.enable_examples is not False
 
             yield {
@@ -119,22 +152,22 @@ def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[st
             raise ValueError((cuda_version, ubuntu_version))
     return ('nvcr.io/nvidia/cuda', tag, digest)
 
-def full_image(*, name: str, tag: str, platform: PLATFORM, args: argparse.Namespace) -> str:
+def full_image(*, name: str, tag: str, platform: Platform, args: argparse.Namespace) -> str:
     """
     Full image from its `name` and `tag`, with remote.
 
     For now, `linux/arm64` are suffixed with `-arm64`, and we don't build a manifest for multi-arch images.
     """
     value = f'{args.registry}/{args.repository}/{name}:{tag}'
-    match platform:
-        case 'linux/amd64':
+    match (platform.os, platform.architecture):
+        case ('linux', 'amd64'):
             return value
-        case 'linux/arm64':
+        case ('linux', 'arm64'):
             return value + '-arm64'
         case _:
             raise ValueError(platform)
 
-def require_arch(arch: NVIDIAArch) -> dict[str, str]:
+def require_arch(spec: Runner) -> dict[str, str]:
     """
     If the `arch` is available in the runner fleet, enforce GPU compute capability with `NVIDIA_REQUIRE_ARCH`.
     See also
@@ -145,22 +178,33 @@ def require_arch(arch: NVIDIAArch) -> dict[str, str]:
     To prevent any GPU-related issues or convoluted conditional skips based on driver version in the tests,
     we explicitly hide all GPUs.
     """
-    if arch in AVAILABLE_RUNNER_ARCHES:
-        return {'NVIDIA_REQUIRE_ARCH': f'arch={arch.compute_capability.major}.{arch.compute_capability.minor}'}
+    if spec in AVAILABLE_RUNNERS:
+        return {'NVIDIA_REQUIRE_ARCH': f'arch={spec.arch.compute_capability.major}.{spec.arch.compute_capability.minor}'}
     return {'NVIDIA_VISIBLE_DEVICES': ''}
 
-def runs_on(arch: NVIDIAArch, jtype: typing.Literal['tests', 'examples']) -> tuple[str, ...]:
+def runs_on(spec: Runner, jtype: typing.Literal['tests', 'examples']) -> tuple[str, ...]:
     """
     We do require the architecture as a label if the architecture is part of our
     available runner fleet.
 
     Example jobs for which we don't have a runner available run on the provider runners.
     """
-    if arch in AVAILABLE_RUNNER_ARCHES:
-        return SELF_HOSTED + (f'{arch}'.lower(), 'gpu:0')
+    if spec in AVAILABLE_RUNNERS:
+        match spec.platform.os:
+            case 'linux':
+                return SELF_HOSTED + (f'{spec.platform.architecture}', f'{spec.arch}'.lower(), 'gpu:0')
+            case _:
+                raise ValueError(spec)
+
     match jtype:
         case 'tests':
-            return SELF_HOSTED
+            match (spec.platform.os, spec.platform.architecture):
+                case ('linux', 'amd64'):
+                    return SELF_HOSTED + ('amd64',)
+                case ('linux', 'arm64'):
+                    return ('ubuntu-24.04-arm',)
+                case _:
+                    raise ValueError(spec)
         case 'examples':
             return ('ubuntu-latest',)
         case _:
@@ -202,7 +246,7 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
 
     # Name of the job.
     # See also https://futurestud.io/tutorials/github-actions-customize-the-job-name.
-    partial['name'] = ', '.join((
+    unique_id: typing.Final[tuple[str, ...]] = (
         arch.as_sm,
         partial['cuda_version'],
         partial['compilers']['CXX'].ID,
@@ -210,8 +254,11 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
         partial['compilers']['CUDA'].ID,
         partial['ubuntu_version'],
         partial['python_version'],
-        partial['platform'],
-    ))
+        str(partial['platform']),
+    )
+
+    partial['name'] = ', '.join(unique_id)
+    partial['unique-id'] = '-'.join(unique_id).replace('/', '-')
 
     # Write compilers as dictionaries.
     for lang in partial['compilers']:
@@ -221,20 +268,23 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     # Environment of the job.
     partial['environment'] = {'REGISTRY': args.registry}
 
+    # Runner specification.
+    spec = Runner(platform=partial['platform'], arch=arch)
+
     # Specifics to the 'tests' jobs.
     if partial['enable_tests']:
         partial['tests'] = {'container': {'image': partial['image']}}
-        partial['tests']['container']['env'] = require_arch(arch=arch)
-        partial['tests']['runs-on'] = runs_on(arch=arch, jtype='tests')
+        partial['tests']['container']['env'] = require_arch(spec=spec)
+        partial['tests']['runs-on'] = runs_on(spec=spec, jtype='tests')
 
     # Specifics to the 'examples' jobs.
     if partial['enable_examples']:
         partial['examples'] = {'container': {'image': partial['kokkos']}}
-        partial['examples']['container']['env'] = require_arch(arch=arch)
-        partial['examples']['runs-on'] = runs_on(arch=arch, jtype='examples')
+        partial['examples']['container']['env'] = require_arch(spec=spec)
+        partial['examples']['runs-on'] = runs_on(spec=spec, jtype='examples')
 
     partial['build-images'] = {
-        'runs-on': ['self-hosted', 'linux', 'docker', partial['platform'].split('/')[1]],
+        'runs-on': ('self-hosted', 'linux', 'docker', f"{partial['platform'].architecture}"),
     }
 
     return partial
@@ -257,7 +307,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.12',
         compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=0),
-        platforms=('linux/amd64', 'linux/arm64'),
+        platforms=(Platform.from_str('linux/amd64'), Platform.from_str('linux/arm64')),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -266,7 +316,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.13',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=9, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -275,7 +325,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.13',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
-        platforms=('linux/amd64', 'linux/arm64'),
+        platforms=(Platform.from_str('linux/amd64'), Platform.from_str('linux/arm64')),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -284,7 +334,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.10',
         compilers={'CXX': Compiler(ID='GNU', version='12'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=5),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -293,7 +343,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.12',
         compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=8, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -302,7 +352,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.12',
         compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=8, minor=9),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -311,7 +361,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.11',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=8, minor=6),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -320,7 +370,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.12',
         compilers={'CXX': Compiler(ID='Clang', version='19'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -329,7 +379,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.14',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=10, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -338,7 +388,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.14',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=10, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -347,7 +397,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.12',
         compilers={'CXX': Compiler(ID='Clang', version='20'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -356,7 +406,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.14',
         compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=10, minor=3),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -365,7 +415,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.13',
         compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=1),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -374,7 +424,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.11',
         compilers={'CXX': Compiler(ID='Clang', version='21')},
         compute_capability=ComputeCapability(major=12, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -383,7 +433,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.12',
         compilers={'CXX': Compiler(ID='Clang', version='22')},
         compute_capability=ComputeCapability(major=9, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -392,7 +442,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.13',
         compilers={'CXX': Compiler(ID='Clang', version='22')},
         compute_capability=ComputeCapability(major=10, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -401,7 +451,7 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.14',
         compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
-        platforms=('linux/amd64',),
+        platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
 
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')

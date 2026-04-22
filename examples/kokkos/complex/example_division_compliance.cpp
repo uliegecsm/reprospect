@@ -7,18 +7,18 @@
 #include "examples/kokkos/complex/example_division.hpp"
 
 #if !defined(__STDC_IEC_60559_COMPLEX__)
-#    error "Your compiler does not comply to ISO/IEC 60559."
+#    error "Your compiler does not comply to IEC 60599."
 #endif
 
 /**
  * @addtogroup unittests
  *
- * compliance of complex division w.r.t. ISO/IEC 60559
- * ---------------------------------------------------
+ * Compliance of complex division w.r.t. IEC 60599
+ * -----------------------------------------------
  *
- * Tests to check compliance to ISO/IEC 60559 of several complex division implementations.
+ * Tests that check compliance with IEC 60599 of several complex division implementations.
  *
- * See also @cite iso-iec-9899-2024, section G.5.2.
+ * See also @cite iso-iec-9899-2024 (Annex G).
  *
  * The tests can be found in @ref examples/kokkos/complex/example_division_compliance.cpp.
  */

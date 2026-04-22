@@ -49,8 +49,19 @@ else:
 
 class Method(StrEnum):
     LogbScalbn = 'LogbScalbn'
+    """
+    Implementation that uses a scaling with the :code:`scalbn` function as suggested in :cite:`iso-iec-9899-2024`.
+    """
+
     ILogbScalbn = 'ILogbScalbn'
+    """
+    Same as :py:attr:`Method.LogbScalbn`, but using the :code:`ilogb` function.
+    """
+
     NormDivision = 'NormDivision'
+    """
+    Implementation that uses the division-based scaling `currently implemented in Kokkos <https://github.com/kokkos/kokkos/blob/e3a19e1c5bd4dcc5f59fba216b72967692f5a33e/core/src/Kokkos_Complex.hpp#L181-L206>`_.
+    """
 
 class TestDivision(CMakeAwareTestCase):
     KOKKOS_TOOLS_NVTX_CONNECTOR_LIB = environment.EnvironmentField(converter=pathlib.Path)
@@ -148,9 +159,15 @@ class TestSASS(TestDivision):
         assert len(findall(matcher=matcher_fp64_to_int32, instructions=decoder[Method.LogbScalbn].instructions)) == 1
 
     def test_detailed_register_usage(self, detailed_register_usage: dict[Method, DetailedRegisterUsage]) -> None: # pylint: disable=too-many-branches,too-many-statements
+        # CUDA compilation shares headers with the C++ standard library, thus bringing in their definition of FP_ILOGBNAN.
+        on_arm64 = any('aarch64' in str(p) for p in self.compiler(toolchain='CUDA').implicit.includeDirectories)
+
         match self.arch.compute_capability.as_int:
             case 70:
-                expt_ilogbscalbn =   {RegisterType.GPR: (40, 36), RegisterType.PRED: (4, 4)}
+                if on_arm64:
+                    expt_ilogbscalbn = {RegisterType.GPR: (40, 30), RegisterType.PRED: (4, 4)}
+                else:
+                    expt_ilogbscalbn = {RegisterType.GPR: (40, 36), RegisterType.PRED: (4, 4)}
                 expt_logbscalbn =    {RegisterType.GPR: (42, 38), RegisterType.PRED: (4, 4)}
                 expt_norm_division = {RegisterType.GPR: (40, 34), RegisterType.PRED: (5, 5)}
             case 75:
@@ -184,7 +201,10 @@ class TestSASS(TestDivision):
             case 100:
                 match self.compiler(toolchain='CUDA').id:
                     case 'NVIDIA':
-                        expt_ilogbscalbn =   {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
+                        if on_arm64:
+                            expt_ilogbscalbn = {RegisterType.GPR: (42, 37), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                        else:
+                            expt_ilogbscalbn = {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
                         expt_logbscalbn =    {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
                         expt_norm_division = {RegisterType.GPR: (40, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                     case 'Clang':
@@ -204,7 +224,10 @@ class TestSASS(TestDivision):
                             expt_ilogbscalbn = {RegisterType.GPR: (40, 33), RegisterType.PRED: (3, 3), RegisterType.UGPR: (14, 10)}
                             expt_logbscalbn =  {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (11, 7)}
                         else:
-                            expt_ilogbscalbn = {RegisterType.GPR: (45, 39), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                            if on_arm64:
+                                expt_ilogbscalbn = {RegisterType.GPR: (42, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                            else:
+                                expt_ilogbscalbn = {RegisterType.GPR: (45, 39), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                             if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.2'):
                                 expt_logbscalbn = {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                             else:

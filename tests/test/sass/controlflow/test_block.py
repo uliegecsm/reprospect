@@ -53,8 +53,8 @@ class TestBasicBlockMatcher(TestBasicBlock):
 
         Built on the observations from:
 
-        * :py:meth:`tests.test.test_half.TestSASS.test_individual`
-        * :py:meth:`tests.test.test_half.TestSASS.test_packed`
+        * :py:meth:`tests.integration.test_half.TestSASS.test_individual`
+        * :py:meth:`tests.integration.test_half.TestSASS.test_packed`
         """
         cfg_individual = ControlFlow.analyze(instructions=Decoder(code=cuobjdump.functions[self.SIGNATURE_INDIVIDUAL].code).instructions)
         cfg_packed     = ControlFlow.analyze(instructions=Decoder(code=cuobjdump.functions[self.SIGNATURE_PACKED].code).instructions)

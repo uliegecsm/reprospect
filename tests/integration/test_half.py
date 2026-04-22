@@ -1,3 +1,13 @@
+"""
+Half types
+==========
+
+Analyze two kernels that compute the square of half-precision values with and without packing using:
+
+* many matchers from :py:mod:`reprospect.test.sass`
+* some profiling with :py:mod:`reprospect.tools.ncu`
+"""
+
 import math
 import pathlib
 import re

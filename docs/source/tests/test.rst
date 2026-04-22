@@ -13,8 +13,3 @@ SASS
    :maxdepth: 1
 
    test/sass
-
-Others
-------
-
-.. automodule:: tests.test.test_half

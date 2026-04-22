@@ -18,4 +18,3 @@ Others
 ------
 
 .. automodule:: tests.test.test_half
-.. automodule:: tests.test.test_saxpy

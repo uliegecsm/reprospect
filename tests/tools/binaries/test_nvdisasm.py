@@ -58,8 +58,8 @@ class TestNVDisasm:
 
             * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/UserGuide.md?plain=1#L262
         """
-        CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent / 'assets' / 'saxpy.cu'
-        SYMBOL:    typing.Final[str] = '_Z12saxpy_kernelfPKfPfj'
+        CUDA_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'saxpy.cu'
+        SYMBOL:    typing.Final[str] = '_Z12saxpy_kerneljfPKfPf'
         SIGNATURE: typing.Final[str] = CuppFilt.demangle(SYMBOL)
 
         SASS_ANNOTATED_FILE: typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'saxpy.sass.annotated'
@@ -124,7 +124,7 @@ class TestNVDisasm:
             """
             with self.SASS_ANNOTATED_FILE.open('r', encoding='utf-8') as fin:
                 function = NVDisasm.parse_sass_with_liveness_range_info(
-                    function_mangled=self.SYMBOL,
+                    function_mangled='_Z12saxpy_kernelfPKfPfj',
                     sass=iter(fin),
                 )
             assert function.registers == {RegisterType.GPR: (8, 7), RegisterType.PRED: (1, 1), RegisterType.UGPR: (7, 3)}

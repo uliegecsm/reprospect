@@ -293,19 +293,19 @@ jobs:
                 coverage combine --keep $(find coverage/ -type f -name "*.cov")
                 coverage report
                 test -f .coverage
-                mv .coverage coverage.${{ matrix.cmake_preset }}-${{ matrix.cuda_version }}-${{ matrix.nvidia_arch }}
+                mv .coverage coverage.${{ matrix.unique-id }}
 
             - uses: actions/upload-artifact@v7
               with:
-                  name: tests-${{ matrix.cmake_preset }}-${{ matrix.cuda_version }}-${{ matrix.nvidia_arch }}
+                  name: tests-${{ matrix.unique-id }}
                   path: artifacts
                   retention-days: 1
                   if-no-files-found: error
 
             - uses: actions/upload-artifact@v7
               with:
-                  name: tests-coverage-${{ matrix.cmake_preset }}-${{ matrix.cuda_version }}-${{ matrix.nvidia_arch }}
-                  path: coverage.${{ matrix.cmake_preset }}-${{ matrix.cuda_version }}-${{ matrix.nvidia_arch }}
+                  name: tests-coverage-${{ matrix.unique-id }}
+                  path: coverage.${{ matrix.unique-id }}
                   retention-days: 1
                   if-no-files-found: error
 
@@ -416,7 +416,7 @@ jobs:
 
             - uses: actions/upload-artifact@v7
               with:
-                  name: examples-${{ matrix.cmake_preset }}-${{ matrix.cuda_version }}-${{ matrix.nvidia_arch }}
+                  name: examples-${{ matrix.unique-id }}
                   path: artifacts
                   retention-days: 1
 
@@ -477,12 +477,12 @@ jobs:
 
             - uses: actions/download-artifact@v8
               with:
-                  name: tests-gnu-nvidia-13.1.0-BLACKWELL120
+                  name: tests-sm_120-13.1.0-GNU-14-NVIDIA-24.04-3.13-linux-amd64
                   path: artifacts
 
             - uses: actions/download-artifact@v8
               with:
-                  name: examples-gnu-nvidia-13.1.0-BLACKWELL120
+                  name: examples-sm_120-13.1.0-GNU-14-NVIDIA-24.04-3.13-linux-amd64
                   path: artifacts
 
             - run: cd docs && make -j4 doctest

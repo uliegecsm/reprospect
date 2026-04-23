@@ -45,23 +45,16 @@ It streamlines data collection and extraction using these tools,
 and it complements them with new functionalities for programmatic analysis of these data,
 thus making it possible to encapsulate the entire prospecting analysis in a single Python script.
 
-`ReProspect` provides a practical foundation for developing novel use cases of CUDA code prospecting.
-It supports collaborative code development by enabling developers to share concise,
-reproducible analyses that motivate design decisions and help reviewers grasp the impact of proposed changes.
-It also enables new types of tests that go beyond traditional output-correctness validation in CI/CD pipelines,
-such as validating the presence of instruction patterns in binaries or confirming expected API call sequences for key library functionalities.
-Additionally, `ReProspect` can act as a framework for structuring research artifacts and documenting analyses,
-enabling others to reproduce the work and build upon it more effectively.
-
 # Statement of need
 
-HPC software development strives to achieve performance and sustain it over time, while hardware and software evolve.
-However, the modern programming landscape relies on complex software stacks and compiler toolchains.
-Therefore, tools are needed to analyse the interaction of the code with other layers across the stack and ultimately with the hardware.
+HPC software development strives to achieve performance and sustain it over time as hardware and software continue to evolve.
+Yet the modern programming landscape relies on complex software stacks and compiler toolchains that make it increasingly difficult to reason about code behavior.
+Developers therefore need tools that support continuous assessment of their code and help them unravel the implications of their design decisions and changes.
 
-The ability to carry out the analysis fully programmatically ensures reproducibility of the results by others while opening a range of new use cases that can be integrated in the development cycle.
-For instance, whereas test suites traditionally check output correctness of public functionalities,
-they could also verify application runtime events, kernel performance, or generated machine code.
+Beyond *ad hoc* investigations, fully programmatic tools allow analyses to be integrated across the development cycle and open a range of new use cases.
+For instance, they support collaborative development by enabling developers to share concise, reproducible analyses that motivate design decisions and help reviewers grasp the impact of proposed changes.
+They also enable new types of tests in CI/CD pipelines that go beyond traditional output-correctness validation --- such as confirming expected API call sequences for key library functionalities, verifying memory traffic for custom data layouts via kernel profiling, or validating the presence of specific instruction patterns in machine code.
+Finally, they can act as a framework for structuring research artifacts and documenting analyses, enabling others to reproduce and build upon prior work more effectively.
 
 For the CUDA stack, NVIDIA provides a set of proprietary tools guaranteed to be up-to-date with their software and hardware.
 The runtime analysis tools Nsight Systems [@nsys2025] and Nsight Compute [@ncu2025] are designed for API tracing and kernel profiling, respectively.
@@ -69,6 +62,14 @@ They both provide a GUI for exploring the results, as well as a low-level Python
 The CUDA binary utilities [@binary2025] provide command-line access to machine code (SASS or PTX [@ptx2025]) and other information embedded in the binaries.
 However, while these tools allow raw data to be extracted, they
 do not themselves provide the infrastructure for effective programmatic analysis.
+
+There is thus a need for a framework that builds on the NVIDIA tools and
+augments them to enable fully programmatic analysis.
+`ReProspect` addresses this need and is designed to support the aforementioned new use cases.
+It allows developers to write well-structured, concise Python scripts focused on analysis results.
+It structures the collected data to be readily amenable to test assertions,
+and introduces new capabilities such as
+matchers for instruction sequence patterns in machine code extracted from binaries.
 
 # State of the field
 

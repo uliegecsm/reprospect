@@ -29,14 +29,20 @@ bibliography: paper.bib
 
 # Summary
 
-`ReProspect` is a Python framework designed to support reproducible prospecting of CUDA code---that is, the systematic analysis of CUDA-based libraries and software components through API tracing, kernel profiling, and binary analysis.
+`ReProspect` is a Python framework for prospecting CUDA code,
+designed to ensure reproducibility through a fully programmatic approach.
+Prospecting encompasses three complementary ways of characterizing
+CUDA-based libraries and software components:
+how they interact with the CUDA runtime through API tracing,
+how kernels perform through kernel profiling,
+and how source constructs translate into machine code through binary analysis.
 
 `ReProspect` builds on NVIDIA tools:
 Nsight Systems,
 Nsight Compute, and
 the CUDA binary utilities.
 It streamlines data collection and extraction using these tools,
-and it complements them with new functionalities for a fully programmatic analysis of these data,
+and it complements them with new functionalities for programmatic analysis of these data,
 thus making it possible to encapsulate the entire prospecting analysis in a single Python script.
 
 `ReProspect` provides a practical foundation for developing novel use cases of CUDA code prospecting.

@@ -1,7 +1,5 @@
-ReProspect documentation
-========================
-
-For a quick introduction to `ReProspect`, see :ref:`overview`.
+.. include:: ../../README.md
+    :parser: myst_parser.sphinx_
 
 .. toctree::
    :maxdepth: 4

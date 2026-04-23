@@ -187,6 +187,8 @@ def runs_on(spec: Runner, jtype: typing.Literal['tests', 'examples']) -> tuple[s
     We do require the architecture as a label if the architecture is part of our
     available runner fleet.
 
+    Test jobs for `amd64` run on our runner fleet for caching efficiency.
+
     Example jobs for which we don't have a runner available run on the provider runners.
     """
     if spec in AVAILABLE_RUNNERS:

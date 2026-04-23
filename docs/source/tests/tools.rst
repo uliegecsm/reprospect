@@ -1,6 +1,8 @@
 Tools
 =====
 
+Tests for :py:mod:`reprospect.tools`.
+
 Architecture
 ------------
 

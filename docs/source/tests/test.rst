@@ -1,6 +1,8 @@
 Test
 ====
 
+Tests for :py:mod:`reprospect.test`.
+
 Environment
 -----------
 

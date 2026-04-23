@@ -1,6 +1,8 @@
 Utils
 =====
 
+Tests for :py:mod:`reprospect.utils`.
+
 `CMake`
 -------
 

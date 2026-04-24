@@ -446,6 +446,89 @@ class TestNvInfo:
     def version() -> semantic_version.Version:
         return nvcc.get_version()
 
+    CODE_NUM_BARRIERS: typing.Final[str] = """\
+__global__ void kernel_num_barriers() {
+    asm volatile("bar.sync 0, 128;");
+    asm volatile("bar.sync 1, 128;");
+    asm volatile("bar.sync 2, 128;");
+}
+"""
+
+    CODE_CTAIDZ_USED: typing.Final[str] = """\
+__global__ void kernel_ctaidz_used(float* data ) {
+    int z = threadIdx.z + blockIdx.z * blockDim.z;
+    data[z] *= 2.0f;
+}
+"""
+
+    def check_attribute_from_code(self, *, request, entry: NvInfoEntry, code: str, mangled: str, parameters: Parameters, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler, absent: bool = False) -> None:
+        """
+        Validate an :py:mod:`reprospect.tools.binaries.elf.NvInfoEIATTR` by compiling code and verifying that it
+        is found in the result of :py:meth:`reprospect.tools.binaries.elf.ELF.nvinfo`.
+        """
+        FILE = workdir / f'{request.node.originalname}.{entry.eiattr.name}.{parameters.arch.as_sm}.cu'
+        FILE.write_text(code)
+
+        output, _ = get_compilation_output(
+            source=FILE,
+            cwd=workdir,
+            arch=parameters.arch,
+            object_file=True,
+            resource_usage=False,
+            cmake_file_api=cmake_file_api,
+        )
+        _, cubin = CuObjDump.extract(
+            file=output,
+            arch=parameters.arch,
+            cwd=workdir,
+            sass=False,
+            cubin=get_cubin_name(
+                compiler=cmake_cuda_compiler,
+                file=output,
+                arch=parameters.arch,
+                object_file=True,
+            ),
+        )
+        with ELF(file=cubin) as elf:
+            attrs = elf.nvinfo(mangled=mangled).attributes
+            if absent:
+                assert entry not in attrs
+            else:
+                assert entry in attrs
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
+    def test_attribute_num_barriers(self, version, request, parameters: Parameters, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
+        """
+        Validate :py:attr:`reprospect.tools.binaries.elf.NvInfoEIATTR.NUM_BARRIERS`.
+        """
+        absent = version in semantic_version.SimpleSpec('<13') \
+            and parameters.arch.compute_capability <= 90
+        self.check_attribute_from_code(
+            request=request,
+            entry=NvInfoEntry(eifmt=NvInfoEIFMT.BVAL, eiattr=NvInfoEIATTR.NUM_BARRIERS, value=3),
+            code=self.CODE_NUM_BARRIERS,
+            mangled='_Z19kernel_num_barriersv',
+            parameters=parameters,
+            absent=absent,
+            workdir=workdir, cmake_file_api=cmake_file_api, cmake_cuda_compiler=cmake_cuda_compiler,
+        )
+
+    @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
+    def test_attribute_ctaidz_used(self, request, parameters: Parameters, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
+        """
+        Validate :py:mod:`reprospect.tools.binaries.elf.NvInfoEIATTR.CTAIDZ_USED` is used until
+        :py:attr:`reprospect.tools.architecture.NVIDIAFamily.AMPERE`.
+        """
+        self.check_attribute_from_code(
+            request=request,
+            entry=NvInfoEntry(eifmt=NvInfoEIFMT.NVAL, eiattr=NvInfoEIATTR.CTAIDZ_USED, value=None),
+            code=self.CODE_CTAIDZ_USED,
+            mangled='_Z18kernel_ctaidz_usedPf',
+            parameters=parameters,
+            absent=parameters.arch.compute_capability >= 90,
+            workdir=workdir, cmake_file_api=cmake_file_api, cmake_cuda_compiler=cmake_cuda_compiler,
+        )
+
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test(self, version, parameters: Parameters, cmake_file_api: cmake.FileAPI, workdir: pathlib.Path, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
         """

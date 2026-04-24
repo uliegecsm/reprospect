@@ -37,6 +37,7 @@ class NvInfoEIATTR(enum.IntEnum):
     References:
 
     * :cite:`hayes-2019-decoding-cubin`
+    * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuNVInfo.py#L7-L40
     """
     MAX_THREADS = 5
     PARAM_CBANK = 10

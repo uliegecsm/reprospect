@@ -19,18 +19,19 @@ such as the integration of such analyses in CI/CD pipelines and their increased 
 
 `ReProspect` supports three complementary forms of analysis:
 
-   .. rubric:: API tracing
+   .. rubric:: :ref:`api_tracing`
 
    Built on top of `Nsight Systems`_ (``nsys``) to record various runtime events, such as CUDA API calls, and examine application-level control flow.
 
-   .. rubric:: Kernel profiling
+   .. rubric:: :ref:`kernel_profiling`
 
    Built on top of `Nsight Compute`_ (``ncu``) to collect detailed per-kernel runtime metrics.
 
-   .. rubric:: Binary analysis
+   .. rubric:: :ref:`binary_analysis`
 
    Built on top of the `CUDA binary utilities`_ (``cuobjdump`` and ``nvdisasm``) to extract information from CUDA binaries,
    such as the SASS instructions that make up a kernel, the associated control flow instructions, the resource usage, and so on.
+   Notably, :py:mod:`reprospect.test.sass` provides matchers to validate the presence of specific instruction patterns in SASS code.
 
 In order to facilitate its integration in CI/CD pipelines, `ReProspect` has functionalities to interact with the build system,
 such as functionalities to obtain information about the compiler toolchain. Currently, these functionalities have been implemented only for the `CMake`_ build system.

@@ -23,3 +23,7 @@ how kernels perform through kernel profiling,
 and how source constructs translate into machine code through binary analysis.
 
 See [the documentation](https://uliegecsm.github.io/reprospect/) for more information.
+
+## Conferences
+
+* [HPSF Community Summit 2026](https://hdl.handle.net/2268/342004)

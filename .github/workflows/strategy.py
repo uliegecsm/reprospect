@@ -303,6 +303,8 @@ def main(*, args: argparse.Namespace) -> None:
     """
     matrix = []
 
+    # STRATEGY-MATRIX-START
+
     matrix.extend(from_config(Config(
         cuda_version='12.8.1',
         ubuntu_version='24.04',
@@ -455,6 +457,8 @@ def main(*, args: argparse.Namespace) -> None:
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
     ), args=args))
+
+    # STRATEGY-MATRIX-END
 
     logging.info(f'Strategy matrix:\n{pprint.pformat(matrix)}')
 

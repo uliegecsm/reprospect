@@ -46,3 +46,17 @@ Test assets are located in:
    :maxdepth: 1
 
    tests/assets
+
+CI/CD strategy matrix
+---------------------
+
+The CI/CD strategy matrix covers:
+
+- many CUDA versions
+- many architectures
+- ``nvcc`` or ``clang`` as CUDA compiler
+
+.. literalinclude:: ../../.github/workflows/strategy.py
+   :language: python
+   :start-after: STRATEGY-MATRIX-START
+   :end-before: STRATEGY-MATRIX-END

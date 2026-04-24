@@ -102,14 +102,8 @@ class Config:
         Each platform is a separate job, because multi-arch builds are too slow due to emulation.
         """
         for platform in self.platforms:
-            enable_tests = self.enable_tests is not False
-            # We don't run examples for 'linux/arm64'.
-            if platform.os == 'linux' and platform.architecture == 'arm64':
-                if self.enable_examples is True:
-                    raise RuntimeError(f'Running examples for {platform} is not supported yet.')
-                enable_examples = False
-            else:
-                enable_examples = self.enable_examples is not False
+            enable_tests    = self.enable_tests    is not False
+            enable_examples = self.enable_examples is not False
 
             yield {
                 'cuda_version': self.cuda_version,
@@ -208,7 +202,13 @@ def runs_on(spec: Runner, jtype: typing.Literal['tests', 'examples']) -> tuple[s
                 case _:
                     raise ValueError(spec)
         case 'examples':
-            return ('ubuntu-latest',)
+            match (spec.platform.os, spec.platform.architecture):
+                case ('linux', 'amd64'):
+                    return ('ubuntu-latest',)
+                case ('linux', 'arm64'):
+                    return ('ubuntu-24.04-arm',)
+                case _:
+                    raise ValueError(spec)
         case _:
             raise ValueError
 

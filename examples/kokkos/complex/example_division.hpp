@@ -24,16 +24,12 @@ namespace reprospect::examples::kokkos::complex {
  * Adapted from https://github.com/jtravs/cuda_complex/blob/master/cuda_complex.hpp#L553.
  * Similar to https://github.com/NVIDIA/cccl/blob/a91db6e2a022a7aa03b37873f0d4caf5ac81281d/libcudacxx/include/cuda/std/__complex/complex.h#L400-L496.
  *
- * @tparam EnableCompliance Enable ISO/IEC 60559 compliance.
+ * @tparam EnableCompliance Enable IEC 60599 compliance.
  * @tparam UseIlogb         Use @c ilogb instead of @c logb.
- *                          Only available when @c ILOGB_NAN_INF_DISTINGUISHABLE is defined.
  */
 template <bool EnableCompliance, bool UseIlogb, typename RealType>
 KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
     logb_scalbn(const Kokkos::complex<RealType>& x, const Kokkos::complex<RealType>& y) {
-#if !defined(ILOGB_NAN_INF_DISTINGUISHABLE)
-    static_assert(!UseIlogb);
-#endif
 
     RealType a = x.real();
     RealType b = x.imag();
@@ -78,7 +74,11 @@ KOKKOS_FUNCTION constexpr Kokkos::complex<RealType>
             } else if (
                 [&]() {
                     if constexpr (UseIlogb) {
+#if defined(ILOGB_NAN_INF_DISTINGUISHABLE)
                         return iexp == INT_MAX;
+#else
+                        return Kokkos::isinf(c) || Kokkos::isinf(d);
+#endif
                     } else {
                         return Kokkos::isinf(logbw);
                     }

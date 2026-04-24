@@ -84,11 +84,19 @@ It has a visual interface, and it can output raw performance data for programmat
 Score-P [@knupfer2012] integrates multiple performance analysis tools in a common infrastructure.
 It can record CUDA API calls and GPU activities through CUPTI and provides standardized data formats.
 
-Although script-driven runtime analysis is also possible with these well-established tools,
+Although script-driven analysis is also possible with these well-established tools,
 developing `ReProspect` as an independent package enables a design optimised for our use cases:
-concise, reproducible, low-overhead, easy-to-adopt, script-driven analysis of individual units of functionality.
-Beyond runtime analysis, `ReProspect` introduces new binary analysis functionalities to inspect machine code for expected instruction sequence patterns.
-To the best of our knowledge, these functionalities are not covered by existing tools.
+it augments the NVIDIA tools to enable easy-to-adopt programmatic analysis of individual units of functionality.
+
+Several tools that operate on SASS embedded in CUDA binaries already exist, each with a distinct focus.
+CuAssembler [@cuassembler2023] and CuAsmRL [@he2025] focus on modifying the SASS code.
+NVBit [@villa2019] is a dynamic instrumentation library for CUDA binaries.
+`ReProspect` provides a SASS matching framework that allows SASS code to be checked for expected instruction sequence patterns.
+To the best of our knowledge, such SASS matching is not covered by existing tools.
+
+Miasm [@desclaux2012] is a Python reverse-engineering framework that can lift binaries into an intermediate representation, but it does not currently support SASS.
+The `ReProspect` matcher framework abstracts SASS across architectures, and hence shares some similarity with an intermediate representation.
+However, it stops short of a full intermediate representation: it abstracts instruction-level patterns sufficient for assertions.
 
 # Software design
 
@@ -185,7 +193,7 @@ Table: Comparison of the SASS code generated for the `sm_100` architecture
 
 `ReProspect` has been successfully used as a support for contributions
 to the open-source Kokkos library [@ctrott-2022] and the development of an in-house finite element
-code built on top of the open-source Trilinos library [@mayr-2025] [@arnst-24] [@tomasetti-24].
+code built on top of the open-source Trilinos library [@mayr-2026] [@arnst-24] [@tomasetti-24].
 
 The [`examples` directory](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/)
 contains several case studies inspired by these research efforts.

@@ -39,6 +39,7 @@ class NvInfoEIATTR(enum.IntEnum):
     * :cite:`hayes-2019-decoding-cubin`
     * https://github.com/cloudcores/CuAssembler/blob/96a9f72baf00f40b9b299653fcef8d3e2b4a3d49/CuAsm/CuNVInfo.py#L7-L40
     """
+    CTAIDZ_USED = 4
     MAX_THREADS = 5
     PARAM_CBANK = 10
     KPARAM_INFO = 23
@@ -46,12 +47,17 @@ class NvInfoEIATTR(enum.IntEnum):
     MAXREG_COUNT = 27
     EXIT_INSTR_OFFSETS = 28
     CRS_STACK_SIZE = 30
+    COOP_GROUP_INSTR_OFFSETS = 40
+    COOP_GROUP_MASK_REGIDS = 41
     WARP_WIDE_INSTR_OFFSETS = 49
     SW2861232_WAR = 53
     SW_WAR = 54
     CUDA_API_VERSION = 55
+    UNUSED_LOAD_BYTE_OFFSET = 68
     VRC_CTA_INIT_COUNT = 74
+    NUM_BARRIERS = 76
     SPARSE_MMA_MASK = 80
+    ANNOTATIONS = 85
     MERCURY_ISA_VERSION = 95
     LANGUAGE = 102
 

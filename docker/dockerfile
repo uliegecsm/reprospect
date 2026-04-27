@@ -73,8 +73,7 @@ RUN <<EOF
         --update --packages                \
         clang-${CXX_COMPILER_VERSION}      \
         llvm-${CXX_COMPILER_VERSION}       \
-        clang-tidy-${CXX_COMPILER_VERSION} \
-        clang-format-${CXX_COMPILER_VERSION}
+        clang-tidy-${CXX_COMPILER_VERSION}
 
     update-alternatives-helpers --prefix /usr/bin \
         --display --level=10 --for-each-of \

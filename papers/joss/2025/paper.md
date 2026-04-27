@@ -83,20 +83,19 @@ It has a visual interface, and it can output raw performance data for programmat
 *e.g.* using Hatchet.
 Score-P [@knupfer2012] integrates multiple performance analysis tools in a common infrastructure.
 It can record CUDA API calls and GPU activities through CUPTI and provides standardized data formats.
-
-Although script-driven analysis is also possible with these well-established tools,
-developing `ReProspect` as an independent package enables a design optimised for our use cases:
-it augments the NVIDIA tools to enable easy-to-adopt programmatic analysis of individual units of functionality.
+By contrast, `ReProspect` focuses on concise programmatic analysis of individual units of functionality based on the outputs of NVIDIA tools.
 
 Several tools that operate on SASS embedded in CUDA binaries already exist, each with a distinct focus.
-CuAssembler [@cuassembler2023] and CuAsmRL [@he2025] focus on modifying the SASS code.
-NVBit [@villa2019] is a dynamic instrumentation library for CUDA binaries.
-`ReProspect` provides a SASS matching framework that allows SASS code to be checked for expected instruction sequence patterns.
-To the best of our knowledge, such SASS matching is not covered by existing tools.
+CuAssembler [@cuassembler-2023] and CuAsmRL [@he-2025] focus on modifying the SASS code.
+NVBit [@villa-2019] is a dynamic instrumentation library for CUDA binaries.
+However, none of these tools provides a SASS matching framework.
 
-Miasm [@desclaux2012] is a Python reverse-engineering framework that can lift binaries into an intermediate representation, but it does not currently support SASS.
-The `ReProspect` matcher framework abstracts SASS across architectures, and hence shares some similarity with an intermediate representation.
-However, it stops short of a full intermediate representation: it abstracts instruction-level patterns sufficient for assertions.
+Miasm [@desclaux-2012] is a Python reverse-engineering framework for CPU assembly:
+it can lift instructions into an intermediate representation (IR) to support higher-level analysis and binary modification.
+The Miasm expressions are conceptually close to the `ReProspect` matching framework.
+However, CPU assembly differs significantly from SASS,
+which depends on the architecture generation and embeds more information,
+such as scheduling control codes, thread predicates, and memory space specifiers.
 
 # Software design
 

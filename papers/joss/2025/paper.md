@@ -83,12 +83,19 @@ It has a visual interface, and it can output raw performance data for programmat
 *e.g.* using Hatchet.
 Score-P [@knupfer2012] integrates multiple performance analysis tools in a common infrastructure.
 It can record CUDA API calls and GPU activities through CUPTI and provides standardized data formats.
+By contrast, `ReProspect` focuses on concise programmatic analysis of individual units of functionality based on the outputs of NVIDIA tools.
 
-Although script-driven runtime analysis is also possible with these well-established tools,
-developing `ReProspect` as an independent package enables a design optimised for our use cases:
-concise, reproducible, low-overhead, easy-to-adopt, script-driven analysis of individual units of functionality.
-Beyond runtime analysis, `ReProspect` introduces new binary analysis functionalities to inspect machine code for expected instruction sequence patterns.
-To the best of our knowledge, these functionalities are not covered by existing tools.
+Several tools that operate on SASS embedded in CUDA binaries already exist, each with a distinct focus.
+CuAssembler [@cuassembler-2023] and CuAsmRL [@he-2025] focus on modifying the SASS code.
+NVBit [@villa-2019] is a dynamic instrumentation library for CUDA binaries.
+However, none of these tools provides a SASS matching framework.
+
+Miasm [@desclaux-2012] is a Python reverse-engineering framework for CPU assembly:
+it can lift instructions into an intermediate representation (IR) to support higher-level analysis and binary modification.
+The Miasm expressions are conceptually close to the `ReProspect` matching framework.
+However, CPU assembly differs significantly from SASS,
+which depends on the architecture generation and embeds more information,
+such as scheduling control codes, thread predicates, and memory space specifiers.
 
 # Software design
 
@@ -185,7 +192,7 @@ Table: Comparison of the SASS code generated for the `sm_100` architecture
 
 `ReProspect` has been successfully used as a support for contributions
 to the open-source Kokkos library [@ctrott-2022] and the development of an in-house finite element
-code built on top of the open-source Trilinos library [@mayr-2025] [@arnst-24] [@tomasetti-24].
+code built on top of the open-source Trilinos library [@mayr-2026] [@arnst-24] [@tomasetti-24].
 
 The [`examples` directory](https://github.com/uliegecsm/reprospect/blob/54a95f066cbf350a54305457159aafdd751f1b18/examples/)
 contains several case studies inspired by these research efforts.

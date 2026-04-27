@@ -19,3 +19,8 @@ repos:
     hooks:
     - id: ruff-check
       args: [--fix, --config=pyproject.toml]
+
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.45.2
+    hooks:
+    - id: typos

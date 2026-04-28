@@ -1,0 +1,1 @@
+add_one_kokkos_example(static_batch_size)

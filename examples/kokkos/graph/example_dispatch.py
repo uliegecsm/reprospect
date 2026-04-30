@@ -10,7 +10,7 @@ import semantic_version
 
 from reprospect.test import CMakeAwareTestCase, environment
 from reprospect.tools import nsys
-from reprospect.utils import detect
+from reprospect.utils import detect, rich_helpers
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -107,22 +107,26 @@ class TestNSYS(TestDispatch):
 
             # Select kernels from the first graph submission.
             kernels_0 = self.get(report=report, kernels=kernels, label='graph - submit - 0')
+            logging.info(f'Kernels for the first submission are:\n{rich_helpers.to_string(rich_helpers.df_to_table(kernels_0.T.reset_index()))}.')
+
             assert len(kernels_0) == self.NODE_COUNT
 
             streams_0 = kernels_0['streamId'].to_list()
 
-            logging.info(f'Kernels for the first submission ran on {streams_0}.')
+            logging.info(f'Kernels for the first submission ran on streams {streams_0}.')
 
             assert len(streams_0) == len(set(streams_0))
 
             # Select kernels from the second graph submission.
             # Second submission reuses the streams of the first submission.
             kernels_1 = self.get(report=report, kernels=kernels, label='graph - submit - 1')
+            logging.info(f'Kernels for the second submission are:\n{rich_helpers.to_string(rich_helpers.df_to_table(kernels_0.T.reset_index()))}.')
+
             assert len(kernels_1) == self.NODE_COUNT
 
             streams_1 = kernels_1['streamId'].to_list()
 
-            logging.info(f'Kernels for the second submission ran on {streams_1}.')
+            logging.info(f'Kernels for the second submission ran on streams {streams_1}.')
 
             assert sorted(streams_0) == sorted(streams_1)
 

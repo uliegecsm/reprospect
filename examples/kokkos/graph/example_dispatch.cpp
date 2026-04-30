@@ -10,6 +10,7 @@
  */
 
 namespace reprospect::examples::kokkos::graph {
+
 template <typename ViewType>
 struct Functor {
     ViewType data;

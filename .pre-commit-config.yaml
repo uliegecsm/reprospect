@@ -21,6 +21,6 @@ repos:
       args: [--fix, --config=pyproject.toml]
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.45.2
+    rev: v1.46.0
     hooks:
     - id: typos

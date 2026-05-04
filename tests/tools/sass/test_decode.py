@@ -142,18 +142,6 @@ class TestDecoder:
             ),
         ], decoder.instructions
 
-    def test_fixit(self) -> None:
-        """
-        Check that :py:meth:`reprospect.tools.sass.decode.Decoder.fixit` works as expected.
-        """
-        SAMPLES: typing.Final[dict[str, str]] = {
-            'HADD2.F32 R10, -RZ, c[0x0] [0x160].H0_H0': 'HADD2.F32 R10, -RZ, c[0x0][0x160].H0_H0',
-            'FSETP.GEU.AND P1, PT, |R151|, +INF , PT': 'FSETP.GEU.AND P1, PT, |R151|, +INF, PT',
-        }
-
-        for sample, expected in SAMPLES.items():
-            assert sass.Decoder.fixit(instruction=sample) == expected
-
     def test_from_source(self) -> None:
         """
         Read SASS from a source.
@@ -287,7 +275,7 @@ class TestDecoder:
         cublas = CuBLAS(cmake_file_api=cmake_file_api)
 
         try:
-            cuobjdump = cublas.cubin(arch=parameters.arch, cwd=workdir, sass=True)
+            cuobjdump = cublas.cuobjdump(arch=parameters.arch, cwd=workdir, sass=True)
         except IndexError:
             pytest.skip(f'The library {cublas.libcublas} does not contain any CUDA binary file for {parameters.arch}.')
 

@@ -59,15 +59,6 @@ class TestAddressMatcher:
         assert AddressMatcher(arch=ARCH, reg='R42', offset='UR2' ).match(ADDRESS_WITH_OFFSET_AS_UREG) is None
         assert AddressMatcher(arch=ARCH, reg='R42', offset='0x20').match(ADDRESS_WITH_OFFSET_AS_UREG) is None
 
-        ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX: typing.Final[str] = '[R14.64+UR8+0x80]'
-
-        assert AddressMatcher(arch=ARCH                                ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) == GenericOrGlobalAddressMatch(reg='R14', offset='UR8+0x80')
-        assert AddressMatcher(arch=ARCH, reg='R14'                     ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) == GenericOrGlobalAddressMatch(reg='R14', offset='UR8+0x80')
-        assert AddressMatcher(arch=ARCH, reg='R14', offset=r'UR8\+0x80').match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) == GenericOrGlobalAddressMatch(reg='R14', offset='UR8+0x80')
-        assert AddressMatcher(arch=ARCH, reg='R27'                     ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) is None
-        assert AddressMatcher(arch=ARCH, reg='R42', offset='UR2'       ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) is None
-        assert AddressMatcher(arch=ARCH, reg='R42', offset='0x20'      ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) is None
-
     def test_reg64_address(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('AMPERE86')
 
@@ -84,6 +75,15 @@ class TestAddressMatcher:
         assert AddressMatcher(arch=ARCH, reg='R42', offset='0x10').match(ADDRESS_WITH_OFFSET) == GenericOrGlobalAddressMatch(reg='R42', offset='0x10')
         assert AddressMatcher(arch=ARCH, reg='R27'               ).match(ADDRESS_WITH_OFFSET) is None
         assert AddressMatcher(arch=ARCH, reg='R42', offset='0x20').match(ADDRESS_WITH_OFFSET) is None
+
+        ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX: typing.Final[str] = '[R14.64+UR8+0x80]'
+
+        assert AddressMatcher(arch=ARCH                                ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) == GenericOrGlobalAddressMatch(reg='R14', offset='UR8+0x80')
+        assert AddressMatcher(arch=ARCH, reg='R14'                     ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) == GenericOrGlobalAddressMatch(reg='R14', offset='UR8+0x80')
+        assert AddressMatcher(arch=ARCH, reg='R14', offset=r'UR8\+0x80').match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) == GenericOrGlobalAddressMatch(reg='R14', offset='UR8+0x80')
+        assert AddressMatcher(arch=ARCH, reg='R27'                     ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) is None
+        assert AddressMatcher(arch=ARCH, reg='R42', offset='UR2'       ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) is None
+        assert AddressMatcher(arch=ARCH, reg='R42', offset='0x20'      ).match(ADDRESS_WITH_OFFSET_AS_UREG_AND_HEX) is None
 
     def test_desc_reg64_address(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('BLACKWELL120')

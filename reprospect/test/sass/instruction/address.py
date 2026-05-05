@@ -201,14 +201,15 @@ class AddressMatcher:
             case 75:
                 return PatternBuilder.any(
                     cls.build_reg_address(arch=arch, reg=reg, offset=offset, captured=captured),
+                    cls.build_reg_extend_bits_address(arch=arch, reg=reg, offset=offset, captured=captured),
                     cls.build_reg64_address(arch=arch, reg=reg, offset=offset, captured=captured),
                 )
-            case 80:
+            case 80 | 86:
                 return PatternBuilder.any(
                     cls.build_reg64_address(arch=arch, reg=reg, offset=offset, captured=captured),
                     cls.build_desc_reg64_address(arch=arch, reg=reg, desc_ureg=desc_ureg, offset=offset, captured=captured),
                 )
-            case 86 | 89:
+            case 89:
                 return cls.build_reg64_address(arch=arch, reg=reg, offset=offset, captured=captured)
             case 90 | 100 | 103 | 120 | 121:
                 return cls.build_desc_reg64_address(arch=arch, reg=reg, desc_ureg=desc_ureg, offset=offset, captured=captured)
@@ -253,6 +254,19 @@ class AddressMatcher:
             [R2+0x10]
         """
         pattern_reg = cls.build_pattern_reg(arch=arch, reg=reg, captured=captured)
+        pattern_offset = cls.build_pattern_offset(arch=arch, offset=offset, captured=captured)
+        return TEMPLATE_REG_ADDRESS.format(reg=pattern_reg, offset=pattern_offset)
+
+    @classmethod
+    def build_reg_extend_bits_address(cls, *, arch: NVIDIAArch, reg: str | None = None, offset: str | None = None, captured: bool = False) -> str:
+        """
+        Some instructions may extend a 32-bit register to get a 64-bit register, such as::
+
+            [R4.U32+UR4+0x4]
+
+        See :py:meth:`tests.test.sass.instruction.test_address.TestAddressMatcher.test_extend_bits_address_turing75`.
+        """
+        pattern_reg = cls.build_pattern_reg(arch=arch, reg=reg, captured=captured) + PatternBuilder.zero_or_one(s=r'\.U32')
         pattern_offset = cls.build_pattern_offset(arch=arch, offset=offset, captured=captured)
         return TEMPLATE_REG_ADDRESS.format(reg=pattern_reg, offset=pattern_offset)
 

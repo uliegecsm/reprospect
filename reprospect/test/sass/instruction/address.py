@@ -149,9 +149,9 @@ class AddressMatcher:
         match arch.compute_capability.as_int:
             case 70:
                 inner = r'-?' + PatternBuilder.HEXADECIMAL
-            case 75 | 80 | 86 | 89:
+            case 80 | 89:
                 inner = PatternBuilder.any(r'-?' + PatternBuilder.HEXADECIMAL, Register.UREG)
-            case 90 | 100 | 103 | 120 | 121:
+            case 75 | 86 | 90 | 100 | 103 | 120 | 121:
                 inner = PatternBuilder.any(r'-?' + PatternBuilder.HEXADECIMAL, Register.UREG, rf'{Register.UREG}\+-?{PatternBuilder.HEXADECIMAL}')
             case _:
                 raise ValueError(f'unsupported architecture {arch}')
@@ -203,7 +203,12 @@ class AddressMatcher:
                     cls.build_reg_address(arch=arch, reg=reg, offset=offset, captured=captured),
                     cls.build_reg64_address(arch=arch, reg=reg, offset=offset, captured=captured),
                 )
-            case 80 | 86 | 89:
+            case 80:
+                return PatternBuilder.any(
+                    cls.build_reg64_address(arch=arch, reg=reg, offset=offset, captured=captured),
+                    cls.build_desc_reg64_address(arch=arch, reg=reg, desc_ureg=desc_ureg, offset=offset, captured=captured),
+                )
+            case 86 | 89:
                 return cls.build_reg64_address(arch=arch, reg=reg, offset=offset, captured=captured)
             case 90 | 100 | 103 | 120 | 121:
                 return cls.build_desc_reg64_address(arch=arch, reg=reg, desc_ureg=desc_ureg, offset=offset, captured=captured)
@@ -276,6 +281,7 @@ class AddressMatcher:
             [R1.64]
             [R2.64+0x10]
             [R14.64+UR6]
+            [R14.64+UR8+0x80]
         """
         pattern_reg = cls.build_pattern_reg(arch=arch, reg=reg, captured=captured)
         pattern_offset = cls.build_pattern_offset(arch=arch, offset=offset, captured=captured)

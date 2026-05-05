@@ -39,3 +39,13 @@ class CuBLAS:
             cwd / file
             for file in CuObjDump.extract_elf(file=self.libcublas, arch=arch, name=name, cwd=cwd)
         )
+
+    def cuobjdump(self, *, arch: NVIDIAArch, cwd: pathlib.Path, **kwargs) -> CuObjDump:
+        """
+        Pick a random cubin file from :py:attr:`libcublas` with :py:meth:`extract`
+        and read it with :py:class:`reprospect.tools.binaries.CuObjDump`.
+        """
+        [cubin] = self.extract(arch=arch, cwd=cwd, randomly=True)
+        assert cubin.is_file()
+
+        return CuObjDump(file=cubin, arch=arch, **kwargs)

@@ -1,7 +1,9 @@
+import pathlib
 import typing
 
 import pytest
 
+from reprospect.test.sass.instruction import InstructionMatch
 from reprospect.test.sass.instruction.address import (
     AddressMatcher,
     GenericOrGlobalAddressMatch,
@@ -13,8 +15,11 @@ from reprospect.test.sass.instruction.instruction import OpcodeModsWithOperandsM
 from reprospect.test.sass.instruction.memory import MemorySpace
 from reprospect.test.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.sass.decode import Instruction
+from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters
+from tests.test.sass.test_instruction import get_decoder
 
 
 class TestAddressMatcher:
@@ -181,6 +186,47 @@ class TestAddressMatcher:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('BLACKWELL120')
 
         assert AddressMatcher.build_pattern(arch=ARCH) == r'desc\[UR[0-9]+\]\[(?:R[0-9]+|UR[0-9]+)\.64(?:\+(?:-?0x[0-9A-Fa-f]+|UR[0-9]+|UR[0-9]+\+-?0x[0-9A-Fa-f]+))?\]'
+
+    def test_extend_bits_address_turing75(self, request, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI) -> None:
+        """
+        Generate a SASS instruction such as::
+
+            ST.E.STRONG.SYS [R4.U32+UR4+0x4], R3
+
+        and match it.
+        """
+        ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_compute_capability(75)
+        CODE: typing.Final[str] = """\
+#include <cuda/atomic>
+
+__global__ void reproducer(int* __restrict__ const ptr, const int value) {
+    const unsigned int offset = threadIdx.x;
+    if (offset%6 > 2) {
+        int* ptr_32 = (int*)((char*)ptr + offset + sizeof(int));
+        cuda::atomic_ref<int, cuda::thread_scope_system> ref(ptr_32[0]);
+        ref.store(value, cuda::memory_order_seq_cst);
+    }
+}
+"""
+        FILE = workdir / f'{request.node.originalname}.cu'
+        FILE.write_text(CODE)
+
+        decoder, _ = get_decoder(
+            cwd=workdir, arch=ARCH,
+            file=FILE, cmake_file_api=cmake_file_api, ptx=False,
+        )
+
+        matcher = OpcodeModsWithOperandsMatcher(
+            opcode='ST', modifiers=('E', 'STRONG', 'SYS'),
+            operands=(
+                AddressMatcher.build_generic_or_global_address(arch=ARCH),
+                Register.REG,
+            ),
+        )
+
+        red: list[tuple[Instruction, InstructionMatch]] = [(inst, matched) for inst in decoder.instructions if (matched := matcher.match(inst))]
+        assert len(red) == 1, matcher
+        assert '.U32' in red[0][1].operands[0]
 
     @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
     def test(self, parameters: Parameters) -> None:

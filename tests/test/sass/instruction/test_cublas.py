@@ -87,6 +87,7 @@ class TestCuBLAS:
         # Matchers for other operands.
         matchers_op.extend((
             regex.compile(r'B[0-9]+'),
+            regex.compile(r'SB[0-9]'),
             regex.compile(r'PR'),
             regex.compile(r'(SR_TID|SR_CTAID)\.(X|Y|Z)'),
             regex.compile(r'SR(X|Y|Z)'),

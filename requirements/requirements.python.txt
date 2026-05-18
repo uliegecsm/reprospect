@@ -1,4 +1,4 @@
-coverage==7.13.5
+coverage==7.14.0
 matplotlib
 mypy==2.0.0
 myst-nb>=1.4.0

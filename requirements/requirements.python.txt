@@ -1,6 +1,6 @@
 coverage==7.14.0
 matplotlib
-mypy==2.0.0
+mypy==2.1.0
 myst-nb>=1.4.0
 nvtx>=0.2.15
 pylint>=4.0.5

@@ -32,25 +32,37 @@ class Dispatch {
 
         const auto device_handle = Kokkos::Experimental::get_device_handle(exec);
 
+        Kokkos::Profiling::pushRegion("graph - constructor");
         graph_t graph{device_handle};
+        Kokkos::Profiling::popRegion();
 
         const auto root = graph.root_node();
 
-        for (unsigned short inode = 0; inode < nnodes; ++inode) {
-            root.then_parallel_for(
-                Kokkos::Experimental::node_props(device_handle),
-                Kokkos::RangePolicy<Kokkos::Cuda>(0, nnodes),
-                Functor<view_t>{.data = data});
+        {
+            const Kokkos::Profiling::ScopedRegion region("graph - definition");
+            for (unsigned short inode = 0; inode < nnodes; ++inode) {
+                root.then_parallel_for(
+                    Kokkos::Experimental::node_props(device_handle),
+                    Kokkos::RangePolicy<Kokkos::Cuda>(0, nnodes),
+                    Functor<view_t>{.data = data});
+            }
         }
 
-        graph.instantiate();
-
-        for (unsigned short int isub = 0; isub < 2; ++isub) {
-            const Kokkos::Profiling::ScopedRegion region("graph - submit - " + std::to_string(isub));
-            graph.submit(exec);
+        {
+            const Kokkos::Profiling::ScopedRegion region("graph - instantiation");
+            graph.instantiate();
         }
 
-        exec.fence("after graph submissions");
+        {
+            const Kokkos::Profiling::ScopedRegion region("graph - submit");
+
+            for (unsigned short int isub = 0; isub < 2; ++isub) {
+                const Kokkos::Profiling::ScopedRegion region(std::to_string(isub));
+                graph.submit(exec);
+            }
+
+            exec.fence("after graph submissions");
+        }
 
         for (unsigned short inode = 0; inode < nnodes; ++inode)
             if (data[inode] != 2 * nnodes)

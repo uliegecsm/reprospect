@@ -62,7 +62,7 @@ class TestNSYS(TestDispatch):
         """
         Get kernels from `kernels` table that are correlated to the :code:`cudaGraphLaunch` API call in the NVTX region `label`.
         """
-        api = report.get_events(table='CUPTI_ACTIVITY_KIND_RUNTIME', accessors=('dispatch', label))
+        api = report.get_events(table='CUPTI_ACTIVITY_KIND_RUNTIME', accessors=('dispatch', 'graph - submit', label))
 
         launch = nsys.Report.single_row(data=api[api['name'].apply(nsys.strip_cuda_api_suffix) == 'cudaGraphLaunch'])
 
@@ -89,7 +89,7 @@ class TestNSYS(TestDispatch):
             logging.info(f'CUDA stream create API call:\n{create}')
 
             # However, the stream is used for the fencing, so its stream ID can still be retrieved.
-            api = report.get_events(table='CUPTI_ACTIVITY_KIND_SYNCHRONIZATION', accessors=('dispatch', 'after graph submissions'), stringids=None)
+            api = report.get_events(table='CUPTI_ACTIVITY_KIND_SYNCHRONIZATION', accessors=('dispatch', 'graph - submit', 'after graph submissions'), stringids=None)
             fence = nsys.Report.single_row(data=api)
             logging.info(f'CUDA stream synchronize API call:\n{fence}')
 
@@ -102,16 +102,46 @@ class TestNSYS(TestDispatch):
 
             logging.info(f'The create stream ID is {stream_id}.')
 
+            # Get the events related to node creation during graph constructor.
+            # It corresponds to the root node.
+            nodes_constructor = report.get_events(table='CUDA_GRAPH_NODE_EVENTS', accessors=('dispatch', 'graph - constructor'))
+            logging.info(f'Node creation events during graph constructor are:\n{rich_helpers.to_string(rich_helpers.df_to_table(nodes_constructor))}')
+
+            assert len(nodes_constructor) == 1
+
+            # Get the events related to node creation during graph definition.
+            nodes_definition = report.get_events(table='CUDA_GRAPH_NODE_EVENTS', accessors=('dispatch', 'graph - definition'))
+            logging.info(f'Node creation events during graph definition are:\n{rich_helpers.to_string(rich_helpers.df_to_table(nodes_definition))}')
+
+            assert len(nodes_definition) == self.NODE_COUNT
+
+            # Get the events related to node creation during graph instantiation.
+            # According to https://docs.nvidia.com/nsight-systems/AnalysisGuide/index.html#common-sqlite-examples, nodes are created
+            # when the graph is instantiated. Those nodes would have their 'originalGraphNodeId' set to the node they refer to.
+            # However, there are also nodes with invalid 'originalGraphNodeId'; it is unclear to what action they relate to.
+            nodes_instantiation = report.get_events(table='CUDA_GRAPH_NODE_EVENTS', accessors=('dispatch', 'graph - instantiation'))
+            logging.info(f'Node creation events during graph instantiation are:\n{rich_helpers.to_string(rich_helpers.df_to_table(nodes_instantiation))}')
+
+            assert len(nodes_instantiation) == (self.NODE_COUNT + 1) * 2
+
+            nodes_instantiation = nodes_instantiation.dropna()
+            assert len(nodes_instantiation) == self.NODE_COUNT + 1
+
+            combined_graph_node_ids = pandas.concat((nodes_constructor['graphNodeId'], nodes_definition['graphNodeId']))
+            assert not combined_graph_node_ids.duplicated().any()
+
+            assert nodes_instantiation['originalGraphNodeId'].isin(combined_graph_node_ids).all()
+
             # Get all kernels.
             kernels = report.table(name='CUPTI_ACTIVITY_KIND_KERNEL')
 
             # Select kernels from the first graph submission.
-            kernels_0 = self.get(report=report, kernels=kernels, label='graph - submit - 0')
+            kernels_0 = self.get(report=report, kernels=kernels, label='0')
             logging.info(f'Kernels for the first submission are:\n{rich_helpers.to_string(rich_helpers.df_to_table(kernels_0.T.reset_index()))}.')
 
             # Select kernels from the second graph submission.
-            kernels_1 = self.get(report=report, kernels=kernels, label='graph - submit - 1')
-            logging.info(f'Kernels for the second submission are:\n{rich_helpers.to_string(rich_helpers.df_to_table(kernels_0.T.reset_index()))}.')
+            kernels_1 = self.get(report=report, kernels=kernels, label='1')
+            logging.info(f'Kernels for the second submission are:\n{rich_helpers.to_string(rich_helpers.df_to_table(kernels_1.T.reset_index()))}.')
 
             # Check kernels of the first graph submission.
             assert len(kernels_0) == self.NODE_COUNT

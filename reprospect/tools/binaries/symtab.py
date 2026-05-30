@@ -1,6 +1,7 @@
 import pathlib
 
 import pandas
+from elftools.elf.sections import SymbolTableSection
 
 from reprospect.tools.binaries.elf import ELF
 
@@ -12,6 +13,8 @@ def get_symbol_table(*, file: pathlib.Path) -> pandas.DataFrame:
     with ELF(file=file) as elf:
         assert elf.elf is not None
         [section] = elf.elf.iter_sections(type='SHT_SYMTAB')
+
+        assert isinstance(section, SymbolTableSection)
 
         return pandas.DataFrame(
             data=(

@@ -180,6 +180,7 @@ __global__ void atomic_exch_kernel() {
         it should generate :py:data:`reprospect.test.sass.instruction.ThreadScope.DEVICE` instructions. However, as noted in:
 
         * https://github.com/uliegecsm/reprospect/issues/556
+        * https://forums.developer.nvidia.com/t/atomiccas-cuda-13-2-unexpectedly-generates-system-scope-atomic-instruction-starting-from-cc100/365449
 
         it may unexpectedly generate :py:data:`reprospect.test.sass.instruction.ThreadScope.SYSTEM` instructions.
 

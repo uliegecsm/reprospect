@@ -220,18 +220,22 @@ class TestSASS(TestDivision):
             case 120:
                 match self.compiler(toolchain='CUDA').id:
                     case 'NVIDIA':
-                        if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.1'):
+                        cuda_version = semantic_version.Version(os.environ['CUDA_VERSION'])
+                        if cuda_version in semantic_version.SimpleSpec('<13.1'):
                             expt_ilogbscalbn = {RegisterType.GPR: (40, 33), RegisterType.PRED: (3, 3), RegisterType.UGPR: (14, 10)}
                             expt_logbscalbn =  {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (11, 7)}
-                        else:
+                        elif cuda_version in semantic_version.SimpleSpec('<13.2'):
                             if on_arm64:
                                 expt_ilogbscalbn = {RegisterType.GPR: (42, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                             else:
                                 expt_ilogbscalbn = {RegisterType.GPR: (45, 39), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
-                            if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('<13.2'):
-                                expt_logbscalbn = {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
-                            else:
-                                expt_logbscalbn = {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                            expt_logbscalbn = {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                        elif cuda_version in semantic_version.SimpleSpec('<13.3'):
+                            expt_ilogbscalbn = {RegisterType.GPR: (45, 39), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                            expt_logbscalbn =  {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                        else:
+                            expt_ilogbscalbn = {RegisterType.GPR: (45, 38), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
+                            expt_logbscalbn =  {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                         expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                     case 'Clang':
                         expt_ilogbscalbn =   {RegisterType.GPR: (45, 42), RegisterType.PRED: (4, 4), RegisterType.UGPR: (15, 11)}

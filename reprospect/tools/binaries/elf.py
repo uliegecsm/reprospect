@@ -60,6 +60,7 @@ class NvInfoEIATTR(enum.IntEnum):
     ANNOTATIONS = 85
     MERCURY_ISA_VERSION = 95
     LANGUAGE = 102
+    NVSAL_SW_WAR = 107
 
 class NvInfoEIFMT(enum.IntEnum):
     """

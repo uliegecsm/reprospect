@@ -211,7 +211,7 @@ class TestDivision(CMakeAwareTestCase):
                 matplotlib.text.Text(text=''),
                 *MARKERS.values(),
             ),
-            loc='outside center left',
+            loc='outside left center',
             frameon=False,
             handler_map={matplotlib.text.Text: HandlerText()},
             fontsize=FONTSIZE,

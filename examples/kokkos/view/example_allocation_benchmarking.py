@@ -275,7 +275,7 @@ class TestAllocation(CMakeAwareTestCase):
                 matplotlib.text.Text(text=''),
                 threshold,
             ),
-            loc='outside center left',
+            loc='outside left center',
             frameon=False,
             handler_map={matplotlib.text.Text: HandlerText()},
             fontsize=FONTSIZE,

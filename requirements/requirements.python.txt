@@ -4,7 +4,7 @@ mypy==2.1.0
 myst-nb>=1.4.0
 nvtx>=0.2.15
 pylint>=4.0.6
-ruff==0.15.17
+ruff==0.15.18
 setuptools==82.0.1
 sphinx<=8.2.3
 sphinx-copybutton==0.5.2

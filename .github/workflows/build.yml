@@ -33,7 +33,7 @@ jobs:
     pre-commit:
       runs-on: ubuntu-latest
       steps:
-        - uses: actions/checkout@v6
+        - uses: actions/checkout@v7
         - uses: actions/setup-python@v6.2.0
           with:
             python-version: '3.14'
@@ -45,7 +45,7 @@ jobs:
             build-images: ${{ steps.build-images.outputs.build-images }}
             setup-job-matrix-image: ${{ steps.setup-job-matrix-image.outputs.setup-job-matrix-image }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             # Images generally need a rebuild either because of file changes or it was requested during the workflow dispatch.
             # Otherwise, the jobs can be skipped, thus speeding up the workflow.
@@ -114,7 +114,7 @@ jobs:
         needs: [setup-skips]
         if: ${{ needs.setup-skips.outputs.setup-job-matrix-image == 'true' }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - uses: docker/login-action@v4
@@ -149,7 +149,7 @@ jobs:
             matrix_tests: ${{ steps.strategy.outputs.matrix_tests }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - id  : strategy
@@ -168,7 +168,7 @@ jobs:
             packages: write
         if: ${{ needs.setup-skips.outputs.build-images == 'true' }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - uses: docker/login-action@v4
               with:
@@ -210,7 +210,7 @@ jobs:
         name: build-images (${{ matrix.name }})
         if: ${{ ! failure() && ! cancelled() && needs.setup-skips.outputs.build-images == 'true' }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - uses: docker/login-action@v4
@@ -273,7 +273,7 @@ jobs:
         container: ${{ matrix.tests.container }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - run: |
@@ -326,7 +326,7 @@ jobs:
                       build: win_amd64
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - uses: actions/setup-python@v6
               with:
                   python-version: '3.11'
@@ -347,7 +347,7 @@ jobs:
         container:
             image: ubuntu:24.04
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - uses: actions/setup-python@v6
               with:
                   python-version: '3.11'
@@ -399,7 +399,7 @@ jobs:
               run: |
                 reprospect-install-nsight-systems --help
 
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
             - run: test -d reprospect && rm -rf reprospect
 
@@ -432,7 +432,7 @@ jobs:
             image: ${{ needs.setup-job-matrix.outputs.doc_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - uses: actions/download-artifact@v8
               with:
@@ -465,7 +465,7 @@ jobs:
             image: ${{ needs.setup-job-matrix.outputs.doc_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - run: |
@@ -500,7 +500,7 @@ jobs:
         steps:
             - run: apk add git
 
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
             - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
             - id: changed-files
@@ -529,7 +529,7 @@ jobs:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - name: On the sources.
               run: |
@@ -560,7 +560,7 @@ jobs:
             image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - name: On the strategy.
               run: |

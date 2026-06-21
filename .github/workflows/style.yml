@@ -15,7 +15,7 @@ jobs:
         container:
             image: python:3.12
         steps:
-          - uses: actions/checkout@v6
+          - uses: actions/checkout@v7
 
           - uses: andreasabel/fix-whitespace-action@v1.3.1
             with:
@@ -28,7 +28,7 @@ jobs:
         container:
             image: python:3.12
         steps:
-            - uses: actions/checkout@v6
+            - uses: actions/checkout@v7
 
             - run: pip install nbstripout
 

@@ -39,6 +39,7 @@ packages = [
     "reprospect.tools",
     "reprospect.tools.binaries",
     "reprospect.tools.ncu",
+    "reprospect.tools.nsys",
     "reprospect.tools.sass",
     "reprospect.utils",
 ]

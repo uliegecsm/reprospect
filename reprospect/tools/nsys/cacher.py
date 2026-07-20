@@ -1,5 +1,6 @@
 # pylint: disable=duplicate-code
 import json
+import logging
 import os
 import pathlib
 import shlex
@@ -11,7 +12,7 @@ import typing
 import blake3
 
 from reprospect.tools import cacher
-from reprospect.tools.ncu.session import Command, Session
+from reprospect.tools.nsys.session import Command, Session
 from reprospect.utils import ldd
 
 if sys.version_info >= (3, 12):
@@ -21,38 +22,37 @@ else:
 
 class Cacher(cacher.Cacher):
     """
-    Cacher tailored to ``ncu`` results.
+    Cacher tailored to ``nsys`` results.
 
-    ``ncu`` require quite some time to acquire results, especially when there are many kernels to profile and/or
-    many metrics to collect.
+    ``nsys`` runs require quite some time to acquire results.
 
     On a cache hit, the cacher will serve:
 
-    - ``<cache_key>.ncu-rep`` file
-    - ``.log`` file
+    - ``.nsys-rep`` file
+    - ``.sqlite`` file
 
-    On a cache miss, ``ncu`` is launched and the cache entry populated accordingly.
+    On a cache miss, ``nsys`` is launched and the cache entry populated accordingly.
 
     .. note::
 
-        It is assumed that hashing is faster than running ``ncu`` itself.
+        It is assumed that hashing is faster than running ``nsys`` itself.
 
     .. warning::
 
         The cache should not be shared between machines, since there may be differences between machines
         that influence the results but are not included in the hashing.
     """
-    TABLE: typing.ClassVar[str] = 'ncu'
+    TABLE: typing.ClassVar[str] = 'nsys'
 
     def __init__(self, *, directory: str | pathlib.Path | None = None):
-        super().__init__(directory=directory or (pathlib.Path(os.environ['HOME']) / '.ncu-cache'))
+        super().__init__(directory=directory or (pathlib.Path(os.environ['HOME']) / '.nsys-cache'))
 
     def hash_impl(self, *, command: Command) -> blake3.blake3:
         """
         Hash based on:
 
-        * ``ncu`` version
-        * ``ncu`` options (but not the output and log files)
+        * ``nsys`` version
+        * ``nsys`` options (but not the output files)
         * executable content
         * executable arguments
         * linked libraries
@@ -60,7 +60,7 @@ class Cacher(cacher.Cacher):
         """
         hasher = blake3.blake3() # pylint: disable=not-callable
 
-        hasher.update(subprocess.check_output(('ncu', '--version')))
+        hasher.update(subprocess.check_output(('nsys', '--version')))
 
         if command.opts:
             hasher.update(shlex.join(command.opts).encode())
@@ -85,20 +85,16 @@ class Cacher(cacher.Cacher):
     @override
     def populate(self, directory: pathlib.Path, **kwargs) -> None:
         """
-        When there is a cache miss, call :py:meth:`reprospect.tools.ncu.Session.run`.
+        When there is a cache miss, call :py:meth:`reprospect.tools.nsys.Session.run`.
         Fill the `directory` with the artifacts.
         """
         command = kwargs.pop('command')
 
         Session(command=command).run(**kwargs)
 
-        shutil.copy(dst=directory, src=command.output.with_suffix('.ncu-rep'))
-        shutil.copy(dst=directory, src=command.log)
+        shutil.copy(dst=directory, src=command.output)
 
-    def run(self,
-        command: Command,
-        **kwargs,
-    ) -> cacher.Cacher.Entry:
+    def run(self, command: Command, **kwargs) -> cacher.Cacher.Entry:
         """
         On a cache hit, copy files from the cache entry.
         """
@@ -108,3 +104,26 @@ class Cacher(cacher.Cacher):
             shutil.copytree(entry.directory, command.output.parent, dirs_exist_ok=True)
 
         return entry
+
+    @staticmethod
+    def export_to_sqlite(
+        command: Command,
+        entry: cacher.Cacher.Entry,
+        **kwargs,
+    ) -> pathlib.Path:
+        """
+        Export report to ``.sqlite``.
+        """
+        output_file_sqlite = command.output.with_suffix('.sqlite')
+
+        cached = entry.directory / output_file_sqlite.name
+
+        if cached.is_file():
+            logging.info(f'Serving {output_file_sqlite} from the cache entry {entry}.')
+            shutil.copyfile(src=cached, dst=output_file_sqlite)
+        else:
+            logging.info(f'Populating the cache entry {entry} with {output_file_sqlite} from the cache entry {entry}.')
+            Session(command=command).export_to_sqlite(**kwargs)
+            shutil.copyfile(src=output_file_sqlite, dst=cached)
+
+        return output_file_sqlite

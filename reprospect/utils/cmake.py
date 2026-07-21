@@ -105,7 +105,7 @@ class FileAPI:
 
         return configurations[0]
 
-    @functools.lru_cache(maxsize=128) # noqa: B019
+    @functools.lru_cache(maxsize=128) # ruff:ignore[cached-instance-method]
     def target(self, name: str) -> TargetDict:
         """
         Retrieve the information available for the target `name`.
@@ -116,7 +116,7 @@ class FileAPI:
                     return json.load(file)
         raise ValueError(f'Target {name!r} not found.')
 
-    @functools.lru_cache(maxsize=128) # noqa: B019
+    @functools.lru_cache(maxsize=128) # ruff:ignore[cached-instance-method]
     def compiler(self, toolchain: str) -> cmake_file_api.kinds.toolchains.v1.CMakeToolchainCompiler:
         """
         Retrieve the compiler for a given toolchain.

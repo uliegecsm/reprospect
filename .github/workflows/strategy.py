@@ -84,6 +84,7 @@ class Config:
     platforms: tuple[Platform, ...]
     enable_tests: bool | None = None
     enable_examples: bool | None = None
+    use_for_documentation: bool | None = None
 
     def __post_init__(self) -> None:
         if 'CUDA' not in self.compilers:
@@ -104,6 +105,7 @@ class Config:
         for platform in self.platforms:
             enable_tests    = self.enable_tests    is not False
             enable_examples = self.enable_examples is not False
+            use_for_documentation = self.use_for_documentation is True
 
             yield {
                 'cuda_version': self.cuda_version,
@@ -114,6 +116,7 @@ class Config:
                 'platform': platform,
                 'enable_tests': enable_tests,
                 'enable_examples': enable_examples,
+                'use_for_documentation': use_for_documentation,
             }
 
 def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[str, str, str]:
@@ -182,7 +185,7 @@ def require_arch(spec: Runner) -> dict[str, str]:
         return {'NVIDIA_REQUIRE_ARCH': f'arch={spec.arch.compute_capability.major}.{spec.arch.compute_capability.minor}'}
     return {'NVIDIA_VISIBLE_DEVICES': ''}
 
-def runs_on(spec: Runner, jtype: typing.Literal['tests', 'examples']) -> tuple[str, ...]:
+def runs_on(spec: Runner, jtype: typing.Literal['tests', 'examples', 'documentation']) -> tuple[str, ...]:
     """
     We do require the architecture as a label if the architecture is part of our
     available runner fleet.
@@ -291,6 +294,12 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
         partial['examples']['container']['env'] = require_arch(spec=spec)
         partial['examples']['runs-on'] = runs_on(spec=spec, jtype='examples')
 
+    # Specifics to the 'documentation' job.
+    if partial['use_for_documentation']:
+        partial['documentation'] = {'container': {'image': partial['kokkos']}}
+        partial['documentation']['container']['env'] = require_arch(spec=spec)
+        partial['documentation']['runs-on'] = runs_on(spec=spec, jtype='documentation')
+
     partial['build-images'] = {
         'runs-on': ('self-hosted', 'linux', 'docker', f"{partial['platform'].architecture}"),
     }
@@ -335,7 +344,17 @@ def main(*, args: argparse.Namespace) -> None:
         python_version='3.13',
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
-        platforms=(Platform.from_str('linux/amd64'), Platform.from_str('linux/arm64')),
+        platforms=(Platform.from_str('linux/amd64'),),
+        use_for_documentation=True,
+    ), args=args))
+
+    matrix.extend(from_config(Config(
+        cuda_version='13.1.0',
+        ubuntu_version='24.04',
+        python_version='3.13',
+        compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=12, minor=0),
+        platforms=(Platform.from_str('linux/arm64'),),
     ), args=args))
 
     matrix.extend(from_config(Config(
@@ -483,8 +502,10 @@ def main(*, args: argparse.Namespace) -> None:
     print(f"matrix_examples={json.dumps([x for x in matrix if 'examples' in x], default = str)}")
     print(f"matrix_tests={json.dumps([x for x in matrix if 'tests' in x], default = str)}")
 
-    print(f"deploy_image={matrix[0]['image']}")
-    print(f"doc_image={matrix[0]['kokkos']}")
+    job_documentation = next(x for x in matrix if 'documentation' in x)
+    print(f"job_documentation={json.dumps(job_documentation, default=str)}")
+
+    print(f"image_deploy={matrix[0]['image']}")
 
 if __name__ == '__main__':
 

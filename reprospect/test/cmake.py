@@ -76,7 +76,7 @@ class CMakeMixin(abc.ABC):
         """
         return self.cmake_file_api.target(self.get_target_name())
 
-    @functools.lru_cache(maxsize=128) # noqa: B019
+    @functools.lru_cache(maxsize=128) # ruff:ignore[cached-instance-method]
     def compiler(self, *, toolchain: str) -> CMakeToolchainCompiler:
         return self.cmake_file_api.compiler(toolchain=toolchain)
 

@@ -254,10 +254,10 @@ class TkInfo:
             yield TkInfo(
                 note_version=toolkit_version,
                 object_filename=cls.extract(arr=entry['n_desc'], offset=object_filename),
-                tool_name=      cls.extract(arr=entry['n_desc'], offset=tool_name),  # noqa: E251
-                tool_version=   cls.extract(arr=entry['n_desc'], offset=tool_version),  # noqa: E251
-                tool_branch=    cls.extract(arr=entry['n_desc'], offset=tool_branch),  # noqa: E251
-                tool_options=   cls.extract(arr=entry['n_desc'], offset=tool_options),  # noqa: E251
+                tool_name=      cls.extract(arr=entry['n_desc'], offset=tool_name),  # ruff:ignore[unexpected-spaces-around-keyword-parameter-equals]
+                tool_version=   cls.extract(arr=entry['n_desc'], offset=tool_version),  # ruff:ignore[unexpected-spaces-around-keyword-parameter-equals]
+                tool_branch=    cls.extract(arr=entry['n_desc'], offset=tool_branch),  # ruff:ignore[unexpected-spaces-around-keyword-parameter-equals]
+                tool_options=   cls.extract(arr=entry['n_desc'], offset=tool_options),  # ruff:ignore[unexpected-spaces-around-keyword-parameter-equals]
             )
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -299,8 +299,8 @@ class CuInfo:
                 raise RuntimeError(f'{entry!r} is not a valid .note.nv.cuinfo.')
 
             yield CuInfo(
-                note_version=   struct.unpack('<H', entry['n_desc'][0:2])[0],  # noqa: E251
-                virtual_sm=     struct.unpack('<H', entry['n_desc'][2:4])[0],  # noqa: E251
+                note_version=   struct.unpack('<H', entry['n_desc'][0:2])[0],  # ruff:ignore[unexpected-spaces-around-keyword-parameter-equals]
+                virtual_sm=     struct.unpack('<H', entry['n_desc'][2:4])[0],  # ruff:ignore[unexpected-spaces-around-keyword-parameter-equals]
                 toolkit_version=struct.unpack('<I', entry['n_desc'][4:8])[0],
             )
 

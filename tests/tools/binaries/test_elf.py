@@ -125,7 +125,7 @@ def get_cubin(arch: NVIDIAArch, cublas: CuBLAS, workdir: pathlib.Path) -> pathli
     assert cubin.is_file()
     return cubin
 
-def get_cuinfo_and_tkinfo(*, arch: NVIDIAArch, file: pathlib.Path, version: semantic_version.Version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> tuple[CuInfo | None, TkInfo | None]: # noqa: B008
+def get_cuinfo_and_tkinfo(*, arch: NVIDIAArch, file: pathlib.Path, version: semantic_version.Version = semantic_version.Version(os.environ['CUDA_VERSION'])) -> tuple[CuInfo | None, TkInfo | None]: # ruff:ignore[function-call-in-default-argument]
     """
     Extract `cuinfo` and `tkinfo` note sections.
 

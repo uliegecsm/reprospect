@@ -142,8 +142,8 @@ jobs:
         container:
             image: ghcr.io/${{ github.repository }}/setup-job-matrix:latest
         outputs:
-            deploy_image: ${{ steps.strategy.outputs.deploy_image }}
-            doc_image: ${{ steps.strategy.outputs.doc_image }}
+            image_deploy: ${{ steps.strategy.outputs.image_deploy }}
+            job_documentation: ${{ steps.strategy.outputs.job_documentation }}
             matrix_examples: ${{ steps.strategy.outputs.matrix_examples }}
             matrix_images: ${{ steps.strategy.outputs.matrix_images }}
             matrix_tests: ${{ steps.strategy.outputs.matrix_tests }}
@@ -429,7 +429,7 @@ jobs:
         ]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
-            image: ${{ needs.setup-job-matrix.outputs.doc_image }}
+            image: ${{ fromJSON(needs.setup-job-matrix.outputs.job_documentation).documentation.container.image }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v7
@@ -460,9 +460,8 @@ jobs:
             tests,
             examples
         ]
-        runs-on: [self-hosted, linux, docker, amd64]
-        container:
-            image: ${{ needs.setup-job-matrix.outputs.doc_image }}
+        runs-on: ${{ fromJSON(needs.setup-job-matrix.outputs.job_documentation).documentation['runs-on'] }}
+        container: ${{ fromJSON(needs.setup-job-matrix.outputs.job_documentation).documentation.container }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v7
@@ -477,12 +476,12 @@ jobs:
 
             - uses: actions/download-artifact@v8
               with:
-                  name: tests-sm_120-13.1.0-GNU-14-NVIDIA-24.04-3.13-linux-amd64
+                  name: tests-${{ fromJSON(needs.setup-job-matrix.outputs.job_documentation).unique-id }}
                   path: artifacts
 
             - uses: actions/download-artifact@v8
               with:
-                  name: examples-sm_120-13.1.0-GNU-14-NVIDIA-24.04-3.13-linux-amd64
+                  name: examples-${{ fromJSON(needs.setup-job-matrix.outputs.job_documentation).unique-id }}
                   path: artifacts
 
             - run: cd docs && make -j4 doctest
@@ -526,7 +525,7 @@ jobs:
         runs-on: [self-hosted, linux, docker, amd64]
         needs: [pre-commit, setup-job-matrix, build-images]
         container:
-            image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
+            image: ${{ needs.setup-job-matrix.outputs.image_deploy }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v7
@@ -557,7 +556,7 @@ jobs:
         runs-on: [self-hosted, linux, docker, amd64]
         needs: [pre-commit, setup-job-matrix, build-images]
         container:
-            image: ${{ needs.setup-job-matrix.outputs.deploy_image }}
+            image: ${{ needs.setup-job-matrix.outputs.image_deploy }}
         if: ${{ ! failure() && ! cancelled() }}
         steps:
             - uses: actions/checkout@v7

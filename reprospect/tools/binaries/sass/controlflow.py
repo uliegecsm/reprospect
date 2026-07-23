@@ -4,8 +4,8 @@ import typing
 
 import yaml
 
-from reprospect.testing.sass.instruction.instruction import Predicate
-from reprospect.testing.sass.instruction.pattern import PatternBuilder
+from reprospect.testing.binaries.sass.instruction.instruction import Predicate
+from reprospect.testing.binaries.sass.instruction.pattern import PatternBuilder
 from reprospect.tools.binaries.sass.decode import Instruction
 
 

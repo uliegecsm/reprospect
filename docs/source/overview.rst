@@ -31,7 +31,7 @@ such as the integration of such analyses in CI/CD pipelines and their increased 
 
    Built on top of the `CUDA binary utilities`_ (``cuobjdump`` and ``nvdisasm``) to extract information from CUDA binaries,
    such as the SASS instructions that make up a kernel, the associated control flow instructions, the resource usage, and so on.
-   Notably, :py:mod:`reprospect.testing.sass` provides matchers to validate the presence of specific instruction patterns in SASS code.
+   Notably, :py:mod:`reprospect.testing.binaries.sass` provides matchers to validate the presence of specific instruction patterns in SASS code.
 
 In order to facilitate its integration in CI/CD pipelines, `ReProspect` has functionalities to interact with the build system,
 such as functionalities to obtain information about the compiler toolchain. Currently, these functionalities have been implemented only for the `CMake`_ build system.

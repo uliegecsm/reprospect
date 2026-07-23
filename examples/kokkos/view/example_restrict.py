@@ -114,24 +114,24 @@ import pytest
 import semantic_version
 
 from reprospect.testing import CMakeAwareTestCase, environment
-from reprospect.testing.sass.composite import (
+from reprospect.testing.binaries.sass.composite import (
     any_of,
     instruction_is,
     instructions_contain,
     interleaved_instructions_are,
 )
-from reprospect.testing.sass.controlflow.block import BasicBlockMatcher
-from reprospect.testing.sass.instruction import (
+from reprospect.testing.binaries.sass.controlflow.block import BasicBlockMatcher
+from reprospect.testing.binaries.sass.instruction import (
     LoadGlobalMatcher,
     OpcodeModsWithOperandsMatcher,
     StoreGlobalMatcher,
 )
-from reprospect.testing.sass.instruction.integer import (
+from reprospect.testing.binaries.sass.instruction.integer import (
     IntAdd3Matcher,
     LEAMatcher,
 )
-from reprospect.testing.sass.instruction.register import Register
-from reprospect.testing.sass.matchers.add_int32 import AddInt32Matcher
+from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.matchers.add_int32 import AddInt32Matcher
 from reprospect.tools import ncu
 from reprospect.tools.binaries.cuobjdump import CuObjDump
 from reprospect.tools.binaries.sass.controlflow import ControlFlow, Graph

@@ -56,8 +56,11 @@ import typing
 import pytest
 
 from reprospect.testing import environment
+from reprospect.testing.binaries.sass.instruction import (
+    LoadGlobalMatcher,
+    StoreGlobalMatcher,
+)
 from reprospect.testing.case import CMakeAwareTestCase
-from reprospect.testing.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.binaries.sass import Decoder
 from reprospect.tools.ncu import (

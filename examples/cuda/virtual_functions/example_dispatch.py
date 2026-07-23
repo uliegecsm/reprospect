@@ -38,10 +38,12 @@ import typing
 
 import pytest
 
-from reprospect.testing.case import CMakeAwareTestCase
-from reprospect.testing.sass.composite import instruction_is, instructions_contain
-from reprospect.testing.sass.controlflow.block import BasicBlockMatcher
-from reprospect.testing.sass.instruction import (
+from reprospect.testing.binaries.sass.composite import (
+    instruction_is,
+    instructions_contain,
+)
+from reprospect.testing.binaries.sass.controlflow.block import BasicBlockMatcher
+from reprospect.testing.binaries.sass.instruction import (
     AddressMatcher,
     ConstantMatcher,
     Fp32AddMatcher,
@@ -50,7 +52,8 @@ from reprospect.testing.sass.instruction import (
     LoadMatcher,
     OpcodeModsMatcher,
 )
-from reprospect.testing.sass.instruction.memory import MemorySpace
+from reprospect.testing.binaries.sass.instruction.memory import MemorySpace
+from reprospect.testing.case import CMakeAwareTestCase
 from reprospect.tools.binaries import (
     ELF,
     CuObjDump,

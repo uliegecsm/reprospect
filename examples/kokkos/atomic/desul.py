@@ -21,7 +21,7 @@ and resort to the CAS-based implementation otherwise.
 
 To ensure that :code:`Kokkos` implements the right code path, the following matchers can be used:
 
-* :py:class:`reprospect.testing.sass.matchers.cas.AtomicCASMatcher`
+* :py:class:`reprospect.testing.binaries.sass.matchers.cas.AtomicCASMatcher`
 * :py:class:`examples.kokkos.atomic.desul.LockBasedAtomicMatcher`
 
 The following tests:
@@ -42,17 +42,17 @@ import typing
 import semantic_version
 from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
-from reprospect.testing.sass.composite import (
+from reprospect.testing.binaries.sass.composite import (
     instruction_is,
     instructions_are,
     instructions_contain,
 )
-from reprospect.testing.sass.composite_impl import (
+from reprospect.testing.binaries.sass.composite_impl import (
     InSequenceAtMatcher,
     OrderedInSequenceMatcher,
     SequenceMatcher,
 )
-from reprospect.testing.sass.instruction import (
+from reprospect.testing.binaries.sass.instruction import (
     AtomicMatcher,
     BranchMatcher,
     InstructionMatch,
@@ -62,8 +62,8 @@ from reprospect.testing.sass.instruction import (
     OpcodeModsWithOperandsMatcher,
     StoreGlobalMatcher,
 )
-from reprospect.testing.sass.instruction.register import Register
-from reprospect.testing.sass.matchers.move32 import Move32Matcher
+from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.matchers.move32 import Move32Matcher
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass import Instruction
 
@@ -74,7 +74,7 @@ else:
 
 def get_atomic_memory_suffix(compiler: CMakeToolchainCompiler) -> typing.Literal['G', '']:
     """
-    See :py:meth:`tests.testing.sass.test_atomic.TestAtomicMatcher.test_exch_device_ptr`.
+    See :py:meth:`tests.testing.binaries.sass.test_atomic.TestAtomicMatcher.test_exch_device_ptr`.
     """
     match compiler.id:
         case 'NVIDIA':

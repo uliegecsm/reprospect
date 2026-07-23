@@ -33,6 +33,6 @@ For instance, for CUDA 12.8.1, install version 12.8.0.
 For older CUDA versions, ``cuda-bindings`` was part of the ``cuda-python`` package, which can
 be installed likewise via ``pip``.
 
-Note that `ReProspect` provides a helper script, :py:mod:`reprospect.installers.cuda_bindings`,
+Note that `ReProspect` provides a helper script, :py:mod:`reprospect.utils.installers.cuda_bindings`,
 which can be used or whose logic can be followed to conveniently install the appropriate package
 with the appropriate version.

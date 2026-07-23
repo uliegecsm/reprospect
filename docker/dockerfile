@@ -111,25 +111,25 @@ EOF
 FROM requirements-compiler-${CXX_COMPILER_ID} AS python-requirements
 
 RUN --mount=target=/requirements/requirements.txt,type=bind,source=requirements/requirements.txt \
-    --mount=target=/reprospect/installers/cuda_bindings.py,type=bind,source=reprospect/installers/cuda_bindings.py \
+    --mount=target=/reprospect/utils/installers/cuda_bindings.py,type=bind,source=reprospect/utils/installers/cuda_bindings.py \
     --mount=target=/requirements/requirements.python.txt,type=bind,source=requirements/requirements.python.txt <<EOF
     set -ex
 
     python3 -m pip install -r /requirements/requirements.txt
     python3 -m pip install -r /requirements/requirements.python.txt
-    python3 /reprospect/installers/cuda_bindings.py
+    python3 /reprospect/utils/installers/cuda_bindings.py
     python3 -m pip install pytest build
 EOF
 
 # Install Nsight Systems.
 FROM python-requirements AS nsight-systems
 
-RUN --mount=target=/reprospect/installers/nsight_systems.py,type=bind,source=reprospect/installers/nsight_systems.py \
+RUN --mount=target=/reprospect/utils/installers/nsight_systems.py,type=bind,source=reprospect/utils/installers/nsight_systems.py \
     --mount=target=/reprospect/utils/nvcc.py,type=bind,source=reprospect/utils/nvcc.py <<EOF
     set -ex
 
     export PYTHONPATH=/${PYTHONPATH+:}${PYTHONPATH}
-    python3 /reprospect/installers/nsight_systems.py
+    python3 /reprospect/utils/installers/nsight_systems.py
 EOF
 
 ENV PATH=/opt/aistor-binaries/:${PATH}

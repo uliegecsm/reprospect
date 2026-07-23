@@ -17,7 +17,7 @@ from reprospect.testing.sass.instruction import (
     RegisterMatcher,
 )
 from reprospect.testing.sass.matchers.cas import AtomicCASMatcher
-from reprospect.tools.sass import ControlFlow, Decoder
+from reprospect.tools.binaries.sass import ControlFlow, Decoder
 
 from examples.kokkos.atomic import add
 

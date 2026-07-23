@@ -8,8 +8,9 @@ import typing
 import pytest
 
 from reprospect.testing.case import CMakeAwareTestCase
-from reprospect.tools import binaries, sass
-from reprospect.tools.sass.decode import RegisterType
+from reprospect.tools import binaries
+from reprospect.tools.binaries import sass
+from reprospect.tools.binaries.sass.decode import RegisterType
 from reprospect.utils import cmake
 
 from tests.compilation import get_compilation_output
@@ -48,14 +49,14 @@ ISETP_NE_U32_AND = \
 
 class TestRegisterType:
     """
-    Test :py:class:`reprospect.tools.sass.decode.RegisterType`.
+    Test :py:class:`reprospect.tools.binaries.sass.decode.RegisterType`.
     """
     assert str(RegisterType.GPR) == 'R'
     assert RegisterType.GPR.name == 'GPR'
 
 class TestDecoder:
     """
-    Test :py:class:`reprospect.tools.sass.Decoder`.
+    Test :py:class:`reprospect.tools.binaries.sass.Decoder`.
     """
     def test_matchers(self) -> None:
         """
@@ -157,7 +158,7 @@ class TestDecoder:
         """
         Read SASS dumped from ``cuobjdump``.
         """
-        CUDA_FILE = pathlib.Path(__file__).parent.parent.parent / 'assets' / 'saxpy.cu'
+        CUDA_FILE = pathlib.Path(__file__).parent.parent.parent.parent / 'assets' / 'saxpy.cu'
         output, _ = get_compilation_output(
             source=CUDA_FILE,
             cwd=workdir,
@@ -192,7 +193,7 @@ class TestDecoder:
 
     def test_string_representation(self) -> None:
         """
-        Test the string representation :py:class:`reprospect.tools.sass.Decoder`.
+        Test the string representation :py:class:`reprospect.tools.binaries.sass.Decoder`.
         """
         decoder = sass.Decoder()
 
@@ -229,7 +230,7 @@ class TestDecoder:
 
     def test_to_html(self) -> None:
         """
-        Test :py:meth:`reprospect.tools.sass.Decoder.to_html`.
+        Test :py:meth:`reprospect.tools.binaries.sass.Decoder.to_html`.
         """
         ARTIFACT_DIR = pathlib.Path(os.environ['ARTIFACT_DIR'])
         ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)

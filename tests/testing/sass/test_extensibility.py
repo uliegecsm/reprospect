@@ -31,7 +31,7 @@ from reprospect.testing.sass.instruction import (
     InstructionMatcher,
     PatternMatcher,
 )
-from reprospect.tools.sass import ControlCode, Instruction
+from reprospect.tools.binaries.sass import ControlCode, Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

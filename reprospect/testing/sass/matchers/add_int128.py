@@ -12,7 +12,7 @@ from reprospect.testing.sass.instruction import (
 from reprospect.testing.sass.instruction.constant import Constant
 from reprospect.testing.sass.instruction.instruction import ZeroOrOne
 from reprospect.testing.sass.instruction.register import Register
-from reprospect.tools.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decode import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

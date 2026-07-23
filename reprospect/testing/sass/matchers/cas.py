@@ -18,8 +18,8 @@ from reprospect.testing.sass.instruction import (
 from reprospect.testing.sass.instruction.memory import MemorySpace
 from reprospect.testing.sass.matchers.move32 import Move32Matcher
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.sass.controlflow import Graph
-from reprospect.tools.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.controlflow import Graph
+from reprospect.tools.binaries.sass.decode import RegisterType
 
 
 class Operation(typing.Protocol):

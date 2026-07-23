@@ -25,7 +25,7 @@ from reprospect.testing.sass.instruction import (
 from reprospect.testing.sass.instruction.constant import Constant
 from reprospect.testing.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.sass import ControlCode, Instruction
+from reprospect.tools.binaries.sass import ControlCode, Instruction
 
 CONTROL_CODE = ControlCode.decode(code='0x000e220000000800')
 

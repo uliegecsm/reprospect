@@ -17,7 +17,7 @@ from reprospect.testing.sass.instruction import (
 from reprospect.testing.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump
-from reprospect.tools.sass import Decoder
+from reprospect.tools.binaries.sass import Decoder
 from reprospect.utils import cmake
 
 from tests.compilation import get_compilation_output
@@ -59,7 +59,7 @@ __global__ void elementwise_add_restrict_256_wide(Tester* __restrict__ const dst
 @functools.lru_cache(maxsize=128)
 def get_decoder(*, cwd: pathlib.Path, arch: NVIDIAArch, file: pathlib.Path, cmake_file_api: cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:
     """
-    Compile the code in `file` for `arch` and return a :py:class:`reprospect.tools.sass.Decoder`.
+    Compile the code in `file` for `arch` and return a :py:class:`reprospect.tools.binaries.sass.Decoder`.
     """
     output, _ = get_compilation_output(
         source=file,

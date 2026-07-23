@@ -18,7 +18,7 @@ from reprospect.testing.sass.instruction import (
     InstructionMatcher,
     RegisterMatcher,
 )
-from reprospect.tools.sass import Instruction
+from reprospect.tools.binaries.sass import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

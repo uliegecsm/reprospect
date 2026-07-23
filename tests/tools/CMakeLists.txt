@@ -5,4 +5,3 @@ add_pytest(ncu)
 add_pytest(nsys)
 
 add_subdirectory(binaries)
-add_subdirectory(sass)

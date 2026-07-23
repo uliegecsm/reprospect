@@ -7,8 +7,8 @@ from reprospect.testing.sass.composite_impl import SequenceMatcher
 from reprospect.testing.sass.instruction import Fp32AddMatcher
 from reprospect.testing.sass.matchers.cas import AtomicCASMatcher
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.sass.controlflow import BasicBlock, Graph
-from reprospect.tools.sass.decode import ControlCode, Instruction
+from reprospect.tools.binaries.sass.controlflow import BasicBlock, Graph
+from reprospect.tools.binaries.sass.decode import ControlCode, Instruction
 
 
 class Operation:

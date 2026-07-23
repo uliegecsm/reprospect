@@ -8,7 +8,7 @@ from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump, CuppFilt, LlvmCppFilt, NVDisasm
 from reprospect.tools.binaries.nvdisasm import DetailedRegisterUsage, Function
-from reprospect.tools.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decode import RegisterType
 from reprospect.utils import cmake
 
 from tests.compilation import get_compilation_output, get_cubin_name

@@ -59,6 +59,7 @@ from reprospect.testing import environment
 from reprospect.testing.case import CMakeAwareTestCase
 from reprospect.testing.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
 from reprospect.tools.binaries import CuObjDump
+from reprospect.tools.binaries.sass import Decoder
 from reprospect.tools.ncu import (
     Cacher,
     Command,
@@ -70,7 +71,6 @@ from reprospect.tools.ncu import (
     ProfilingMetrics,
     Report,
 )
-from reprospect.tools.sass import Decoder
 from reprospect.utils import detect
 
 if sys.version_info >= (3, 11):

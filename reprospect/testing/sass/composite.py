@@ -8,7 +8,7 @@ import typing
 
 from reprospect.testing.sass import composite_impl, instruction
 from reprospect.testing.sass.composite_impl import OperandMatcher
-from reprospect.tools.sass import Instruction
+from reprospect.tools.binaries.sass import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -71,7 +71,7 @@ class Fluentizer(instruction.InstructionMatcher):
         """
         >>> from reprospect.testing.sass.composite   import instruction_is
         >>> from reprospect.testing.sass.instruction import Fp32AddMatcher, RegisterMatcher
-        >>> from reprospect.tools.sass.decode     import RegisterType
+        >>> from reprospect.tools.binaries.sass.decode     import RegisterType
         >>> matcher = instruction_is(Fp32AddMatcher()).with_operand(index = 1, operand = RegisterMatcher(rtype = RegisterType.GPR, index = 8))
         >>> matcher.match(inst = 'FADD R5, R9, R10')
         >>> matcher.match(inst = 'FADD R5, R8, R9')

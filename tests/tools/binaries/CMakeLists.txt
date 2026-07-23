@@ -3,3 +3,5 @@ add_pytest(demangle)
 add_pytest(elf)
 add_pytest(nvdisasm)
 add_pytest(symtab)
+
+add_subdirectory(sass)

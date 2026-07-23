@@ -12,7 +12,7 @@ from reprospect.testing.sass.instruction.constant import ConstantMatcher
 from reprospect.testing.sass.instruction.immediate import Immediate
 from reprospect.testing.sass.instruction.instruction import AnyMatcher
 from reprospect.testing.sass.instruction.register import RegisterMatcher
-from reprospect.tools.sass.decode import Decoder, Instruction
+from reprospect.tools.binaries.sass.decode import Decoder, Instruction
 from reprospect.utils import cmake
 
 from tests.cublas import CuBLAS

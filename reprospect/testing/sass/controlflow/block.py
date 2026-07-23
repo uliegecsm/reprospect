@@ -6,7 +6,7 @@ import mypy_extensions
 
 from reprospect.testing.sass.composite_impl import InSequenceMatcher, SequenceMatcher
 from reprospect.testing.sass.instruction import InstructionMatch, InstructionMatcher
-from reprospect.tools.sass.controlflow import BasicBlock, Graph
+from reprospect.tools.binaries.sass.controlflow import BasicBlock, Graph
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -16,7 +16,7 @@ else:
 @mypy_extensions.mypyc_attr(allow_interpreted_subclasses=False)
 class BasicBlockMatcherBase(abc.ABC):
     """
-    Base class for matchers that find blocks in a :py:class:`reprospect.tools.sass.controlflow.Graph`.
+    Base class for matchers that find blocks in a :py:class:`reprospect.tools.binaries.sass.controlflow.Graph`.
     """
     @abc.abstractmethod
     def match(self, cfg: Graph) -> tuple[BasicBlock, list[InstructionMatch]] | None:
@@ -57,7 +57,7 @@ class BasicBlockMatcher(BasicBlockMatcherBase):
 
 class BasicBlockWithParentMatcher(BasicBlockMatcherBase):
     """
-    Match the first block of a :py:class:`reprospect.tools.sass.controlflow.Graph` that
+    Match the first block of a :py:class:`reprospect.tools.binaries.sass.controlflow.Graph` that
     matches :py:attr:`matcher` and has an incoming edge from :py:attr:`parent`.
 
     .. note::

@@ -134,8 +134,8 @@ from reprospect.testing.sass.instruction.register import Register
 from reprospect.testing.sass.matchers.add_int32 import AddInt32Matcher
 from reprospect.tools import ncu
 from reprospect.tools.binaries.cuobjdump import CuObjDump
-from reprospect.tools.sass.controlflow import ControlFlow, Graph
-from reprospect.tools.sass.decode import Decoder
+from reprospect.tools.binaries.sass.controlflow import ControlFlow, Graph
+from reprospect.tools.binaries.sass.decode import Decoder
 from reprospect.utils import detect
 
 if sys.version_info >= (3, 12):

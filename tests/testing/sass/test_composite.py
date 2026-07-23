@@ -35,7 +35,7 @@ from reprospect.testing.sass.instruction import (
     OpcodeModsMatcher,
     RegisterMatcher,
 )
-from reprospect.tools.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decode import RegisterType
 
 
 class TestInstructionIs:

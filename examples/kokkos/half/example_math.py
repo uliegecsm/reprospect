@@ -54,8 +54,8 @@ from reprospect.testing.sass.instruction.half import Fp16AddMatcher, Fp16MinMaxM
 from reprospect.testing.sass.instruction.register import Register
 from reprospect.testing.sass.matchers.convert_fp32_to_fp16 import ConvertFp32ToFp16
 from reprospect.tools.binaries import CuObjDump
-from reprospect.tools.sass import ControlFlow, Decoder, Instruction
-from reprospect.tools.sass.controlflow import BasicBlock
+from reprospect.tools.binaries.sass import ControlFlow, Decoder, Instruction
+from reprospect.tools.binaries.sass.controlflow import BasicBlock
 
 if sys.version_info >= (3, 12):
     from typing import override

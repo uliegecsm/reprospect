@@ -40,7 +40,7 @@ class GenericOrGlobalAddressMatch:
     reg: str
     offset: str | None = None
     desc_ureg: str | None = None
-    """:py:attr:`reprospect.tools.sass.decode.RegisterType.UGPR` from cache policy descriptor."""
+    """:py:attr:`reprospect.tools.binaries.sass.decode.RegisterType.UGPR` from cache policy descriptor."""
 
     @classmethod
     def parse(cls, bits: regex.Match[str]) -> GenericOrGlobalAddressMatch:

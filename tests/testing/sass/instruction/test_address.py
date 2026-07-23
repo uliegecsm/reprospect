@@ -17,7 +17,7 @@ from reprospect.testing.sass.instruction.instruction import (
 from reprospect.testing.sass.instruction.memory import MemorySpace
 from reprospect.testing.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decode import Instruction
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters

@@ -24,7 +24,7 @@ from reprospect.testing.sass.instruction import (
 from reprospect.testing.sass.instruction.constant import Constant
 from reprospect.testing.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.sass import Decoder
+from reprospect.tools.binaries.sass import Decoder
 
 from examples.kokkos.atomic import add, desul
 

@@ -6,7 +6,7 @@ import yaml
 
 from reprospect.testing.sass.instruction.instruction import Predicate
 from reprospect.testing.sass.instruction.pattern import PatternBuilder
-from reprospect.tools.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decode import Instruction
 
 
 @dataclasses.dataclass(frozen=True, slots=True, repr=False)
@@ -33,7 +33,7 @@ class Graph:
     """
     Control Flow Graph (CFG) representation of SASS code.
 
-    Blocks are :py:class:`reprospect.tools.sass.controlflow.BasicBlock`, edges represent control flow between blocks.
+    Blocks are :py:class:`reprospect.tools.binaries.sass.controlflow.BasicBlock`, edges represent control flow between blocks.
     """
     blocks: list[BasicBlock] = dataclasses.field(default_factory=list)
 
@@ -85,7 +85,7 @@ class Graph:
 
 class ControlFlow:
     """
-    Analyze SASS instructions from a :py:class:`reprospect.tools.sass.Decoder` to construct a :py:class:`reprospect.tools.sass.controlflow.Graph`.
+    Analyze SASS instructions from a :py:class:`reprospect.tools.binaries.sass.Decoder` to construct a :py:class:`reprospect.tools.binaries.sass.controlflow.Graph`.
     """
     BRANCHING: typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join(( # ruff:ignore[static-join-to-f-string]
         'BPT',
@@ -125,8 +125,8 @@ class ControlFlow:
         """
         Get the target of a branching instruction.
 
-        >>> from reprospect.tools.sass.controlflow import ControlFlow
-        >>> from reprospect.tools.sass.decode      import ControlCode, Instruction
+        >>> from reprospect.tools.binaries.sass.controlflow import ControlFlow
+        >>> from reprospect.tools.binaries.sass.decode      import ControlCode, Instruction
         >>> ControlFlow.get_target(instruction = Instruction(offset = '0160', instruction = f'@!P0 BRA {hex(400)}', hex = '0x0000000000088947', control = ControlCode.decode(code = '0x000fea0003800000')))
         400
         """

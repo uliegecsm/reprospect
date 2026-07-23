@@ -23,6 +23,8 @@ from reprospect.tools.binaries import (
     Function,
     NVDisasm,
 )
+from reprospect.tools.binaries.sass import Decoder
+from reprospect.tools.binaries.sass.decode import RegisterType
 from reprospect.tools.ncu import (
     Cacher,
     Command,
@@ -33,8 +35,6 @@ from reprospect.tools.ncu import (
     ProfilingMetrics,
     Report,
 )
-from reprospect.tools.sass import Decoder
-from reprospect.tools.sass.decode import RegisterType
 from reprospect.utils import detect
 
 if sys.version_info >= (3, 11):

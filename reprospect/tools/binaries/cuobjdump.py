@@ -5,7 +5,7 @@ Tools that can be used to extract SASS code and kernel attributes from executabl
 
     Whereas :py:class:`cuda.core._module.KernelAttributes` focuses on compiling with ``nvcc`` and querying a handful
     of kernel properties, this modules provides an interface to the CUDA binary analysis utilities to allow
-    the SASS code of each kernel to be extracted for more extensive analysis, *e.g.* with :py:mod:`reprospect.tools.sass`.
+    the SASS code of each kernel to be extracted for more extensive analysis, *e.g.* with :py:mod:`reprospect.tools.binaries.sass`.
 """
 
 from __future__ import annotations

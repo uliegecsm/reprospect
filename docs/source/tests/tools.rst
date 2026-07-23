@@ -14,10 +14,7 @@ Binaries
 .. toctree::
    :maxdepth: 1
 
-   tools/binaries/cuobjdump
-   tools/binaries/demangle
-   tools/binaries/elf
-   tools/binaries/nvdisasm
+   tools/binaries
 
 Cacher
 ------
@@ -38,12 +35,3 @@ Device properties
 ----------------
 
 .. automodule:: tests.tools.test_nsys
-
-SASS
-----
-
-.. toctree::
-   :maxdepth: 1
-
-   tools/sass/controlflow
-   tools/sass/decode

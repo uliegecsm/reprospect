@@ -4,8 +4,8 @@ import typing
 
 import pytest
 
-from reprospect.tools.sass.controlflow import BasicBlock, ControlFlow, Graph
-from reprospect.tools.sass.decode import ControlCode, Decoder, Instruction
+from reprospect.tools.binaries.sass.controlflow import BasicBlock, ControlFlow, Graph
+from reprospect.tools.binaries.sass.decode import ControlCode, Decoder, Instruction
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters
@@ -14,7 +14,7 @@ from tests.testing.sass.test_instruction import get_decoder
 
 class TestGraph:
     """
-    Tests for :py:class:`reprospect.tools.sass.controlflow.Graph`.
+    Tests for :py:class:`reprospect.tools.binaries.sass.controlflow.Graph`.
     """
     CONTROLCODE: typing.Final[ControlCode] = ControlCode.decode(code='0')
 
@@ -89,7 +89,7 @@ flowchart TD
 
 class TestControlFlow:
     """
-    Tests for :py:class:`reprospect.tools.sass.controlflow.ControlFlow`.
+    Tests for :py:class:`reprospect.tools.binaries.sass.controlflow.ControlFlow`.
     """
     class TestIfs:
         CU_IFS:         typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'ifs.cu'

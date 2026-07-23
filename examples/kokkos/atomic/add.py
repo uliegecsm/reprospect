@@ -7,7 +7,7 @@ import pytest
 
 from reprospect.testing import CMakeAwareTestCase
 from reprospect.tools.binaries import CuObjDump
-from reprospect.tools.sass import Decoder
+from reprospect.tools.binaries.sass import Decoder
 from reprospect.utils import detect
 
 

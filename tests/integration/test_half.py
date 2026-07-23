@@ -25,7 +25,7 @@ from reprospect.testing.sass.instruction.half import (
 )
 from reprospect.tools import ncu
 from reprospect.tools.binaries import CuObjDump
-from reprospect.tools.sass import ControlFlow, Decoder
+from reprospect.tools.binaries.sass import ControlFlow, Decoder
 from reprospect.utils import cmake, detect
 
 from tests.parameters import PARAMETERS, Parameters

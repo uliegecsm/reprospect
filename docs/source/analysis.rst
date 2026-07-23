@@ -32,7 +32,7 @@ Binary analysis
 * :py:class:`reprospect.tools.binaries.CuObjDump`
 * :py:class:`reprospect.tools.binaries.ELF`
 * :py:class:`reprospect.tools.binaries.NVDisasm`
-* :py:class:`reprospect.tools.sass.Decoder`
+* :py:class:`reprospect.tools.binaries.sass.Decoder`
 * :py:class:`reprospect.testing.sass.instruction.instruction.InstructionMatcher`
 * :py:class:`reprospect.testing.sass.composite_impl.SequenceMatcher`
 

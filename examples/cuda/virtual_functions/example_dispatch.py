@@ -59,9 +59,9 @@ from reprospect.tools.binaries import (
     NVDisasm,
     ResourceUsage,
 )
-from reprospect.tools.sass import ControlFlow, Decoder
-from reprospect.tools.sass.controlflow import BasicBlock, Graph
-from reprospect.tools.sass.decode import RegisterType
+from reprospect.tools.binaries.sass import ControlFlow, Decoder
+from reprospect.tools.binaries.sass.controlflow import BasicBlock, Graph
+from reprospect.tools.binaries.sass.decode import RegisterType
 from reprospect.utils import detect
 
 if sys.version_info >= (3, 11):

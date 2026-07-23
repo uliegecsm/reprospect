@@ -2,18 +2,20 @@ import re
 import sys
 import typing
 
-from reprospect.testing.sass.composite import unordered_interleaved_instructions_are
-from reprospect.testing.sass.composite_impl import UnorderedInSequenceMatcher
-from reprospect.testing.sass.instruction import (
+from reprospect.testing.binaries.sass.composite import (
+    unordered_interleaved_instructions_are,
+)
+from reprospect.testing.binaries.sass.composite_impl import UnorderedInSequenceMatcher
+from reprospect.testing.binaries.sass.instruction import (
     InstructionMatch,
     OpcodeModsWithOperandsMatcher,
     PatternBuilder,
     RegisterMatcher,
 )
-from reprospect.testing.sass.instruction.constant import Constant
-from reprospect.testing.sass.instruction.register import Register
-from reprospect.testing.sass.matchers.cas import AtomicCASMatcher
-from reprospect.tools.sass import ControlFlow, Decoder
+from reprospect.testing.binaries.sass.instruction.constant import Constant
+from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.matchers.cas import AtomicCASMatcher
+from reprospect.tools.binaries.sass import ControlFlow, Decoder
 
 from examples.kokkos.atomic import add, desul
 

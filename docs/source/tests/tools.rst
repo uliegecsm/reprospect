@@ -3,21 +3,20 @@ Tools
 
 Tests for :py:mod:`reprospect.tools`.
 
+The tests for the three main subpackages can be found in:
+
+.. toctree::
+   :maxdepth: 3
+
+   tools/binaries
+   tools/ncu
+   tools/nsys
+
+
 Architecture
 ------------
 
 .. automodule:: tests.tools.test_architecture
-
-Binaries
---------
-
-.. toctree::
-   :maxdepth: 1
-
-   tools/binaries/cuobjdump
-   tools/binaries/demangle
-   tools/binaries/elf
-   tools/binaries/nvdisasm
 
 Cacher
 ------
@@ -28,22 +27,3 @@ Device properties
 -----------------
 
 .. automodule:: tests.tools.test_device_properties
-
-`Nsight Compute`
-----------------
-
-.. automodule:: tests.tools.test_ncu
-
-`Nsight Systems`
-----------------
-
-.. automodule:: tests.tools.test_nsys
-
-SASS
-----
-
-.. toctree::
-   :maxdepth: 1
-
-   tools/sass/controlflow
-   tools/sass/decode

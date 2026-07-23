@@ -3,17 +3,16 @@ import re
 import sys
 import typing
 
-from reprospect.testing.features import Memory
-from reprospect.testing.sass.composite import (
+from reprospect.testing.binaries.sass.composite import (
     instruction_is,
     interleaved_instructions_are,
     unordered_interleaved_instructions_are,
 )
-from reprospect.testing.sass.composite_impl import (
+from reprospect.testing.binaries.sass.composite_impl import (
     SequenceMatcher,
     UnorderedInSequenceMatcher,
 )
-from reprospect.testing.sass.instruction import (
+from reprospect.testing.binaries.sass.instruction import (
     InstructionMatch,
     LoadGlobalMatcher,
     OpcodeModsWithOperandsMatcher,
@@ -21,10 +20,11 @@ from reprospect.testing.sass.instruction import (
     RegisterMatcher,
     StoreGlobalMatcher,
 )
-from reprospect.testing.sass.instruction.constant import Constant
-from reprospect.testing.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.instruction.constant import Constant
+from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.features import Memory
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.sass import Decoder
+from reprospect.tools.binaries.sass import Decoder
 
 from examples.kokkos.atomic import add, desul
 

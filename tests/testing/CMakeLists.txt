@@ -1,3 +1,3 @@
 add_pytest(environment)
 
-add_subdirectory(sass)
+add_subdirectory(binaries)

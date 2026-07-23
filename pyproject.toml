@@ -31,15 +31,16 @@ build-backend = "setuptools.build_meta"
 packages = [
     "reprospect",
     "reprospect.testing",
-    "reprospect.testing.sass",
-    "reprospect.testing.sass.controlflow",
-    "reprospect.testing.sass.instruction",
-    "reprospect.testing.sass.matchers",
+    "reprospect.testing.binaries",
+    "reprospect.testing.binaries.sass",
+    "reprospect.testing.binaries.sass.controlflow",
+    "reprospect.testing.binaries.sass.instruction",
+    "reprospect.testing.binaries.sass.matchers",
     "reprospect.tools",
     "reprospect.tools.binaries",
+    "reprospect.tools.binaries.sass",
     "reprospect.tools.ncu",
     "reprospect.tools.nsys",
-    "reprospect.tools.sass",
     "reprospect.utils",
     "reprospect.utils.installers",
 ]
@@ -262,7 +263,7 @@ archs = []
 build-verbosity = 1
 
 test-command = [
-    "python -m pytest {package}/tests/testing/sass/test_extensibility.py",
+    "python -m pytest {package}/tests/testing/binaries/sass/test_extensibility.py",
 ]
 test-requires = "pytest==9.0.2"
 

@@ -3,15 +3,14 @@ Testing
 
 Tests for :py:mod:`reprospect.testing`.
 
-Environment
------------
-
-.. automodule:: tests.testing.test_environment
-
-SASS
-----
+The tests for the :py:mod:`reprospect.testing.binaries` subpackage can be found in:
 
 .. toctree::
    :maxdepth: 1
 
-   testing/sass
+   testing/binaries
+
+Environment
+-----------
+
+.. automodule:: tests.testing.test_environment

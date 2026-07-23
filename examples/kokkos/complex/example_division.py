@@ -11,18 +11,20 @@ import pytest
 import semantic_version
 
 from reprospect.testing import environment
+from reprospect.testing.binaries.sass.composite import findall
+from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
+from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.matchers.convert_fp_to_int import ConvertFpToInt
+from reprospect.testing.binaries.sass.matchers.convert_int_to_fp import ConvertIntToFp
 from reprospect.testing.case import CMakeAwareTestCase
-from reprospect.testing.sass.composite import findall
-from reprospect.testing.sass.instruction import OpcodeModsMatcher
-from reprospect.testing.sass.instruction.register import Register
-from reprospect.testing.sass.matchers.convert_fp_to_int import ConvertFpToInt
-from reprospect.testing.sass.matchers.convert_int_to_fp import ConvertIntToFp
 from reprospect.tools.binaries import (
     CuObjDump,
     DetailedRegisterUsage,
     Function,
     NVDisasm,
 )
+from reprospect.tools.binaries.sass import Decoder
+from reprospect.tools.binaries.sass.decode import RegisterType
 from reprospect.tools.ncu import (
     Cacher,
     Command,
@@ -33,8 +35,6 @@ from reprospect.tools.ncu import (
     ProfilingMetrics,
     Report,
 )
-from reprospect.tools.sass import Decoder
-from reprospect.tools.sass.decode import RegisterType
 from reprospect.utils import detect
 
 if sys.version_info >= (3, 11):

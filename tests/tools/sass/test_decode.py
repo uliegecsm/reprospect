@@ -7,7 +7,7 @@ import typing
 
 import pytest
 
-from reprospect.test.case import CMakeAwareTestCase
+from reprospect.testing.case import CMakeAwareTestCase
 from reprospect.tools import binaries, sass
 from reprospect.tools.sass.decode import RegisterType
 from reprospect.utils import cmake

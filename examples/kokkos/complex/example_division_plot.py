@@ -9,7 +9,7 @@ import matplotlib.pyplot
 import numpy
 import pytest
 
-from reprospect.test.case import CMakeAwareTestCase
+from reprospect.testing.case import CMakeAwareTestCase
 from reprospect.utils import detect
 
 if sys.version_info >= (3, 12):

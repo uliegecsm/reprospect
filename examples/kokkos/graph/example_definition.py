@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from reprospect.test import CMakeAwareTestCase, environment
+from reprospect.testing import CMakeAwareTestCase, environment
 from reprospect.tools import nsys
 from reprospect.utils import detect
 from reprospect.utils.rich_helpers import df_to_table, to_string

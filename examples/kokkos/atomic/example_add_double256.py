@@ -3,17 +3,17 @@ import re
 import sys
 import typing
 
-from reprospect.test.features import Memory
-from reprospect.test.sass.composite import (
+from reprospect.testing.features import Memory
+from reprospect.testing.sass.composite import (
     instruction_is,
     interleaved_instructions_are,
     unordered_interleaved_instructions_are,
 )
-from reprospect.test.sass.composite_impl import (
+from reprospect.testing.sass.composite_impl import (
     SequenceMatcher,
     UnorderedInSequenceMatcher,
 )
-from reprospect.test.sass.instruction import (
+from reprospect.testing.sass.instruction import (
     InstructionMatch,
     LoadGlobalMatcher,
     OpcodeModsWithOperandsMatcher,
@@ -21,8 +21,8 @@ from reprospect.test.sass.instruction import (
     RegisterMatcher,
     StoreGlobalMatcher,
 )
-from reprospect.test.sass.instruction.constant import Constant
-from reprospect.test.sass.instruction.register import Register
+from reprospect.testing.sass.instruction.constant import Constant
+from reprospect.testing.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.sass import Decoder
 

@@ -2,12 +2,12 @@ import re
 import sys
 import typing
 
-from reprospect.test.sass.instruction import (
+from reprospect.testing.sass.instruction import (
     InstructionMatch,
     RegisterMatcher,
 )
-from reprospect.test.sass.matchers import add_int128
-from reprospect.test.sass.matchers.cas import AtomicCASMatcher
+from reprospect.testing.sass.matchers import add_int128
+from reprospect.testing.sass.matchers.cas import AtomicCASMatcher
 from reprospect.tools.sass import ControlFlow, Decoder
 
 from examples.kokkos.atomic import add, desul

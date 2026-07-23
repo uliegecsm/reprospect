@@ -22,7 +22,7 @@ import typing
 
 import pytest
 
-from reprospect.test import CMakeAwareTestCase
+from reprospect.testing import CMakeAwareTestCase
 from reprospect.tools.binaries import CuObjDump, DetailedRegisterUsage, NVDisasm
 from reprospect.tools.sass.decode import RegisterType
 

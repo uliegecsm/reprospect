@@ -43,7 +43,7 @@ import numpy
 import pandas
 import pytest
 
-from reprospect.test import CMakeAwareTestCase
+from reprospect.testing import CMakeAwareTestCase
 from reprospect.utils import detect
 
 from examples.kokkos.pyplot import HandlerText

@@ -91,7 +91,7 @@ class TestCuBLAS:
             regex.compile(r'PR'),
             regex.compile(r'(SR_TID|SR_CTAID)\.(X|Y|Z)'),
             regex.compile(r'SR(X|Y|Z)'),
-            regex.compile(r'SR_CgaCtaId|SR_LANEID|SR_LTMASK|SR_SWINHI'),
+            regex.compile(r'SR_CgaCtaId|SR_LANEID|SR_LTMASK|SR_SWINLO|SR_SWINHI'),
         ))
 
         for name, function in cuobjdump.functions.items():

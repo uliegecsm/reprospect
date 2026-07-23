@@ -30,7 +30,6 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools]
 packages = [
     "reprospect",
-    "reprospect.installers",
     "reprospect.testing",
     "reprospect.testing.sass",
     "reprospect.testing.sass.controlflow",
@@ -42,6 +41,7 @@ packages = [
     "reprospect.tools.nsys",
     "reprospect.tools.sass",
     "reprospect.utils",
+    "reprospect.utils.installers",
 ]
 
 [tool.setuptools.package-data]
@@ -72,8 +72,8 @@ Homepage = "https://github.com/uliegecsm/reprospect"
 Documentation = "https://uliegecsm.github.io/reprospect/"
 
 [project.scripts]
-reprospect-install-cuda-bindings = "reprospect.installers.cuda_bindings:main"
-reprospect-install-nsight-systems = "reprospect.installers.nsight_systems:main"
+reprospect-install-cuda-bindings = "reprospect.utils.installers.cuda_bindings:main"
+reprospect-install-nsight-systems = "reprospect.utils.installers.nsight_systems:main"
 reprospect-utils-detect-gpus = "reprospect.utils.detect:main"
 
 [tool.mypy]

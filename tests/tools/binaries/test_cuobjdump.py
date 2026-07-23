@@ -7,7 +7,7 @@ import typing
 import pytest
 from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
-from reprospect.test.case import CMakeAwareTestCase
+from reprospect.testing.case import CMakeAwareTestCase
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump, CuppFilt, Function, ResourceUsage
 from reprospect.utils import cmake, rich_helpers

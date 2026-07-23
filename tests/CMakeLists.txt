@@ -35,6 +35,6 @@ endfunction()
 
 add_subdirectory(assets)
 add_subdirectory(integration)
-add_subdirectory(test)
+add_subdirectory(testing)
 add_subdirectory(tools)
 add_subdirectory(utils)

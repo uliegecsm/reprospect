@@ -65,7 +65,7 @@ The following strategies map to a single sequence, but each has a drawback:
         *supports all C++ fundamental types, CUDA vector types (except x3 components), and extended floating-point types*.
         However, as of CUDA 13.1, it seems to only support up to :code:`double2`, *i.e.* up to
         128-bit size objects. This seems contradictory with
-        :py:meth:`reprospect.test.features.Memory.max_transaction_size` that states 256-bit size objects
+        :py:meth:`reprospect.testing.features.Memory.max_transaction_size` that states 256-bit size objects
         are supported as of :py:attr:`reprospect.tools.architecture.NVIDIAFamily.BLACKWELL` and CUDA 13.
 
 ``.CONSTANT`` load
@@ -113,25 +113,25 @@ import typing
 import pytest
 import semantic_version
 
-from reprospect.test import CMakeAwareTestCase, environment
-from reprospect.test.sass.composite import (
+from reprospect.testing import CMakeAwareTestCase, environment
+from reprospect.testing.sass.composite import (
     any_of,
     instruction_is,
     instructions_contain,
     interleaved_instructions_are,
 )
-from reprospect.test.sass.controlflow.block import BasicBlockMatcher
-from reprospect.test.sass.instruction import (
+from reprospect.testing.sass.controlflow.block import BasicBlockMatcher
+from reprospect.testing.sass.instruction import (
     LoadGlobalMatcher,
     OpcodeModsWithOperandsMatcher,
     StoreGlobalMatcher,
 )
-from reprospect.test.sass.instruction.integer import (
+from reprospect.testing.sass.instruction.integer import (
     IntAdd3Matcher,
     LEAMatcher,
 )
-from reprospect.test.sass.instruction.register import Register
-from reprospect.test.sass.matchers.add_int32 import AddInt32Matcher
+from reprospect.testing.sass.instruction.register import Register
+from reprospect.testing.sass.matchers.add_int32 import AddInt32Matcher
 from reprospect.tools import ncu
 from reprospect.tools.binaries.cuobjdump import CuObjDump
 from reprospect.tools.sass.controlflow import ControlFlow, Graph

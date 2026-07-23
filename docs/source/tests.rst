@@ -9,7 +9,7 @@ The tests for the three main subpackages can be found in:
 .. toctree::
    :maxdepth: 1
 
-   tests/test
+   tests/testing
    tests/tools
    tests/utils
 

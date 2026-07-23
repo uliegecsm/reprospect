@@ -10,13 +10,13 @@ import numpy
 import pytest
 import semantic_version
 
-from reprospect.test import environment
-from reprospect.test.case import CMakeAwareTestCase
-from reprospect.test.sass.composite import findall
-from reprospect.test.sass.instruction import OpcodeModsMatcher
-from reprospect.test.sass.instruction.register import Register
-from reprospect.test.sass.matchers.convert_fp_to_int import ConvertFpToInt
-from reprospect.test.sass.matchers.convert_int_to_fp import ConvertIntToFp
+from reprospect.testing import environment
+from reprospect.testing.case import CMakeAwareTestCase
+from reprospect.testing.sass.composite import findall
+from reprospect.testing.sass.instruction import OpcodeModsMatcher
+from reprospect.testing.sass.instruction.register import Register
+from reprospect.testing.sass.matchers.convert_fp_to_int import ConvertFpToInt
+from reprospect.testing.sass.matchers.convert_int_to_fp import ConvertIntToFp
 from reprospect.tools.binaries import (
     CuObjDump,
     DetailedRegisterUsage,

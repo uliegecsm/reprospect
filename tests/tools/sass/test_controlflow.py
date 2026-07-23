@@ -9,7 +9,7 @@ from reprospect.tools.sass.decode import ControlCode, Decoder, Instruction
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters
-from tests.test.sass.test_instruction import get_decoder
+from tests.testing.sass.test_instruction import get_decoder
 
 
 class TestGraph:

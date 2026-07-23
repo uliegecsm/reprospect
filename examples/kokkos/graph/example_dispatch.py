@@ -8,7 +8,7 @@ import pandas
 import pytest
 import semantic_version
 
-from reprospect.test import CMakeAwareTestCase, environment
+from reprospect.testing import CMakeAwareTestCase, environment
 from reprospect.tools import nsys
 from reprospect.utils import detect, rich_helpers
 

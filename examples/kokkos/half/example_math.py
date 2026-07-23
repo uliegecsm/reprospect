@@ -37,22 +37,22 @@ import typing
 
 import pytest
 
-from reprospect.test import CMakeAwareTestCase
-from reprospect.test.sass.composite import (
+from reprospect.testing import CMakeAwareTestCase
+from reprospect.testing.sass.composite import (
     instruction_is,
     instructions_are,
     instructions_contain,
 )
-from reprospect.test.sass.controlflow.block import BasicBlockMatcher
-from reprospect.test.sass.instruction import (
+from reprospect.testing.sass.controlflow.block import BasicBlockMatcher
+from reprospect.testing.sass.instruction import (
     InstructionMatch,
     LoadGlobalMatcher,
     OpcodeModsWithOperandsMatcher,
     StoreGlobalMatcher,
 )
-from reprospect.test.sass.instruction.half import Fp16AddMatcher, Fp16MinMaxMatcher
-from reprospect.test.sass.instruction.register import Register
-from reprospect.test.sass.matchers.convert_fp32_to_fp16 import ConvertFp32ToFp16
+from reprospect.testing.sass.instruction.half import Fp16AddMatcher, Fp16MinMaxMatcher
+from reprospect.testing.sass.instruction.register import Register
+from reprospect.testing.sass.matchers.convert_fp32_to_fp16 import ConvertFp32ToFp16
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.sass import ControlFlow, Decoder, Instruction
 from reprospect.tools.sass.controlflow import BasicBlock

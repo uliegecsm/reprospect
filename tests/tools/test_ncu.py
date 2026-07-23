@@ -10,7 +10,7 @@ import unittest.mock
 import pytest
 from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
-from reprospect.test.cmake import get_demangler_for_compiler
+from reprospect.testing.cmake import get_demangler_for_compiler
 from reprospect.tools import ncu
 from reprospect.tools.ncu.metrics import MetricCorrelationData
 from reprospect.utils import detect

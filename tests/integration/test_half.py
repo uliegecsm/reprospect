@@ -4,7 +4,7 @@ Half types
 
 Analyze two kernels that compute the square of half-precision values with and without packing using:
 
-* many matchers from :py:mod:`reprospect.test.sass`
+* many matchers from :py:mod:`reprospect.testing.sass`
 * some profiling with :py:mod:`reprospect.tools.ncu`
 """
 
@@ -16,17 +16,20 @@ import typing
 
 import pytest
 
-from reprospect.test.sass.composite import any_of, instructions_contain
-from reprospect.test.sass.controlflow.block import BasicBlockMatcher
-from reprospect.test.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
-from reprospect.test.sass.instruction.half import Fp16FusedMulAddMatcher, Fp16MulMatcher
+from reprospect.testing.sass.composite import any_of, instructions_contain
+from reprospect.testing.sass.controlflow.block import BasicBlockMatcher
+from reprospect.testing.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
+from reprospect.testing.sass.instruction.half import (
+    Fp16FusedMulAddMatcher,
+    Fp16MulMatcher,
+)
 from reprospect.tools import ncu
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.sass import ControlFlow, Decoder
 from reprospect.utils import cmake, detect
 
 from tests.parameters import PARAMETERS, Parameters
-from tests.test.sass.test_instruction import get_compilation_output
+from tests.testing.sass.test_instruction import get_compilation_output
 
 
 @pytest.mark.parametrize('parameters', PARAMETERS, ids=str, scope='class')

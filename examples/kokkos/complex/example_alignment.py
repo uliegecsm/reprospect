@@ -55,9 +55,9 @@ import typing
 
 import pytest
 
-from reprospect.test import environment
-from reprospect.test.case import CMakeAwareTestCase
-from reprospect.test.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
+from reprospect.testing import environment
+from reprospect.testing.case import CMakeAwareTestCase
+from reprospect.testing.sass.instruction import LoadGlobalMatcher, StoreGlobalMatcher
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.ncu import (
     Cacher,

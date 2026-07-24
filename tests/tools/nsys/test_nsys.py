@@ -388,7 +388,7 @@ NVTX events
                     executable=pathlib.Path(sys.executable),
                     output=workdir / 'test-report-nvtx',
                     nvtx_capture='*',
-                    args=(pathlib.Path(__file__).parent.parent / 'assets' / 'nvtx_annotations.py',),
+                    args=(pathlib.Path(__file__).parent.parent.parent / 'assets' / 'nvtx_annotations.py',),
                 )
                 entry = cacher.run(command=command, cwd=workdir)
 

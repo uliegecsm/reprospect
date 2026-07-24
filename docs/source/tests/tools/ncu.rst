@@ -1,4 +1,4 @@
 `Nsight Compute`
 ================
 
-.. automodule:: tests.tools.test_ncu
+.. automodule:: tests.tools.ncu.test_ncu

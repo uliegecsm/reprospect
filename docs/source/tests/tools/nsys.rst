@@ -1,4 +1,4 @@
 `Nsight Systems`
 ================
 
-.. automodule:: tests.tools.test_nsys
+.. automodule:: tests.tools.nsys.test_nsys

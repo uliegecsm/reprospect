@@ -63,7 +63,7 @@ class TestTracingResults:
 
 class TestCommand:
     """
-    Tests for :py:class:`reprospect.tools.nsys.Command`.
+    Tests for :py:class:`reprospect.tools.nsys.session.Command`.
     """
     def test_env(self, bindir: pathlib.Path) -> None:
         """
@@ -90,7 +90,7 @@ class TestCommand:
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestSession:
     """
-    Test :py:class:`reprospect.tools.nsys.Session`.
+    Test :py:class:`reprospect.tools.nsys.session.Session`.
     """
     EXECUTABLE: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
@@ -157,7 +157,7 @@ class TestSession:
 
     def test_report(self, bindir, workdir) -> None:
         """
-        Process the `nsys` report with :py:class:`reprospect.tools.nsys.Report`.
+        Process the `nsys` report with :py:class:`reprospect.tools.nsys.report.Report`.
         """
         ns = self.run(bindir=bindir, cwd=workdir)
 
@@ -219,14 +219,14 @@ class TestSession:
 
 class TestCacher:
     """
-    Tests for :py:class:`reprospect.tools.nsys.Cacher`.
+    Tests for :py:class:`reprospect.tools.nsys.cacher.Cacher`.
     """
     GRAPH: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
     SAXPY: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
     def test_hash_same(self, bindir) -> None:
         """
-        Test :py:meth:`reprospect.tools.nsys.Cacher.hash`.
+        Test :py:meth:`reprospect.tools.nsys.cacher.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir, Cacher(directory=tmpdir) as cacher:
             command = Command(
@@ -242,7 +242,7 @@ class TestCacher:
 
     def test_hash_different(self, bindir) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
+        Test :py:meth:`reprospect.tools.ncu.cacher.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir, Cacher(directory=tmpdir) as cacher:
             hash_a = cacher.hash(command=Command(executable=bindir / self.GRAPH, output=pathlib.Path('I-dont-care') / 'osef', opts=('--nvtx',), args=('--bla=42',)))
@@ -289,7 +289,7 @@ class TestCacher:
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestReport:
     """
-    Test :py:class:`reprospect.tools.nsys.Report`.
+    Test :py:class:`reprospect.tools.nsys.report.Report`.
     """
     @pytest.fixture(scope='class')
     def report(self, bindir, workdir: pathlib.Path) -> Report:
@@ -343,11 +343,11 @@ class TestReport:
 
     class TestReportNvtxEvents:
         """
-        Tests for :py:class:`reprospect.tools.nsys.ReportNvtxEvents`.
+        Tests for :py:class:`reprospect.tools.nsys.report.ReportNvtxEvents`.
         """
         def test_get(self, report) -> None:
             """
-            Test :py:meth:`reprospect.tools.nsys.ReportNvtxEvents.get`.
+            Test :py:meth:`reprospect.tools.nsys.report.ReportNvtxEvents.get`.
             """
             with report:
                 events = report.nvtx_events
@@ -364,7 +364,7 @@ class TestReport:
 
         def test_string_representation(self, report) -> None:
             """
-            Test the string representation of :py:meth:`reprospect.tools.nsys.ReportNvtxEvents`.
+            Test the string representation of :py:meth:`reprospect.tools.nsys.report.ReportNvtxEvents`.
             """
             with report:
                 assert str(report.nvtx_events) == """\

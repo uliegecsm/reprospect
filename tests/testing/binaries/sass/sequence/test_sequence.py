@@ -3,7 +3,19 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.composite_impl import (
+from reprospect.testing.binaries.sass.instruction import (
+    AnyMatcher,
+    Constant,
+    Fp32AddMatcher,
+    Fp64AddMatcher,
+    InstructionMatch,
+    LoadGlobalMatcher,
+    OpcodeModsMatcher,
+    OpcodeModsWithOperandsMatcher,
+    Register,
+    RegisterMatcher,
+)
+from reprospect.testing.binaries.sass.sequence import (
     AllInSequenceMatcher,
     AnyOfMatcher,
     CountInSequenceMatcher,
@@ -15,17 +27,21 @@ from reprospect.testing.binaries.sass.composite_impl import (
     UnorderedInSequenceMatcher,
     UnorderedInterleavedInSequenceMatcher,
     ZeroOrMoreInSequenceMatcher,
+    any_of,
+    findall,
+    findunique,
+    instruction_count_is,
+    instruction_is,
+    instructions_are,
+    instructions_contain,
+    interleaved_instructions_are,
+    unordered_instructions_are,
+    unordered_interleaved_instructions_are,
 )
-from reprospect.testing.binaries.sass.instruction import (
-    InstructionMatch,
-    LoadGlobalMatcher,
-    OpcodeModsMatcher,
-    OpcodeModsWithOperandsMatcher,
-)
-from reprospect.testing.binaries.sass.instruction.constant import Constant
-from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.sequence.sequence import Fluentizer
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass import ControlCode, Instruction
+from reprospect.tools.binaries.sass.decoder import RegisterType
 
 CONTROL_CODE = ControlCode.decode(code='0x000e220000000800')
 
@@ -48,7 +64,7 @@ MATCHER_NOP  = OpcodeModsMatcher(opcode='NOP', operands=False)
 
 class TestInSequenceAtMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.InSequenceAtMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.InSequenceAtMatcher`.
     """
     MATCHER: typing.Final[InSequenceAtMatcher] = InSequenceAtMatcher(matcher=MATCHER_DADD)
 
@@ -82,7 +98,7 @@ class TestInSequenceAtMatcher:
 
 class TestZeroOrMoreInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.ZeroOrMoreInSequenceMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.ZeroOrMoreInSequenceMatcher`.
     """
     def test_matches_zero(self) -> None:
         """
@@ -116,7 +132,7 @@ class TestZeroOrMoreInSequenceMatcher:
 
 class TestOneOrMoreInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.OneOrMoreInSequenceMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.OneOrMoreInSequenceMatcher`.
     """
     def test_matches_zero(self) -> None:
         """
@@ -162,7 +178,7 @@ class TestOneOrMoreInSequenceMatcher:
 
 class TestOrderedInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.OrderedInSequenceMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.OrderedInSequenceMatcher`.
     """
     MATCHER: typing.Final[OrderedInSequenceMatcher] = OrderedInSequenceMatcher(matchers=(
         MATCHER_DADD,
@@ -205,7 +221,7 @@ class TestOrderedInSequenceMatcher:
 
 class TestUnorderedInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.UnorderedInSequenceMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.UnorderedInSequenceMatcher`.
     """
     def test_match_with_nop(self) -> None:
         """
@@ -279,7 +295,7 @@ class TestUnorderedInSequenceMatcher:
 
 class TestInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.InSequenceMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.InSequenceMatcher`.
     """
     def test_matches(self) -> None:
         matcher = InSequenceMatcher(matcher=MATCHER_DADD)
@@ -297,7 +313,7 @@ class TestInSequenceMatcher:
 
 class TestAnyOfMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.AnyOfMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.AnyOfMatcher`.
     """
     def test_matches(self) -> None:
         matcher = AnyOfMatcher(
@@ -328,7 +344,7 @@ class TestAnyOfMatcher:
 
 class TestOrderedInterleavedInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.OrderedInterleavedInSequenceMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.OrderedInterleavedInSequenceMatcher`.
     """
     INSTRUCTIONS_DADD: typing.Final[tuple[str, ...]] = (
         'LDG.E.ENL2.256 R8, R4, desc[UR6][R2.64]',
@@ -402,7 +418,7 @@ class TestOrderedInterleavedInSequenceMatcher:
 
 class TestUnorderedInterleavedInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.UnorderedInterleavedInSequenceMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.UnorderedInterleavedInSequenceMatcher`.
     """
     def test_dadd(self) -> None:
         matchers = list(TestOrderedInterleavedInSequenceMatcher.MATCHERS_DADD)
@@ -416,7 +432,7 @@ class TestUnorderedInterleavedInSequenceMatcher:
 
 class TestCountInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.CountInSequenceMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.CountInSequenceMatcher`.
     """
     INNER: typing.Final[OpcodeModsMatcher] = OpcodeModsMatcher(opcode='YIELD', operands=False)
 
@@ -432,11 +448,11 @@ class TestCountInSequenceMatcher:
 
 class TestAllInSequenceMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.composite_impl.AllInSequenceMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.sequence.sequence.AllInSequenceMatcher`.
     """
     def test_single(self) -> None:
         """
-        The inner matcher is a :py:class:`reprospect.testing.binaries.sass.instruction.InstructionMatcher`.
+        The inner matcher is a :py:class:`reprospect.testing.binaries.sass.instruction.instruction.InstructionMatcher`.
         """
         matcher = AllInSequenceMatcher(OpcodeModsMatcher(opcode='DADD'))
         assert isinstance(matcher.matcher, InSequenceMatcher)
@@ -446,7 +462,7 @@ class TestAllInSequenceMatcher:
 
     def test_sequence(self) -> None:
         """
-        The inner matcher is a :py:class:`reprospect.testing.binaries.sass.composite_impl.SequenceMatcher`.
+        The inner matcher is a :py:class:`reprospect.testing.binaries.sass.sequence.sequence.SequenceMatcher`.
         """
         matcher = AllInSequenceMatcher(OrderedInSequenceMatcher(matchers=(
             MATCHER_NOP,
@@ -465,3 +481,205 @@ class TestAllInSequenceMatcher:
     def test_no_match(self) -> None:
         matcher = AllInSequenceMatcher(OpcodeModsMatcher(opcode='FADD'))
         assert not matcher.match(TestOrderedInterleavedInSequenceMatcher.INSTRUCTIONS_DADD)
+
+class TestInstructionIs:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.instruction_is`.
+    """
+    def test(self) -> None:
+        matcher = instruction_is(Fp32AddMatcher())
+        assert isinstance(matcher, Fluentizer)
+
+        assert (matched := matcher.match(inst='FADD R2, R2, R3')) is not None
+        assert isinstance(matched, InstructionMatch)
+
+    def test_times_1(self) -> None:
+        matcher = instruction_is(Fp32AddMatcher()).times(1)
+        assert isinstance(matcher, InSequenceAtMatcher)
+
+    def test_times_2(self) -> None:
+        matcher = instruction_is(Fp32AddMatcher()).times(2)
+        assert isinstance(matcher, OrderedInSequenceMatcher)
+        assert len(matcher.matchers) == 2 and all(isinstance(x, Fp32AddMatcher) for x in matcher.matchers)
+
+    def test_one_or_more_times(self) -> None:
+        matcher = instruction_is(Fp32AddMatcher()).one_or_more_times()
+        assert isinstance(matcher, OneOrMoreInSequenceMatcher)
+
+    def test_zero_or_more_time(self) -> None:
+        matcher = instruction_is(Fp32AddMatcher()).zero_or_more_times()
+        assert isinstance(matcher, ZeroOrMoreInSequenceMatcher)
+
+    def test_with_modifier(self) -> None:
+        """
+        Test :py:meth:`reprospect.testing.binaries.sass.sequence.sequence.Fluentizer.with_modifier`.
+        """
+        INSTRUCTION: typing.Final[str] = 'IMAD.WIDE.U32 R2, R0, R7, c[0x0][0x180]'
+        MATCHER: typing.Final[Fluentizer] = instruction_is(AnyMatcher())
+
+        assert MATCHER.with_modifier('WIDE', index=0).match(INSTRUCTION) is not None
+        assert MATCHER.with_modifier('WIDE', index=1).match(INSTRUCTION) is None
+        assert MATCHER.with_modifier('WIDE', index=None).match(INSTRUCTION) is not None
+
+        assert MATCHER.with_modifier('U32', index=0).match(INSTRUCTION) is None
+        assert MATCHER.with_modifier('U32', index=1).match(INSTRUCTION) is not None
+        assert MATCHER.with_modifier('U32', index=None).match(INSTRUCTION) is not None
+
+        assert MATCHER.with_modifier('HELLO', index=0).match(INSTRUCTION) is None
+
+    def test_with_operand(self) -> None:
+        """
+        Test :py:meth:`reprospect.testing.binaries.sass.sequence.sequence.Fluentizer.with_operand`.
+        """
+        matcher = instruction_is(Fp32AddMatcher()).with_operand(
+            index=1,
+            operand='R2',
+        )
+        assert isinstance(matcher, Fluentizer)
+        assert matcher.match(inst='FADD R2, R2, R3') is not None
+        assert matcher.match(inst='FADD R4, R4, RZ') is None
+
+        matcher = instruction_is(Fp32AddMatcher()).with_operand(
+            index=2,
+            operand=RegisterMatcher(rtype=RegisterType.GPR, special=False),
+        )
+        assert isinstance(matcher, Fluentizer)
+        assert matcher.match(inst='FADD R2, R2, R3') is not None
+        assert matcher.match(inst='FADD R2, R2, RZ') is None
+
+        matcher = instruction_is(AnyMatcher()).with_operand(
+            index=-1,
+            operand=RegisterMatcher(rtype=RegisterType.UGPR, special=True),
+        )
+        assert matcher.match(inst='UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
+
+        matcher = instruction_is(AnyMatcher()).with_operand(operand='UPT')
+        assert matcher.match(inst='UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
+
+        matcher = instruction_is(AnyMatcher()).with_operand(operand='R42')
+        assert matcher.match(inst='UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is None
+
+    def test_with_operand_composed(self) -> None:
+        """
+        Similar to :py:meth:`test_with_operands` but calls
+        :py:meth:`reprospect.testing.binaries.sass.sequence.sequence.Fluentizer.with_operand`
+        many times.
+        """
+        matcher = instruction_is(Fp32AddMatcher()).with_operand(
+            index=2, operand='R3',
+        ).with_operand(
+            index=1,
+            operand=RegisterMatcher(rtype=RegisterType.GPR, index=2),
+        )
+        assert isinstance(matcher, Fluentizer)
+        assert matcher.match(inst='FADD R2, R2, R3') is not None
+        assert matcher.match(inst='FADD R3, R2, R3') is not None
+        assert matcher.match(inst='FADD R2, R2, RZ') is None
+
+    def test_with_operands(self) -> None:
+        """
+        Test :py:meth:`reprospect.testing.binaries.sass.sequence.sequence.Fluentizer.with_operands`.
+        """
+        matcher = instruction_is(AnyMatcher()).with_operands(operands=(
+            (-1, 'URZ'),
+            ( 1, RegisterMatcher(rtype=RegisterType.UPRED, special=True)),
+        ))
+        assert isinstance(matcher, Fluentizer)
+        assert matcher.match(inst='UIADD3 UR5, UPT, UPT, -UR4, UR9, URZ') is not None
+
+class TestInstructionCountIs:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.instruction_count_is`.
+    """
+    def test(self) -> None:
+        matcher = instruction_count_is(Fp32AddMatcher(), count=4)
+        assert isinstance(matcher, CountInSequenceMatcher)
+
+class TestInstructionsAre:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.instructions_are`.
+    """
+    def test(self) -> None:
+        matcher = instructions_are(Fp32AddMatcher(), Fp32AddMatcher())
+        assert isinstance(matcher, OrderedInSequenceMatcher)
+        assert len(matcher.matchers) == 2 and all(isinstance(x, Fp32AddMatcher) for x in matcher.matchers)
+
+    def test_mix(self) -> None:
+        matcher = instructions_are(
+            Fp32AddMatcher(),
+            instruction_is(OpcodeModsMatcher(opcode='NOP', operands=False)).zero_or_more_times(),
+            Fp32AddMatcher(),
+        )
+        assert isinstance(matcher, OrderedInSequenceMatcher)
+        assert len(matcher.matchers) == 3
+
+class TestUnorderedInstructionsAre:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.unordered_instructions_are`.
+    """
+    def test(self) -> None:
+        matcher = unordered_instructions_are(Fp32AddMatcher(), Fp64AddMatcher())
+        assert isinstance(matcher, UnorderedInSequenceMatcher)
+        assert len(matcher.matchers) == 2
+        assert isinstance(matcher.matchers[0], Fp32AddMatcher)
+        assert isinstance(matcher.matchers[1], Fp64AddMatcher)
+
+class TestInstructionsContain:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.instructions_contain`.
+    """
+    def test(self) -> None:
+        matcher = instructions_contain(Fp32AddMatcher())
+        assert isinstance(matcher, InSequenceMatcher)
+
+class TestAnyOf:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.any_of`.
+    """
+    def test(self) -> None:
+        matcher = any_of(Fp32AddMatcher(), Fp32AddMatcher())
+        assert isinstance(matcher, AnyOfMatcher)
+
+class TestInterleavedInstructionsAre:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.interleaved_instructions_are`.
+    """
+    def test(self) -> None:
+        matcher = interleaved_instructions_are(Fp32AddMatcher(), Fp64AddMatcher())
+        assert isinstance(matcher, OrderedInterleavedInSequenceMatcher)
+
+class TestUnorderedInterleavedInstructionsAre:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.unordered_interleaved_instructions_are`.
+    """
+    def test(self) -> None:
+        matcher = unordered_interleaved_instructions_are(Fp32AddMatcher(), Fp64AddMatcher())
+        assert isinstance(matcher, UnorderedInterleavedInSequenceMatcher)
+
+class TestFindall:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.findall`.
+    """
+    def test(self) -> None:
+        matched = findall(Fp32AddMatcher(), (
+            'FADD R0, R1, R2',
+            'NOP',
+            'NOP',
+            'DADD R0, R1, R2',
+            'FADD R45, R46, R47',
+        ))
+        assert len(matched) == 2
+
+class TestFindunique:
+    """
+    Tests for :py:func:`reprospect.testing.binaries.sass.sequence.sequence.findunique`.
+    """
+    def test(self) -> None:
+        with pytest.raises(ValueError):
+            findunique(Fp32AddMatcher(), (
+                'FADD R0, R1, R2',
+                'NOP',
+                'NOP',
+                'DADD R0, R1, R2',
+                'FADD R45, R46, R47',
+            ))

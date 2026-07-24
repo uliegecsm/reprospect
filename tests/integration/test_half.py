@@ -16,16 +16,14 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.composite import any_of, instructions_contain
-from reprospect.testing.binaries.sass.controlflow.block import BasicBlockMatcher
+from reprospect.testing.binaries.sass.controlflow import BasicBlockMatcher
 from reprospect.testing.binaries.sass.instruction import (
+    Fp16FusedMulAddMatcher,
+    Fp16MulMatcher,
     LoadGlobalMatcher,
     StoreGlobalMatcher,
 )
-from reprospect.testing.binaries.sass.instruction.half import (
-    Fp16FusedMulAddMatcher,
-    Fp16MulMatcher,
-)
+from reprospect.testing.binaries.sass.sequence import any_of, instructions_contain
 from reprospect.tools import ncu
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.binaries.sass import ControlFlow, Decoder

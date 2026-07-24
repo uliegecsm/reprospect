@@ -3,25 +3,23 @@ import re
 import sys
 import typing
 
-from reprospect.testing.binaries.sass.composite import (
-    instruction_is,
-    interleaved_instructions_are,
-    unordered_interleaved_instructions_are,
-)
-from reprospect.testing.binaries.sass.composite_impl import (
-    SequenceMatcher,
-    UnorderedInSequenceMatcher,
-)
 from reprospect.testing.binaries.sass.instruction import (
+    Constant,
     InstructionMatch,
     LoadGlobalMatcher,
     OpcodeModsWithOperandsMatcher,
     PatternBuilder,
+    Register,
     RegisterMatcher,
     StoreGlobalMatcher,
 )
-from reprospect.testing.binaries.sass.instruction.constant import Constant
-from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.sequence import (
+    SequenceMatcher,
+    UnorderedInSequenceMatcher,
+    instruction_is,
+    interleaved_instructions_are,
+    unordered_interleaved_instructions_are,
+)
 from reprospect.testing.features import Memory
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass import Decoder

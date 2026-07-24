@@ -12,13 +12,14 @@ import attrs
 import mypy_extensions
 
 from reprospect.testing.binaries.sass.instruction import (
-    AddressMatcher,
-    ConstantMatcher,
     InstructionMatch,
     InstructionMatcher,
-    RegisterMatcher,
+    ModifierValidator,
+    OperandMatcher,
+    OperandsValidator,
+    OperandValidator,
 )
-from reprospect.tools.binaries.sass import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -35,7 +36,7 @@ class SequenceMatcher(abc.ABC):
         """
         .. note::
 
-            The `instructions` may be consumed more than once, *e.g.* in :py:class:`reprospect.testing.binaries.sass.composite_impl.UnorderedInSequenceMatcher`.
+            The `instructions` may be consumed more than once, *e.g.* in :py:class:`reprospect.testing.binaries.sass.sequence.sequence.UnorderedInSequenceMatcher`.
             Therefore, it must be a :py:class:`typing.Sequence`, not a :py:class:`typing.Iterable`.
         """
 
@@ -423,95 +424,277 @@ class AllInSequenceMatcher:
             offset += self.matcher.next_index
         return matches
 
-class ModifierValidator(InstructionMatcher):
+class Fluentizer(InstructionMatcher):
     """
-    If :py:attr:`index` is an integer, the modifier must be present at that specific position in the matched instruction modifiers.
-    If :py:attr:`index` is :py:obj:`None`, the modifier may be at any position in the matched instruction modifiers.
-
     .. note::
 
         It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    __slots__ = ('index', 'matcher', 'modifier')
+    __slots__ = ('matcher',)
 
-    def __init__(self, matcher: InstructionMatcher, modifier: str, index: int | None = None) -> None:
+    def __init__(self, matcher: InstructionMatcher) -> None:
         self.matcher: typing.Final[InstructionMatcher] = matcher
-        self.index: typing.Final[int | None] = index
-        self.modifier: typing.Final[str] = modifier
+
+    def times(self, num: int) -> InSequenceAtMatcher | OrderedInSequenceMatcher:
+        """
+        Match :py:attr:`matcher` `num` times (consecutively).
+
+        .. note::
+
+            If `num` is 0, it tests for the absence of a match.
+        """
+        if num < 0:
+            raise RuntimeError
+        if num == 0:
+            raise NotImplementedError
+        if num == 1:
+            return InSequenceAtMatcher(matcher=self.matcher)
+        return OrderedInSequenceMatcher(matchers=(self.matcher,) * num)
+
+    def one_or_more_times(self) -> OneOrMoreInSequenceMatcher:
+        """
+        Match :py:attr:`matcher` one or more times (consecutively).
+        """
+        return OneOrMoreInSequenceMatcher(matcher=self.matcher)
+
+    def zero_or_more_times(self) -> ZeroOrMoreInSequenceMatcher:
+        """
+        Match :py:attr:`matcher` zero or more times (consecutively).
+        """
+        return ZeroOrMoreInSequenceMatcher(matcher=self.matcher)
+
+    def with_modifier(self, modifier: str, index: int | None = None) -> Fluentizer:
+        """
+        >>> from reprospect.testing.binaries.sass.sequence import instruction_is
+        >>> from reprospect.testing.binaries.sass.instruction import AnyMatcher
+        >>> matcher = instruction_is(AnyMatcher()).with_modifier(modifier='U32').with_operand(index=0, operand='R4')
+        >>> matcher.match(inst='IMAD.WIDE.U32 R4, R7, 0x4, R4')
+        InstructionMatch(opcode='IMAD', modifiers=('WIDE', 'U32'), operands=('R4', 'R7', '0x4', 'R4'), predicate=None, additional=None)
+        """
+        return Fluentizer(matcher=ModifierValidator(
+            matcher=self.matcher,
+            index=index, modifier=modifier,
+        ))
+
+    def with_operand(self, operand: OperandMatcher, index: int | None = None) -> Fluentizer:
+        """
+        >>> from reprospect.testing.binaries.sass.sequence import instruction_is
+        >>> from reprospect.testing.binaries.sass.instruction import Fp32AddMatcher, RegisterMatcher
+        >>> from reprospect.tools.binaries.sass.decoder     import RegisterType
+        >>> matcher = instruction_is(Fp32AddMatcher()).with_operand(index = 1, operand = RegisterMatcher(rtype = RegisterType.GPR, index = 8))
+        >>> matcher.match(inst = 'FADD R5, R9, R10')
+        >>> matcher.match(inst = 'FADD R5, R8, R9')
+        InstructionMatch(opcode='FADD', modifiers=(), operands=('R5', 'R8', 'R9'), predicate=None, additional={'dst': ['R5']})
+        """
+        return Fluentizer(matcher=OperandValidator(
+            matcher=self.matcher,
+            index=index, operand=operand,
+        ))
+
+    def with_operands(self, operands: typing.Collection[tuple[int, OperandMatcher]]) -> Fluentizer:
+        """
+        Similar to :py:meth:`with_operand` for many operands.
+
+        >>> from reprospect.testing.binaries.sass.sequence   import instruction_is
+        >>> from reprospect.testing.binaries.sass.instruction import Fp32AddMatcher
+        >>> matcher = instruction_is(Fp32AddMatcher()).with_operands(
+        ...     operands = ((1, 'R8'), (2, 'R9')),
+        ... )
+        >>> matcher.match(inst = 'FADD R5, R9, R10')
+        >>> matcher.match(inst = 'FADD R5, R8, R9')
+        InstructionMatch(opcode='FADD', modifiers=(), operands=('R5', 'R8', 'R9'), predicate=None, additional={'dst': ['R5']})
+        """
+        return Fluentizer(matcher=OperandsValidator(
+            matcher=self,
+            operands=operands,
+        ))
 
     @override
+    @typing.final
     def match(self, inst: Instruction | str) -> InstructionMatch | None:
-        if (matched := self.matcher.match(inst)) is not None:
-            if self.index is not None:
-                try:
-                    return matched if matched.modifiers[self.index] == self.modifier else None
-                except IndexError:
-                    return None
-            else:
-                return matched if self.modifier in matched.modifiers else None
-        return None
+        return self.matcher.match(inst=inst)
 
-OperandMatcher: typing.TypeAlias = str | AddressMatcher | ConstantMatcher | RegisterMatcher
-
-class OperandValidator(InstructionMatcher):
+def instruction_is(matcher: InstructionMatcher) -> Fluentizer:
     """
-    Validate that the operand at :py:attr:`index` matches the instruction matched
-    with :py:attr:`matcher`.
+    Match the current instruction with `matcher`.
+
+    >>> from reprospect.testing.binaries.sass.sequence   import instruction_is
+    >>> from reprospect.testing.binaries.sass.instruction import Fp32AddMatcher
+    >>> instruction_is(Fp32AddMatcher()).match(inst = 'FADD R2, R2, R3')
+    InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']})
+    >>> instruction_is(Fp32AddMatcher()).one_or_more_times().match(instructions = ('FADD R2, R2, R3', 'FADD R4, R4, R5'))
+    [InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']}), InstructionMatch(opcode='FADD', modifiers=(), operands=('R4', 'R4', 'R5'), predicate=None, additional={'dst': ['R4']})]
+    """
+    return Fluentizer(matcher)
+
+def instruction_count_is(matcher: InstructionMatcher, count: int) -> CountInSequenceMatcher:
+    """
+    Match only if the `matcher` matches `count` times in the sequence.
+
+    >>> from reprospect.testing.binaries.sass.sequence import instruction_count_is
+    >>> from reprospect.testing.binaries.sass.instruction import Fp32AddMatcher
+    >>> matcher = instruction_count_is(Fp32AddMatcher(), count=2)
+    >>> matcher.match(instructions=('FADD R2, R2, R3',))
+    >>> matcher.match(instructions=('FADD R2, R2, R3', 'FADD R4, R4, R5'))
+    [InstructionMatch(opcode='FADD', modifiers=(), operands=('R2', 'R2', 'R3'), predicate=None, additional={'dst': ['R2']}), InstructionMatch(opcode='FADD', modifiers=(), operands=('R4', 'R4', 'R5'), predicate=None, additional={'dst': ['R4']})]
+    """
+    return CountInSequenceMatcher(matcher=matcher, count=count)
+
+def instructions_are(*matchers: InstructionMatcher | SequenceMatcher) -> OrderedInSequenceMatcher:
+    """
+    Match a sequence of instructions against `matchers`.
+
+    >>> from reprospect.testing.binaries.sass.sequence   import instructions_are
+    >>> from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
+    >>> instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     instruction_is(OpcodeModsMatcher(opcode = 'NOP', operands = False)).zero_or_more_times(),
+    ... ).match(instructions = ('YIELD', 'NOP', 'NOP'))
+    [InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None)]
+    """
+    return OrderedInSequenceMatcher(matchers=matchers)
+
+def unordered_instructions_are(*matchers: InstructionMatcher | SequenceMatcher) -> UnorderedInSequenceMatcher:
+    """
+    Match a sequence of instructions against `matchers` (unordered).
+
+    >>> from reprospect.testing.binaries.sass.sequence   import unordered_instructions_are
+    >>> from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
+    >>> unordered_instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
+    ... ).match(instructions = ('NOP', 'YIELD'))
+    [InstructionMatch(opcode='NOP', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None)]
+    """
+    return UnorderedInSequenceMatcher(matchers=matchers)
+
+def instructions_contain(matcher: InstructionMatcher | SequenceMatcher) -> InSequenceMatcher:
+    """
+    Check that a sequence of instructions contains at least one instruction matching `matcher`.
 
     .. note::
 
-        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
+        Stops on the first match.
+
+    >>> from reprospect.testing.binaries.sass.sequence   import instructions_are, instructions_contain
+    >>> from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
+    >>> matcher = instructions_contain(instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'FADD', operands = True),
+    ... ))
+    >>> matcher.match(instructions = ('NOP', 'NOP', 'YIELD', 'FADD R1, R1, R2'))
+    [InstructionMatch(opcode='YIELD', modifiers=(), operands=(), predicate=None, additional=None), InstructionMatch(opcode='FADD', modifiers=(), operands=('R1', 'R1', 'R2'), predicate=None, additional=None)]
+    >>> matcher.next_index
+    4
     """
-    __slots__ = ('index', 'matcher', 'operand')
+    return InSequenceMatcher(matcher)
 
-    def __init__(self, matcher: InstructionMatcher, operand: OperandMatcher, index: int | None = None) -> None:
-        self.matcher: typing.Final[InstructionMatcher] = matcher
-        self.index: typing.Final[int | None] = index
-        self.operand: typing.Final[OperandMatcher] = operand
-
-    def check(self, operand: str) -> bool:
-        if isinstance(self.operand, str) and operand == self.operand:
-            return True
-        return isinstance(self.operand, AddressMatcher | ConstantMatcher | RegisterMatcher) and self.operand.match(operand) is not None
-
-    @override
-    def match(self, inst: Instruction | str) -> InstructionMatch | None:
-        if (matched := self.matcher.match(inst)) is not None:
-            if self.index is not None:
-                try:
-                    return matched if self.check(operand=matched.operands[self.index]) else None
-                except IndexError:
-                    return None
-            else:
-                return matched if any(self.check(x) for x in matched.operands) else None
-        return None
-
-class OperandsValidator(InstructionMatcher):
+def any_of(*matchers: InstructionMatcher | SequenceMatcher) -> AnyOfMatcher:
     """
-    Validate that the :py:attr:`operands` match the instruction matched
-    with :py:attr:`matcher`.
+    Match a sequence of instructions against any of the `matchers`.
 
     .. note::
 
-        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
+        Returns the first match.
+
+    >>> from reprospect.testing.binaries.sass.sequence   import any_of
+    >>> from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
+    >>> matcher = any_of(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
+    ... )
+    >>> matcher.match(instructions = ('FADD R1, R1, R2',)) is None
+    True
+    >>> matcher.match(instructions=('NOP',)) is not None
+    True
+    >>> matcher.matched
+    1
     """
-    __slots__ = ('matcher', 'operands')
+    return AnyOfMatcher(*matchers)
 
-    def __init__(self, matcher: InstructionMatcher, operands: typing.Collection[tuple[int, OperandMatcher]]) -> None:
-        self.matcher: typing.Final[InstructionMatcher] = matcher
-        self.operands: typing.Final[tuple[tuple[int, OperandMatcher], ...]] = tuple(operands)
+def interleaved_instructions_are(*matchers: InstructionMatcher | SequenceMatcher) -> OrderedInterleavedInSequenceMatcher:
+    """
+    Match a sequence of instructions against `matchers`, allowing matched instructions to be interleaved with unmatched instructions.
 
-    @override
-    def match(self, inst: Instruction | str) -> InstructionMatch | None:
-        if (matched := self.matcher.match(inst)) is not None:
-            for mindex, moperand in self.operands:
-                try:
-                    operand = matched.operands[mindex]
-                except IndexError:
-                    return None
-                if isinstance(moperand, str) and operand != moperand:
-                    return None
-                if isinstance(moperand, AddressMatcher | ConstantMatcher | RegisterMatcher) and moperand.match(operand) is None:
-                    return None
-            return matched
-        return None
+    >>> from reprospect.testing.binaries.sass.sequence import interleaved_instructions_are
+    >>> from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
+    >>> matcher = interleaved_instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
+    ... )
+    >>> matcher.match(instructions = ('YIELD', 'NOP')) is not None
+    True
+    >>> matcher.match(instructions = ('NOP', 'YIELD')) is None
+    True
+    >>> matcher.match(instructions = ('YIELD', 'FADD R0, R1, R2', 'NOP')) is not None
+    True
+    """
+    return OrderedInterleavedInSequenceMatcher(matchers)
+
+def unordered_interleaved_instructions_are(*matchers: InstructionMatcher | SequenceMatcher) -> UnorderedInterleavedInSequenceMatcher:
+    """
+    Match a sequence of instructions against `matchers` (unordered), allowing matched instructions to be interleaved with unmatched instructions.
+
+    >>> from reprospect.testing.binaries.sass.sequence import unordered_interleaved_instructions_are
+    >>> from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
+    >>> matcher = unordered_interleaved_instructions_are(
+    ...     OpcodeModsMatcher(opcode = 'YIELD', operands = False),
+    ...     OpcodeModsMatcher(opcode = 'NOP', operands = False),
+    ... )
+    >>> matcher.match(instructions = ('YIELD', 'NOP')) is not None
+    True
+    >>> matcher.match(instructions = ('NOP', 'YIELD')) is not None
+    True
+    >>> matcher.match(instructions = ('YIELD', 'FADD R0, R1, R2', 'NOP')) is not None
+    True
+    >>> matcher.match(instructions = ('YIELD',)) is None
+    True
+    """
+    return UnorderedInterleavedInSequenceMatcher(matchers)
+
+@typing.overload
+def findall(matcher: InstructionMatcher, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch]:
+    ...
+
+@typing.overload
+def findall(matcher: SequenceMatcher, instructions: typing.Sequence[Instruction | str]) -> list[list[InstructionMatch]]:
+    ...
+
+def findall(
+    matcher: InstructionMatcher | SequenceMatcher,
+    instructions: typing.Sequence[Instruction | str],
+) -> list[InstructionMatch] | list[list[InstructionMatch]]:
+    """
+    Find all matches for `matcher` in a sequence of instructions.
+    Similarly to :py:func:`re.findall`, return an empty list if no match found.
+
+    >>> from reprospect.testing.binaries.sass.sequence import findall
+    >>> from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
+    >>> findall(
+    ...     OpcodeModsMatcher(opcode='FADD', operands=True),
+    ...     (
+    ...         'NOP',
+    ...         'FADD R1, R1, R2',
+    ...         'NOP',
+    ...         'FADD R3, R4, R5',
+    ... ))
+    [InstructionMatch(opcode='FADD', modifiers=(), operands=('R1', 'R1', 'R2'), predicate=None, additional=None), InstructionMatch(opcode='FADD', modifiers=(), operands=('R3', 'R4', 'R5'), predicate=None, additional=None)]
+    """
+    return AllInSequenceMatcher(matcher).match(instructions=instructions)
+
+@typing.overload
+def findunique(matcher: InstructionMatcher, instructions: typing.Sequence[Instruction | str]) -> InstructionMatch:
+    ...
+
+@typing.overload
+def findunique(matcher: SequenceMatcher, instructions: typing.Sequence[Instruction | str]) -> list[InstructionMatch]:
+    ...
+
+def findunique(matcher: InstructionMatcher | SequenceMatcher, instructions: typing.Sequence[Instruction | str]) -> InstructionMatch | list[InstructionMatch]:
+    """
+    Ensure that :py:meth:`findall` matches once.
+    """
+    matched = findall(matcher, instructions)
+    if len(matched) != 1:
+        raise ValueError
+    return matched[0]

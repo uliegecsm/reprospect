@@ -3,21 +3,19 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.instruction import InstructionMatch
-from reprospect.testing.binaries.sass.instruction.address import (
+from reprospect.testing.binaries.sass.instruction import (
     AddressMatcher,
     GenericOrGlobalAddressMatch,
+    InstructionMatch,
     LocalAddressMatch,
+    MemorySpace,
+    OpcodeModsWithOperandsMatcher,
+    Register,
     SharedAddressMatch,
     StrideModifier,
 )
-from reprospect.testing.binaries.sass.instruction.instruction import (
-    OpcodeModsWithOperandsMatcher,
-)
-from reprospect.testing.binaries.sass.instruction.memory import MemorySpace
-from reprospect.testing.binaries.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters

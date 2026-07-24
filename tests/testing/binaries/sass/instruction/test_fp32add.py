@@ -14,7 +14,7 @@ from tests.testing.binaries.sass.test_instruction import (
 
 class TestFp32AddMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.Fp32AddMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.floating.Fp32AddMatcher`.
     """
     def test(self) -> None:
         matched = Fp32AddMatcher().match(inst='FADD R6, R4, R2')

@@ -3,9 +3,9 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.composite import instructions_contain
 from reprospect.testing.binaries.sass.instruction import LoadGlobalMatcher
-from reprospect.testing.binaries.sass.matchers.add_int32 import AddInt32Matcher
+from reprospect.testing.binaries.sass.operation.add_int32 import AddInt32Matcher
+from reprospect.testing.binaries.sass.sequence import instructions_contain
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters
@@ -15,7 +15,7 @@ from tests.testing.binaries.sass.test_instruction import get_decoder
 @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestAddInt32Matcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.matchers.add_int32.AddInt32Matcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.operation.add_int32.AddInt32Matcher`.
     """
     CODE: typing.Final[str] = """\
 __global__ void add({type}* __restrict__ const dst, const {type}* __restrict__ src)

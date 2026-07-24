@@ -17,9 +17,9 @@ from :download:`this SASS code<../../../../../tests/tools/binaries/sass/assets/a
 Decode
 ------
 
-Here is the output of :py:func:`tests.tools.binaries.sass.test_decode.TestDecoder.test_to_html`:
+Here is the output of :py:func:`tests.tools.binaries.sass.test_decoder.TestDecoder.test_to_html`:
 
 .. raw:: html
-    :file: ../../../../../artifacts/tests/tools/binaries/sass/test_decode.py/saxpy.html
+    :file: ../../../../../artifacts/tests/tools/binaries/sass/test_decoder.py/saxpy.html
 
-.. automodule:: tests.tools.binaries.sass.test_decode
+.. automodule:: tests.tools.binaries.sass.test_decoder

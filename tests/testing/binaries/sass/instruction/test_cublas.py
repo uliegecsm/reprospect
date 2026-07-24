@@ -7,15 +7,15 @@ import typing
 import pytest
 import regex
 
-from reprospect.testing.binaries.sass.instruction.address import (
+from reprospect.testing.binaries.sass.instruction import (
     AddressMatcher,
+    AnyMatcher,
+    ConstantMatcher,
+    Immediate,
     MemorySpace,
+    RegisterMatcher,
 )
-from reprospect.testing.binaries.sass.instruction.constant import ConstantMatcher
-from reprospect.testing.binaries.sass.instruction.immediate import Immediate
-from reprospect.testing.binaries.sass.instruction.instruction import AnyMatcher
-from reprospect.testing.binaries.sass.instruction.register import RegisterMatcher
-from reprospect.tools.binaries.sass.decode import Decoder, Instruction
+from reprospect.tools.binaries.sass.decoder import Decoder, Instruction
 from reprospect.utils import cmake
 
 from tests.cublas import CuBLAS

@@ -5,11 +5,11 @@ from reprospect.testing.binaries.sass.instruction import (
     InstructionMatch,
     InstructionMatcher,
     OpcodeModsWithOperandsMatcher,
+    Operand,
     PatternBuilder,
+    Register,
 )
-from reprospect.testing.binaries.sass.instruction.operand import Operand
-from reprospect.testing.binaries.sass.instruction.register import Register
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

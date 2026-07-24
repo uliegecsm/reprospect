@@ -38,14 +38,22 @@ from .address import (
     GenericOrGlobalAddressMatch,
     LocalAddressMatch,
     SharedAddressMatch,
+    StrideModifier,
 )
 from .atomic import AtomicMatcher, ReductionMatcher, ThreadScope
 from .branch import BranchMatcher
-from .constant import ConstantMatch, ConstantMatcher
+from .constant import Constant, ConstantMatch, ConstantMatcher
 from .floating import (
     Fp32AddMatcher,
     Fp64AddMatcher,
 )
+from .half import (
+    Fp16AddMatcher,
+    Fp16FusedMulAddMatcher,
+    Fp16MinMaxMatcher,
+    Fp16MulMatcher,
+)
+from .immediate import Immediate
 from .instruction import (
     AnyMatcher,
     ArchitectureAndVersionAwarePatternMatcher,
@@ -55,15 +63,30 @@ from .instruction import (
     OpcodeModsMatcher,
     OpcodeModsWithOperandsMatcher,
     PatternMatcher,
+    Predicate,
+    ZeroOrOne,
+)
+from .integer import (
+    IntAdd3Matcher,
+    IntAddMatcher,
+    LEAMatcher,
 )
 from .load import (
     LoadConstantMatcher,
     LoadGlobalMatcher,
     LoadMatcher,
 )
+from .memory import MemorySpace
+from .operand import MathModifier, Operand
 from .pattern import PatternBuilder
-from .register import RegisterMatch, RegisterMatcher
+from .register import Register, RegisterMatch, RegisterMatcher
 from .store import StoreGlobalMatcher, StoreMatcher
+from .validate import (
+    ModifierValidator,
+    OperandMatcher,
+    OperandsValidator,
+    OperandValidator,
+)
 
 __all__ = (
     'AddressMatcher',
@@ -72,26 +95,46 @@ __all__ = (
     'ArchitectureAwarePatternMatcher',
     'AtomicMatcher',
     'BranchMatcher',
+    'Constant',
     'ConstantMatch',
     'ConstantMatcher',
+    'Fp16AddMatcher',
+    'Fp16FusedMulAddMatcher',
+    'Fp16MinMaxMatcher',
+    'Fp16MulMatcher',
     'Fp32AddMatcher',
     'Fp64AddMatcher',
     'GenericOrGlobalAddressMatch',
+    'Immediate',
     'InstructionMatch',
     'InstructionMatcher',
+    'IntAdd3Matcher',
+    'IntAddMatcher',
+    'LEAMatcher',
     'LoadConstantMatcher',
     'LoadGlobalMatcher',
     'LoadMatcher',
     'LocalAddressMatch',
+    'MathModifier',
+    'MemorySpace',
+    'ModifierValidator',
     'OpcodeModsMatcher',
     'OpcodeModsWithOperandsMatcher',
+    'Operand',
+    'OperandMatcher',
+    'OperandValidator',
+    'OperandsValidator',
     'PatternBuilder',
     'PatternMatcher',
+    'Predicate',
     'ReductionMatcher',
+    'Register',
     'RegisterMatch',
     'RegisterMatcher',
     'SharedAddressMatch',
     'StoreGlobalMatcher',
     'StoreMatcher',
+    'StrideModifier',
     'ThreadScope',
+    'ZeroOrOne',
 )

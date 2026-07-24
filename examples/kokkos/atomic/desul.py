@@ -21,7 +21,7 @@ and resort to the CAS-based implementation otherwise.
 
 To ensure that :code:`Kokkos` implements the right code path, the following matchers can be used:
 
-* :py:class:`reprospect.testing.binaries.sass.matchers.cas.AtomicCASMatcher`
+* :py:class:`reprospect.testing.binaries.sass.operation.cas.AtomicCASMatcher`
 * :py:class:`examples.kokkos.atomic.desul.LockBasedAtomicMatcher`
 
 The following tests:
@@ -42,16 +42,6 @@ import typing
 import semantic_version
 from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
-from reprospect.testing.binaries.sass.composite import (
-    instruction_is,
-    instructions_are,
-    instructions_contain,
-)
-from reprospect.testing.binaries.sass.composite_impl import (
-    InSequenceAtMatcher,
-    OrderedInSequenceMatcher,
-    SequenceMatcher,
-)
 from reprospect.testing.binaries.sass.instruction import (
     AtomicMatcher,
     BranchMatcher,
@@ -60,10 +50,18 @@ from reprospect.testing.binaries.sass.instruction import (
     LoadGlobalMatcher,
     OpcodeModsMatcher,
     OpcodeModsWithOperandsMatcher,
+    Register,
     StoreGlobalMatcher,
 )
-from reprospect.testing.binaries.sass.instruction.register import Register
-from reprospect.testing.binaries.sass.matchers.move32 import Move32Matcher
+from reprospect.testing.binaries.sass.operation.move32 import Move32Matcher
+from reprospect.testing.binaries.sass.sequence import (
+    InSequenceAtMatcher,
+    OrderedInSequenceMatcher,
+    SequenceMatcher,
+    instruction_is,
+    instructions_are,
+    instructions_contain,
+)
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass import Instruction
 

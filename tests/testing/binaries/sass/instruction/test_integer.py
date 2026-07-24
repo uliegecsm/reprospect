@@ -1,4 +1,4 @@
-from reprospect.testing.binaries.sass.instruction.integer import (
+from reprospect.testing.binaries.sass.instruction import (
     IntAdd3Matcher,
     IntAddMatcher,
     LEAMatcher,

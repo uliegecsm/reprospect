@@ -11,7 +11,7 @@ from reprospect.testing.binaries.sass.instruction.operand import (
     MathModifier,
 )
 from reprospect.testing.binaries.sass.instruction.pattern import PatternBuilder
-from reprospect.tools.binaries.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decoder import RegisterType
 
 MODIFIER_REUSE: typing.Final[str] = 'reuse'
 
@@ -98,7 +98,7 @@ class Register:
 class RegisterMatch:
     """
     If :py:attr:`index` is set to a negative value, it is a special register (*e.g.*
-    ``RZ`` if :py:attr:`rtype` is :py:const:`reprospect.tools.binaries.sass.decode.RegisterType.GPR`).
+    ``RZ`` if :py:attr:`rtype` is :py:const:`reprospect.tools.binaries.sass.decoder.RegisterType.GPR`).
     """
     rtype: RegisterType
     index: int = -1

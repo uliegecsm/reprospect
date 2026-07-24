@@ -5,10 +5,10 @@ from reprospect.testing.binaries.sass.instruction import (
     InstructionMatch,
     InstructionMatcher,
     OpcodeModsWithOperandsMatcher,
+    Register,
 )
-from reprospect.testing.binaries.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 from reprospect.utils.types import ConvertibleTypeInfo, TypeInfo
 
 if sys.version_info >= (3, 12):

@@ -6,8 +6,8 @@ Extensibility
 This module verifies that the following types remain
 subclassable after compilation, allowing users to extend :py:mod:`reprospect` capabilities:
 
-* :py:class:`reprospect.testing.binaries.sass.instruction.InstructionMatcher` (see :py:class:`tests.testing.binaries.sass.test_extensibility.NewInstructionMatcher`)
-* :py:class:`reprospect.testing.binaries.sass.instruction.PatternMatcher` (see :py:class:`tests.testing.binaries.sass.test_extensibility.NewPatternMatcher`)
+* :py:class:`reprospect.testing.binaries.sass.instruction.instruction.InstructionMatcher` (see :py:class:`tests.testing.binaries.sass.test_extensibility.NewInstructionMatcher`)
+* :py:class:`reprospect.testing.binaries.sass.instruction.instruction.PatternMatcher` (see :py:class:`tests.testing.binaries.sass.test_extensibility.NewPatternMatcher`)
 
 .. warning::
 
@@ -24,13 +24,13 @@ import typing
 import pytest
 import regex
 
-from reprospect.testing.binaries.sass.composite import instruction_is
 from reprospect.testing.binaries.sass.instruction import (
     Fp32AddMatcher,
     InstructionMatch,
     InstructionMatcher,
     PatternMatcher,
 )
+from reprospect.testing.binaries.sass.sequence import instruction_is
 from reprospect.tools.binaries.sass import ControlCode, Instruction
 
 if sys.version_info >= (3, 12):
@@ -57,7 +57,7 @@ class NewPatternMatcher(PatternMatcher):
 
 class CannotBeExtended(Fp32AddMatcher):
     """
-    :py:class:`reprospect.testing.binaries.sass.instruction.Fp32AddMatcher` was not marked as extensible.
+    :py:class:`reprospect.testing.binaries.sass.instruction.floating.Fp32AddMatcher` was not marked as extensible.
     """
 
 class TestInspect:

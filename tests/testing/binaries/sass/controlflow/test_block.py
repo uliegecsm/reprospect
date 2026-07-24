@@ -4,11 +4,7 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.composite import (
-    any_of,
-    interleaved_instructions_are,
-)
-from reprospect.testing.binaries.sass.controlflow.block import (
+from reprospect.testing.binaries.sass.controlflow import (
     BasicBlockMatcher,
     BasicBlockWithParentMatcher,
 )
@@ -20,9 +16,13 @@ from reprospect.testing.binaries.sass.instruction.half import (
     Fp16FusedMulAddMatcher,
     Fp16MulMatcher,
 )
+from reprospect.testing.binaries.sass.sequence import (
+    any_of,
+    interleaved_instructions_are,
+)
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.binaries.sass.controlflow import ControlFlow
-from reprospect.tools.binaries.sass.decode import Decoder
+from reprospect.tools.binaries.sass.decoder import Decoder
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters

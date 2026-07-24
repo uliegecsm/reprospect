@@ -1,12 +1,7 @@
 import logging
 import typing
 
-from reprospect.testing.binaries.sass.composite import (
-    instruction_is,
-    instructions_contain,
-)
-from reprospect.testing.binaries.sass.composite_impl import SequenceMatcher
-from reprospect.testing.binaries.sass.controlflow.block import (
+from reprospect.testing.binaries.sass.controlflow import (
     BasicBlockMatcher,
     BasicBlockWithParentMatcher,
 )
@@ -15,14 +10,19 @@ from reprospect.testing.binaries.sass.instruction import (
     AtomicMatcher,
     InstructionMatch,
     LoadGlobalMatcher,
+    MemorySpace,
     RegisterMatch,
     RegisterMatcher,
 )
-from reprospect.testing.binaries.sass.instruction.memory import MemorySpace
-from reprospect.testing.binaries.sass.matchers.move32 import Move32Matcher
+from reprospect.testing.binaries.sass.operation.move32 import Move32Matcher
+from reprospect.testing.binaries.sass.sequence import (
+    SequenceMatcher,
+    instruction_is,
+    instructions_contain,
+)
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass.controlflow import Graph
-from reprospect.tools.binaries.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decoder import RegisterType
 
 
 class Operation(typing.Protocol):

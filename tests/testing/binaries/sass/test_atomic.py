@@ -12,10 +12,10 @@ from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 from reprospect.testing.binaries.sass.instruction import (
     AtomicMatcher,
     InstructionMatch,
+    MemorySpace,
+    Register,
     ThreadScope,
 )
-from reprospect.testing.binaries.sass.instruction.memory import MemorySpace
-from reprospect.testing.binaries.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass import Instruction
 from reprospect.utils import cmake
@@ -156,7 +156,7 @@ __global__ void atomic_exch_kernel() {
     @staticmethod
     def get_atomicCAS_thread_scope(*, size: int, arch: NVIDIAArch, cuda_compiler: CMakeToolchainCompiler) -> ThreadScope:
         """
-        Get the expected :py:data:`reprospect.testing.binaries.sass.instruction.ThreadScope` for :code:`atomicCAS`.
+        Get the expected :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope` for :code:`atomicCAS`.
         """
         cuda_compiler_version = semantic_version.Version(cuda_compiler.version)
 
@@ -171,18 +171,18 @@ __global__ void atomic_exch_kernel() {
     @staticmethod
     def assert_atomicCAS_ptx(*, output: pathlib.Path, matcher: AtomicMatcher, cuda_compiler: CMakeToolchainCompiler) -> None:
         """
-        Check for the expected PTX code in `output` given the :py:data:`reprospect.testing.binaries.sass.instruction.ThreadScope`.
+        Check for the expected PTX code in `output` given the :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope`.
 
         According to:
 
         * https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#legacy-atomic-functions
 
-        it should generate :py:data:`reprospect.testing.binaries.sass.instruction.ThreadScope.DEVICE` instructions. However, as noted in:
+        it should generate :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.DEVICE` instructions. However, as noted in:
 
         * https://github.com/uliegecsm/reprospect/issues/556
         * https://forums.developer.nvidia.com/t/atomiccas-cuda-13-2-unexpectedly-generates-system-scope-atomic-instruction-starting-from-cc100/365449
 
-        it may unexpectedly generate :py:data:`reprospect.testing.binaries.sass.instruction.ThreadScope.SYSTEM` instructions.
+        it may unexpectedly generate :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.SYSTEM` instructions.
 
         .. note::
 
@@ -412,7 +412,7 @@ __global__ void atomic_exch_kernel() {
 
     def test_min_relaxed_device_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
-        Test with :py:attr:`CODE_MIN` for `int` and :py:data:`reprospect.testing.binaries.sass.instruction.ThreadScope.DEVICE` scope.
+        Test with :py:attr:`CODE_MIN` for `int` and :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.DEVICE` scope.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MIN.format(type='int', scope='device'))
@@ -440,7 +440,7 @@ __global__ void atomic_exch_kernel() {
 
     def test_min_relaxed_system_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
-        Test with :py:attr:`CODE_MIN` for `int` and :py:data:`reprospect.testing.binaries.sass.instruction.ThreadScope.SYSTEM` scope.
+        Test with :py:attr:`CODE_MIN` for `int` and :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.SYSTEM` scope.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MIN.format(type='int', scope='system'))
@@ -468,7 +468,7 @@ __global__ void atomic_exch_kernel() {
 
     def test_min_relaxed_device_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
-        Test with :py:attr:`CODE_MIN` for `long long int` and :py:data:`reprospect.testing.binaries.sass.instruction.ThreadScope.DEVICE` scope.
+        Test with :py:attr:`CODE_MIN` for `long long int` and :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.DEVICE` scope.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MIN.format(type='long long int', scope='device'))
@@ -496,7 +496,7 @@ __global__ void atomic_exch_kernel() {
 
     def test_min_relaxed_device_unsigned_long_long_int(self, request, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
-        Test with :py:attr:`CODE_MIN` for `unsigned long long int` and :py:data:`reprospect.testing.binaries.sass.instruction.ThreadScope.DEVICE` scope.
+        Test with :py:attr:`CODE_MIN` for `unsigned long long int` and :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.DEVICE` scope.
         """
         FILE = workdir / f'{request.node.originalname}.{parameters.arch.as_sm}.cu'
         FILE.write_text(self.CODE_MIN.format(type='unsigned long long int', scope='device'))
@@ -525,7 +525,7 @@ __global__ void atomic_exch_kernel() {
     @pytest.mark.parametrize('consistency', ['strong', 'weak'], ids=str)
     def test_compare_exchange_system(self, request, consistency: str, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI):
         """
-        Test with :py:attr:`CODE_COMPARE_EXCHANGE` for `unsigned long long int`, :py:data:`reprospect.testing.binaries.sass.instruction.ThreadScope.SYSTEM` scope.
+        Test with :py:attr:`CODE_COMPARE_EXCHANGE` for `unsigned long long int`, :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.SYSTEM` scope.
 
         .. note::
 

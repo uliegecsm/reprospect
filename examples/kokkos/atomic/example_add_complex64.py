@@ -2,21 +2,19 @@ import re
 import sys
 import typing
 
-from reprospect.testing.binaries.sass.composite import (
-    instruction_is,
-    interleaved_instructions_are,
-    unordered_interleaved_instructions_are,
-)
-from reprospect.testing.binaries.sass.composite_impl import (
-    OrderedInterleavedInSequenceMatcher,
-    UnorderedInterleavedInSequenceMatcher,
-)
 from reprospect.testing.binaries.sass.instruction import (
     Fp32AddMatcher,
     InstructionMatch,
     RegisterMatcher,
 )
-from reprospect.testing.binaries.sass.matchers.cas import AtomicCASMatcher
+from reprospect.testing.binaries.sass.operation.cas import AtomicCASMatcher
+from reprospect.testing.binaries.sass.sequence import (
+    OrderedInterleavedInSequenceMatcher,
+    UnorderedInterleavedInSequenceMatcher,
+    instruction_is,
+    interleaved_instructions_are,
+    unordered_interleaved_instructions_are,
+)
 from reprospect.tools.binaries.sass import ControlFlow, Decoder
 
 from examples.kokkos.atomic import add

@@ -3,9 +3,11 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.instruction import OpcodeModsWithOperandsMatcher
-from reprospect.testing.binaries.sass.instruction.immediate import Immediate
-from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.instruction import (
+    Immediate,
+    OpcodeModsWithOperandsMatcher,
+    Register,
+)
 
 
 class TestImmediate:

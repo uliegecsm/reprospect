@@ -4,8 +4,8 @@ import typing
 import numpy
 import pytest
 
-from reprospect.testing.binaries.sass.composite import instructions_contain
-from reprospect.testing.binaries.sass.matchers.convert_fp_to_int import ConvertFpToInt
+from reprospect.testing.binaries.sass.operation.convert_fp_to_int import ConvertFpToInt
+from reprospect.testing.binaries.sass.sequence import instructions_contain
 from reprospect.utils.types import ConvertibleTypeInfo
 
 from tests.parameters import PARAMETERS, Parameters
@@ -15,7 +15,7 @@ from tests.testing.binaries.sass.test_instruction import get_decoder
 @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestConvertFpToInt:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.matchers.convert_fp_to_int.ConvertFpToInt`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.operation.convert_fp_to_int.ConvertFpToInt`.
     """
     CODE: typing.Final[str] = """\
 __global__ void test({int_type}* __restrict__ const dst, const {fp_type}* __restrict__ const src) {{

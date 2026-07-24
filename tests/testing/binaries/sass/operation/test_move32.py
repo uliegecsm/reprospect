@@ -1,9 +1,9 @@
-from reprospect.testing.binaries.sass.matchers.move32 import Move32Matcher
+from reprospect.testing.binaries.sass.operation.move32 import Move32Matcher
 
 
 class TestMove32Matcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.matchers.move32.Move32Matcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.operation.move32.Move32Matcher`.
     """
     def test_mov(self) -> None:
         assert Move32Matcher().match(inst='MOV R11, 0x4') is not None

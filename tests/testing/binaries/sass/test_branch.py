@@ -2,8 +2,7 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.instruction.branch import BranchMatcher
-from reprospect.testing.binaries.sass.instruction.instruction import InstructionMatch
+from reprospect.testing.binaries.sass.instruction import BranchMatcher, InstructionMatch
 
 
 class TestBranchMatcher:

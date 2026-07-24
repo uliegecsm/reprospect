@@ -4,15 +4,13 @@ import typing
 from reprospect.testing.binaries.sass.instruction import (
     InstructionMatch,
     InstructionMatcher,
-    OpcodeModsWithOperandsMatcher,
-)
-from reprospect.testing.binaries.sass.instruction.integer import (
     IntAdd3Matcher,
     IntAddMatcher,
+    OpcodeModsWithOperandsMatcher,
+    Register,
 )
-from reprospect.testing.binaries.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

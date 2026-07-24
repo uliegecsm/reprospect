@@ -5,8 +5,8 @@ from reprospect.testing.binaries.sass.instruction import (
     InstructionMatch,
     InstructionMatcher,
     OpcodeModsWithOperandsMatcher,
+    Register,
 )
-from reprospect.testing.binaries.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass.decode import Instruction
 

@@ -11,11 +11,13 @@ import pytest
 import semantic_version
 
 from reprospect.testing import environment
-from reprospect.testing.binaries.sass.composite import findall
-from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
-from reprospect.testing.binaries.sass.instruction.register import Register
-from reprospect.testing.binaries.sass.matchers.convert_fp_to_int import ConvertFpToInt
-from reprospect.testing.binaries.sass.matchers.convert_int_to_fp import ConvertIntToFp
+from reprospect.testing.binaries.sass.instruction import (
+    OpcodeModsMatcher,
+    Register,
+)
+from reprospect.testing.binaries.sass.operation.convert_fp_to_int import ConvertFpToInt
+from reprospect.testing.binaries.sass.operation.convert_int_to_fp import ConvertIntToFp
+from reprospect.testing.binaries.sass.sequence import findall
 from reprospect.testing.case import CMakeAwareTestCase
 from reprospect.tools.binaries import (
     CuObjDump,

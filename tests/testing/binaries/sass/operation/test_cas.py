@@ -2,10 +2,12 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.composite import interleaved_instructions_are
-from reprospect.testing.binaries.sass.composite_impl import SequenceMatcher
 from reprospect.testing.binaries.sass.instruction import Fp32AddMatcher
-from reprospect.testing.binaries.sass.matchers.cas import AtomicCASMatcher
+from reprospect.testing.binaries.sass.operation.cas import AtomicCASMatcher
+from reprospect.testing.binaries.sass.sequence import (
+    SequenceMatcher,
+    interleaved_instructions_are,
+)
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass.controlflow import BasicBlock, Graph
 from reprospect.tools.binaries.sass.decode import ControlCode, Instruction
@@ -17,7 +19,7 @@ class Operation:
 
 class TestAtomicCASMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.matchers.cas.AtomicCASMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.operation.cas.AtomicCASMatcher`.
     """
     CONTROL_CODE: typing.Final[ControlCode] = ControlCode.decode(code='0x000e220000000800')
 

@@ -6,15 +6,15 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.composite import (
-    instruction_is,
-    instructions_contain,
-)
 from reprospect.testing.binaries.sass.instruction import (
     LoadGlobalMatcher,
     RegisterMatcher,
 )
-from reprospect.testing.binaries.sass.matchers import add_int128
+from reprospect.testing.binaries.sass.operation import add_int128
+from reprospect.testing.binaries.sass.sequence import (
+    instruction_is,
+    instructions_contain,
+)
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters
@@ -23,7 +23,7 @@ from tests.testing.binaries.sass.test_instruction import get_decoder
 
 class TestAddInt128Matcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.matchers.add_int128.AddInt128Matcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.operation.add_int128.AddInt128Matcher`.
     """
     CODE_ADD_INT128: typing.Final[str] = """\
 __global__ void add_int128(__int128_t* __restrict__ const dst, const __int128_t* __restrict__ const src)

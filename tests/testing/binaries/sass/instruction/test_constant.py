@@ -2,7 +2,7 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.instruction.constant import (
+from reprospect.testing.binaries.sass.instruction import (
     ConstantMatch,
     ConstantMatcher,
     MathModifier,

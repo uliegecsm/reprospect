@@ -4,12 +4,12 @@ import typing
 import pytest
 
 from reprospect.testing import features
-from reprospect.testing.binaries.sass.composite import findall
-from reprospect.testing.binaries.sass.instruction.memory import MemorySpace
-from reprospect.testing.binaries.sass.instruction.store import (
+from reprospect.testing.binaries.sass.instruction import (
+    MemorySpace,
     StoreGlobalMatcher,
     StoreMatcher,
 )
+from reprospect.testing.binaries.sass.sequence import findall
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 

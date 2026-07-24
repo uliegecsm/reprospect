@@ -1,17 +1,19 @@
 import sys
 import typing
 
-from reprospect.testing.binaries.sass.composite import instructions_contain
-from reprospect.testing.binaries.sass.composite_impl import SequenceMatcher
 from reprospect.testing.binaries.sass.instruction import (
+    Constant,
     InstructionMatch,
     OpcodeModsWithOperandsMatcher,
     PatternBuilder,
+    Register,
     RegisterMatcher,
+    ZeroOrOne,
 )
-from reprospect.testing.binaries.sass.instruction.constant import Constant
-from reprospect.testing.binaries.sass.instruction.instruction import ZeroOrOne
-from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.sequence import (
+    SequenceMatcher,
+    instructions_contain,
+)
 from reprospect.tools.binaries.sass.decode import Instruction
 
 if sys.version_info >= (3, 12):

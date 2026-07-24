@@ -7,14 +7,14 @@ import numpy
 import pytest
 import semantic_version
 
-from reprospect.testing.binaries.sass.composite import findunique
 from reprospect.testing.binaries.sass.instruction import (
     AtomicMatcher,
     OpcodeModsMatcher,
     OpcodeModsWithOperandsMatcher,
     ReductionMatcher,
+    Register,
 )
-from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.sequence import findunique
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.binaries.sass import Decoder

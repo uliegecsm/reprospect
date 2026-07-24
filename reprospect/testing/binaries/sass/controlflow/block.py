@@ -4,13 +4,13 @@ import typing
 
 import mypy_extensions
 
-from reprospect.testing.binaries.sass.composite_impl import (
-    InSequenceMatcher,
-    SequenceMatcher,
-)
 from reprospect.testing.binaries.sass.instruction import (
     InstructionMatch,
     InstructionMatcher,
+)
+from reprospect.testing.binaries.sass.sequence import (
+    InSequenceMatcher,
+    SequenceMatcher,
 )
 from reprospect.tools.binaries.sass.controlflow import BasicBlock, Graph
 

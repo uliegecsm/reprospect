@@ -7,23 +7,23 @@ import pytest
 from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.testing import features
-from reprospect.testing.binaries.sass.composite import (
-    findall,
-    findunique,
-    instruction_is,
-    instructions_contain,
-)
 from reprospect.testing.binaries.sass.instruction import (
     ConstantMatcher,
     InstructionMatch,
     LoadConstantMatcher,
     LoadGlobalMatcher,
     LoadMatcher,
+    MemorySpace,
     OpcodeModsWithOperandsMatcher,
     PatternBuilder,
+    Register,
 )
-from reprospect.testing.binaries.sass.instruction.memory import MemorySpace
-from reprospect.testing.binaries.sass.instruction.register import Register
+from reprospect.testing.binaries.sass.sequence import (
+    findall,
+    findunique,
+    instruction_is,
+    instructions_contain,
+)
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.utils import cmake
 

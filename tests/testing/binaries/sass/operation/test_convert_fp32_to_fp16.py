@@ -3,10 +3,10 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.composite import instructions_contain
-from reprospect.testing.binaries.sass.matchers.convert_fp32_to_fp16 import (
+from reprospect.testing.binaries.sass.operation.convert_fp32_to_fp16 import (
     ConvertFp32ToFp16,
 )
+from reprospect.testing.binaries.sass.sequence import instructions_contain
 
 from tests.parameters import PARAMETERS, Parameters
 from tests.testing.binaries.sass.test_instruction import get_decoder
@@ -15,7 +15,7 @@ from tests.testing.binaries.sass.test_instruction import get_decoder
 @pytest.mark.parametrize('parameters', PARAMETERS, ids=str)
 class TestConvertFp32ToFp16:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.matchers.convert_fp32_to_fp16.ConvertFp32ToFp16`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.operation.convert_fp32_to_fp16.ConvertFp32ToFp16`.
     """
     CODE: typing.Final[str] = """#include "cuda_fp16.h"
 __global__ void test(__half* __restrict__ const dst, const float* __restrict__ const src) {

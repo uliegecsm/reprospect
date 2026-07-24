@@ -6,19 +6,19 @@ import typing
 
 import pytest
 
-from reprospect.testing.binaries.sass.composite import (
+from reprospect.testing.binaries.sass.instruction import (
+    Fp16AddMatcher,
+    Fp16FusedMulAddMatcher,
+    Fp16MinMaxMatcher,
+    Fp16MulMatcher,
+    OpcodeModsMatcher,
+)
+from reprospect.testing.binaries.sass.sequence import (
     any_of,
     findall,
     findunique,
     instruction_is,
     instructions_contain,
-)
-from reprospect.testing.binaries.sass.instruction import OpcodeModsMatcher
-from reprospect.testing.binaries.sass.instruction.half import (
-    Fp16AddMatcher,
-    Fp16FusedMulAddMatcher,
-    Fp16MinMaxMatcher,
-    Fp16MulMatcher,
 )
 from reprospect.testing.features import PTX
 from reprospect.tools.binaries import CuObjDump

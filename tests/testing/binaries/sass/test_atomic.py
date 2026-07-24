@@ -12,10 +12,10 @@ from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 from reprospect.testing.binaries.sass.instruction import (
     AtomicMatcher,
     InstructionMatch,
+    MemorySpace,
+    Register,
     ThreadScope,
 )
-from reprospect.testing.binaries.sass.instruction.memory import MemorySpace
-from reprospect.testing.binaries.sass.instruction.register import Register
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass import Instruction
 from reprospect.utils import cmake

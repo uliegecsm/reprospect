@@ -3,13 +3,13 @@ import typing
 import pytest
 import regex
 
-from reprospect.testing.binaries.sass.instruction.register import (
+from reprospect.testing.binaries.sass.instruction import (
     MathModifier,
     Register,
     RegisterMatch,
     RegisterMatcher,
-    RegisterType,
 )
+from reprospect.tools.binaries.sass.decode import RegisterType
 
 
 class TestRegister:

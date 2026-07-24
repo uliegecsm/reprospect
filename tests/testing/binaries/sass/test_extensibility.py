@@ -24,13 +24,13 @@ import typing
 import pytest
 import regex
 
-from reprospect.testing.binaries.sass.composite import instruction_is
 from reprospect.testing.binaries.sass.instruction import (
     Fp32AddMatcher,
     InstructionMatch,
     InstructionMatcher,
     PatternMatcher,
 )
+from reprospect.testing.binaries.sass.sequence import instruction_is
 from reprospect.tools.binaries.sass import ControlCode, Instruction
 
 if sys.version_info >= (3, 12):

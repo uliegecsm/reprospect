@@ -30,7 +30,7 @@ Binary analysis
 ~~~~~~~~~~~~~~~
 
 * :py:class:`reprospect.testing.binaries.sass.instruction.instruction.InstructionMatcher`
-* :py:class:`reprospect.testing.binaries.sass.composite_impl.SequenceMatcher`
+* :py:class:`reprospect.testing.binaries.sass.sequence.sequence.SequenceMatcher`
 * :py:class:`reprospect.tools.binaries.CuObjDump`
 * :py:class:`reprospect.tools.binaries.ELF`
 * :py:class:`reprospect.tools.binaries.NVDisasm`

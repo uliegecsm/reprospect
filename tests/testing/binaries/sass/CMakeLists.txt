@@ -1,6 +1,4 @@
-add_pytest(any)
-add_pytest(atomic)
-add_pytest(branch)
+add_pytest(half)
 add_pytest(instruction)
 add_pytest(load)
 add_pytest(store)

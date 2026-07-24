@@ -14,8 +14,8 @@ from :download:`this SASS code<../../../../../tests/tools/binaries/sass/assets/a
 
 .. automodule:: tests.tools.binaries.sass.test_controlflow
 
-Decode
-------
+Decoder
+-------
 
 Here is the output of :py:func:`tests.tools.binaries.sass.test_decoder.TestDecoder.test_to_html`:
 

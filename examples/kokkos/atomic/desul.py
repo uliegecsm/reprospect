@@ -72,7 +72,7 @@ else:
 
 def get_atomic_memory_suffix(compiler: CMakeToolchainCompiler) -> typing.Literal['G', '']:
     """
-    See :py:meth:`tests.testing.binaries.sass.test_atomic.TestAtomicMatcher.test_exch_device_ptr`.
+    See :py:meth:`tests.testing.binaries.sass.instruction.test_atomic.TestAtomicMatcher.test_exch_device_ptr`.
     """
     match compiler.id:
         case 'NVIDIA':

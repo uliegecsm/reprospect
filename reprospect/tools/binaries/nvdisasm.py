@@ -7,7 +7,7 @@ import typing
 import rich.table
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
+from reprospect.tools.binaries.demangler import CuppFilt, LlvmCppFilt
 from reprospect.tools.binaries.elf import ELF
 from reprospect.tools.binaries.sass.decoder import RegisterType
 from reprospect.tools.binaries.symtab import get_symbol_table

@@ -14,7 +14,7 @@ import typing
 
 import rich.tree
 
-from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
+from reprospect.tools.binaries.demangler import CuppFilt, LlvmCppFilt
 from reprospect.tools.ncu.metrics import (
     Metric,
     MetricCorrelation,

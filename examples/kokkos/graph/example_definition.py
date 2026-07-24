@@ -8,9 +8,9 @@ import sys
 
 import pytest
 
-from reprospect.testing import CMakeAwareTestCase, environment
+from reprospect.testing import CMakeAwareTestCase
 from reprospect.tools import nsys
-from reprospect.utils import detect
+from reprospect.utils import detect, environment
 from reprospect.utils.rich_helpers import df_to_table, to_string
 
 if sys.version_info >= (3, 12):

@@ -113,7 +113,7 @@ import typing
 import pytest
 import semantic_version
 
-from reprospect.testing import CMakeAwareTestCase, environment
+from reprospect.testing import CMakeAwareTestCase
 from reprospect.testing.binaries.sass.controlflow import BasicBlockMatcher
 from reprospect.testing.binaries.sass.instruction import (
     IntAdd3Matcher,
@@ -134,7 +134,7 @@ from reprospect.tools import ncu
 from reprospect.tools.binaries.cuobjdump import CuObjDump
 from reprospect.tools.binaries.sass.controlflow import ControlFlow, Graph
 from reprospect.tools.binaries.sass.decoder import Decoder
-from reprospect.utils import detect
+from reprospect.utils import detect, environment
 
 if sys.version_info >= (3, 12):
     from typing import override

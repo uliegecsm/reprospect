@@ -8,9 +8,9 @@ import pandas
 import pytest
 import semantic_version
 
-from reprospect.testing import CMakeAwareTestCase, environment
+from reprospect.testing import CMakeAwareTestCase
 from reprospect.tools import nsys
-from reprospect.utils import detect, rich_helpers
+from reprospect.utils import detect, environment, rich_helpers
 
 if sys.version_info >= (3, 12):
     from typing import override

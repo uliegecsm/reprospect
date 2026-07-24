@@ -55,7 +55,6 @@ import typing
 
 import pytest
 
-from reprospect.testing import environment
 from reprospect.testing.binaries.sass.instruction import (
     LoadGlobalMatcher,
     StoreGlobalMatcher,
@@ -74,7 +73,7 @@ from reprospect.tools.ncu import (
     ProfilingMetrics,
     Report,
 )
-from reprospect.utils import detect
+from reprospect.utils import detect, environment
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum

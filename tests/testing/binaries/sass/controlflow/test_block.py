@@ -9,12 +9,10 @@ from reprospect.testing.binaries.sass.controlflow import (
     BasicBlockWithParentMatcher,
 )
 from reprospect.testing.binaries.sass.instruction import (
-    LoadGlobalMatcher,
-    OpcodeModsMatcher,
-)
-from reprospect.testing.binaries.sass.instruction.half import (
     Fp16FusedMulAddMatcher,
     Fp16MulMatcher,
+    LoadGlobalMatcher,
+    OpcodeModsMatcher,
 )
 from reprospect.testing.binaries.sass.sequence import (
     any_of,

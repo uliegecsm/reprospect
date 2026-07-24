@@ -5,8 +5,8 @@ import pathlib
 import pytest
 
 from reprospect.tools.architecture import NVIDIAArch
+from reprospect.tools.compile_command import get_arch_from_compile_command
 from reprospect.utils import cmake
-from reprospect.utils.compile_command import get_arch_from_compile_command
 
 
 @pytest.fixture(scope='session')
@@ -17,7 +17,7 @@ def cmake_file_api() -> cmake.FileAPI:
 
 class TestGetArchFromCompileCommand:
     """
-    Tests for :py:meth:`reprospect.utils.compile_command.get_arch_from_compile_command`.
+    Tests for :py:meth:`reprospect.tools.compile_command.get_arch_from_compile_command`.
     """
     def test_from_bits(self) -> None:
         COMMANDS: dict[str, set[NVIDIAArch]] = {

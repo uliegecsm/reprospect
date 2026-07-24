@@ -10,7 +10,6 @@ import numpy
 import pytest
 import semantic_version
 
-from reprospect.testing import environment
 from reprospect.testing.binaries.sass.instruction import (
     OpcodeModsMatcher,
     Register,
@@ -37,7 +36,7 @@ from reprospect.tools.ncu import (
     ProfilingMetrics,
     Report,
 )
-from reprospect.utils import detect
+from reprospect.utils import detect, environment
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum

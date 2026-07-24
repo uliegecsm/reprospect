@@ -13,10 +13,8 @@ The tests for the subpackages can be found in:
    sass/operation
    sass/sequence
 
-.. automodule:: tests.testing.binaries.sass.test_any
-.. automodule:: tests.testing.binaries.sass.test_atomic
-.. automodule:: tests.testing.binaries.sass.test_branch
 .. automodule:: tests.testing.binaries.sass.test_extensibility
+.. automodule:: tests.testing.binaries.sass.test_half
 .. automodule:: tests.testing.binaries.sass.test_instruction
 .. automodule:: tests.testing.binaries.sass.test_load
 .. automodule:: tests.testing.binaries.sass.test_store

@@ -19,7 +19,7 @@ from reprospect.testing.binaries.sass.instruction import (
     OperandsValidator,
     OperandValidator,
 )
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -36,7 +36,7 @@ class SequenceMatcher(abc.ABC):
         """
         .. note::
 
-            The `instructions` may be consumed more than once, *e.g.* in :py:class:`reprospect.testing.binaries.sass.sequence.UnorderedInSequenceMatcher`.
+            The `instructions` may be consumed more than once, *e.g.* in :py:class:`reprospect.testing.binaries.sass.sequence.sequence.UnorderedInSequenceMatcher`.
             Therefore, it must be a :py:class:`typing.Sequence`, not a :py:class:`typing.Iterable`.
         """
 
@@ -480,7 +480,7 @@ class Fluentizer(InstructionMatcher):
         """
         >>> from reprospect.testing.binaries.sass.sequence import instruction_is
         >>> from reprospect.testing.binaries.sass.instruction import Fp32AddMatcher, RegisterMatcher
-        >>> from reprospect.tools.binaries.sass.decode     import RegisterType
+        >>> from reprospect.tools.binaries.sass.decoder     import RegisterType
         >>> matcher = instruction_is(Fp32AddMatcher()).with_operand(index = 1, operand = RegisterMatcher(rtype = RegisterType.GPR, index = 8))
         >>> matcher.match(inst = 'FADD R5, R9, R10')
         >>> matcher.match(inst = 'FADD R5, R8, R9')

@@ -22,7 +22,7 @@ from reprospect.testing.binaries.sass.sequence import (
 )
 from reprospect.tools.binaries import CuObjDump
 from reprospect.tools.binaries.sass.controlflow import ControlFlow
-from reprospect.tools.binaries.sass.decode import Decoder
+from reprospect.tools.binaries.sass.decoder import Decoder
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters

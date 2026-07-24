@@ -15,7 +15,7 @@ from reprospect.testing.binaries.sass.instruction import (
     StrideModifier,
 )
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters

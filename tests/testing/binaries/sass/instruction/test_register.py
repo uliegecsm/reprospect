@@ -9,7 +9,7 @@ from reprospect.testing.binaries.sass.instruction import (
     RegisterMatch,
     RegisterMatcher,
 )
-from reprospect.tools.binaries.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decoder import RegisterType
 
 
 class TestRegister:

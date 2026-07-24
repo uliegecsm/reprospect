@@ -9,7 +9,7 @@ from reprospect.testing.binaries.sass.instruction import (
     PatternBuilder,
     Register,
 )
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

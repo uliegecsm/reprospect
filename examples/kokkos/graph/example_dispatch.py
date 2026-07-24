@@ -41,7 +41,7 @@ class TestNSYS(TestDispatch):
     @pytest.fixture(scope='class')
     def report(self) -> nsys.Report:
         """
-        Analyse with `nsys`, use :py:class:`reprospect.tools.nsys.Cacher`.
+        Analyse with `nsys`, use :py:class:`reprospect.tools.nsys.cacher.Cacher`.
         """
         with nsys.Cacher() as cacher:
             command = nsys.Command(

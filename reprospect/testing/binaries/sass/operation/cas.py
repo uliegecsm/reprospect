@@ -22,7 +22,7 @@ from reprospect.testing.binaries.sass.sequence import (
 )
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass.controlflow import Graph
-from reprospect.tools.binaries.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decoder import RegisterType
 
 
 class Operation(typing.Protocol):

@@ -1,2 +1,2 @@
 add_pytest(controlflow)
-add_pytest(decode)
+add_pytest(decoder)

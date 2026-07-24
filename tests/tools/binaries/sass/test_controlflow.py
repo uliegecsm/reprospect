@@ -5,7 +5,7 @@ import typing
 import pytest
 
 from reprospect.tools.binaries.sass.controlflow import BasicBlock, ControlFlow, Graph
-from reprospect.tools.binaries.sass.decode import ControlCode, Decoder, Instruction
+from reprospect.tools.binaries.sass.decoder import ControlCode, Decoder, Instruction
 from reprospect.utils import cmake
 
 from tests.parameters import PARAMETERS, Parameters

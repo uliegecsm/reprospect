@@ -8,7 +8,7 @@ from reprospect.testing.binaries.sass.instruction import (
     PatternBuilder,
     Predicate,
 )
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 
 
 @dataclasses.dataclass(frozen=True, slots=True, repr=False)
@@ -87,7 +87,7 @@ class Graph:
 
 class ControlFlow:
     """
-    Analyze SASS instructions from a :py:class:`reprospect.tools.binaries.sass.Decoder` to construct a :py:class:`reprospect.tools.binaries.sass.controlflow.Graph`.
+    Analyze SASS instructions from a :py:class:`reprospect.tools.binaries.sass.decoder.Decoder` to construct a :py:class:`reprospect.tools.binaries.sass.controlflow.Graph`.
     """
     BRANCHING: typing.Final[re.Pattern[str]] = re.compile('(' + '|'.join(( # ruff:ignore[static-join-to-f-string]
         'BPT',
@@ -128,7 +128,7 @@ class ControlFlow:
         Get the target of a branching instruction.
 
         >>> from reprospect.tools.binaries.sass.controlflow import ControlFlow
-        >>> from reprospect.tools.binaries.sass.decode      import ControlCode, Instruction
+        >>> from reprospect.tools.binaries.sass.decoder      import ControlCode, Instruction
         >>> ControlFlow.get_target(instruction = Instruction(offset = '0160', instruction = f'@!P0 BRA {hex(400)}', hex = '0x0000000000088947', control = ControlCode.decode(code = '0x000fea0003800000')))
         400
         """

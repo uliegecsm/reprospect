@@ -10,7 +10,7 @@ import pytest
 from reprospect.testing.case import CMakeAwareTestCase
 from reprospect.tools import binaries
 from reprospect.tools.binaries import sass
-from reprospect.tools.binaries.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decoder import RegisterType
 from reprospect.utils import cmake
 
 from tests.compilation import get_compilation_output
@@ -49,14 +49,14 @@ ISETP_NE_U32_AND = \
 
 class TestRegisterType:
     """
-    Test :py:class:`reprospect.tools.binaries.sass.decode.RegisterType`.
+    Test :py:class:`reprospect.tools.binaries.sass.decoder.RegisterType`.
     """
     assert str(RegisterType.GPR) == 'R'
     assert RegisterType.GPR.name == 'GPR'
 
 class TestDecoder:
     """
-    Test :py:class:`reprospect.tools.binaries.sass.Decoder`.
+    Test :py:class:`reprospect.tools.binaries.sass.decoder.Decoder`.
     """
     def test_matchers(self) -> None:
         """
@@ -193,7 +193,7 @@ class TestDecoder:
 
     def test_string_representation(self) -> None:
         """
-        Test the string representation :py:class:`reprospect.tools.binaries.sass.Decoder`.
+        Test the string representation :py:class:`reprospect.tools.binaries.sass.decoder.Decoder`.
         """
         decoder = sass.Decoder()
 
@@ -230,7 +230,7 @@ class TestDecoder:
 
     def test_to_html(self) -> None:
         """
-        Test :py:meth:`reprospect.tools.binaries.sass.Decoder.to_html`.
+        Test :py:meth:`reprospect.tools.binaries.sass.decoder.Decoder.to_html`.
         """
         ARTIFACT_DIR = pathlib.Path(os.environ['ARTIFACT_DIR'])
         ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)

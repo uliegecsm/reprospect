@@ -67,6 +67,7 @@ autodoc_default_options = {
     'special-members': '__str__,__init__,__enter__,__exit__',
     'show-inheritance': True,
     'undoc-members': True,
+    'ignore-module-all': True,
 }
 
 autodoc_inherit_docstrings = False

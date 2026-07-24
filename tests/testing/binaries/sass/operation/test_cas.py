@@ -10,7 +10,7 @@ from reprospect.testing.binaries.sass.sequence import (
 )
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.sass.controlflow import BasicBlock, Graph
-from reprospect.tools.binaries.sass.decode import ControlCode, Instruction
+from reprospect.tools.binaries.sass.decoder import ControlCode, Instruction
 
 
 class Operation:

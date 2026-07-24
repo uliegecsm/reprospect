@@ -8,7 +8,7 @@ from reprospect.testing.binaries.sass.instruction import (
     Register,
 )
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

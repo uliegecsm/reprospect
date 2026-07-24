@@ -26,7 +26,7 @@ from reprospect.tools.binaries import (
     NVDisasm,
 )
 from reprospect.tools.binaries.sass import Decoder
-from reprospect.tools.binaries.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decoder import RegisterType
 from reprospect.tools.ncu import (
     Cacher,
     Command,

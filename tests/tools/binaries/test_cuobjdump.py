@@ -137,7 +137,7 @@ class TestResourceUsage:
 
 class TestFunction:
     """
-    Tests related to :py:class:`reprospect.tools.binaries.Function`.
+    Tests related to :py:class:`reprospect.tools.binaries.cuobjdump.Function`.
     """
     SYMBOL: typing.Final[str] = '_Z9my_kernelfPKfPfj'
 
@@ -156,7 +156,7 @@ class TestFunction:
 
     def test_string_representation(self) -> None:
         """
-        Test :py:meth:`reprospect.tools.binaries.Function.__str__`.
+        Test :py:meth:`reprospect.tools.binaries.cuobjdump.Function.__str__`.
         """
         function = Function(symbol=self.SYMBOL, code=self.CODE, ru=self.RU)
 
@@ -193,7 +193,7 @@ class TestFunction:
 
 class TestCuObjDump:
     """
-    Tests related to :py:class:`reprospect.tools.binaries.CuObjDump`.
+    Tests related to :py:class:`reprospect.tools.binaries.cuobjdump.CuObjDump`.
     """
     @staticmethod
     def dump(*, file: pathlib.Path, cuobjdump: CuObjDump) -> None:
@@ -481,7 +481,7 @@ class TestCuObjDump:
 
     def test_string_representation(self) -> None:
         """
-        Test :py:meth:`reprospect.tools.binaries.CuObjDump.__str__`.
+        Test :py:meth:`reprospect.tools.binaries.cuobjdump.CuObjDump.__str__`.
         """
         cuobjdump = CuObjDump(
             file=pathlib.Path('code_object.o'),

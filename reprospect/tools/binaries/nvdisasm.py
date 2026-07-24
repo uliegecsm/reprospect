@@ -9,7 +9,7 @@ import rich.table
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
 from reprospect.tools.binaries.elf import ELF
-from reprospect.tools.binaries.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decoder import RegisterType
 from reprospect.tools.binaries.symtab import get_symbol_table
 from reprospect.utils import rich_helpers
 from reprospect.utils.subprocess_helpers import popen_stream
@@ -37,7 +37,7 @@ class Function(rich_helpers.TableMixin):
     * the number of registers actually used within that span
 
     For instance, if a kernel uses registers ``R0``, ``R1``, and ``R3``, then the entry for
-    :py:const:`reprospect.tools.binaries.sass.decode.RegisterType.GPR` will be `(4, 3)` because the span ``R0-R3``
+    :py:const:`reprospect.tools.binaries.sass.decoder.RegisterType.GPR` will be `(4, 3)` because the span ``R0-R3``
     contains 4 registers, from which 3 are actually used.
 
     .. note::
@@ -99,17 +99,17 @@ class NVDisasm:
     The main purpose of ``nvdisasm`` is to disassemble CUDA binary files. Beyond the raw
     disassembly, it can also annotate the disassembled SASS with information, such as register
     liveness range information. ``nvdisasm`` provides liveness ranges for all register types:
-    ``GPR``, ``PRED``, ``UGPR``, ``UPRED``; see also :py:class:`reprospect.tools.binaries.sass.decode.RegisterType`.
+    ``GPR``, ``PRED``, ``UGPR``, ``UPRED``; see also :py:class:`reprospect.tools.binaries.sass.decoder.RegisterType`.
 
     This class provides functionalities to parse this register liveness range information to
     deduce how many registers each kernel uses.
 
-    Note that the register use information extracted by :py:class:`reprospect.tools.binaries.CuObjDump`
-    concerns only the :py:const:`reprospect.tools.binaries.sass.decode.RegisterType.GPR` register type. As compared with
-    :py:class:`reprospect.tools.binaries.CuObjDump`, this class provides details for all register types.
+    Note that the register use information extracted by :py:class:`reprospect.tools.binaries.cuobjdump.CuObjDump`
+    concerns only the :py:const:`reprospect.tools.binaries.sass.decoder.RegisterType.GPR` register type. As compared with
+    :py:class:`reprospect.tools.binaries.cuobjdump.CuObjDump`, this class provides details for all register types.
 
     Note that register liveness range information can also be obtained by parsing the SASS
-    code extracted by :py:class:`reprospect.tools.binaries.CuObjDump`. However, to implement
+    code extracted by :py:class:`reprospect.tools.binaries.cuobjdump.CuObjDump`. However, to implement
     such a parser, it is not sufficient to simply track the registers that appear in the SASS
     code. For instance, for certain instructions, operands span multiple consecutive registers,
     but only the first register index appears in the instruction string. For instance,

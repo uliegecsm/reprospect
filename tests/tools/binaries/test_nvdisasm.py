@@ -8,7 +8,7 @@ from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 from reprospect.tools.architecture import NVIDIAArch
 from reprospect.tools.binaries import CuObjDump, CuppFilt, LlvmCppFilt, NVDisasm
 from reprospect.tools.binaries.nvdisasm import DetailedRegisterUsage, Function
-from reprospect.tools.binaries.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decoder import RegisterType
 from reprospect.utils import cmake
 
 from tests.compilation import get_compilation_output, get_cubin_name
@@ -41,7 +41,7 @@ class TestFunction:
 
 class TestNVDisasm:
     """
-    Tests related to :py:class:`reprospect.tools.binaries.NVDisasm`.
+    Tests related to :py:class:`reprospect.tools.binaries.nvdisasm.NVDisasm`.
     """
     class TestSaxpy:
         """
@@ -120,7 +120,7 @@ class TestNVDisasm:
 
         def test_from_sass_annotated(self) -> None:
             """
-            Read annotated SASS from file and check :py:meth:`reprospect.tools.binaries.NVDisasm.parse_sass_with_liveness_range_info`.
+            Read annotated SASS from file and check :py:meth:`reprospect.tools.binaries.nvdisasm.NVDisasm.parse_sass_with_liveness_range_info`.
             """
             with self.SASS_ANNOTATED_FILE.open('r', encoding='utf-8') as fin:
                 function = NVDisasm.parse_sass_with_liveness_range_info(
@@ -198,7 +198,7 @@ class TestNVDisasm:
 
     def test_string_representation(self) -> None:
         """
-        Test :py:meth:`reprospect.tools.binaries.NVDisasm.__str__`.
+        Test :py:meth:`reprospect.tools.binaries.nvdisasm.NVDisasm.__str__`.
         """
         def mock_init(
             self,

@@ -133,7 +133,7 @@ from reprospect.testing.binaries.sass.sequence import (
 from reprospect.tools import ncu
 from reprospect.tools.binaries.cuobjdump import CuObjDump
 from reprospect.tools.binaries.sass.controlflow import ControlFlow, Graph
-from reprospect.tools.binaries.sass.decode import Decoder
+from reprospect.tools.binaries.sass.decoder import Decoder
 from reprospect.utils import detect
 
 if sys.version_info >= (3, 12):

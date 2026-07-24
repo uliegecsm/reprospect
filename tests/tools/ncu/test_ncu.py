@@ -18,7 +18,7 @@ from reprospect.utils import detect
 
 class TestProfilingResults:
     """
-    Tests for :py:class:`reprospect.tools.ncu.ProfilingResults`.
+    Tests for :py:class:`reprospect.tools.ncu.report.ProfilingResults`.
     """
     @pytest.fixture(scope='class')
     def results(self) -> ncu.ProfilingResults:
@@ -43,7 +43,7 @@ class TestProfilingResults:
 
     def test_query(self, results: ncu.ProfilingResults) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query`.
+        Test :py:meth:`reprospect.tools.ncu.report.ProfilingResults.query`.
         """
         with pytest.raises(KeyError, match="'nvtx_range_not_in_results'"):
             results.query(('nvtx_range_not_in_results',))
@@ -57,7 +57,7 @@ class TestProfilingResults:
 
     def test_query_filter(self, results: ncu.ProfilingResults) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_filter`.
+        Test :py:meth:`reprospect.tools.ncu.report.ProfilingResults.query_filter`.
         """
         results_filtered_no_A = results.query_filter(('nvtx_range_name',), lambda k: k != 'nvtx_push_region_A')
         results_filtered_no_B = results.query_filter(('nvtx_range_name',), lambda k: k != 'nvtx_push_region_B')
@@ -70,14 +70,14 @@ class TestProfilingResults:
 
     def test_query_metrics(self, results: ncu.ProfilingResults) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_metrics`.
+        Test :py:meth:`reprospect.tools.ncu.report.ProfilingResults.query_metrics`.
         """
         metrics = results.query_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel', 'kernel'))
         assert metrics['smsp__inst_executed.sum'] == 100.
 
     def test_query_single_next(self, results: ncu.ProfilingResults) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next`.
+        Test :py:meth:`reprospect.tools.ncu.report.ProfilingResults.query_single_next`.
         """
         key, metrics = results.query_single_next(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel'))
         assert key == 'kernel'
@@ -85,7 +85,7 @@ class TestProfilingResults:
 
     def test_query_single_next_metrics(self, results: ncu.ProfilingResults) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.query_single_next_metrics`.
+        Test :py:meth:`reprospect.tools.ncu.report.ProfilingResults.query_single_next_metrics`.
         """
         key, metrics = results.query_single_next_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel'))
         assert key == 'kernel'
@@ -93,7 +93,7 @@ class TestProfilingResults:
 
     def test_iter_metrics(self, results: ncu.ProfilingResults) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.iter_metrics`.
+        Test :py:meth:`reprospect.tools.ncu.report.ProfilingResults.iter_metrics`.
         """
         [(key, metrics)] = results.iter_metrics(('nvtx_range_name', 'nvtx_push_region_A', 'nvtx_push_region_kernel'))
         assert key == 'kernel'
@@ -104,7 +104,7 @@ class TestProfilingResults:
 
     def test_assign_metrics(self) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.assign_metrics`.
+        Test :py:meth:`reprospect.tools.ncu.report.ProfilingResults.assign_metrics`.
         """
         other_results = ncu.ProfilingResults()
 
@@ -117,7 +117,7 @@ class TestProfilingResults:
 
     def test_aggregate_metrics(self) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.ProfilingResults.aggregate_metrics`.
+        Test :py:meth:`reprospect.tools.ncu.report.ProfilingResults.aggregate_metrics`.
         """
         other_results = ncu.ProfilingResults()
         other_results.assign_metrics(
@@ -143,7 +143,7 @@ class TestProfilingResults:
 
     def test_string_representation(self, results: ncu.ProfilingResults) -> None:
         """
-        Test the string representation of :py:meth:`reprospect.tools.ncu.ProfilingResults`.
+        Test the string representation of :py:meth:`reprospect.tools.ncu.report.ProfilingResults`.
         """
         assert str(results) == """\
 Profiling results
@@ -175,7 +175,7 @@ Profiling results
 
 class TestCommand:
     """
-    Tests for :py:class:`reprospect.tools.ncu.Command`.
+    Tests for :py:class:`reprospect.tools.ncu.session.Command`.
     """
     def test_env(self, bindir: pathlib.Path) -> None:
         """
@@ -202,7 +202,7 @@ class TestCommand:
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestSession:
     """
-    Test :py:class:`reprospect.tools.ncu.Session`.
+    Test :py:class:`reprospect.tools.ncu.session.Session`.
     """
     GRAPH: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
     SAXPY: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
@@ -464,14 +464,14 @@ class TestSession:
 
 class TestCacher:
     """
-    Tests for :py:class:`reprospect.tools.ncu.Cacher`.
+    Tests for :py:class:`reprospect.tools.ncu.cacher.Cacher`.
     """
     GRAPH: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_graph'
     SAXPY: typing.Final[pathlib.Path] = pathlib.Path('tests') / 'assets' / 'tests_assets_saxpy'
 
     def test_hash_same(self, bindir) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
+        Test :py:meth:`reprospect.tools.ncu.cacher.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir, ncu.Cacher(directory=tmpdir) as cacher:
             command = ncu.Command(opts=('--nvtx',), executable=bindir / self.GRAPH, args=('--bla=42',), output=pathlib.Path('I-dont-care'))
@@ -482,7 +482,7 @@ class TestCacher:
 
     def test_hash_different(self, bindir) -> None:
         """
-        Test :py:meth:`reprospect.tools.ncu.Cacher.hash`.
+        Test :py:meth:`reprospect.tools.ncu.cacher.Cacher.hash`.
         """
         with tempfile.TemporaryDirectory() as tmpdir, ncu.Cacher(directory=tmpdir) as cacher:
             hash_a = cacher.hash(command=ncu.Command(opts=('--nvtx',), executable=bindir / self.GRAPH, args=('--bla=42',), output=pathlib.Path('i-dont-care')))

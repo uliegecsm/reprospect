@@ -59,7 +59,7 @@ __global__ void elementwise_add_restrict_256_wide(Tester* __restrict__ const dst
 @functools.lru_cache(maxsize=128)
 def get_decoder(*, cwd: pathlib.Path, arch: NVIDIAArch, file: pathlib.Path, cmake_file_api: cmake.FileAPI, **kwargs) -> tuple[Decoder, pathlib.Path]:
     """
-    Compile the code in `file` for `arch` and return a :py:class:`reprospect.tools.binaries.sass.Decoder`.
+    Compile the code in `file` for `arch` and return a :py:class:`reprospect.tools.binaries.sass.decoder.Decoder`.
     """
     output, _ = get_compilation_output(
         source=file,
@@ -294,7 +294,7 @@ __global__ void max({type}* __restrict__ const dst, const {type}* __restrict__ c
 
 class TestOpcodeModsMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.OpcodeModsMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.instruction.OpcodeModsMatcher`.
     """
     def test_with_square_brackets(self):
         instruction = 'IMAD R4, R4, c[0x0][0x0], R3'
@@ -330,7 +330,7 @@ class TestOpcodeModsMatcher:
 
 class TestOpcodeModsWithOperandsMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.OpcodeModsWithOperandsMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.instruction.OpcodeModsWithOperandsMatcher`.
     """
     def test(self):
         instruction = 'ISETP.NE.AND P2, PT, R4, RZ, PT'

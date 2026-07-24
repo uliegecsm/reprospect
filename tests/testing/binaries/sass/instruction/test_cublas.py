@@ -15,7 +15,7 @@ from reprospect.testing.binaries.sass.instruction import (
     MemorySpace,
     RegisterMatcher,
 )
-from reprospect.tools.binaries.sass.decode import Decoder, Instruction
+from reprospect.tools.binaries.sass.decoder import Decoder, Instruction
 from reprospect.utils import cmake
 
 from tests.cublas import CuBLAS

@@ -58,7 +58,7 @@ def enable_mypyc(dist: Distribution) -> None:
             'reprospect/tools/nsys/report.py',
             'reprospect/tools/nsys/session.py',
             'reprospect/tools/binaries/sass/controlflow.py',
-            'reprospect/tools/binaries/sass/decode.py',
+            'reprospect/tools/binaries/sass/decoder.py',
             'reprospect/utils/cmake.py',
             'reprospect/utils/compile_command.py',
             'reprospect/utils/detect.py',

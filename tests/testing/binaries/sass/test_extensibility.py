@@ -6,8 +6,8 @@ Extensibility
 This module verifies that the following types remain
 subclassable after compilation, allowing users to extend :py:mod:`reprospect` capabilities:
 
-* :py:class:`reprospect.testing.binaries.sass.instruction.InstructionMatcher` (see :py:class:`tests.testing.binaries.sass.test_extensibility.NewInstructionMatcher`)
-* :py:class:`reprospect.testing.binaries.sass.instruction.PatternMatcher` (see :py:class:`tests.testing.binaries.sass.test_extensibility.NewPatternMatcher`)
+* :py:class:`reprospect.testing.binaries.sass.instruction.instruction.InstructionMatcher` (see :py:class:`tests.testing.binaries.sass.test_extensibility.NewInstructionMatcher`)
+* :py:class:`reprospect.testing.binaries.sass.instruction.instruction.PatternMatcher` (see :py:class:`tests.testing.binaries.sass.test_extensibility.NewPatternMatcher`)
 
 .. warning::
 
@@ -57,7 +57,7 @@ class NewPatternMatcher(PatternMatcher):
 
 class CannotBeExtended(Fp32AddMatcher):
     """
-    :py:class:`reprospect.testing.binaries.sass.instruction.Fp32AddMatcher` was not marked as extensible.
+    :py:class:`reprospect.testing.binaries.sass.instruction.floating.Fp32AddMatcher` was not marked as extensible.
     """
 
 class TestInspect:

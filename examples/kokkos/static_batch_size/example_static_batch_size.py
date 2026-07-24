@@ -24,7 +24,7 @@ import pytest
 
 from reprospect.testing import CMakeAwareTestCase
 from reprospect.tools.binaries import CuObjDump, DetailedRegisterUsage, NVDisasm
-from reprospect.tools.binaries.sass.decode import RegisterType
+from reprospect.tools.binaries.sass.decoder import RegisterType
 
 if sys.version_info >= (3, 12):
     from typing import override
@@ -85,7 +85,7 @@ class TestStaticBatchSize(CMakeAwareTestCase):
 
         .. note::
 
-            Once https://github.com/kokkos/kokkos/pull/9123 is merged, the :py:attr:`reprospect.tools.binaries.sass.decode.RegisterType.GPR` count
+            Once https://github.com/kokkos/kokkos/pull/9123 is merged, the :py:attr:`reprospect.tools.binaries.sass.decoder.RegisterType.GPR` count
             will decrease for the unit batch size case.
         """
         match self.arch.compute_capability:

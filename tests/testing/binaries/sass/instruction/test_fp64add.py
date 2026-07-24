@@ -11,7 +11,7 @@ from tests.testing.binaries.sass.test_instruction import get_decoder
 
 class TestFp64AddMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.Fp64AddMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.floating.Fp64AddMatcher`.
     """
     CODE_FP64_ADD: typing.Final[str] = """\
 __global__ void fp64_add(double* __restrict__ const dst, const double* __restrict__ const src)

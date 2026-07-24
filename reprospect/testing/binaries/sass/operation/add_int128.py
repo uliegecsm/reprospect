@@ -14,7 +14,7 @@ from reprospect.testing.binaries.sass.sequence import (
     SequenceMatcher,
     instructions_contain,
 )
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 
 if sys.version_info >= (3, 12):
     from typing import override

@@ -7,7 +7,7 @@ from reprospect.testing.binaries.sass.instruction import (
     OpcodeModsWithOperandsMatcher,
     Register,
 )
-from reprospect.tools.binaries.sass.decode import Instruction
+from reprospect.tools.binaries.sass.decoder import Instruction
 from reprospect.utils.types import ConvertibleTypeInfo, TypeInfo
 
 if sys.version_info >= (3, 12):

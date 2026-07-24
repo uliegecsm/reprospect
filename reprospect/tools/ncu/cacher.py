@@ -85,7 +85,7 @@ class Cacher(cacher.Cacher):
     @override
     def populate(self, directory: pathlib.Path, **kwargs) -> None:
         """
-        When there is a cache miss, call :py:meth:`reprospect.tools.ncu.Session.run`.
+        When there is a cache miss, call :py:meth:`reprospect.tools.ncu.session.Session.run`.
         Fill the `directory` with the artifacts.
         """
         command = kwargs.pop('command')

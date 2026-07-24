@@ -8,7 +8,7 @@ from reprospect.testing.binaries.sass.instruction import AnyMatcher, Instruction
 
 class TestAnyMatcher:
     """
-    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.AnyMatcher`.
+    Tests for :py:class:`reprospect.testing.binaries.sass.instruction.instruction.AnyMatcher`.
     """
     INSTRUCTIONS: typing.Final[dict[str, InstructionMatch]] = {
         'IMAD.MOV.U32 R4, R4, R5, R6': InstructionMatch(opcode='IMAD', modifiers=('MOV', 'U32'), operands=('R4', 'R4', 'R5', 'R6')),

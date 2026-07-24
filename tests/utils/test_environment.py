@@ -3,12 +3,12 @@ import typing
 
 import pytest
 
-from reprospect.testing.environment import EnvironmentField
+from reprospect.utils.environment import EnvironmentField
 
 
 class TestEnvironmentField:
     """
-    Tests for :py:class:`reprospect.testing.environment.EnvironmentField`.
+    Tests for :py:class:`reprospect.utils.environment.EnvironmentField`.
     """
     def test_no_attribute_name_or_env_key(self) -> None:
         """

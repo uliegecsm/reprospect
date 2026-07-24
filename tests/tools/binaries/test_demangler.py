@@ -7,7 +7,7 @@ from reprospect.tools.binaries import CuppFilt, LlvmCppFilt
 
 class TestCuppFilt:
     """
-    Test :py:class:`reprospect.tools.binaries.demangle.CuppFilt`.
+    Test :py:class:`reprospect.tools.binaries.demangler.CuppFilt`.
     """
     def test_demangle(self):
         assert CuppFilt.demangle(s='_Z5saxpyfPKfPfj') == 'saxpy(float, const float *, float *, unsigned int)'
@@ -17,7 +17,7 @@ class TestCuppFilt:
 )
 class TestLlvmCppFilt:
     """
-    Test :py:class:`reprospect.tools.binaries.demangle.LlvmCppFilt`.
+    Test :py:class:`reprospect.tools.binaries.demangler.LlvmCppFilt`.
     """
     def test_demangle(self):
         MANGLED = '_Z24add_and_increment_kernelILj0ETpTnjJEEvPj'

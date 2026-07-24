@@ -26,7 +26,7 @@ import rich.table
 import rich.text
 
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
+from reprospect.tools.binaries.demangler import CuppFilt, LlvmCppFilt
 from reprospect.tools.binaries.elf import ELF
 from reprospect.tools.binaries.symtab import get_symbol_table
 from reprospect.utils import rich_helpers

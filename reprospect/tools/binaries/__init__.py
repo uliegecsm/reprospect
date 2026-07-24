@@ -1,5 +1,5 @@
 from .cuobjdump import CuObjDump, Function, ResourceUsage
-from .demangle import CuppFilt, LlvmCppFilt
+from .demangler import CuppFilt, LlvmCppFilt
 from .elf import ELF
 from .nvdisasm import DetailedRegisterUsage, NVDisasm
 

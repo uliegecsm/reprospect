@@ -6,11 +6,11 @@ import typing
 
 from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
-from reprospect.testing.environment import EnvironmentField
 from reprospect.tools.architecture import NVIDIAArch
-from reprospect.tools.binaries.demangle import CuppFilt, LlvmCppFilt
+from reprospect.tools.binaries.demangler import CuppFilt, LlvmCppFilt
+from reprospect.tools.compile_command import get_arch_from_compile_command
 from reprospect.utils import cmake
-from reprospect.utils.compile_command import get_arch_from_compile_command
+from reprospect.utils.environment import EnvironmentField
 
 
 def get_demangler_for_compiler(compiler: CMakeToolchainCompiler) -> type[CuppFilt | LlvmCppFilt]:

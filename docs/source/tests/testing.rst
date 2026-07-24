@@ -9,8 +9,3 @@ The tests for the :py:mod:`reprospect.testing.binaries` subpackage can be found 
    :maxdepth: 1
 
    testing/binaries
-
-Environment
------------
-
-.. automodule:: tests.testing.test_environment

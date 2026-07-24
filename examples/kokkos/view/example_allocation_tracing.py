@@ -9,9 +9,9 @@ import numpy
 import pandas
 import pytest
 
-from reprospect.testing import CMakeAwareTestCase, environment
+from reprospect.testing import CMakeAwareTestCase
 from reprospect.tools import nsys
-from reprospect.utils import detect
+from reprospect.utils import detect, environment
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum

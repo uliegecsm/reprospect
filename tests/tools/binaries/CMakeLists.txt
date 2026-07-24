@@ -1,5 +1,5 @@
 add_pytest(cuobjdump)
-add_pytest(demangle)
+add_pytest(demangler)
 add_pytest(elf)
 add_pytest(nvdisasm)
 add_pytest(symtab)

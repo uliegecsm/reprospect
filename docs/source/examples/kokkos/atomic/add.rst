@@ -1,3 +1,5 @@
+.. _example-kokkos-atomics-desul:
+
 :code:`Kokkos::atomic_add`
 ==========================
 

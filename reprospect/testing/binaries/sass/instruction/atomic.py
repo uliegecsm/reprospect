@@ -69,12 +69,15 @@ class ThreadScope(StrEnum):
 
 class ReductionMatcher(ArchitectureAwarePatternMatcher):
     """
-    Matcher for reduction operations on generic memory (``RED``).
+    Matcher for reduction operations on generic memory.
 
-    ``RED`` instructions are typically used when the atomic operation return value is not used.
-    Otherwise, it would typically map to ``ATOM``.
+    The corresponding SASS opcode is ``RED`` on pre-Hopper architectures
+    and ``REDG`` on Hopper and later architectures.
 
-    The ``RED`` opcode may take several modifiers:
+    These reduction operation instructions are typically emitted when the return value of an atomic operation is unused.
+    When the return value is used, the compiler typically emits an atomic instruction instead.
+
+    The SASS opcode may take several modifiers:
 
     * operation (*e.g.* `ADD`)
     * scope (*e.g.* :py:attr:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.DEVICE`)
@@ -152,9 +155,9 @@ class AtomicMatcher(ArchitectureAndVersionAwarePatternMatcher):
     * shared memory (``ATOMS``)
     * global memory (``ATOMG``)
 
-    Unlike ``RED``, these operations capture the return value.
+    Unlike reduction operations on generic memory, these atomic operations use the return value.
 
-    The ``ATOM`` opcode may take several modifiers:
+    The SASS opcode may take several modifiers:
 
     * operation (*e.g.* `CAS`)
     * scope (*e.g.* :py:attr:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.DEVICE`)

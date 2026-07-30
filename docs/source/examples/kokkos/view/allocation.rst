@@ -1,3 +1,5 @@
+.. _example-kokkos-view-allocation:
+
 Allocation
 ==========
 

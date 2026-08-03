@@ -484,6 +484,78 @@ class L1TEXCache:
 
     LocalStore: typing.Final[type[L1TEXCacheLocalStore]] = L1TEXCacheLocalStore # pylint: disable=invalid-name
 
+class WarpStallBase:
+    """
+    Base class for factories of warp-stall ratio metrics.
+    """
+    TEMPLATE_NAME: typing.Final[str] = 'smsp__average_warps_issue_stalled_{reason}_per_issue_active'
+    TEMPLATE_LABEL: typing.Final[str] = 'Warp stall {reason}'
+
+    #: The stall reason as it appears in the ``ncu`` metric name.
+    reason: typing.ClassVar[str]
+
+    #: The stall reason as it appears in the label.
+    pretty_reason: typing.ClassVar[str]
+
+    @classmethod
+    def create(cls, *,
+        subs: tuple[MetricRatioRollUp, ...] = (MetricRatioRollUp.PCT,),
+    ) -> tuple[MetricRatio, ...]:
+        name = cls.TEMPLATE_NAME.format(reason=cls.reason)
+
+        pretty_name = cls.TEMPLATE_LABEL.format(reason=cls.pretty_reason)
+
+        return (MetricRatio(name=name, pretty_name=pretty_name, subs=subs),)
+
+class WarpStallLGThrottle(WarpStallBase):
+    """
+    Factory of ratio metric ``smsp__average_warps_issue_stalled_lg_throttle_per_issue_active``.
+    """
+    reason: typing.ClassVar[str] = 'lg_throttle'
+
+    pretty_reason: typing.ClassVar[str] = 'LG throttle'
+
+class WarpStallLongScoreboard(WarpStallBase):
+    """
+    Factory of ratio metric ``smsp__average_warps_issue_stalled_long_scoreboard_per_issue_active``.
+    """
+    reason: typing.ClassVar[str] = 'long_scoreboard'
+
+    pretty_reason: typing.ClassVar[str] = 'Long scoreboard'
+
+class WarpStallMIOThrottle(WarpStallBase):
+    """
+    Factory of ratio metric ``smsp__average_warps_issue_stalled_mio_throttle_per_issue_active``.
+    """
+    reason: typing.ClassVar[str] = 'mio_throttle'
+
+    pretty_reason: typing.ClassVar[str] = 'MIO throttle'
+
+class WarpStallShortScoreboard(WarpStallBase):
+    """
+    Factory of ratio metric ``smsp__average_warps_issue_stalled_short_scoreboard_per_issue_active``.
+    """
+    reason: typing.ClassVar[str] = 'short_scoreboard'
+
+    pretty_reason: typing.ClassVar[str] = 'Short scoreboard'
+
+class WarpStall:
+    """
+    A selection of metrics related to warp stall reasons.
+
+    References:
+
+    * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#warp-stall-reasons
+    """
+    LGThrottle: typing.Final[type[WarpStallLGThrottle]] = WarpStallLGThrottle # pylint: disable=invalid-name
+
+    LongScoreboard: typing.Final[type[WarpStallLongScoreboard]] = WarpStallLongScoreboard # pylint: disable=invalid-name
+
+    MIOThrottle: typing.Final[type[WarpStallMIOThrottle]] = WarpStallMIOThrottle # pylint: disable=invalid-name
+
+    ShortScoreboard: typing.Final[type[WarpStallShortScoreboard]] = WarpStallShortScoreboard # pylint: disable=invalid-name
+
+
 MetricKind: typing.TypeAlias = Metric | MetricCorrelation | MetricDeviceAttribute
 
 def gather(metrics: typing.Iterable[MetricKind]) -> tuple[str, ...]:

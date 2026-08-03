@@ -25,6 +25,11 @@ from .metrics import (
     MetricKind,
     MetricRatio,
     MetricRatioRollUp,
+    WarpStall,
+    WarpStallLGThrottle,
+    WarpStallLongScoreboard,
+    WarpStallMIOThrottle,
+    WarpStallShortScoreboard,
     gather,
     labels,
 )
@@ -67,6 +72,11 @@ __all__ = (
     'ProfilingResults',
     'Report',
     'Session',
+    'WarpStall',
+    'WarpStallLGThrottle',
+    'WarpStallLongScoreboard',
+    'WarpStallMIOThrottle',
+    'WarpStallShortScoreboard',
     'gather',
     'labels',
 )

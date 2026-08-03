@@ -315,6 +315,12 @@ class TestMetrics:
             gathered=('l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum',),
             labels=('L1/TEX cache global store sectors sum',),
         ),
+        CreatedMetricsCase(
+            metrics=ncu.WarpStall.LGThrottle.create(),
+            expected=(ncu.MetricRatio(name='smsp__average_warps_issue_stalled_lg_throttle_per_issue_active', pretty_name='Warp stall LG throttle', subs=(ncu.MetricRatioRollUp.PCT,)),),
+            gathered=('smsp__average_warps_issue_stalled_lg_throttle_per_issue_active.pct',),
+            labels=('Warp stall LG throttle pct',),
+        ),
     )
 
     @pytest.mark.parametrize(('metric', 'gather', 'labels'), METRICS)

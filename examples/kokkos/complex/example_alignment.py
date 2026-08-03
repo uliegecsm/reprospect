@@ -174,11 +174,11 @@ class TestNCU(TestAlignment):
         # Specific instruction counts (LDG and STG and others).
         MetricCorrelation(name='sass__inst_executed_per_opcode'),
         # Memory traffic.
-        L1TEXCache.GlobalLoad.Instructions.create(),
-        L1TEXCache.GlobalLoad.Sectors.create(),
-        L1TEXCache.GlobalLoad.SectorMisses.create(),
-        L1TEXCache.GlobalStore.Instructions.create(),
-        L1TEXCache.LocalStore.Instructions.create(),
+        *L1TEXCache.GlobalLoad.Instructions.create(),
+        *L1TEXCache.GlobalLoad.Sectors.create(),
+        *L1TEXCache.GlobalLoad.SectorMisses.create(),
+        *L1TEXCache.GlobalStore.Instructions.create(),
+        *L1TEXCache.LocalStore.Instructions.create(),
         MetricCounter(name='lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs=(MetricCounterRollUp.SUM,)),
     )
 

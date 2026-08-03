@@ -247,14 +247,14 @@ class TestNCU(TestAlignment):
         expt_stg_count_specified = self.WARP_COUNT * self.STORE_COUNT
         expt_stg_count_default   = expt_stg_count_specified * 2
 
-        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global load instructions sass.sum'] == expt_ldg_count_default
-        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global load instructions sass.sum'] == expt_ldg_count_specified
+        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global load instructions sass sum'] == expt_ldg_count_default
+        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global load instructions sass sum'] == expt_ldg_count_specified
 
-        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global store instructions sass.sum'] == expt_stg_count_default
-        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global store instructions sass.sum'] == expt_stg_count_specified
+        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global store instructions sass sum'] == expt_stg_count_default
+        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global store instructions sass sum'] == expt_stg_count_specified
 
-        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache local store instructions sass.sum'] == 0
-        assert metrics[Alignment.SPECIFIED]['L1/TEX cache local store instructions sass.sum'] == 0
+        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache local store instructions sass sum'] == 0
+        assert metrics[Alignment.SPECIFIED]['L1/TEX cache local store instructions sass sum'] == 0
 
     def test_l1tex_memory_traffic_sector_count(self, metrics: dict[Alignment, ProfilingMetrics]) -> None:
         """
@@ -269,8 +269,8 @@ class TestNCU(TestAlignment):
         read_memory = self.LOAD_COUNT * self.ELEMENT_COUNT * self.COMPLEX_DOUBLE_SIZE
         sector_count = read_memory / self.SECTOR_SIZE
 
-        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global load sectors.sum'] == sector_count * 2
-        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global load sectors.sum'] == sector_count
+        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global load sectors sum'] == sector_count * 2
+        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global load sectors sum'] == sector_count
 
     def test_l2_memory_traffic_sector_count(self, metrics: dict[Alignment, ProfilingMetrics]) -> None:
         """
@@ -280,7 +280,7 @@ class TestNCU(TestAlignment):
         the same sector as the first load and can thus be expected to hit in L1 cache.
         """
         keys_sectors_lookup_misses = (
-            'L1/TEX cache global load sectors miss.sum',
+            'L1/TEX cache global load sectors miss sum',
             'lts__t_sectors_srcunit_tex_op_read_lookup_miss.sum',
         )
 

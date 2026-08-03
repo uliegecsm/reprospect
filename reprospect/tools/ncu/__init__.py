@@ -26,6 +26,7 @@ from .metrics import (
     MetricRatio,
     MetricRatioRollUp,
     gather,
+    labels,
 )
 from .report import (
     ProfilingMetrics,
@@ -67,4 +68,5 @@ __all__ = (
     'Report',
     'Session',
     'gather',
+    'labels',
 )

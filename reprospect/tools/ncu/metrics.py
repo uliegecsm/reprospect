@@ -38,7 +38,6 @@ class Metric:
     subs: tuple[str | tuple[str, ...], ...] | None = None
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, 'pretty_name', self.pretty_name or self.name)
         if self.subs is not None:
             object.__setattr__(self, 'subs',
                 tuple((sub,) if isinstance(sub, str) else sub for sub in self.subs))
@@ -50,6 +49,16 @@ class Metric:
         if self.subs is not None:
             return tuple('.'.join((self.name, *sub)) for sub in self.subs)
         return (self.name,)
+
+    def labels(self) -> tuple[str, ...]:
+        """
+        Get the list of sub-metric labels. Parallel to :py:meth:`gather`, but uses the pretty name.
+        """
+        if self.pretty_name is not None:
+            if self.subs is not None:
+                return tuple(' '.join((self.pretty_name, *sub)) for sub in self.subs)
+            return (self.pretty_name,)
+        return self.gather()
 
 class MetricCounterRollUpQuantity(StrEnum):
     """
@@ -121,6 +130,9 @@ class MetricDeviceAttribute:
     def gather(self) -> tuple[str]:
         return (self.full_name,)
 
+    def labels(self) -> tuple[str]:
+        return self.gather()
+
 MetricCorrelationDataType: typing.TypeAlias = dict[str | int, ValueType]
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -148,6 +160,9 @@ class MetricCorrelation:
 
     def gather(self) -> tuple[str]:
         return (self.name,)
+
+    def labels(self) -> tuple[str]:
+        return self.gather()
 
 class XYZBase:
     """
@@ -476,3 +491,9 @@ def gather(metrics: typing.Iterable[MetricKind]) -> tuple[str, ...]:
     Retrieve all sub-metric names, e.g. to pass them to ``ncu``.
     """
     return tuple(name for metric in metrics for name in metric.gather())
+
+def labels(metrics: typing.Iterable[MetricKind]) -> tuple[str, ...]:
+    """
+    Retrieve all sub-metric labels, e.g. to lookup collected data by label.
+    """
+    return tuple(label for metric in metrics for label in metric.labels())

@@ -199,6 +199,23 @@ class TestCommand:
                 'my-executable',
             ), env={'MY_BASE_ENV': '666', 'IT_MATTERS': 'ON'}, cwd=bindir)
 
+class TestMetrics:
+    """
+    Tests for :py:mod:`reprospect.tools.ncu.metrics`.
+    """
+    METRICS: typing.Final[tuple[tuple[ncu.MetricKind, ncu.MetricKind, tuple[str, ...]], ...]] = (
+        (ncu.L1TEXCache.GlobalStore.Instructions.create(), ncu.MetricCounter(name='smsp__sass_inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions sass', subs=(ncu.MetricCounterRollUp.SUM,)), ('smsp__sass_inst_executed_op_global_st.sum',)),
+        (ncu.L1TEXCache.GlobalStore.Instructions.create(mode=None), ncu.MetricCounter(name='smsp__inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions', subs=(ncu.MetricCounterRollUp.SUM,)), ('smsp__inst_executed_op_global_st.sum',)),
+        (ncu.L1TEXCache.GlobalStore.Instructions.create(subs=(ncu.MetricCounterRollUp.MIN, ncu.MetricCounterRollUp.MAX)), ncu.MetricCounter(name='smsp__sass_inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions sass', subs=(ncu.MetricCounterRollUp.MIN, ncu.MetricCounterRollUp.MAX)), ('smsp__sass_inst_executed_op_global_st.min', 'smsp__sass_inst_executed_op_global_st.max')),
+        (ncu.L1TEXCache.GlobalStore.Requests.create(), ncu.MetricCounter(name='l1tex__t_requests_pipe_lsu_mem_global_op_st', pretty_name='L1/TEX cache global store requests', subs=(ncu.MetricCounterRollUp.SUM,)), ('l1tex__t_requests_pipe_lsu_mem_global_op_st.sum',)),
+        (ncu.L1TEXCache.GlobalStore.Sectors.create(), ncu.MetricCounter(name='l1tex__t_sectors_pipe_lsu_mem_global_op_st', pretty_name='L1/TEX cache global store sectors', subs=(ncu.MetricCounterRollUp.SUM,)), ('l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum',)),
+    )
+
+    @pytest.mark.parametrize(('metric', 'expected', 'gather'), METRICS)
+    def test(self, metric: ncu.MetricKind, expected: ncu.MetricKind, gather: tuple[str, ...]) -> None:
+        assert metric == expected
+        assert ncu.gather([metric]) == gather
+
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestSession:
     """

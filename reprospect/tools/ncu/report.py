@@ -78,12 +78,12 @@ class ProfilingResults(rich_helpers.TreeMixin):
         └── 'nvtx range'
             ├── 'nvtx region'
             │   └── 'kernel'
-            │       ├── 'metric i'  -> ProfilingMetricData
-            │       └── 'metric ii' -> ProfilingMetricData
+            │       ├── 'metric i label'  -> ProfilingMetricData
+            │       └── 'metric ii label' -> ProfilingMetricData
             └── 'other nvtx region'
                 └── 'other kernel'
-                    ├── 'metric i'  -> ProfilingMetricData
-                    └── 'metric ii' -> ProfilingMetricData
+                    ├── 'metric i label'  -> ProfilingMetricData
+                    └── 'metric ii label' -> ProfilingMetricData
 
     .. note::
 
@@ -463,22 +463,17 @@ class Report:
                     correlated[key] = metric_correlation.value(icor)
                 value = self.get_metric_value(metric=metric_correlation)
                 assert isinstance(value, ValueType)
-                results[metric.name] = MetricCorrelationData(
+                label, = metric.labels()
+                results[label] = MetricCorrelationData(
                     value=value,
                     correlated=correlated,
                 )
             elif isinstance(metric, Metric):
-                assert metric.pretty_name is not None
-                metric_data = self.fill_metric(action=action, metric=metric)
-                if metric.subs is not None:
-                    assert isinstance(metric_data, dict)
-                    for sub, value in metric_data.items():
-                        results[f'{metric.pretty_name}.{sub}'] = value
-                else:
-                    assert metric_data is not None
-                    results[metric.pretty_name] = metric_data
+                for name, label in zip(metric.gather(), metric.labels(), strict=True):
+                    results[label] = self.get_metric_by_name(action=action, metric=name).value()
             elif isinstance(metric, MetricDeviceAttribute):
-                results[metric.full_name] = self.get_metric_by_name(action=action, metric=metric.full_name).value()
+                label, = metric.labels()
+                results[label] = self.get_metric_by_name(action=action, metric=metric.full_name).value()
             else:
                 raise NotImplementedError(metric)
 
@@ -492,15 +487,6 @@ class Report:
             converter = self.ncu_report.IMetric_kind_to_value_func[metric.kind()]
             return converter(metric, index) if index is not None else converter(metric)
         return metric.value(idx=index)
-
-    @classmethod
-    def fill_metric(cls, action: Action, metric: Metric) -> MetricData:
-        """
-        Loop over submetrics of `metric`.
-        """
-        if metric.subs is not None:
-            return {f'{".".join(sub)}': cls.get_metric_by_name(action=action, metric=f'{".".join((metric.name, *sub))}').value() for sub in metric.subs}
-        return cls.get_metric_by_name(action=action, metric=metric.name).value()
 
     @classmethod
     def get_metric_by_name(cls, *, action: Action, metric: str):

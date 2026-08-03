@@ -243,7 +243,7 @@ class L1TEXCacheGlobalLoadInstructions:
             qualifier='executed_op_global_ld',
         )
 
-        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'instructions', mode or ''))
+        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'instructions', mode)))
 
         return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
@@ -359,7 +359,26 @@ class L1TEXCacheGlobalStoreInstructions:
             qualifier='executed_op_global_st',
         )
 
-        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'instructions', mode or ''))
+        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'instructions', mode)))
+
+        return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
+
+class L1TEXCacheGlobalStoreRequests:
+    """
+    Factory of counter metric ``l1tex__t_requests_pipe_lsu_mem_global_op_st``.
+    """
+    @staticmethod
+    def create(*,
+        subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
+    ) -> MetricCounter:
+        name = counter_name_from(
+            unit=Unit.L1TEX,
+            pipestage=PipeStage.TAG,
+            quantity=Quantity.REQUEST,
+            qualifier='pipe_lsu_mem_global_op_st',
+        )
+
+        pretty_name = f'{L1TEXCache.NAME} {L1TEXCache.GlobalStore.NAME} requests'
 
         return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 
@@ -388,6 +407,8 @@ class L1TEXCacheGlobalStore:
 
     Instructions: typing.Final[type[L1TEXCacheGlobalStoreInstructions]] = L1TEXCacheGlobalStoreInstructions # pylint: disable=invalid-name
 
+    Requests: typing.Final[type[L1TEXCacheGlobalStoreRequests]] = L1TEXCacheGlobalStoreRequests # pylint: disable=invalid-name
+
     Sectors: typing.Final[type[L1TEXCacheGlobalStoreSectors]] = L1TEXCacheGlobalStoreSectors # pylint: disable=invalid-name
 
 class L1TEXCacheLocalStoreInstructions:
@@ -406,7 +427,7 @@ class L1TEXCacheLocalStoreInstructions:
             qualifier='executed_op_local_st',
         )
 
-        pretty_name = ' '.join((L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, 'instructions', mode or ''))
+        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, 'instructions', mode)))
 
         return MetricCounter(name=name, pretty_name=pretty_name, subs=subs)
 

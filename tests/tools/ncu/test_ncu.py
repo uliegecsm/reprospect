@@ -203,7 +203,11 @@ class TestMetrics:
     """
     Tests for :py:mod:`reprospect.tools.ncu.metrics`.
     """
-    METRICS: typing.Final[tuple[tuple[tuple[ncu.MetricKind, ...], tuple[ncu.MetricKind, ...], tuple[str, ...]], ...]] = (
+    METRICS: typing.Final[tuple[tuple[ncu.MetricKind, tuple[str, ...]], ...]] = (
+        (ncu.MetricCounter(name='dram__bytes_op_write', subs=((ncu.MetricCounterRollUp.SUM, ncu.MetricCounterRollUpQuantity.PCT_OF_PEAK_SUSTAINED_ELAPSED),)), ('dram__bytes_op_write.sum.pct_of_peak_sustained_elapsed',)),
+    )
+
+    METRICS_FROM_METRIC_FACTORIES: typing.Final[tuple[tuple[tuple[ncu.MetricKind, ...], tuple[ncu.MetricKind, ...], tuple[str, ...]], ...]] = (
         (ncu.LaunchBlock.create(), (ncu.Metric(name='launch__block_dim_x', pretty_name='launch block size x'), ncu.Metric(name='launch__block_dim_y', pretty_name='launch block size y'), ncu.Metric(name='launch__block_dim_z', pretty_name='launch block size z')), ('launch__block_dim_x', 'launch__block_dim_y', 'launch__block_dim_z')),
         (ncu.LaunchBlock.create(dims=()), (ncu.Metric(name='launch__block_dim_x', pretty_name='launch block size x'), ncu.Metric(name='launch__block_dim_y', pretty_name='launch block size y'), ncu.Metric(name='launch__block_dim_z', pretty_name='launch block size z')), ('launch__block_dim_x', 'launch__block_dim_y', 'launch__block_dim_z')),
         (ncu.LaunchBlock.create(dims=('x',)), (ncu.Metric(name='launch__block_dim_x', pretty_name='launch block size x'),), ('launch__block_dim_x',)),
@@ -214,10 +218,14 @@ class TestMetrics:
         (ncu.L1TEXCache.GlobalStore.Sectors.create(), (ncu.MetricCounter(name='l1tex__t_sectors_pipe_lsu_mem_global_op_st', pretty_name='L1/TEX cache global store sectors', subs=(ncu.MetricCounterRollUp.SUM,)),), ('l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum',)),
     )
 
-    @pytest.mark.parametrize(('metric', 'expected', 'gather'), METRICS)
-    def test(self, metric: tuple[ncu.MetricKind, ...], expected: tuple[ncu.MetricKind, ...], gather: tuple[str, ...]) -> None:
-        assert metric == expected
-        assert ncu.gather(metric) == gather
+    @pytest.mark.parametrize(('metric', 'gather'), METRICS)
+    def test_metrics(self, metric: ncu.MetricKind, gather: tuple[str, ...]) -> None:
+        assert ncu.gather([metric]) == gather
+
+    @pytest.mark.parametrize(('metrics', 'expected', 'gather'), METRICS_FROM_METRIC_FACTORIES)
+    def test_metrics_from_metric_factories(self, metrics: tuple[ncu.MetricKind, ...], expected: tuple[ncu.MetricKind, ...], gather: tuple[str, ...]) -> None:
+        assert metrics == expected
+        assert ncu.gather(metrics) == gather
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestSession:

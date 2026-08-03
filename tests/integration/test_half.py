@@ -192,8 +192,8 @@ class TestNCU:
         assert individual['launch block size x'] == self.BLOCK_DIM_X['individual']
         assert packed    ['launch block size x'] == self.BLOCK_DIM_X['packed']
 
-        assert individual['L1/TEX cache global load instructions sass sum'] == math.ceil(self.BLOCK_DIM_X['individual'] / self.WARP_SIZE)
-        assert packed    ['L1/TEX cache global load instructions sass sum'] == math.ceil(self.BLOCK_DIM_X['packed']     / self.WARP_SIZE)
+        assert individual['L1/TEX cache global load sass instructions smsp sum'] == math.ceil(self.BLOCK_DIM_X['individual'] / self.WARP_SIZE)
+        assert packed    ['L1/TEX cache global load sass instructions smsp sum'] == math.ceil(self.BLOCK_DIM_X['packed']     / self.WARP_SIZE)
 
         assert individual['L1/TEX cache global load requests sum'] == math.ceil(self.BLOCK_DIM_X['individual'] / self.WARP_SIZE)
         assert packed    ['L1/TEX cache global load requests sum'] == math.ceil(self.BLOCK_DIM_X['packed']     / self.WARP_SIZE)

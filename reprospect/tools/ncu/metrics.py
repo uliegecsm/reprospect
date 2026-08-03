@@ -276,7 +276,7 @@ class L1TEXCacheGlobalLoadInstructions:
             qualifier='executed_op_global_ld',
         )
 
-        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, 'instructions', mode)))
+        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, mode, 'instructions', unit)))
 
         return (MetricCounter(name=name, pretty_name=pretty_name, subs=subs),)
 
@@ -392,7 +392,7 @@ class L1TEXCacheGlobalStoreInstructions:
             qualifier='executed_op_global_st',
         )
 
-        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, 'instructions', mode)))
+        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, mode, 'instructions', unit)))
 
         return (MetricCounter(name=name, pretty_name=pretty_name, subs=subs),)
 
@@ -460,7 +460,7 @@ class L1TEXCacheLocalStoreInstructions:
             qualifier='executed_op_local_st',
         )
 
-        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, 'instructions', mode)))
+        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, mode, 'instructions', unit)))
 
         return (MetricCounter(name=name, pretty_name=pretty_name, subs=subs),)
 

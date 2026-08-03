@@ -140,9 +140,9 @@ class TestNCU:
 
     METRICS: typing.Final[tuple[ncu.metrics.MetricKind, ...]] = (
         ncu.MetricDeviceAttribute(name='display_name'),
-        ncu.L1TEXCacheGlobalLoadInstructions.create(),
-        ncu.L1TEXCacheGlobalLoadRequests.create(),
-        ncu.L1TEXCacheGlobalLoadSectors.create(),
+        *ncu.L1TEXCacheGlobalLoadInstructions.create(),
+        *ncu.L1TEXCacheGlobalLoadRequests.create(),
+        *ncu.L1TEXCacheGlobalLoadSectors.create(),
         *ncu.LaunchGrid.create(),
         *ncu.LaunchBlock.create(),
     )
@@ -183,14 +183,14 @@ class TestNCU:
         _, packed     = results.query_single_next_metrics(('packed',))
 
         for dim in ('x', 'y', 'z'):
-            assert individual[f'launch__grid_dim_{dim}'] == 1
-            assert packed    [f'launch__grid_dim_{dim}'] == 1
+            assert individual[f'launch grid size {dim}'] == 1
+            assert packed    [f'launch grid size {dim}'] == 1
 
-        assert individual['launch__block_dim_y'] == 1 and packed['launch__block_dim_y'] == 1
-        assert individual['launch__block_dim_z'] == 1 and packed['launch__block_dim_z'] == 1
+        assert individual['launch block size y'] == 1 and packed['launch block size y'] == 1
+        assert individual['launch block size z'] == 1 and packed['launch block size z'] == 1
 
-        assert individual['launch__block_dim_x'] == self.BLOCK_DIM_X['individual']
-        assert packed    ['launch__block_dim_x'] == self.BLOCK_DIM_X['packed']
+        assert individual['launch block size x'] == self.BLOCK_DIM_X['individual']
+        assert packed    ['launch block size x'] == self.BLOCK_DIM_X['packed']
 
         assert individual['L1/TEX cache global load instructions sass.sum'] == math.ceil(self.BLOCK_DIM_X['individual'] / self.WARP_SIZE)
         assert packed    ['L1/TEX cache global load instructions sass.sum'] == math.ceil(self.BLOCK_DIM_X['packed']     / self.WARP_SIZE)

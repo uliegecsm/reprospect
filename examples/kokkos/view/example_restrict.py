@@ -497,9 +497,9 @@ class TestNCU(TestRestrict):
     Kernel profiling.
     """
     METRICS: tuple[ncu.Metric | ncu.MetricCorrelation, ...] = (
-        ncu.L1TEXCache.GlobalLoad.Sectors.create(),
-        ncu.L1TEXCache.GlobalLoad.SectorMisses.create(),
-        ncu.L1TEXCache.GlobalStore.Sectors.create(),
+        *ncu.L1TEXCache.GlobalLoad.Sectors.create(),
+        *ncu.L1TEXCache.GlobalLoad.SectorMisses.create(),
+        *ncu.L1TEXCache.GlobalStore.Sectors.create(),
         ncu.MetricCounter(name='lts__t_sectors_srcunit_tex_op_read_lookup_miss', subs=(ncu.MetricCounterRollUp.SUM,)),
     )
 

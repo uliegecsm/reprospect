@@ -203,18 +203,21 @@ class TestMetrics:
     """
     Tests for :py:mod:`reprospect.tools.ncu.metrics`.
     """
-    METRICS: typing.Final[tuple[tuple[ncu.MetricKind, ncu.MetricKind, tuple[str, ...]], ...]] = (
-        (ncu.L1TEXCache.GlobalStore.Instructions.create(), ncu.MetricCounter(name='smsp__sass_inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions sass', subs=(ncu.MetricCounterRollUp.SUM,)), ('smsp__sass_inst_executed_op_global_st.sum',)),
-        (ncu.L1TEXCache.GlobalStore.Instructions.create(mode=None), ncu.MetricCounter(name='smsp__inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions', subs=(ncu.MetricCounterRollUp.SUM,)), ('smsp__inst_executed_op_global_st.sum',)),
-        (ncu.L1TEXCache.GlobalStore.Instructions.create(subs=(ncu.MetricCounterRollUp.MIN, ncu.MetricCounterRollUp.MAX)), ncu.MetricCounter(name='smsp__sass_inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions sass', subs=(ncu.MetricCounterRollUp.MIN, ncu.MetricCounterRollUp.MAX)), ('smsp__sass_inst_executed_op_global_st.min', 'smsp__sass_inst_executed_op_global_st.max')),
-        (ncu.L1TEXCache.GlobalStore.Requests.create(), ncu.MetricCounter(name='l1tex__t_requests_pipe_lsu_mem_global_op_st', pretty_name='L1/TEX cache global store requests', subs=(ncu.MetricCounterRollUp.SUM,)), ('l1tex__t_requests_pipe_lsu_mem_global_op_st.sum',)),
-        (ncu.L1TEXCache.GlobalStore.Sectors.create(), ncu.MetricCounter(name='l1tex__t_sectors_pipe_lsu_mem_global_op_st', pretty_name='L1/TEX cache global store sectors', subs=(ncu.MetricCounterRollUp.SUM,)), ('l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum',)),
+    METRICS: typing.Final[tuple[tuple[tuple[ncu.MetricKind, ...], tuple[ncu.MetricKind, ...], tuple[str, ...]], ...]] = (
+        (ncu.LaunchBlock.create(), (ncu.Metric(name='launch__block_dim_x', pretty_name='launch block size x'), ncu.Metric(name='launch__block_dim_y', pretty_name='launch block size y'), ncu.Metric(name='launch__block_dim_z', pretty_name='launch block size z')), ('launch__block_dim_x', 'launch__block_dim_y', 'launch__block_dim_z')),
+        (ncu.LaunchBlock.create(dims=()), (ncu.Metric(name='launch__block_dim_x', pretty_name='launch block size x'), ncu.Metric(name='launch__block_dim_y', pretty_name='launch block size y'), ncu.Metric(name='launch__block_dim_z', pretty_name='launch block size z')), ('launch__block_dim_x', 'launch__block_dim_y', 'launch__block_dim_z')),
+        (ncu.LaunchBlock.create(dims=('x',)), (ncu.Metric(name='launch__block_dim_x', pretty_name='launch block size x'),), ('launch__block_dim_x',)),
+        (ncu.L1TEXCache.GlobalStore.Instructions.create(), (ncu.MetricCounter(name='smsp__sass_inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions sass', subs=(ncu.MetricCounterRollUp.SUM,)),), ('smsp__sass_inst_executed_op_global_st.sum',)),
+        (ncu.L1TEXCache.GlobalStore.Instructions.create(mode=None), (ncu.MetricCounter(name='smsp__inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions', subs=(ncu.MetricCounterRollUp.SUM,)),), ('smsp__inst_executed_op_global_st.sum',)),
+        (ncu.L1TEXCache.GlobalStore.Instructions.create(subs=(ncu.MetricCounterRollUp.MIN, ncu.MetricCounterRollUp.MAX)), (ncu.MetricCounter(name='smsp__sass_inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions sass', subs=(ncu.MetricCounterRollUp.MIN, ncu.MetricCounterRollUp.MAX)),), ('smsp__sass_inst_executed_op_global_st.min', 'smsp__sass_inst_executed_op_global_st.max')),
+        (ncu.L1TEXCache.GlobalStore.Requests.create(), (ncu.MetricCounter(name='l1tex__t_requests_pipe_lsu_mem_global_op_st', pretty_name='L1/TEX cache global store requests', subs=(ncu.MetricCounterRollUp.SUM,)),), ('l1tex__t_requests_pipe_lsu_mem_global_op_st.sum',)),
+        (ncu.L1TEXCache.GlobalStore.Sectors.create(), (ncu.MetricCounter(name='l1tex__t_sectors_pipe_lsu_mem_global_op_st', pretty_name='L1/TEX cache global store sectors', subs=(ncu.MetricCounterRollUp.SUM,)),), ('l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum',)),
     )
 
     @pytest.mark.parametrize(('metric', 'expected', 'gather'), METRICS)
-    def test(self, metric: ncu.MetricKind, expected: ncu.MetricKind, gather: tuple[str, ...]) -> None:
+    def test(self, metric: tuple[ncu.MetricKind, ...], expected: tuple[ncu.MetricKind, ...], gather: tuple[str, ...]) -> None:
         assert metric == expected
-        assert ncu.gather([metric]) == gather
+        assert ncu.gather(metric) == gather
 
 @pytest.mark.skipif(not detect.GPUDetector.count() > 0, reason='needs a GPU')
 class TestSession:
@@ -237,8 +240,8 @@ class TestSession:
             *ncu.LaunchBlock.create(),
             *ncu.LaunchGrid.create(),
             # A few L1TEX cache metrics.
-            ncu.L1TEXCache.GlobalLoad.Instructions.create(),
-            ncu.L1TEXCache.GlobalLoad.Sectors.create(),
+            *ncu.L1TEXCache.GlobalLoad.Instructions.create(),
+            *ncu.L1TEXCache.GlobalLoad.Sectors.create(),
             # A few device attributes.
             ncu.MetricDeviceAttribute(name='display_name'),
             ncu.MetricDeviceAttribute(name='architecture'),
@@ -252,12 +255,12 @@ class TestSession:
         EXPT_METRICS_AND_METADATA = (
             'launch__registers_per_thread_allocated',
             'smsp__inst_executed.sum',
-            'launch__block_dim_x',
-            'launch__block_dim_y',
-            'launch__block_dim_z',
-            'launch__grid_dim_x',
-            'launch__grid_dim_y',
-            'launch__grid_dim_z',
+            'launch block size x',
+            'launch block size y',
+            'launch block size z',
+            'launch grid size x',
+            'launch grid size y',
+            'launch grid size z',
             'L1/TEX cache global load instructions sass.sum',
             'L1/TEX cache global load sectors.sum',
             'mangled',
@@ -316,12 +319,12 @@ class TestSession:
         assert all(x in metrics_filtered_second_saxpy_kernel_1 for x in EXPT_METRICS_AND_METADATA[:2])
 
         # A few checks.
-        assert metrics_saxpy_kernel_0['launch__block_dim_x'] == 128
-        assert metrics_saxpy_kernel_0['launch__block_dim_y'] == 1
-        assert metrics_saxpy_kernel_0['launch__block_dim_z'] == 1
-        assert metrics_saxpy_kernel_0['launch__grid_dim_x'] == 8
-        assert metrics_saxpy_kernel_0['launch__grid_dim_y'] == 1
-        assert metrics_saxpy_kernel_0['launch__grid_dim_z'] == 1
+        assert metrics_saxpy_kernel_0['launch block size x'] == 128
+        assert metrics_saxpy_kernel_0['launch block size y'] == 1
+        assert metrics_saxpy_kernel_0['launch block size z'] == 1
+        assert metrics_saxpy_kernel_0['launch grid size x'] == 8
+        assert metrics_saxpy_kernel_0['launch grid size y'] == 1
+        assert metrics_saxpy_kernel_0['launch grid size z'] == 1
 
         assert metrics_saxpy_kernel_0['mangled'] == '_Z12saxpy_kerneljfPKfPf'
         assert metrics_saxpy_kernel_0['demangled'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'
@@ -382,8 +385,8 @@ class TestSession:
             # Metric with full name provided.
             ncu.Metric(name='launch__registers_per_thread_allocated'),
             # A few L1TEX cache metrics.
-            ncu.L1TEXCache.GlobalLoad.Sectors.create(),
-            ncu.L1TEXCache.GlobalStore.Sectors.create(),
+            *ncu.L1TEXCache.GlobalLoad.Sectors.create(),
+            *ncu.L1TEXCache.GlobalStore.Sectors.create(),
         )
 
         session = ncu.Session(command=ncu.Command(
@@ -516,8 +519,8 @@ class TestCacher:
         """
         METRICS: typing.Final[tuple[ncu.Metric, ...]] = (
             # A few L1TEX cache metrics.
-            ncu.L1TEXCache.GlobalLoad.Sectors.create(),
-            ncu.L1TEXCache.GlobalStore.Sectors.create(),
+            *ncu.L1TEXCache.GlobalLoad.Sectors.create(),
+            *ncu.L1TEXCache.GlobalStore.Sectors.create(),
         )
 
         FILES = ('report-cached.log', 'report-cached.ncu-rep')

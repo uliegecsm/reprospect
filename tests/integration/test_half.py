@@ -183,14 +183,14 @@ class TestNCU:
         _, packed     = results.query_single_next_metrics(('packed',))
 
         for dim in ('x', 'y', 'z'):
-            assert individual[f'launch grid size {dim}'] == 1
-            assert packed    [f'launch grid size {dim}'] == 1
+            assert individual[f'Launch grid size {dim}'] == 1
+            assert packed    [f'Launch grid size {dim}'] == 1
 
-        assert individual['launch block size y'] == 1 and packed['launch block size y'] == 1
-        assert individual['launch block size z'] == 1 and packed['launch block size z'] == 1
+        assert individual['Launch block size y'] == 1 and packed['Launch block size y'] == 1
+        assert individual['Launch block size z'] == 1 and packed['Launch block size z'] == 1
 
-        assert individual['launch block size x'] == self.BLOCK_DIM_X['individual']
-        assert packed    ['launch block size x'] == self.BLOCK_DIM_X['packed']
+        assert individual['Launch block size x'] == self.BLOCK_DIM_X['individual']
+        assert packed    ['Launch block size x'] == self.BLOCK_DIM_X['packed']
 
         assert individual['L1/TEX cache global load sass instructions smsp sum'] == math.ceil(self.BLOCK_DIM_X['individual'] / self.WARP_SIZE)
         assert packed    ['L1/TEX cache global load sass instructions smsp sum'] == math.ceil(self.BLOCK_DIM_X['packed']     / self.WARP_SIZE)

@@ -226,9 +226,9 @@ class TestMetrics:
         CreatedMetricsCase(
             metrics=ncu.LaunchBlock.create(),
             expected=(
-                ncu.Metric(name='launch__block_dim_x', pretty_name='launch block size x'),
-                ncu.Metric(name='launch__block_dim_y', pretty_name='launch block size y'),
-                ncu.Metric(name='launch__block_dim_z', pretty_name='launch block size z'),
+                ncu.Metric(name='launch__block_dim_x', pretty_name='Launch block size x'),
+                ncu.Metric(name='launch__block_dim_y', pretty_name='Launch block size y'),
+                ncu.Metric(name='launch__block_dim_z', pretty_name='Launch block size z'),
             ),
             gathered=(
                 'launch__block_dim_x',
@@ -236,23 +236,23 @@ class TestMetrics:
                 'launch__block_dim_z',
             ),
             labels=(
-                'launch block size x',
-                'launch block size y',
-                'launch block size z',
+                'Launch block size x',
+                'Launch block size y',
+                'Launch block size z',
             ),
         ),
         CreatedMetricsCase(
             metrics=ncu.LaunchBlock.create(dims=('x',)),
-            expected=(ncu.Metric(name='launch__block_dim_x', pretty_name='launch block size x'),),
+            expected=(ncu.Metric(name='launch__block_dim_x', pretty_name='Launch block size x'),),
             gathered=('launch__block_dim_x',),
-            labels=('launch block size x',),
+            labels=('Launch block size x',),
         ),
         CreatedMetricsCase(
             metrics=ncu.LaunchBlock.create(dims=()),
             expected=(
-                ncu.Metric(name='launch__block_dim_x', pretty_name='launch block size x'),
-                ncu.Metric(name='launch__block_dim_y', pretty_name='launch block size y'),
-                ncu.Metric(name='launch__block_dim_z', pretty_name='launch block size z'),
+                ncu.Metric(name='launch__block_dim_x', pretty_name='Launch block size x'),
+                ncu.Metric(name='launch__block_dim_y', pretty_name='Launch block size y'),
+                ncu.Metric(name='launch__block_dim_z', pretty_name='Launch block size z'),
             ),
             gathered=(
                 'launch__block_dim_x',
@@ -260,9 +260,9 @@ class TestMetrics:
                 'launch__block_dim_z',
             ),
             labels=(
-                'launch block size x',
-                'launch block size y',
-                'launch block size z',
+                'Launch block size x',
+                'Launch block size y',
+                'Launch block size z',
             ),
         ),
         CreatedMetricsCase(
@@ -370,12 +370,12 @@ class TestSession:
         EXPT_METRIC_LABELS_AND_METADATA = (
             'launch__registers_per_thread_allocated',
             'smsp__inst_executed.sum',
-            'launch block size x',
-            'launch block size y',
-            'launch block size z',
-            'launch grid size x',
-            'launch grid size y',
-            'launch grid size z',
+            'Launch block size x',
+            'Launch block size y',
+            'Launch block size z',
+            'Launch grid size x',
+            'Launch grid size y',
+            'Launch grid size z',
             'L1/TEX cache global load sass instructions smsp sum',
             'L1/TEX cache global load sectors sum',
             'mangled',
@@ -434,12 +434,12 @@ class TestSession:
         assert all(x in metrics_filtered_second_saxpy_kernel_1 for x in EXPT_METRIC_LABELS_AND_METADATA[:2])
 
         # A few checks.
-        assert metrics_saxpy_kernel_0['launch block size x'] == 128
-        assert metrics_saxpy_kernel_0['launch block size y'] == 1
-        assert metrics_saxpy_kernel_0['launch block size z'] == 1
-        assert metrics_saxpy_kernel_0['launch grid size x'] == 8
-        assert metrics_saxpy_kernel_0['launch grid size y'] == 1
-        assert metrics_saxpy_kernel_0['launch grid size z'] == 1
+        assert metrics_saxpy_kernel_0['Launch block size x'] == 128
+        assert metrics_saxpy_kernel_0['Launch block size y'] == 1
+        assert metrics_saxpy_kernel_0['Launch block size z'] == 1
+        assert metrics_saxpy_kernel_0['Launch grid size x'] == 8
+        assert metrics_saxpy_kernel_0['Launch grid size y'] == 1
+        assert metrics_saxpy_kernel_0['Launch grid size z'] == 1
 
         assert metrics_saxpy_kernel_0['mangled'] == '_Z12saxpy_kerneljfPKfPf'
         assert metrics_saxpy_kernel_0['demangled'] == 'saxpy_kernel(unsigned int, float, const float *, float *)'

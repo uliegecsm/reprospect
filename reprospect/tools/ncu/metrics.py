@@ -190,7 +190,7 @@ class LaunchBlock(XYZBase):
     """
     prefix: typing.ClassVar[str] = 'launch__block_dim_'
 
-    pretty_prefix: typing.ClassVar[str | None] = 'launch block size'
+    pretty_prefix: typing.ClassVar[str | None] = 'Launch block size'
 
 class LaunchGrid(XYZBase):
     """
@@ -198,7 +198,7 @@ class LaunchGrid(XYZBase):
     """
     prefix: typing.ClassVar[str] = 'launch__grid_dim_'
 
-    pretty_prefix: typing.ClassVar[str | None] = 'launch grid size'
+    pretty_prefix: typing.ClassVar[str | None] = 'Launch grid size'
 
 class Unit(StrEnum):
     """

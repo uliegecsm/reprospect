@@ -499,7 +499,7 @@ class Report:
         Loop over submetrics of `metric`.
         """
         if metric.subs is not None:
-            return {sub: cls.get_metric_by_name(action=action, metric=f'{metric.name}.{sub}').value() for sub in metric.subs}
+            return {f'{".".join(sub)}': cls.get_metric_by_name(action=action, metric=f'{".".join((metric.name, *sub))}').value() for sub in metric.subs}
         return cls.get_metric_by_name(action=action, metric=metric.name).value()
 
     @classmethod

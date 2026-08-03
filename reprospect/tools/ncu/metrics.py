@@ -16,7 +16,7 @@ ValueType: typing.TypeAlias = int | float
 #: A single metric value type or a dictionary of submetric values of such type.
 MetricData: typing.TypeAlias = ValueType | dict[str, ValueType]
 
-@dataclasses.dataclass(frozen=False, slots=True)
+@dataclasses.dataclass(frozen=True, slots=True)
 class Metric:
     """
     Used to represent a ``ncu`` metric.
@@ -34,19 +34,29 @@ class Metric:
     #: Human readable name.
     pretty_name: str | None = None
 
-    #: Optional sub-metric names.
-    subs: tuple[str, ...] | None = None
+    #: Optional sub-metric names, each one stored as a path of components
+    subs: tuple[str | tuple[str, ...], ...] | None = None
 
     def __post_init__(self) -> None:
-        self.pretty_name = self.pretty_name or self.name
+        object.__setattr__(self, 'pretty_name', self.pretty_name or self.name)
+        if self.subs is not None:
+            object.__setattr__(self, 'subs',
+                tuple((sub,) if isinstance(sub, str) else sub for sub in self.subs))
 
     def gather(self) -> tuple[str, ...]:
         """
         Get the list of sub-metric names or the metric name itself if no sub-metrics are defined.
         """
         if self.subs is not None:
-            return tuple(f'{self.name}.{sub}' for sub in self.subs)
+            return tuple('.'.join((self.name, *sub)) for sub in self.subs)
         return (self.name,)
+
+class MetricCounterRollUpQuantity(StrEnum):
+    """
+    Available quantities for :py:class:`MetricCounterRollUp`.
+    """
+    PCT_OF_PEAK_SUSTAINED_ACTIVE = enum.auto()
+    PCT_OF_PEAK_SUSTAINED_ELAPSED = enum.auto()
 
 class MetricCounterRollUp(StrEnum):
     """
@@ -57,7 +67,7 @@ class MetricCounterRollUp(StrEnum):
     MIN = enum.auto()
     MAX = enum.auto()
 
-@dataclasses.dataclass(slots=True, frozen=False)
+@dataclasses.dataclass(frozen=True, slots=True)
 class MetricCounter(Metric):
     """
     A counter metric.
@@ -77,7 +87,7 @@ class MetricRatioRollUp(StrEnum):
     RATIO = enum.auto()
     MAX_RATE = enum.auto()
 
-@dataclasses.dataclass(slots=True, frozen=False)
+@dataclasses.dataclass(frozen=True, slots=True)
 class MetricRatio(Metric):
     """
     A ratio metric.

@@ -10,13 +10,13 @@ if sys.version_info >= (3, 11):
 else:
     from backports.strenum.strenum import StrEnum
 
+
 #: A single metric value type.
 ValueType: typing.TypeAlias = int | float
 
 #: A single metric value type or a dictionary of submetric values of such type.
 MetricData: typing.TypeAlias = ValueType | dict[str, ValueType]
 
-@dataclasses.dataclass(frozen=True, slots=True)
 class Metric:
     """
     Used to represent a ``ncu`` metric.
@@ -27,20 +27,30 @@ class Metric:
     References:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
+
+    .. note::
+
+        It is not decorated with :py:func:`dataclasses.dataclass` because of https://github.com/mypyc/mypyc/issues/1061.
     """
-    #: The base name of the metric.
-    name: str
+    #: Sub-metric components implied by the metric kind, omitted from labels.
+    SILENT_SUBS: typing.ClassVar[frozenset[str]] = frozenset()
 
-    #: Human readable name.
-    pretty_name: str | None = None
+    __slots__ = ('name', 'pretty_name', 'subs')
 
-    #: Optional sub-metric names, each one stored as a path of components
-    subs: tuple[str | tuple[str, ...], ...] | None = None
+    def __init__(self, name: str, pretty_name: str | None = None, subs: tuple[str | tuple[str, ...], ...] | None = None) -> None:
+        """
+        :param name: The base name of the metric.
+        :param pretty_name: Human readable name; defaults to :py:attr:`name`.
+        :param subs: Sub-metric names. The constructor normalizes each to a path of components.
+        """
+        self.name: typing.Final[str] = name
+        self.pretty_name: typing.Final[str | None] = pretty_name
+        self.subs: typing.Final[tuple[tuple[str, ...], ...] | None] = tuple((sub,) if isinstance(sub, str) else sub for sub in subs) if subs is not None else None
 
-    def __post_init__(self) -> None:
-        if self.subs is not None:
-            object.__setattr__(self, 'subs',
-                tuple((sub,) if isinstance(sub, str) else sub for sub in self.subs))
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Metric):
+            return self.name == other.name and self.pretty_name == other.pretty_name and self.subs == other.subs
+        return NotImplemented
 
     def gather(self) -> tuple[str, ...]:
         """
@@ -54,16 +64,25 @@ class Metric:
         """
         Get the list of sub-metric labels. Parallel to :py:meth:`gather`, but uses the pretty name.
         """
-        if self.pretty_name is not None:
-            if self.subs is not None:
-                return tuple(' '.join((self.pretty_name, *sub)) for sub in self.subs)
+        if self.pretty_name is None:
+            return self.gather()
+        if self.subs is None:
             return (self.pretty_name,)
-        return self.gather()
+        result = []
+        for sub in self.subs:
+            sub_labels = tuple(getattr(c, 'label', c) for c in sub if c not in self.SILENT_SUBS)
+            result.append(f'{self.pretty_name} ({", ".join(sub_labels)})' if sub_labels else self.pretty_name)
+        assert len(set(result)) == len(result), result
+        return tuple(result)
 
 class MetricCounterRollUpQuantity(StrEnum):
     """
     Available quantities for :py:class:`MetricCounterRollUp`.
     """
+    @property
+    def label(self) -> str:
+        return {self.PCT_OF_PEAK_SUSTAINED_ACTIVE: '% of peak active', self.PCT_OF_PEAK_SUSTAINED_ELAPSED: '% of peak elapsed'}[self]
+
     PCT_OF_PEAK_SUSTAINED_ACTIVE = enum.auto()
     PCT_OF_PEAK_SUSTAINED_ELAPSED = enum.auto()
 
@@ -71,12 +90,15 @@ class MetricCounterRollUp(StrEnum):
     """
     Available roll-ups for :py:class:`MetricCounter`.
     """
+    @property
+    def label(self) -> str:
+        return self.value
+
     SUM = enum.auto()
     AVG = enum.auto()
     MIN = enum.auto()
     MAX = enum.auto()
 
-@dataclasses.dataclass(frozen=True, slots=True)
 class MetricCounter(Metric):
     """
     A counter metric.
@@ -87,16 +109,20 @@ class MetricCounter(Metric):
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
+    SILENT_SUBS: typing.ClassVar[frozenset[str]] = frozenset({MetricCounterRollUp.SUM})
 
 class MetricRatioRollUp(StrEnum):
     """
     Available roll-ups for :py:class:`MetricRatio`.
     """
+    @property
+    def label(self) -> str:
+        return {self.PCT: '%', self.RATIO: 'ratio', self.MAX_RATE: 'max rate'}[self]
+
     PCT = enum.auto()
     RATIO = enum.auto()
     MAX_RATE = enum.auto()
 
-@dataclasses.dataclass(frozen=True, slots=True)
 class MetricRatio(Metric):
     """
     A ratio metric.
@@ -107,6 +133,7 @@ class MetricRatio(Metric):
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html#metrics-structure
     """
+    SILENT_SUBS: typing.ClassVar[frozenset[str]] = frozenset({MetricRatioRollUp.RATIO})
 
 @dataclasses.dataclass(frozen=True, slots=True)
 class MetricDeviceAttribute:
@@ -172,33 +199,33 @@ class XYZBase:
 
     * https://docs.nvidia.com/nsight-compute/ProfilingGuide/#metrics-reference
     """
-    prefix: typing.ClassVar[str]
+    PREFIX: typing.ClassVar[str]
 
-    pretty_prefix: typing.ClassVar[str | None] = None
+    PRETTY_PREFIX: typing.ClassVar[str | None] = None
 
     @classmethod
     def create(cls, dims: typing.Iterable[str] | None = None) -> tuple[Metric, ...]:
         if not dims:
             dims = ('x', 'y', 'z')
-        if cls.pretty_prefix:
-            return tuple(Metric(name=cls.prefix + dim, pretty_name=f'{cls.pretty_prefix} {dim}') for dim in dims)
-        return tuple(Metric(name=cls.prefix + dim) for dim in dims)
+        if cls.PRETTY_PREFIX:
+            return tuple(Metric(name=cls.PREFIX + dim, pretty_name=f'{cls.PRETTY_PREFIX} {dim}') for dim in dims)
+        return tuple(Metric(name=cls.PREFIX + dim) for dim in dims)
 
 class LaunchBlock(XYZBase):
     """
     Factory of metrics ``launch__block_dim_x``, ``launch__block_dim_y`` and ``launch__block_dim_z``.
     """
-    prefix: typing.ClassVar[str] = 'launch__block_dim_'
+    PREFIX: typing.ClassVar[str] = 'launch__block_dim_'
 
-    pretty_prefix: typing.ClassVar[str | None] = 'Launch block size'
+    PRETTY_PREFIX: typing.ClassVar[str | None] = 'Launch block size'
 
 class LaunchGrid(XYZBase):
     """
     Factory of metrics ``launch__grid_dim_x``, ``launch__grid_dim_y`` and ``launch__grid_dim_z``.
     """
-    prefix: typing.ClassVar[str] = 'launch__grid_dim_'
+    PREFIX: typing.ClassVar[str] = 'launch__grid_dim_'
 
-    pretty_prefix: typing.ClassVar[str | None] = 'Launch grid size'
+    PRETTY_PREFIX: typing.ClassVar[str | None] = 'Launch grid size'
 
 class Unit(StrEnum):
     """
@@ -492,18 +519,18 @@ class WarpStallBase:
     TEMPLATE_LABEL: typing.Final[str] = 'Warp stall {reason}'
 
     #: The stall reason as it appears in the ``ncu`` metric name.
-    reason: typing.ClassVar[str]
+    REASON: typing.ClassVar[str]
 
     #: The stall reason as it appears in the label.
-    pretty_reason: typing.ClassVar[str]
+    PRETTY_REASON: typing.ClassVar[str]
 
     @classmethod
     def create(cls, *,
-        subs: tuple[MetricRatioRollUp, ...] = (MetricRatioRollUp.PCT,),
+        subs: tuple[MetricRatioRollUp, ...] = (MetricRatioRollUp.RATIO,),
     ) -> tuple[MetricRatio, ...]:
-        name = cls.TEMPLATE_NAME.format(reason=cls.reason)
+        name = cls.TEMPLATE_NAME.format(reason=cls.REASON)
 
-        pretty_name = cls.TEMPLATE_LABEL.format(reason=cls.pretty_reason)
+        pretty_name = cls.TEMPLATE_LABEL.format(reason=cls.PRETTY_REASON)
 
         return (MetricRatio(name=name, pretty_name=pretty_name, subs=subs),)
 
@@ -511,33 +538,33 @@ class WarpStallLGThrottle(WarpStallBase):
     """
     Factory of ratio metric ``smsp__average_warps_issue_stalled_lg_throttle_per_issue_active``.
     """
-    reason: typing.ClassVar[str] = 'lg_throttle'
+    REASON: typing.ClassVar[str] = 'lg_throttle'
 
-    pretty_reason: typing.ClassVar[str] = 'LG throttle'
+    PRETTY_REASON: typing.ClassVar[str] = 'LG throttle'
 
 class WarpStallLongScoreboard(WarpStallBase):
     """
     Factory of ratio metric ``smsp__average_warps_issue_stalled_long_scoreboard_per_issue_active``.
     """
-    reason: typing.ClassVar[str] = 'long_scoreboard'
+    REASON: typing.ClassVar[str] = 'long_scoreboard'
 
-    pretty_reason: typing.ClassVar[str] = 'Long scoreboard'
+    PRETTY_REASON: typing.ClassVar[str] = 'Long scoreboard'
 
 class WarpStallMIOThrottle(WarpStallBase):
     """
     Factory of ratio metric ``smsp__average_warps_issue_stalled_mio_throttle_per_issue_active``.
     """
-    reason: typing.ClassVar[str] = 'mio_throttle'
+    REASON: typing.ClassVar[str] = 'mio_throttle'
 
-    pretty_reason: typing.ClassVar[str] = 'MIO throttle'
+    PRETTY_REASON: typing.ClassVar[str] = 'MIO throttle'
 
 class WarpStallShortScoreboard(WarpStallBase):
     """
     Factory of ratio metric ``smsp__average_warps_issue_stalled_short_scoreboard_per_issue_active``.
     """
-    reason: typing.ClassVar[str] = 'short_scoreboard'
+    REASON: typing.ClassVar[str] = 'short_scoreboard'
 
-    pretty_reason: typing.ClassVar[str] = 'Short scoreboard'
+    PRETTY_REASON: typing.ClassVar[str] = 'Short scoreboard'
 
 class WarpStall:
     """
@@ -561,11 +588,15 @@ MetricKind: typing.TypeAlias = Metric | MetricCorrelation | MetricDeviceAttribut
 def gather(metrics: typing.Iterable[MetricKind]) -> tuple[str, ...]:
     """
     Retrieve all sub-metric names, e.g. to pass them to ``ncu``.
+
+    Order follows `metrics`, then each metric's :py:attr:`~Metric.subs`; parallel to :py:func:`labels`.
     """
     return tuple(name for metric in metrics for name in metric.gather())
 
 def labels(metrics: typing.Iterable[MetricKind]) -> tuple[str, ...]:
     """
     Retrieve all sub-metric labels, e.g. to lookup collected data by label.
+
+    Order follows `metrics`, then each metric's :py:attr:`~Metric.subs`; parallel to :py:func:`gather`.
     """
     return tuple(label for metric in metrics for label in metric.labels())

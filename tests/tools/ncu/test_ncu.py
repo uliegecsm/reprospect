@@ -28,7 +28,7 @@ class TestProfilingResults:
             data=ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum': 100.,
                 'sass__inst_executed_per_opcode': MetricCorrelationData(correlated={'LDCU': 16., 'LDC': 16.}),
-                'L1/TEX cache global load sectors sum': 0.,
+                'L1/TEX cache global load sectors': 0.,
             }),
         )
         results.assign_metrics(
@@ -36,7 +36,7 @@ class TestProfilingResults:
             data=ncu.ProfilingMetrics({
                 'smsp__inst_executed.sum': 96.,
                 'sass__inst_executed_per_opcode': MetricCorrelationData(correlated={'LDCU': 16., 'LDC': 16.}),
-                'L1/TEX cache global load sectors sum': 0.,
+                'L1/TEX cache global load sectors': 0.,
             }),
         )
         return results
@@ -153,13 +153,13 @@ Profiling results
     │       └── kernel
     │           ├── smsp__inst_executed.sum: 100.0
     │           ├── sass__inst_executed_per_opcode: MetricCorrelationData(correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
-    │           └── L1/TEX cache global load sectors sum: 0.0
+    │           └── L1/TEX cache global load sectors: 0.0
     └── nvtx_push_region_B
         └── nvtx_push_region_other_kernel
             └── other_kernel
                 ├── smsp__inst_executed.sum: 96.0
                 ├── sass__inst_executed_per_opcode: MetricCorrelationData(correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
-                └── L1/TEX cache global load sectors sum: 0.0
+                └── L1/TEX cache global load sectors: 0.0
 """
 
         results_A = results.query(("nvtx_range_name", "nvtx_push_region_A"))
@@ -170,7 +170,7 @@ Profiling results
     └── kernel
         ├── smsp__inst_executed.sum: 100.0
         ├── sass__inst_executed_per_opcode: MetricCorrelationData(correlated={'LDCU': 16.0, 'LDC': 16.0}, value=None)
-        └── L1/TEX cache global load sectors sum: 0.0
+        └── L1/TEX cache global load sectors: 0.0
 """
 
 class TestCommand:
@@ -219,6 +219,11 @@ class TestMetrics:
             metric=ncu.MetricCounter(name='dram__bytes_op_write', subs=((ncu.MetricCounterRollUp.SUM, ncu.MetricCounterRollUpQuantity.PCT_OF_PEAK_SUSTAINED_ELAPSED),)),
             gathered=('dram__bytes_op_write.sum.pct_of_peak_sustained_elapsed',),
             labels=('dram__bytes_op_write.sum.pct_of_peak_sustained_elapsed',),
+        ),
+        MetricCase(
+            metric=ncu.MetricCounter(name='dram__bytes_op_write', pretty_name='Device memory store bytes', subs=((ncu.MetricCounterRollUp.SUM, ncu.MetricCounterRollUpQuantity.PCT_OF_PEAK_SUSTAINED_ELAPSED),)),
+            gathered=('dram__bytes_op_write.sum.pct_of_peak_sustained_elapsed',),
+            labels=('Device memory store bytes (% of peak elapsed)',),
         ),
     )
 
@@ -269,13 +274,13 @@ class TestMetrics:
             metrics=ncu.L1TEXCache.GlobalStore.Instructions.create(),
             expected=(ncu.MetricCounter(name='smsp__sass_inst_executed_op_global_st', pretty_name='L1/TEX cache global store sass instructions smsp', subs=(ncu.MetricCounterRollUp.SUM,)),),
             gathered=('smsp__sass_inst_executed_op_global_st.sum',),
-            labels=('L1/TEX cache global store sass instructions smsp sum',),
+            labels=('L1/TEX cache global store sass instructions smsp',),
         ),
         CreatedMetricsCase(
             metrics=ncu.L1TEXCache.GlobalStore.Instructions.create(mode=None),
             expected=(ncu.MetricCounter(name='smsp__inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions smsp', subs=(ncu.MetricCounterRollUp.SUM,)),),
             gathered=('smsp__inst_executed_op_global_st.sum',),
-            labels=('L1/TEX cache global store instructions smsp sum',),
+            labels=('L1/TEX cache global store instructions smsp',),
         ),
         CreatedMetricsCase(
             metrics=ncu.L1TEXCache.GlobalStore.Instructions.create(
@@ -299,27 +304,27 @@ class TestMetrics:
                 'smsp__sass_inst_executed_op_global_st.max',
             ),
             labels=(
-                'L1/TEX cache global store sass instructions smsp min',
-                'L1/TEX cache global store sass instructions smsp max',
+                'L1/TEX cache global store sass instructions smsp (min)',
+                'L1/TEX cache global store sass instructions smsp (max)',
             ),
         ),
         CreatedMetricsCase(
             metrics=ncu.L1TEXCache.GlobalStore.Requests.create(),
             expected=(ncu.MetricCounter(name='l1tex__t_requests_pipe_lsu_mem_global_op_st', pretty_name='L1/TEX cache global store requests', subs=(ncu.MetricCounterRollUp.SUM,)),),
             gathered=('l1tex__t_requests_pipe_lsu_mem_global_op_st.sum',),
-            labels=('L1/TEX cache global store requests sum',),
+            labels=('L1/TEX cache global store requests',),
         ),
         CreatedMetricsCase(
             metrics=ncu.L1TEXCache.GlobalStore.Sectors.create(),
             expected=(ncu.MetricCounter(name='l1tex__t_sectors_pipe_lsu_mem_global_op_st', pretty_name='L1/TEX cache global store sectors', subs=(ncu.MetricCounterRollUp.SUM,)),),
             gathered=('l1tex__t_sectors_pipe_lsu_mem_global_op_st.sum',),
-            labels=('L1/TEX cache global store sectors sum',),
+            labels=('L1/TEX cache global store sectors',),
         ),
         CreatedMetricsCase(
             metrics=ncu.WarpStall.LGThrottle.create(),
-            expected=(ncu.MetricRatio(name='smsp__average_warps_issue_stalled_lg_throttle_per_issue_active', pretty_name='Warp stall LG throttle', subs=(ncu.MetricRatioRollUp.PCT,)),),
-            gathered=('smsp__average_warps_issue_stalled_lg_throttle_per_issue_active.pct',),
-            labels=('Warp stall LG throttle pct',),
+            expected=(ncu.MetricRatio(name='smsp__average_warps_issue_stalled_lg_throttle_per_issue_active', pretty_name='Warp stall LG throttle', subs=(ncu.MetricRatioRollUp.RATIO,)),),
+            gathered=('smsp__average_warps_issue_stalled_lg_throttle_per_issue_active.ratio',),
+            labels=('Warp stall LG throttle',),
         ),
     )
 
@@ -376,8 +381,8 @@ class TestSession:
             'Launch grid size x',
             'Launch grid size y',
             'Launch grid size z',
-            'L1/TEX cache global load sass instructions smsp sum',
-            'L1/TEX cache global load sectors sum',
+            'L1/TEX cache global load sass instructions smsp',
+            'L1/TEX cache global load sectors',
             'mangled',
             'demangled',
             'device__attribute_display_name',
@@ -552,34 +557,34 @@ class TestSession:
         assert SIGNATURES['node_D'](metrics_node_D)
 
         metrics_aggregate = results.aggregate_metrics(accessors=(), keys=(
-            'L1/TEX cache global store sectors sum',
-            'L1/TEX cache global load sectors sum',
+            'L1/TEX cache global store sectors',
+            'L1/TEX cache global load sectors',
         ))
 
         # Node A makes one load and one store.
-        assert metrics_node_A['L1/TEX cache global load sectors sum']  == 1
-        assert metrics_node_A['L1/TEX cache global store sectors sum'] == 1
+        assert metrics_node_A['L1/TEX cache global load sectors']  == 1
+        assert metrics_node_A['L1/TEX cache global store sectors'] == 1
 
         assert metrics_node_A['launch__registers_per_thread_allocated'] == 512
 
         # Nodes B and C make two loads and one store each.
-        assert metrics_node_B['L1/TEX cache global load sectors sum']  == 2
-        assert metrics_node_B['L1/TEX cache global store sectors sum'] == 1
-        assert metrics_node_C['L1/TEX cache global load sectors sum']  == 2
-        assert metrics_node_C['L1/TEX cache global store sectors sum'] == 1
+        assert metrics_node_B['L1/TEX cache global load sectors']  == 2
+        assert metrics_node_B['L1/TEX cache global store sectors'] == 1
+        assert metrics_node_C['L1/TEX cache global load sectors']  == 2
+        assert metrics_node_C['L1/TEX cache global store sectors'] == 1
 
         assert metrics_node_B['launch__registers_per_thread_allocated'] == 512
         assert metrics_node_C['launch__registers_per_thread_allocated'] == 512
 
         # Node D makes three loads and one store.
-        assert metrics_node_D['L1/TEX cache global load sectors sum']  == 3
-        assert metrics_node_D['L1/TEX cache global store sectors sum'] == 1
+        assert metrics_node_D['L1/TEX cache global load sectors']  == 3
+        assert metrics_node_D['L1/TEX cache global store sectors'] == 1
 
         assert metrics_node_D['launch__registers_per_thread_allocated'] == 512
 
         assert metrics_aggregate == {
-            'L1/TEX cache global load sectors sum':  8,
-            'L1/TEX cache global store sectors sum': 4,
+            'L1/TEX cache global load sectors':  8,
+            'L1/TEX cache global store sectors': 4,
         }
 
     def test_fails_correctly_with_retries(self, bindir, workdir) -> None:

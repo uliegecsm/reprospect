@@ -565,8 +565,8 @@ class TestNCU(TestRestrict):
             case _:
                 raise ValueError(method)
 
-        assert metrics['L1/TEX cache global load sectors sum']  == factor * self.SECTOR_COUNT_LOAD
-        assert metrics['L1/TEX cache global store sectors sum'] == factor * self.SECTOR_COUNT_STORE
+        assert metrics['L1/TEX cache global load sectors']  == factor * self.SECTOR_COUNT_LOAD
+        assert metrics['L1/TEX cache global store sectors'] == factor * self.SECTOR_COUNT_STORE
 
-        assert metrics['L1/TEX cache global load sectors miss sum']          == self.SECTOR_COUNT_LOAD
+        assert metrics['L1/TEX cache global load sectors miss']          == self.SECTOR_COUNT_LOAD
         assert metrics['lts__t_sectors_srcunit_tex_op_read_lookup_miss.sum'] == self.SECTOR_COUNT_LOAD

@@ -272,15 +272,15 @@ class TestMetrics:
         ),
         CreatedMetricsCase(
             metrics=ncu.L1TEXCache.GlobalStore.Instructions.create(),
-            expected=(ncu.MetricCounter(name='smsp__sass_inst_executed_op_global_st', pretty_name='L1/TEX cache global store sass instructions smsp', subs=(ncu.MetricCounterRollUp.SUM,)),),
+            expected=(ncu.MetricCounter(name='smsp__sass_inst_executed_op_global_st', pretty_name='L1/TEX cache global store sass instructions', subs=(ncu.MetricCounterRollUp.SUM,)),),
             gathered=('smsp__sass_inst_executed_op_global_st.sum',),
-            labels=('L1/TEX cache global store sass instructions smsp',),
+            labels=('L1/TEX cache global store sass instructions',),
         ),
         CreatedMetricsCase(
             metrics=ncu.L1TEXCache.GlobalStore.Instructions.create(mode=None),
-            expected=(ncu.MetricCounter(name='smsp__inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions smsp', subs=(ncu.MetricCounterRollUp.SUM,)),),
+            expected=(ncu.MetricCounter(name='smsp__inst_executed_op_global_st', pretty_name='L1/TEX cache global store instructions', subs=(ncu.MetricCounterRollUp.SUM,)),),
             gathered=('smsp__inst_executed_op_global_st.sum',),
-            labels=('L1/TEX cache global store instructions smsp',),
+            labels=('L1/TEX cache global store instructions',),
         ),
         CreatedMetricsCase(
             metrics=ncu.L1TEXCache.GlobalStore.Instructions.create(
@@ -292,7 +292,7 @@ class TestMetrics:
             expected=(
                 ncu.MetricCounter(
                     name='smsp__sass_inst_executed_op_global_st',
-                    pretty_name='L1/TEX cache global store sass instructions smsp',
+                    pretty_name='L1/TEX cache global store sass instructions',
                     subs=(
                         ncu.MetricCounterRollUp.MIN,
                         ncu.MetricCounterRollUp.MAX,
@@ -304,8 +304,8 @@ class TestMetrics:
                 'smsp__sass_inst_executed_op_global_st.max',
             ),
             labels=(
-                'L1/TEX cache global store sass instructions smsp (min)',
-                'L1/TEX cache global store sass instructions smsp (max)',
+                'L1/TEX cache global store sass instructions (min)',
+                'L1/TEX cache global store sass instructions (max)',
             ),
         ),
         CreatedMetricsCase(
@@ -381,7 +381,7 @@ class TestSession:
             'Launch grid size x',
             'Launch grid size y',
             'Launch grid size z',
-            'L1/TEX cache global load sass instructions smsp',
+            'L1/TEX cache global load sass instructions',
             'L1/TEX cache global load sectors',
             'mangled',
             'demangled',

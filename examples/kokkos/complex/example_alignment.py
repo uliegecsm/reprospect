@@ -247,14 +247,14 @@ class TestNCU(TestAlignment):
         expt_stg_count_specified = self.WARP_COUNT * self.STORE_COUNT
         expt_stg_count_default   = expt_stg_count_specified * 2
 
-        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global load sass instructions smsp'] == expt_ldg_count_default
-        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global load sass instructions smsp'] == expt_ldg_count_specified
+        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global load sass instructions'] == expt_ldg_count_default
+        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global load sass instructions'] == expt_ldg_count_specified
 
-        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global store sass instructions smsp'] == expt_stg_count_default
-        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global store sass instructions smsp'] == expt_stg_count_specified
+        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache global store sass instructions'] == expt_stg_count_default
+        assert metrics[Alignment.SPECIFIED]['L1/TEX cache global store sass instructions'] == expt_stg_count_specified
 
-        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache local store sass instructions smsp'] == 0
-        assert metrics[Alignment.SPECIFIED]['L1/TEX cache local store sass instructions smsp'] == 0
+        assert metrics[Alignment.DEFAULT  ]['L1/TEX cache local store sass instructions'] == 0
+        assert metrics[Alignment.SPECIFIED]['L1/TEX cache local store sass instructions'] == 0
 
     def test_l1tex_memory_traffic_sector_count(self, metrics: dict[Alignment, ProfilingMetrics]) -> None:
         """

@@ -293,17 +293,16 @@ class L1TEXCacheGlobalLoadInstructions:
     """
     @staticmethod
     def create(*,
-        unit: Unit = Unit.SMSP,
         mode: typing.Literal['sass'] | None = 'sass',
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> tuple[MetricCounter, ...]:
         name = counter_name_from(
-            unit=unit,
+            unit=Unit.SMSP,
             quantity=f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
             qualifier='executed_op_global_ld',
         )
 
-        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, mode, 'instructions', unit)))
+        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalLoad.NAME, mode, 'instructions')))
 
         return (MetricCounter(name=name, pretty_name=pretty_name, subs=subs),)
 
@@ -409,17 +408,16 @@ class L1TEXCacheGlobalStoreInstructions:
     """
     @staticmethod
     def create(*,
-        unit: Unit = Unit.SMSP,
         mode: typing.Literal['sass'] | None = 'sass',
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> tuple[MetricCounter, ...]:
         name = counter_name_from(
-            unit=unit,
+            unit=Unit.SMSP,
             quantity=f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
             qualifier='executed_op_global_st',
         )
 
-        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, mode, 'instructions', unit)))
+        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.GlobalStore.NAME, mode, 'instructions')))
 
         return (MetricCounter(name=name, pretty_name=pretty_name, subs=subs),)
 
@@ -477,17 +475,16 @@ class L1TEXCacheLocalStoreInstructions:
     """
     @staticmethod
     def create(*,
-        unit: Unit = Unit.SMSP,
         mode: typing.Literal['sass'] | None = 'sass',
         subs: tuple[MetricCounterRollUp, ...] = (MetricCounterRollUp.SUM,),
     ) -> tuple[MetricCounter, ...]:
         name = counter_name_from(
-            unit=unit,
+            unit=Unit.SMSP,
             quantity=f'sass_{Quantity.INSTRUCTION}' if mode == 'sass' else Quantity.INSTRUCTION,
             qualifier='executed_op_local_st',
         )
 
-        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, mode, 'instructions', unit)))
+        pretty_name = ' '.join(filter(None, (L1TEXCache.NAME, L1TEXCache.LocalStore.NAME, mode, 'instructions')))
 
         return (MetricCounter(name=name, pretty_name=pretty_name, subs=subs),)
 
@@ -548,7 +545,7 @@ class WarpStallLongScoreboard(WarpStallBase):
     """
     REASON: typing.ClassVar[str] = 'long_scoreboard'
 
-    PRETTY_REASON: typing.ClassVar[str] = 'Long scoreboard'
+    PRETTY_REASON: typing.ClassVar[str] = 'long scoreboard'
 
 class WarpStallMIOThrottle(WarpStallBase):
     """
@@ -564,7 +561,7 @@ class WarpStallShortScoreboard(WarpStallBase):
     """
     REASON: typing.ClassVar[str] = 'short_scoreboard'
 
-    PRETTY_REASON: typing.ClassVar[str] = 'Short scoreboard'
+    PRETTY_REASON: typing.ClassVar[str] = 'short scoreboard'
 
 class WarpStall:
     """

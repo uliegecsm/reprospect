@@ -1,5 +1,6 @@
 add_pytest(cmake)
 add_pytest(detect)
 add_pytest(environment)
+add_pytest(rich_helpers)
 add_pytest(subprocess_helpers)
 add_pytest(types)

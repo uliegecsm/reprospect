@@ -5,7 +5,6 @@ import pandas
 import rich.console
 import rich.table
 import rich.tree
-import rich_tools
 
 
 def to_string(
@@ -38,22 +37,48 @@ def df_to_table(
     *,
     rich_table: rich.table.Table | None = None,
     show_index: bool = False,
-    **kwargs,
 ) -> rich.table.Table:
     """
     Convert a :py:class:`pandas.DataFrame` to a :py:class:`rich.table.Table`.
 
     .. note:
 
-        This wrapper around the equivalent function from the `rich-tools` package
-        can be avoided once an issue with their function is resolved:
+        This function is similar to an equivalent function from the `rich-tools` package.
+
+        However, this function allows the indices to be the indices of the :py:class:`pandas.DataFrame`
+        rather than an enumeration of the rows.
+
+        There is also an issue with the `rich-tools` function:
 
         * https://github.com/avi-perl/rich_tools/issues/10
     """
     if rich_table is None:
         rich_table = rich.table.Table()
 
-    return rich_tools.df_to_table(df, rich_table=rich_table, show_index=show_index, **kwargs)
+    if show_index:
+        index_name = df.index.name or ''
+        rich_table.add_column(str(index_name))
+
+    for column in df.columns:
+        rich_table.add_column(str(column))
+
+    for index, value_list in df.iterrows():
+        row = [str(index)] if show_index else []
+        row += [str(x) for x in value_list]
+        rich_table.add_row(*row)
+
+    return rich_table
+
+def rows_to_table(rows: typing.Iterable[tuple[typing.Any, ...]], *, columns: tuple[str, ...]) -> rich.table.Table:
+    """
+    Build a :py:class:`rich.table.Table` from `rows`, one table row per tuple.
+
+    Values are converted with :py:class:`str`.
+    """
+    table = rich.table.Table(*columns)
+    for row in rows:
+        table.add_row(*map(str, row))
+    return table
 
 class TableMixin(metaclass=abc.ABCMeta):
     """

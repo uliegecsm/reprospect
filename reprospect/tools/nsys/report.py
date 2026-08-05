@@ -115,7 +115,7 @@ class Report:
         """
         if len(data) != 1:
             raise RuntimeError(data)
-        return data.squeeze()
+        return data.iloc[0]
 
     @classmethod
     def get_correlated_row(cls, *,
@@ -239,7 +239,7 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
         if len(filtered) != 1:
             raise RuntimeError(f'Expecting exactly one NVTX event, got {len(filtered)}.')
 
-        filtered = filtered.squeeze()
+        filtered = filtered.iloc[0]
 
         logging.info(f"Events will be filtered in the time frame {filtered['start']} -> {filtered['end']}.")
 

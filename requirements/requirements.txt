@@ -9,7 +9,6 @@ pyelftools==0.33
 pyyaml
 regex
 rich
-rich-tools
 semantic_version
 system-helpers>=0.0.3
 typing-extensions>=4.4.0

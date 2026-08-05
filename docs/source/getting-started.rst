@@ -7,5 +7,5 @@ The following notebooks introduce how to use `ReProspect` for each of these form
 .. toctree::
    :maxdepth: 3
 
-   getting-started/example_api_tracing.ipynb
+   getting-started/example_kernel_profiling.ipynb
    getting-started/example_binary_analysis.ipynb

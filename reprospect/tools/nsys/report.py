@@ -194,6 +194,11 @@ ORDER BY NVTX_EVENTS.start ASC, NVTX_EVENTS.end DESC
 """
         events = pandas.read_sql_query(query, self.conn)
 
+        # Normalize missing values to None.
+        text = events['text'].astype(object)
+        text[text.isna()] = None
+        events['text'] = text
+
         # Add a 'level' column.
         events['level'] = -1
 

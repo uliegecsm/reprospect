@@ -1,4 +1,5 @@
 import datetime
+import importlib
 import os
 import pathlib
 import subprocess
@@ -12,9 +13,16 @@ project = 'ReProspect'
 author = 'Tomasetti, R and Arnst, M.'
 copyright = f'{datetime.datetime.now(datetime.timezone.utc).year}, {author}'
 
-PROJECT_DIR = pathlib.Path(__file__).parent.parent.parent
+DOCS_SOURCES_DIR = pathlib.Path(__file__).parent
+DOCS_DIR         = DOCS_SOURCES_DIR.parent
+PROJECT_DIR      = DOCS_DIR.parent
 
 sys.path.append(str(PROJECT_DIR))
+
+strategy_spec = importlib.util.spec_from_file_location('strategy', PROJECT_DIR / '.github' / 'workflows' / 'strategy.py')
+strategy = importlib.util.module_from_spec(strategy_spec)
+sys.modules['strategy'] = strategy
+strategy_spec.loader.exec_module(strategy)
 
 # Allow subprocesses launched by Sphinx to find ReProspect.
 os.environ['PYTHONPATH'] = str(PROJECT_DIR) + os.path.pathsep + os.environ.get('PYTHONPATH', '')
@@ -99,6 +107,17 @@ rst_prolog = '''
 tikz_latex_preamble = r'\usepackage[dvipsnames]{xcolor}'
 
 mermaid_d3_zoom = True
+
+# Write the list of Docker images that we build into a file that can be included in the documentation.
+image_pairs = sorted(
+    (entry["image"], entry["kokkos"])
+    for entry in strategy.build_matrix()
+)
+generated = DOCS_SOURCES_DIR / 'generated'
+generated.mkdir(exist_ok=True)
+lines = ['.. code-block:: shell', '']
+lines += [f'   {image}\n   {kokkos}' for image, kokkos in image_pairs]
+(generated / 'images.rst').write_text('\n'.join(lines) + '\n')
 
 # 'unittest.TestCase' is implemented in 'unittest.test.TestCase' but is documented
 # as 'unittest.TestCase', thus confusing 'intersphinx'.

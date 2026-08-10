@@ -155,9 +155,7 @@ jobs:
 
             - id  : strategy
               run : |
-                  PYTHONPATH=$PWD python .github/workflows/strategy.py \
-                      --registry=ghcr.io \
-                      --repository=${{ github.repository }} >> $GITHUB_OUTPUT
+                  PYTHONPATH=$PWD python .github/workflows/strategy.py >> $GITHUB_OUTPUT
 
     build-images-image:
         needs: [pre-commit, setup-skips]

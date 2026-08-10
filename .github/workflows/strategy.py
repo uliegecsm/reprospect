@@ -6,6 +6,7 @@ import dataclasses
 import enum
 import json
 import logging
+import pathlib
 import pprint
 import typing
 
@@ -234,9 +235,6 @@ def complete_job_impl(*, partial: JobDict, args: argparse.Namespace) -> JobDict:
     # https://cmake.org/cmake/help/latest/prop_tgt/CUDA_ARCHITECTURES.html.
     partial['cmake_cuda_architectures'] = f"{partial['compute_capability'].as_int}-real"
 
-    # Kokkos SHA.
-    partial['kokkos_sha'] = KOKKOS_SHA
-
     # Name and tag of the image (lower case).
     name = ('-'.join((
         'cuda',
@@ -311,6 +309,25 @@ def from_config(config: Config, args: argparse.Namespace) -> list[JobDict]:
         complete_job_impl(partial=copy.deepcopy(job), args=args)
         for job in config.jobs()
     ]
+
+def common_dependencies() -> dict:
+    """
+    Read the information on dependencies common across all strategy entries.
+    """
+    return json.loads((pathlib.Path(__file__).parents[2] / 'dependencies.json').read_text())
+
+def common_dependency_versions_as_build_args() -> str:
+    """
+    Return the common dependency versions as build arguments.
+    """
+    deps = common_dependencies()
+    return '\n'.join((
+        f'DOXYGEN_VERSION={deps["doxygen"]["version"]}',
+        f'GOOGLEBENCHMARK_VERSION={deps["googlebenchmark"]["version"]}',
+        f'NVTX3_VERSION={deps["nvtx3"]["version"]}',
+        f'KOKKOS_SHA={deps["kokkos"]["sha"]}',
+        f'KOKKOS_TOOLS_SHA={deps["kokkos-tools"]["sha"]}',
+    ))
 
 def main(*, args: argparse.Namespace) -> None:
     """
@@ -506,6 +523,8 @@ def main(*, args: argparse.Namespace) -> None:
     print(f"job_documentation={json.dumps(job_documentation, default=str)}")
 
     print(f"image_deploy={matrix[0]['image']}")
+
+    print(f"common_dependency_versions_as_build_args={common_dependency_versions_as_build_args()}")
 
 if __name__ == '__main__':
 

@@ -142,6 +142,7 @@ jobs:
         container:
             image: ghcr.io/${{ github.repository }}/setup-job-matrix:latest
         outputs:
+            common_dependency_versions_as_build_args: ${{ steps.strategy.outputs.common_dependency_versions_as_build_args }}
             image_deploy: ${{ steps.strategy.outputs.image_deploy }}
             job_documentation: ${{ steps.strategy.outputs.job_documentation }}
             matrix_examples: ${{ steps.strategy.outputs.matrix_examples }}
@@ -231,13 +232,11 @@ jobs:
                   cache-from: type=registry,ref=${{ matrix.image }}
                   cache-to: type=inline
                   build-args: |
+                      ${{ needs.setup-job-matrix.outputs.common_dependency_versions_as_build_args }}
                       BASE_IMAGE=${{ matrix.base_image }}
                       CXX_COMPILER_ID=${{ matrix.compilers.CXX.ID_lower }}
                       CXX_COMPILER_VERSION=${{ matrix.compilers.CXX.version }}
                       CXX_COMPILER=${{ matrix.compilers.CXX.path }}
-                      DOXYGEN_VERSION=1_14_0
-                      GOOGLEBENCHMARK_VERSION=1.9.5
-                      NVTX3_VERSION=3.5.0
                       PYTHON_VERSION=${{ matrix.python_version }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
@@ -251,14 +250,13 @@ jobs:
                   cache-from: type=registry,ref=${{ matrix.kokkos }}
                   cache-to: type=inline
                   build-args: |
+                      ${{ needs.setup-job-matrix.outputs.common_dependency_versions_as_build_args }}
                       BASE_IMAGE=${{ matrix.image }}
                       KOKKOS_ARCH=${{ matrix.nvidia_arch }}
                       KOKKOS_CXX_COMPILER=${{ matrix.compilers.CXX.path }}
                       KOKKOS_CUDA_COMPILER=${{ matrix.compilers.CUDA.path }}
                       KOKKOS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
-                      KOKKOS_SHA=${{ matrix.kokkos_sha }}
                       KOKKOS_TOOLS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}
-                      KOKKOS_TOOLS_SHA=6493964271d2e887432489f20559b72757db02b0
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     tests:

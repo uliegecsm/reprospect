@@ -60,3 +60,7 @@ The CI/CD strategy matrix covers:
    :language: python
    :start-after: STRATEGY-MATRIX-START
    :end-before: STRATEGY-MATRIX-END
+
+With this strategy, the full list of images the CI/CD builds is as follows:
+
+.. include:: generated/images.rst

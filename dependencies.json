@@ -1,0 +1,17 @@
+{
+    "doxygen": {
+        "version": "1_14_0"
+    },
+    "googlebenchmark": {
+        "version": "1.9.5"
+    },
+    "nvtx3": {
+        "version": "3.5.0"
+    },
+    "kokkos": {
+        "sha": "5.1.0"
+    },
+    "kokkos-tools": {
+        "sha": "6493964271d2e887432489f20559b72757db02b0"
+    }
+}

@@ -142,6 +142,7 @@ jobs:
         container:
             image: ghcr.io/${{ github.repository }}/setup-job-matrix:latest
         outputs:
+            dependencies: ${{ steps.strategy.outputs.dependencies }}
             image_deploy: ${{ steps.strategy.outputs.image_deploy }}
             job_documentation: ${{ steps.strategy.outputs.job_documentation }}
             matrix_examples: ${{ steps.strategy.outputs.matrix_examples }}
@@ -235,9 +236,9 @@ jobs:
                       CXX_COMPILER_ID=${{ matrix.compilers.CXX.ID_lower }}
                       CXX_COMPILER_VERSION=${{ matrix.compilers.CXX.version }}
                       CXX_COMPILER=${{ matrix.compilers.CXX.path }}
-                      DOXYGEN_VERSION=1_14_0
-                      GOOGLEBENCHMARK_VERSION=1.9.5
-                      NVTX3_VERSION=3.5.0
+                      DOXYGEN_VERSION=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).doxygen.version }}
+                      GOOGLEBENCHMARK_VERSION=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).googlebenchmark.version }}
+                      NVTX3_VERSION=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).nvtx3.version }}
                       PYTHON_VERSION=${{ matrix.python_version }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
@@ -256,9 +257,9 @@ jobs:
                       KOKKOS_CXX_COMPILER=${{ matrix.compilers.CXX.path }}
                       KOKKOS_CUDA_COMPILER=${{ matrix.compilers.CUDA.path }}
                       KOKKOS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
-                      KOKKOS_SHA=${{ matrix.kokkos_sha }}
+                      KOKKOS_SHA=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).kokkos.sha }}
                       KOKKOS_TOOLS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}
-                      KOKKOS_TOOLS_SHA=6493964271d2e887432489f20559b72757db02b0
+                      KOKKOS_TOOLS_SHA=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).kokkos-tools.sha }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     tests:

@@ -12,7 +12,8 @@
 .. toctree::
    :maxdepth: 2
 
-   examples
+   cicd
    tests
+   examples
    bibliography
    contributing

@@ -94,14 +94,18 @@ apidoc_separate_modules = True
 
 bibtex_bibfiles = ['references.bib']
 
-rst_prolog = '''
+rst_prolog = f'''
 .. _Kokkos: http://kokkos.org
+.. _Kokkos Tools: https://github.com/kokkos/kokkos-tools
 .. _Low-level Python Bindings for CUDA: https://nvidia.github.io/cuda-python/cuda-bindings/latest/
 .. _CUDA binary utilities: https://docs.nvidia.com/cuda/cuda-binary-utilities/index.html
 .. _Nsight Compute: https://developer.nvidia.com/nsight-compute
 .. _Nsight Systems: https://developer.nvidia.com/nsight-systems
+.. _NVTX: https://github.com/NVIDIA/NVTX
+.. _Google Benchmark: https://github.com/google/benchmark
 .. _CMake: https://cmake.org
 .. _std::mdspan: https://en.cppreference.com/w/cpp/container/mdspan.html
+.. |kokkos_sha| replace:: {strategy.dependencies()['kokkos']['sha']}
 '''
 
 tikz_latex_preamble = r'\usepackage[dvipsnames]{xcolor}'
@@ -109,15 +113,20 @@ tikz_latex_preamble = r'\usepackage[dvipsnames]{xcolor}'
 mermaid_d3_zoom = True
 
 # Write the list of Docker images that we build into a file that can be included in the documentation.
+matrix = strategy.build_matrix()
 image_pairs = sorted(
     (entry["image"], entry["kokkos"])
-    for entry in strategy.build_matrix()
+    for entry in matrix
 )
 generated = DOCS_SOURCES_DIR / 'generated'
 generated.mkdir(exist_ok=True)
 lines = ['.. code-block:: shell', '']
 lines += [f'   {image}\n   {kokkos}' for image, kokkos in image_pairs]
 (generated / 'images.rst').write_text('\n'.join(lines) + '\n')
+
+# Assert that the image names hardcoded in the "Running the tests" and "Running the examples" documentation still exist in the matrix
+assert any(entry["image"] == "ghcr.io/uliegecsm/reprospect/cuda-gnu-14-nvidia-py3.13:13.1.0-devel-ubuntu24.04" for entry in matrix)
+assert any(entry["kokkos"] == "ghcr.io/uliegecsm/reprospect/cuda-gnu-14-nvidia-py3.13-kokkos-5.1.0:13.1.0-devel-ubuntu24.04-blackwell120" for entry in matrix)
 
 # 'unittest.TestCase' is implemented in 'unittest.test.TestCase' but is documented
 # as 'unittest.TestCase', thus confusing 'intersphinx'.

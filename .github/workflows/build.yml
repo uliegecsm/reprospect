@@ -142,7 +142,7 @@ jobs:
         container:
             image: ghcr.io/${{ github.repository }}/setup-job-matrix:latest
         outputs:
-            common_dependency_versions_as_build_args: ${{ steps.strategy.outputs.common_dependency_versions_as_build_args }}
+            dependencies: ${{ steps.strategy.outputs.dependencies }}
             image_deploy: ${{ steps.strategy.outputs.image_deploy }}
             job_documentation: ${{ steps.strategy.outputs.job_documentation }}
             matrix_examples: ${{ steps.strategy.outputs.matrix_examples }}
@@ -232,11 +232,13 @@ jobs:
                   cache-from: type=registry,ref=${{ matrix.image }}
                   cache-to: type=inline
                   build-args: |
-                      ${{ needs.setup-job-matrix.outputs.common_dependency_versions_as_build_args }}
                       BASE_IMAGE=${{ matrix.base_image }}
                       CXX_COMPILER_ID=${{ matrix.compilers.CXX.ID_lower }}
                       CXX_COMPILER_VERSION=${{ matrix.compilers.CXX.version }}
                       CXX_COMPILER=${{ matrix.compilers.CXX.path }}
+                      DOXYGEN_VERSION=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).doxygen.version }}
+                      GOOGLEBENCHMARK_VERSION=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).googlebenchmark.version }}
+                      NVTX3_VERSION=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).nvtx3.version }}
                       PYTHON_VERSION=${{ matrix.python_version }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
@@ -250,13 +252,14 @@ jobs:
                   cache-from: type=registry,ref=${{ matrix.kokkos }}
                   cache-to: type=inline
                   build-args: |
-                      ${{ needs.setup-job-matrix.outputs.common_dependency_versions_as_build_args }}
                       BASE_IMAGE=${{ matrix.image }}
                       KOKKOS_ARCH=${{ matrix.nvidia_arch }}
                       KOKKOS_CXX_COMPILER=${{ matrix.compilers.CXX.path }}
                       KOKKOS_CUDA_COMPILER=${{ matrix.compilers.CUDA.path }}
                       KOKKOS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}-${{ matrix.nvidia_arch }}
+                      KOKKOS_SHA=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).kokkos.sha }}
                       KOKKOS_TOOLS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}
+                      KOKKOS_TOOLS_SHA=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).kokkos-tools.sha }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
 
     tests:

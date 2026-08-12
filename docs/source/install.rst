@@ -7,6 +7,27 @@ Installing `ReProspect`
 
    pip install reprospect
 
+Verification
+------------
+
+To ensure that `ReProspect` was installed correctly, the installation can be verified with a few lines of Python.
+Here, we use the :py:class:`~reprospect.utils.detect.GPUDetector` class from the :py:mod:`reprospect.utils.detect` module to detect the visible GPUs on the system.
+
+.. code-block:: python
+
+   from reprospect.utils.detect import GPUDetector
+   print(GPUDetector().detect())
+
+The output should be similar to:
+
+.. code-block:: text
+
+                                          uuid  index                        name compute_cap  architecture
+   0  GPU-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx      0  NVIDIA GeForce RTX 5070 Ti        12.0  BLACKWELL120
+
+The column values identify the specific GPUs visible on the system and will differ on your system.
+The output is empty if no NVIDIA GPUs are visible on the system.
+
 Optional dependency on ``cuda-bindings``
 ----------------------------------------
 

@@ -188,5 +188,20 @@ def lastcommit(name: str, rawtext: str, text: str, lineno: int, inliner: docutil
     )
     return [node], []
 
+def repofile(name: str, rawtext: str, text: str, lineno: int, inliner: docutils.parsers.rst.states.Inliner, **kwargs) -> tuple[list[docutils.nodes.Node], list[docutils.nodes.system_message]]:
+    """
+    Role linking a repository file to its content on GitHub, pinned to the file's last commit.
+    """
+    commit_hash = get_last_commit(file=pathlib.Path(text), cwd=PROJECT_DIR)
+    url = f'{linkcode_url}/blob/{commit_hash}/{text}'
+    node = docutils.nodes.reference(
+        rawsource=rawtext,
+        text=text,
+        refuri=url,
+        **kwargs,
+    )
+    return [node], []
+
 def setup(app):
     app.add_role('lastcommit', lastcommit)
+    app.add_role('repofile', repofile)

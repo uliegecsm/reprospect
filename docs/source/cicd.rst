@@ -20,6 +20,13 @@ For each entry in the strategy matrix, the CI/CD pipeline builds two images:
 - the first image contains the dependencies needed to build and run the `ReProspect` tests for the given configuration;
 - the second image contains, in addition, a Kokkos_ installation (currently |kokkos_sha|) and a compatible `Kokkos Tools`_ installation, as needed to run the `ReProspect` examples.
 
+The CI/CD pipelines configure, build and install Kokkos_ by running the script :repofile:`docker/kokkos.sh` that sets the CMake_ arguments as follows:
+
+.. literalinclude:: ../../docker/kokkos.sh
+   :language: bash
+   :start-after: KOKKOS-CMAKE-ARGS-START
+   :end-before: KOKKOS-CMAKE-ARGS-END
+
 The full list of images the CI/CD pipelines build is as follows:
 
 .. _images:

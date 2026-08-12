@@ -3,6 +3,7 @@ set -ex
 # Kokkos
 cd /opt/kokkos-sources/kokkos-${KOKKOS_SHA}
 
+# KOKKOS-CMAKE-ARGS-START
 # When nvcc is used as CUDA compiler, use 'nvcc_wrapper'.
 if [[ "${KOKKOS_CUDA_COMPILER}" == "nvcc" ]];then
     cmake_args_kokkos=(
@@ -28,6 +29,7 @@ cmake_args_kokkos+=(
     "-DKokkos_ENABLE_COMPILE_AS_CMAKE_LANGUAGE=ON"
     "-DCMAKE_INSTALL_PREFIX=/opt/kokkos-${KOKKOS_SHA}/${KOKKOS_INSTALL_SUFFIX}"
 )
+# KOKKOS-CMAKE-ARGS-END
 
 cmake -S . -B build "${cmake_args_kokkos[@]}"
 

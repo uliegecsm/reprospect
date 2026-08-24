@@ -302,7 +302,7 @@ def complete_job_impl(*, partial: JobDict, deps: DependencyDict) -> JobDict:
         partial['documentation']['runs-on'] = runs_on(spec=spec, jtype='documentation')
 
     partial['build-images'] = {
-        'runs-on': ('self-hosted', 'linux', 'docker', f"{partial['platform'].architecture}"),
+        'runs-on': ('ubuntu-latest',) if partial['platform'].architecture == Architecture.AMD64 else ('ubuntu-24.04-arm',),
     }
 
     return partial

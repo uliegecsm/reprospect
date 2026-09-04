@@ -3,7 +3,7 @@ matplotlib
 mypy==2.3.1
 myst-nb>=1.4.0
 nvtx>=0.2.16
-pylint>=4.0.7
+pylint>=4.0.8
 ruff==0.16.5
 setuptools==84.0.0
 sphinx<=8.2.3

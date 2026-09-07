@@ -152,7 +152,7 @@ class AddressMatcher:
             case 80 | 89:
                 inner = PatternBuilder.any(r'-?' + PatternBuilder.HEXADECIMAL, Register.UREG)
             case 75 | 86 | 90 | 100 | 103 | 120 | 121:
-                inner = PatternBuilder.any(r'-?' + PatternBuilder.HEXADECIMAL, Register.UREG, rf'{Register.UREG}\+-?{PatternBuilder.HEXADECIMAL}')
+                inner = PatternBuilder.any(r'-?' + PatternBuilder.HEXADECIMAL, Register.UREGZ, rf'{Register.UREG}\+-?{PatternBuilder.HEXADECIMAL}')
             case _:
                 raise ValueError(f'unsupported architecture {arch}')
         return PatternBuilder.zero_or_one(r'\+' + (PatternBuilder.group(inner, 'offset') if captured else inner))

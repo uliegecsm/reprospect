@@ -64,6 +64,12 @@ class TestAddressMatcher:
         assert AddressMatcher(arch=ARCH, reg='R42', offset='UR2' ).match(ADDRESS_WITH_OFFSET_AS_UREG) is None
         assert AddressMatcher(arch=ARCH, reg='R42', offset='0x20').match(ADDRESS_WITH_OFFSET_AS_UREG) is None
 
+        ADDRESS_WITH_OFFSET_AS_UREGZ: typing.Final[str] = '[R17+URZ]'
+
+        assert AddressMatcher(arch=ARCH                          ).match(ADDRESS_WITH_OFFSET_AS_UREGZ) == GenericOrGlobalAddressMatch(reg='R17', offset='URZ')
+        assert AddressMatcher(arch=ARCH, reg='R17'               ).match(ADDRESS_WITH_OFFSET_AS_UREGZ) == GenericOrGlobalAddressMatch(reg='R17', offset='URZ')
+        assert AddressMatcher(arch=ARCH, reg='R17', offset='URZ' ).match(ADDRESS_WITH_OFFSET_AS_UREGZ) == GenericOrGlobalAddressMatch(reg='R17', offset='URZ')
+
     def test_reg64_address(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('AMPERE86')
 
@@ -185,7 +191,7 @@ class TestAddressMatcher:
     def test_build_pattern(self) -> None:
         ARCH: typing.Final[NVIDIAArch] = NVIDIAArch.from_str('BLACKWELL120')
 
-        assert AddressMatcher.build_pattern(arch=ARCH) == r'desc\[UR[0-9]+\]\[(?:R[0-9]+|UR[0-9]+)\.64(?:\+(?:-?0x[0-9A-Fa-f]+|UR[0-9]+|UR[0-9]+\+-?0x[0-9A-Fa-f]+))?\]'
+        assert AddressMatcher.build_pattern(arch=ARCH) == r'desc\[UR[0-9]+\]\[(?:R[0-9]+|UR[0-9]+)\.64(?:\+(?:-?0x[0-9A-Fa-f]+|UR(?:Z|\d+)|UR[0-9]+\+-?0x[0-9A-Fa-f]+))?\]'
 
     def test_extend_bits_address_turing75(self, request, workdir: pathlib.Path, cmake_file_api: cmake.FileAPI) -> None:
         """

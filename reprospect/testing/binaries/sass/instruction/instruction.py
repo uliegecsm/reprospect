@@ -180,9 +180,9 @@ class PatternMatcher(InstructionMatcher):
         elif predicate is None:
             parts.append(PatternBuilder.zero_or_one(Predicate.predicate()))
 
-        parts.append(OpCode.mod(opcode=opcode or OpCode.OPCODE, modifiers=modifiers))
-
-        parts.append(cls.build_pattern_operands(operands=operands))
+        parts.extend([
+            OpCode.mod(opcode=opcode or OpCode.OPCODE, modifiers=modifiers),
+            cls.build_pattern_operands(operands=operands)])
 
         return SEPARATOR.join(filter(None, parts))
 

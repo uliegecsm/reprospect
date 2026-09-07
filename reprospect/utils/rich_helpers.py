@@ -80,7 +80,7 @@ def rows_to_table(rows: typing.Iterable[tuple[typing.Any, ...]], *, columns: tup
         table.add_row(*map(str, row))
     return table
 
-class TableMixin(metaclass=abc.ABCMeta):
+class TableMixin(abc.ABC):
     """
     Define :py:meth:`__str__` based on the :py:class:`rich.table.Table` representation from :py:meth:`to_table`.
     """
@@ -97,7 +97,7 @@ class TableMixin(metaclass=abc.ABCMeta):
         """
         return to_string(self.to_table())
 
-class TreeMixin(metaclass=abc.ABCMeta):
+class TreeMixin(abc.ABC):
     """
     Define :py:meth:`__str__` based on the :py:class:`rich.tree.Tree` representation from :py:meth:`to_tree`.
     """

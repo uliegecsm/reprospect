@@ -89,19 +89,19 @@ class AddDouble4:
 
             logging.info(f'Load register {matched}.')
 
-            matchers.append(OpcodeModsWithOperandsMatcher(opcode='DADD',
+            matchers.extend([OpcodeModsWithOperandsMatcher(opcode='DADD',
                 operands=(
                     register, register,
                     PatternBuilder.any(Register.UREG, Constant.ADDRESS),
                 ),
-            ))
-            matchers.append(OpcodeModsWithOperandsMatcher(opcode='DADD',
+            ),
+            OpcodeModsWithOperandsMatcher(opcode='DADD',
                 operands=(
                     f'{matched.rtype}{matched.index + 2}',
                     f'{matched.rtype}{matched.index + 2}',
                     PatternBuilder.any(Register.UREG, Constant.ADDRESS),
                 ),
-            ))
+            )])
 
         return unordered_interleaved_instructions_are(*matchers)
 

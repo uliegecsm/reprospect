@@ -1,6 +1,7 @@
 import logging
 import pathlib
 import re
+import string
 import sys
 import typing
 
@@ -265,7 +266,7 @@ class NVDisasm:
                         ):
                             sections = tuple(x.strip() for x in line[start + matched.span()[1] - 1::].strip().rstrip('|').split('|'))
                             for reg_type, section in zip(reg_types, sections, strict=True):
-                                offset = len(section) - len(section.lstrip('0123456789')) - 1
+                                offset = len(section) - len(section.lstrip(string.digits)) - 1
                                 statuses_as_str = tuple(
                                     section[pos[0] + offset:pos[1] + offset].strip()
                                     for pos in positions[reg_type]

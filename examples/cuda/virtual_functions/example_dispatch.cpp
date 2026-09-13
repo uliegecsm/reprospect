@@ -50,7 +50,8 @@ struct DeviceDeleter {
 template <typename Derived>
 __global__ void __launch_bounds__(1, 1) copy_construct_kernel(Derived* const ptr, const Derived derived) {
     if (blockIdx.x == 0) {
-#if defined(__NVCC__) && defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 700)
+#if defined(__NVCC__) && defined(__CUDA_ARCH__)                                                                        \
+    && (__CUDA_ARCH__ == 700 || (__CUDA_ARCH__ == 800 && __CUDACC_VER_MAJOR__ < 13))
         const Derived copy = derived;
         new (ptr) Derived(copy);
 #else

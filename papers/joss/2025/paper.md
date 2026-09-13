@@ -57,9 +57,9 @@ They also enable new types of tests in CI/CD pipelines that go beyond traditiona
 Finally, they can act as a framework for structuring research artifacts and documenting analyses, enabling others to reproduce and build upon prior work more effectively.
 
 For the CUDA stack, NVIDIA provides a set of proprietary tools guaranteed to be up-to-date with their software and hardware.
-The runtime analysis tools Nsight Systems [@nsys2025] and Nsight Compute [@ncu2025] are designed for API tracing and kernel profiling, respectively.
+The runtime analysis tools Nsight Systems [@nsys2026] and Nsight Compute [@ncu2026] are designed for API tracing and kernel profiling, respectively.
 They both provide a GUI for exploring the results, as well as a low-level Python API for accessing the raw data.
-The CUDA binary utilities [@binary2025] provide command-line access to machine code (SASS or PTX [@ptx2025]) and other information embedded in the binaries.
+The CUDA binary utilities [@binary2026] provide command-line access to machine code (SASS or PTX [@ptx2026]) and other information embedded in the binaries.
 However, while these tools allow raw data to be extracted, they
 do not themselves provide the infrastructure for effective programmatic analysis.
 
@@ -74,7 +74,7 @@ matchers for instruction sequence patterns in machine code extracted from binari
 # State of the field
 
 Several well-established open-source tools are already available.
-Caliper [@boehme2016] can intercept CUDA API calls through the NVIDIA CUPTI library [@cupti2025].
+Caliper [@boehme2016] can intercept CUDA API calls through the NVIDIA CUPTI library [@cupti2026].
 It can interface with the Python package Hatchet [@bhatele2019] to organize results into a hierarchical data structure.
 Thicket [@brink2023] adds kernel profiling support through Nsight Compute, with a primary focus on exploratory data analysis of multi-run performance experiments.
 HPCToolkit [@zhou2021] is another comprehensive suite designed for large-scale parallel systems.
@@ -114,7 +114,7 @@ and performing the subsequent analysis.
 The `ReProspect` `Command` and `Session` classes streamline launching
 Nsight Systems and Nsight Compute to collect
 a focused set of metrics most relevant for the analysis.
-The collected data are gathered in a `Report`, queryable by NVTX range annotations [@nvtx],
+The collected data are gathered in a `Report`, queryable by NVTX range annotations [@nvtx2026],
 readily amenable to test assertions.
 
 To avoid unnecessary re-runs,
@@ -210,7 +210,7 @@ Table: Comparison of the SASS code generated for the `sm_100` architecture
        \label{table:hfmax}
 
 The binary analysis targeting SASS rather than PTX is a trade-off.
-PTX is fully documented [@ptx2025] and architecture-independent, but it is an intermediate representation.
+PTX is fully documented [@ptx2026] and architecture-independent, but it is an intermediate representation.
 SASS is the machine code the hardware executes; assertions on SASS thus characterize the final instructions and their scheduling.
 Inspecting SASS is also relevant for kernel profiling: performance metrics are directly associated with executed instructions,
 whereas interpreting them at a higher level requires correlation, such as through compiler-emitted line information.
@@ -230,6 +230,8 @@ code built on top of the open-source Trilinos library [@mayr-2026] [@arnst-24] [
 
 The [`examples` directory](https://github.com/uliegecsm/reprospect/blob/30cf1b8569191a776dc81d2abd26c74cec5e47b2/examples/)
 contains several case studies inspired by these research efforts.
+
+The documentation provides detailed instructions for building and running the tests and examples.
 
 ## `Kokkos::View` allocation
 
@@ -266,21 +268,16 @@ by matching an instruction sequence pattern.
 
 See [online example](https://github.com/uliegecsm/reprospect/blob/30cf1b8569191a776dc81d2abd26c74cec5e47b2/examples/kokkos/atomic/desul.py).
 
-# Code availability
-
-`ReProspect` is available under the `LGPL-3.0` license on [GitHub](https://github.com/uliegecsm/reprospect) and released on [PyPI](https://pypi.org/project/reprospect/).
-The documentation provides detailed instructions for building and running the tests and examples.
-
-# Acknowledgements
-
-This work was supported by the Fonds de la Recherche Scientifique (F.R.S.-FNRS, Belgium) through a
-Research Fellowship.
-
 # AI usage disclosure
 
 No AI was used for the design of the code.
 Alongside traditional tools such as `pylint` and `mypy`, `Claude` and `CoPilot` were used as assistants
 to improve implementation details of individual functions.
 AI helped improve the clarity of the manuscript and the documentation.
+
+# Acknowledgements
+
+This work was supported by the Fonds de la Recherche Scientifique (F.R.S.-FNRS, Belgium) through a
+Research Fellowship.
 
 # References

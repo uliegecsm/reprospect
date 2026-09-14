@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+version: 1.1.2
+title: "ReProspect - A framework for reproducible prospecting of CUDA applications"
+abstract: >-
+  ReProspect is a Python framework for prospecting CUDA code, designed to
+  ensure reproducibility through a fully programmatic approach. Prospecting
+  encompasses three complementary ways of characterizing CUDA-based libraries
+  and software components: how they interact with the CUDA runtime through API
+  tracing, how kernels perform through kernel profiling, and how source
+  constructs translate into machine code through binary analysis. ReProspect builds
+  on NVIDIA tools: Nsight Systems, Nsight Compute, and the CUDA binary utilities. It
+  streamlines data collection and extraction using these tools, and it complements
+  them with new functionalities for programmatic analysis of these data, thus making
+  it possible to encapsulate the entire prospecting analysis in a single Python script.
+authors:
+  - given-names: Romin
+    family-names: Tomasetti
+    email: romin.tomasetti@uliege.be
+    orcid: "https://orcid.org/0009-0006-2839-7072"
+    affiliation: "University of Liège, Belgium"
+  - given-names: Maarten
+    family-names: Arnst
+    email: maarten.arnst@uliege.be
+    orcid: "https://orcid.org/0000-0003-4993-0527"
+    affiliation: "University of Liège, Belgium"
+license: LGPL-3.0-only
+repository-code: "https://github.com/uliegecsm/reprospect"
+url: "https://uliegecsm.github.io/reprospect/"
+keywords:
+  - CUDA
+  - reproducibility
+  - API tracing
+  - kernel profiling
+  - binary analysis
+  - HPC
+  - Kokkos

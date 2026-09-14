@@ -2,7 +2,7 @@
 title: 'ReProspect - A framework for reproducible prospecting of CUDA applications'
 tags:
   - CUDA
-  - reproducible
+  - reproducibility
   - API tracing
   - kernel profiling
   - binary analysis

@@ -80,7 +80,7 @@ Thicket [@brink2023] adds kernel profiling support through Nsight Compute, with 
 HPCToolkit [@zhou2021] is another comprehensive suite designed for large-scale parallel systems.
 It includes CUDA API tracing through CUPTI and kernel profiling through PAPI [@terpstra2010], and it has binary analysis capabilities to attribute performance data to calling contexts.
 It has a visual interface, and it can output raw performance data for programmatic analysis,
-*e.g.* using Hatchet.
+e.g., using Hatchet.
 Score-P [@knupfer2012] integrates multiple performance analysis tools in a common infrastructure.
 It can record CUDA API calls and GPU activities through CUPTI and provides standardized data formats.
 By contrast, `ReProspect` focuses on concise programmatic analysis of individual units of functionality based on the outputs of NVIDIA tools.
@@ -146,7 +146,7 @@ The same design serves API tracing: the corresponding `Report` retrieves event r
 `ReProspect` provides a set of tools for extracting and analysing the content of CUDA binaries.
 
 The `CuObjDump` and `NVDisasm` classes drive and parse the output of the underlying CUDA binary utilities
-to retrieve the SASS code and resource usage of kernels (*e.g.* registers, constant memory).
+to retrieve the SASS code and resource usage of kernels (e.g., registers, constant memory).
 
 The `ELF` class decodes ELF-formatted sections to extract complementary information,
 including the symbol table, toolchain metadata (from the *.note.nv.tkinfo* section), and
@@ -167,7 +167,7 @@ By extending this hierarchical design to instruction sequence and basic block ma
 `ReProspect` enables robust, composable matching across CUDA architectures and compiler toolchains.
 
 The following snippet illustrates how matchers can be composed to
-assert the presence or absence of a 16-bit floating-point code path, *e.g.* in the SASS codes in \autoref{table:hfmax}:
+assert the presence or absence of a 16-bit floating-point code path, e.g., in the SASS codes in \autoref{table:hfmax}:
 ```python
 arch = NVIDIAArch(...)
 instructions = Decoder(...)

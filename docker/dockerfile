@@ -141,20 +141,20 @@ ENV PATH=/opt/aistor-binaries/:${PATH}
 # Install Doxygen.
 FROM requirements-compiler-${CXX_COMPILER_ID} AS doxygen
 
-ARG CXX_COMPILER
 ARG DOXYGEN_VERSION
 
-ADD https://github.com/doxygen/doxygen/archive/refs/tags/Release_${DOXYGEN_VERSION}.tar.gz /opt/doxygen-sources/Release_${DOXYGEN_VERSION}.tar.gz
+ADD https://github.com/doxygen/doxygen/archive/refs/tags/Release_${DOXYGEN_VERSION//./_}.tar.gz /tmp/
 
 RUN <<EOF
     set -ex
 
+    cd /tmp
+
+    tar -xvf Release_$(echo ${DOXYGEN_VERSION} | tr . _).tar.gz
+
     apt-helpers install-packages --clean --update --packages flex bison
 
-    cd /opt/doxygen-sources/
-    tar -zxf Release_${DOXYGEN_VERSION}.tar.gz
-
-    cd doxygen-Release_${DOXYGEN_VERSION}
+    cd doxygen-Release_$(echo ${DOXYGEN_VERSION} | tr . _)
 
     cmake -S . -B build \
         --toolchain /opt/toolchain.cmake \

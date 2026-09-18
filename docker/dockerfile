@@ -132,6 +132,8 @@ RUN --mount=target=/reprospect/utils/installers/nsight_systems.py,type=bind,sour
     --mount=target=/reprospect/utils/nvcc.py,type=bind,source=reprospect/utils/nvcc.py <<EOF
     set -ex
 
+    apt-helpers install-packages --clean --update --packages libcap2
+
     export PYTHONPATH=/${PYTHONPATH+:}${PYTHONPATH}
     python3 /reprospect/utils/installers/nsight_systems.py
 EOF

@@ -3,6 +3,7 @@ import typing
 import unittest.mock
 
 import pytest
+import semantic_version
 from cmake_file_api.kinds.toolchains.v1 import CMakeToolchainCompiler
 
 from reprospect.tools.architecture import NVIDIAArch
@@ -168,27 +169,58 @@ class TestNVDisasm:
             assert len(disasm.functions) == 2
             assert all(s in disasm.functions for s in self.SYMBOLS)
 
+            cuda_compiler_version = semantic_version.Version(cmake_cuda_compiler.version)
+
             match parameters.arch.compute_capability.as_int:
-                case 70 | 75:
+                case 70:
                     expt_register_usage_details = {
-                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (2, 2)},
-                        self.SYMBOLS[1]: {RegisterType.GPR: (12,  9), RegisterType.PRED: (1, 1)},
-                    }
+                            self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (2, 2)},
+                            self.SYMBOLS[1]: {RegisterType.GPR: (12,  9), RegisterType.PRED: (1, 1)},
+                        }
+                case 75:
+                    if cmake_cuda_compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>=23'):
+                        expt_register_usage_details = {
+                            self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (2, 2)},
+                            self.SYMBOLS[1]: {RegisterType.GPR: (10,  10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (5, 1)},
+                        }
+                    else:
+                        expt_register_usage_details = {
+                            self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (2, 2)},
+                            self.SYMBOLS[1]: {RegisterType.GPR: (12,  9), RegisterType.PRED: (1, 1)},
+                        }
                 case 80 | 86 | 89:
-                    expt_register_usage_details = {
-                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (2, 2)},
-                        self.SYMBOLS[1]: {RegisterType.GPR: (12,  9), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
-                    }
+                    if cmake_cuda_compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>=23'):
+                        expt_register_usage_details = {
+                            self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (2, 2)},
+                            self.SYMBOLS[1]: {RegisterType.GPR: (10,  9), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
+                        }
+                    else:
+                        expt_register_usage_details = {
+                            self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (2, 2)},
+                            self.SYMBOLS[1]: {RegisterType.GPR: (12,  9), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
+                        }
                 case 90 | 100 | 103:
-                    expt_register_usage_details = {
-                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (1, 1), RegisterType.UGPR: (8, 4)},
-                        self.SYMBOLS[1]: {RegisterType.GPR: (12, 10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
-                    }
+                    if cmake_cuda_compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>=23'):
+                        expt_register_usage_details = {
+                            self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (1, 1), RegisterType.UGPR: (8, 4)},
+                            self.SYMBOLS[1]: {RegisterType.GPR: (10, 10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
+                        }
+                    else:
+                        expt_register_usage_details = {
+                            self.SYMBOLS[0]: {RegisterType.GPR: (22, 18), RegisterType.PRED: (1, 1), RegisterType.UGPR: (8, 4)},
+                            self.SYMBOLS[1]: {RegisterType.GPR: (12, 10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
+                        }
                 case 120 | 121:
-                    expt_register_usage_details = {
-                        self.SYMBOLS[0]: {RegisterType.GPR: (22, 18),                            RegisterType.UGPR: (8, 4)},
-                        self.SYMBOLS[1]: {RegisterType.GPR: (12, 10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
-                    }
+                    if cmake_cuda_compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>=23'):
+                        expt_register_usage_details = {
+                            self.SYMBOLS[0]: {RegisterType.GPR: (22, 18),                            RegisterType.UGPR: (8, 4)},
+                            self.SYMBOLS[1]: {RegisterType.GPR: (10, 10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
+                        }
+                    else:
+                        expt_register_usage_details = {
+                            self.SYMBOLS[0]: {RegisterType.GPR: (22, 18),                            RegisterType.UGPR: (8, 4)},
+                            self.SYMBOLS[1]: {RegisterType.GPR: (12, 10), RegisterType.PRED: (1, 1), RegisterType.UGPR: (6, 2)},
+                        }
                 case _:
                     raise ValueError(f'unsupported {parameters.arch.compute_capability}')
 

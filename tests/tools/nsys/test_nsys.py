@@ -17,7 +17,7 @@ from reprospect.tools.nsys import (
     Session,
     strip_cuda_api_suffix,
 )
-from reprospect.utils import detect, rich_helpers
+from reprospect.utils import cmake, detect, rich_helpers
 
 
 class TestTracingResults:
@@ -107,7 +107,7 @@ class TestSession:
 
         return ns
 
-    def test_cuda_api_trace(self, bindir, workdir) -> None:
+    def test_cuda_api_trace(self, bindir, workdir, cmake_file_api: cmake.FileAPI) -> None:
         """
         Collect all CUDA API calls of :file:`tests/assets/saxpy.cpp`.
         """
@@ -119,6 +119,9 @@ class TestSession:
         cuda_api_trace = ns.extract_statistical_report(report='cuda_api_trace')
 
         logging.info(f'Report cuda_api_trace:\n{rich_helpers.to_string(rich_helpers.df_to_table(cuda_api_trace))}')
+
+        cuda_compiler = cmake_file_api.compiler(toolchain='CUDA')
+        cuda_compiler_version = semantic_version.Version(cuda_compiler.version)
 
         expt = [
             'cuModuleGetLoadingMode',
@@ -135,12 +138,14 @@ class TestSession:
             expt += [
                 'cuLibraryLoadData',
                 'cuLibraryGetKernel',
-                'cuKernelGetName',
             ]
+            if not (cuda_compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>=23')):
+                expt += ['cuKernelGetName']
 
         expt += ['cudaLaunchKernel']
 
-        if semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('>=13.0.0'):
+        if (semantic_version.Version(os.environ['CUDA_VERSION']) in semantic_version.SimpleSpec('>=13.0.0')
+            and not (cuda_compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>=23'))):
             expt += ['cuKernelGetName']
 
         expt += [

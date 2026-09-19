@@ -152,9 +152,9 @@ def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[st
         case ('13.2.1', '24.04'):
             tag = '13.2.1-devel-ubuntu24.04'
             digest = 'sha256:44a9504c6dfb50b1241464241b02a93871928f373de6f5a644cf5fe9f080aa63'
-        case ('13.3.1', '26.04'):
-            tag = '13.3.1-devel-ubuntu26.04'
-            digest = 'sha256:8cf42b8dc4c34d47fb42ffb0923f8a5e363469a7149181c094da336d311bb466'
+        case ('13.3.0', '26.04'):
+            tag = '13.3.0-devel-ubuntu26.04'
+            digest = 'sha256:243be03aa10331842755b7e5c044aefb0c97978e8065d27d40aed4663094c900'
         case _:
             raise ValueError((cuda_version, ubuntu_version))
     return ('nvcr.io/nvidia/cuda', tag, digest)
@@ -355,7 +355,7 @@ def build_matrix() -> list[JobDict]:
     ), deps=deps))
 
     matrix.extend(from_config(Config(
-        cuda_version='13.3.1',
+        cuda_version='13.3.0',
         ubuntu_version='26.04',
         python_version='3.14',
         compilers={'CXX': Compiler(ID='GNU', version='15'), 'CUDA': Compiler(ID='NVIDIA')},
@@ -365,7 +365,7 @@ def build_matrix() -> list[JobDict]:
     ), deps=deps))
 
     matrix.extend(from_config(Config(
-        cuda_version='13.3.1',
+        cuda_version='13.3.0',
         ubuntu_version='26.04',
         python_version='3.14',
         compilers={'CXX': Compiler(ID='GNU', version='15'), 'CUDA': Compiler(ID='NVIDIA')},
@@ -401,7 +401,7 @@ def build_matrix() -> list[JobDict]:
     ), deps=deps))
 
     matrix.extend(from_config(Config(
-        cuda_version='13.3.1',
+        cuda_version='13.3.0',
         ubuntu_version='26.04',
         python_version='3.14',
         compilers={'CXX': Compiler(ID='GNU', version='15'), 'CUDA': Compiler(ID='NVIDIA')},
@@ -464,7 +464,7 @@ def build_matrix() -> list[JobDict]:
     ), deps=deps))
 
     matrix.extend(from_config(Config(
-        cuda_version='13.3.1',
+        cuda_version='13.3.0',
         ubuntu_version='26.04',
         python_version='3.14',
         compilers={'CXX': Compiler(ID='Clang', version='23')},
@@ -491,7 +491,7 @@ def build_matrix() -> list[JobDict]:
     ), deps=deps))
 
     matrix.extend(from_config(Config(
-        cuda_version='13.3.1',
+        cuda_version='13.3.0',
         ubuntu_version='26.04',
         python_version='3.14',
         compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},

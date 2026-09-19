@@ -139,7 +139,7 @@ class TestNVDisasm:
         CPP_FILE:  typing.Final[pathlib.Path] = pathlib.Path(__file__).parent / 'assets' / 'many.cpp'
         SYMBOLS:   typing.Final[tuple[str, ...]] = ('_Z6say_hiv', '_Z20vector_atomic_add_42PKfS0_Pfj')
 
-        def test_from_executable(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None:
+        def test_from_executable(self, workdir, parameters: Parameters, cmake_file_api: cmake.FileAPI, cmake_cuda_compiler: CMakeToolchainCompiler) -> None: # pylint: disable=too-many-branches
             """
             Compile :py:attr:`CPP_FILE` as an executable, extract cubin and run ``nvdisasm``.
             """

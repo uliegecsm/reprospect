@@ -224,7 +224,7 @@ jobs:
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: true # ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
                   file: docker/dockerfile
                   tags: ${{ matrix.image }}
                   cache-from: type=registry,ref=${{ matrix.image }}
@@ -244,7 +244,7 @@ jobs:
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: true # ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
                   file: docker/dockerfile.kokkos
                   tags: ${{ matrix.kokkos }}
                   cache-from: type=registry,ref=${{ matrix.kokkos }}

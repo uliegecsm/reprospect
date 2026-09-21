@@ -161,8 +161,13 @@ def get_cuinfo_and_tkinfo(*, arch: NVIDIAArch, file: pathlib.Path, version: sema
         else:
             logging.info(tkinfos)
             assert tkinfos is not None
-            assert len(tkinfos) == 1
-            tkinfo = tkinfos[0]
+            # As of CUDA 13.4, there may be a 'finalizer' tool, in addition to the 'ptxas' tool
+            assert len(tkinfos) == 1 or len(tkinfos) == 2
+            if tkinfos[0].tool_name == 'ptxas':
+                tkinfo = tkinfos[0]
+            else:
+                assert len(tkinfos) == 2
+                tkinfo = tkinfos[1]
 
         if cuinfo is not None and tkinfo is not None:
             assert cuinfo.note_version == tkinfo.note_version

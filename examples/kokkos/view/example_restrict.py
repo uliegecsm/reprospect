@@ -284,6 +284,7 @@ class TestSASS(TestRestrict):
                 AddInt32Matcher(arch=self.arch, src_a=matched_ldg[0].operands[0], src_b=matched_ldg[1].operands[0]),
                 any_of(
                     IntAdd3Matcher(arch=self.arch, dst=matched_stg[0].operands[1]),
+                    AddInt32Matcher(arch=self.arch, dst=matched_stg[0].operands[1]),
                     OpcodeModsWithOperandsMatcher(opcode='IMAD', modifiers=('SHL', 'U32'), operands=(
                         matched_stg[0].operands[1],
                         Register.REG,

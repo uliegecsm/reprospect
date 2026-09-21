@@ -185,7 +185,7 @@ class TestCommand:
             ncu.Command(executable='my-executable', output=pathlib.Path('my-output-path.whatever')).run()
             check_call.assert_called_with(args=(
                 'ncu', '--print-summary=per-kernel', '--warp-sampling-interval=0',
-                '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever'),
+                '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever').with_suffix('.ncu-rep'),
                 '--log-file', pathlib.Path('my-output-path.log'),
                 'my-executable',
             ), env=None, cwd=None)
@@ -194,7 +194,7 @@ class TestCommand:
             ncu.Command(executable='my-executable', output=pathlib.Path('my-output-path.whatever'), env={'IT_MATTERS': 'ON'}).run(env={'MY_BASE_ENV': '666'}, cwd=bindir)
             check_call.assert_called_with(args=(
                 'ncu', '--print-summary=per-kernel', '--warp-sampling-interval=0',
-                '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever'),
+                '--force-overwrite', '-o', pathlib.Path('my-output-path.whatever').with_suffix('.ncu-rep'),
                 '--log-file', pathlib.Path('my-output-path.log'),
                 'my-executable',
             ), env={'MY_BASE_ENV': '666', 'IT_MATTERS': 'ON'}, cwd=bindir)

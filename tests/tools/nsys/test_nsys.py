@@ -210,11 +210,19 @@ class TestSession:
             ENUM_CUDA_KERNEL_LAUNCH_TYPE = report.table(name='ENUM_CUDA_KERNEL_LAUNCH_TYPE')
             logging.info(f'Table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_helpers.df_to_table(ENUM_CUDA_KERNEL_LAUNCH_TYPE))}')
 
+            CUDA_KERNEL_LAUNCH_TYPE_UNKNOWN = report.single_row(data=ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_UNKNOWN'])
+            logging.info(f'Results selected from table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_helpers.ds_to_table(CUDA_KERNEL_LAUNCH_TYPE_UNKNOWN))}')
+
             CUDA_KERNEL_LAUNCH_TYPE_REGULAR = report.single_row(data=ENUM_CUDA_KERNEL_LAUNCH_TYPE[ENUM_CUDA_KERNEL_LAUNCH_TYPE['name'] == 'CUDA_KERNEL_LAUNCH_TYPE_REGULAR'])
             logging.info(f'Results selected from table ENUM_CUDA_KERNEL_LAUNCH_TYPE:\n{rich_helpers.to_string(rich_helpers.ds_to_table(CUDA_KERNEL_LAUNCH_TYPE_REGULAR))}')
 
-            assert saxpy_kernel_first ['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR['id']
-            assert saxpy_kernel_second['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR['id']
+            cuda_version = semantic_version.Version(os.environ['CUDA_VERSION'])
+            if cuda_version in semantic_version.SimpleSpec('<13.4'):
+                assert saxpy_kernel_first ['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR['id']
+                assert saxpy_kernel_second['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_REGULAR['id']
+            else:
+                assert saxpy_kernel_first ['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_UNKNOWN['id']
+                assert saxpy_kernel_second['launchType'] == CUDA_KERNEL_LAUNCH_TYPE_UNKNOWN['id']
 
             # Check 'saxpy' kernels mangled and demangled names.
             stringids = report.table(name='StringIds')

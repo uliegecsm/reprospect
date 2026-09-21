@@ -163,7 +163,7 @@ __global__ void atomic_exch_kernel() {
         if cuda_compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>21'):
             return ThreadScope.SYSTEM
 
-        if cuda_compiler.id == 'NVIDIA' and cuda_compiler_version in semantic_version.SimpleSpec('>=13.2') and arch.compute_capability >= 100 and size >= 32:
+        if cuda_compiler.id == 'NVIDIA' and cuda_compiler_version in semantic_version.SimpleSpec('>=13.2,<13.4') and arch.compute_capability >= 100 and size >= 32:
             return ThreadScope.SYSTEM
 
         return ThreadScope.DEVICE
@@ -202,7 +202,7 @@ __global__ void atomic_exch_kernel() {
             expt_bits = matcher.dtype.bits
         match matcher.scope:
             case ThreadScope.DEVICE:
-                assert regex.search(rf'atom(?:\.(relaxed|acquire))?(?:\.global)?\.cas\.b{expt_bits}', result) is not None
+                assert regex.search(rf'atom(?:\.(relaxed|acquire))?(?:\.gpu)?(?:\.global)?\.cas\.b{expt_bits}', result) is not None
             case ThreadScope.SYSTEM:
                 assert regex.search(rf'atom(?:\.(relaxed|acquire))?\.sys\.global\.cas\.b{expt_bits}', result) is not None
             case _:

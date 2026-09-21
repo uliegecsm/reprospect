@@ -61,6 +61,7 @@ class NvInfoEIATTR(enum.IntEnum):
     MERCURY_ISA_VERSION = 95
     LANGUAGE = 102
     NVSAL_SW_WAR = 107
+    PREEXIT_USED = 109
 
 class NvInfoEIFMT(enum.IntEnum):
     """

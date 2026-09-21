@@ -471,7 +471,7 @@ jobs:
                     -DReProspect_ENABLE_DOCS=ON \
                     -DReProspect_ENABLE_EXAMPLES=ON \
                     -DReProspect_ENABLE_TESTS=ON
-                cmake --build . --preset=gnu-nvidia --target=docs
+                cmake --build --preset=gnu-nvidia --target=docs
 
             - uses: actions/download-artifact@v8
               with:

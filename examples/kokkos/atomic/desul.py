@@ -218,6 +218,8 @@ class LockBasedAtomicMatcher(SequenceMatcher):
             For data types that require many loads or stores, the operation instructions might be interleaved, such that the
             sequence within the memory thread fences is not strictly load/operation/store.
         """
+        cuda_compiler_version = semantic_version.Version(self.compiler.version)
+
         matched: list[InstructionMatch] = []
 
         # First, try to atomically acquire a lock.
@@ -241,7 +243,10 @@ class LockBasedAtomicMatcher(SequenceMatcher):
 
         # Then, ISETP.NE.AND that reuses the register in which the atomic acquire put its result.
         modifiers: tuple[str, ...]
-        if self.compiler.id == 'NVIDIA' and semantic_version.Version(self.compiler.version) in semantic_version.SimpleSpec('<13.2'):
+        if self.compiler.id == 'NVIDIA' and (
+            cuda_compiler_version in semantic_version.SimpleSpec('<13.2')
+            or (cuda_compiler_version in semantic_version.SimpleSpec('>=13.3') and self.arch == NVIDIAArch.from_str('AMPERE86'))
+        ):
             modifiers = ('NE', 'AND')
         else:
             modifiers = ('NE', 'U32', 'AND')

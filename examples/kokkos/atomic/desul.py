@@ -52,6 +52,7 @@ from reprospect.testing.binaries.sass.instruction import (
     OpcodeModsWithOperandsMatcher,
     Register,
     StoreGlobalMatcher,
+    ThreadScope,
 )
 from reprospect.testing.binaries.sass.operation.move32 import Move32Matcher
 from reprospect.testing.binaries.sass.sequence import (
@@ -91,6 +92,18 @@ class AtomicAcquireMatcher:
     * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L39
     * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Array_CUDA.hpp#L83
     """
+    @staticmethod
+    def get_thread_scope(*, compiler: CMakeToolchainCompiler) -> ThreadScope:
+        """
+        Get the expected :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope`.
+        """
+        cuda_compiler_version = semantic_version.Version(compiler.version)
+
+        if compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>=23'):
+            return ThreadScope.SYSTEM
+
+        return ThreadScope.DEVICE
+
     @classmethod
     def build(cls, arch: NVIDIAArch, compiler: CMakeToolchainCompiler) -> OrderedInSequenceMatcher:
         return instructions_are(
@@ -100,7 +113,7 @@ class AtomicAcquireMatcher:
                 memory=get_atomic_memory_suffix(compiler=compiler),
                 arch=arch,
                 operation='EXCH',
-                scope='DEVICE',
+                scope=cls.get_thread_scope(compiler=compiler),
                 consistency='STRONG',
             ),
         )
@@ -114,13 +127,25 @@ class AtomicReleaseMatcher:
     * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Based_Fetch_Op_CUDA.hpp#L44
     * https://github.com/desul/desul/blob/79f928075837ffb5d302aae188e0ec7b7a79ae94/atomics/include/desul/atomics/Lock_Array_CUDA.hpp#L102
     """
+    @staticmethod
+    def get_thread_scope(*, compiler: CMakeToolchainCompiler) -> ThreadScope:
+        """
+        Get the expected :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope`.
+        """
+        cuda_compiler_version = semantic_version.Version(compiler.version)
+
+        if compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>=23'):
+            return ThreadScope.SYSTEM
+
+        return ThreadScope.DEVICE
+
     @classmethod
     def build(cls, arch: NVIDIAArch, compiler: CMakeToolchainCompiler) -> InstructionMatcher:
         return instruction_is(AtomicMatcher(
             memory=get_atomic_memory_suffix(compiler=compiler),
             arch=arch,
             operation='EXCH',
-            scope='DEVICE',
+            scope=cls.get_thread_scope(compiler=compiler),
             consistency='STRONG',
         )).with_operand(index=-1, operand='RZ')
 

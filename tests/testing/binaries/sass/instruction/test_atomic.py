@@ -209,6 +209,19 @@ __global__ void atomic_exch_kernel() {
                 raise ValueError(matcher.scope)
 
     @staticmethod
+    def get_exchange_thread_scope(*, cmake_file_api: cmake.FileAPI) -> ThreadScope:
+        """
+        Get the expected :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope` for the exchange.
+        """
+        cuda_compiler = cmake_file_api.compiler(toolchain='CUDA')
+        cuda_compiler_version = semantic_version.Version(cuda_compiler.version)
+
+        if cuda_compiler.id == 'Clang' and cuda_compiler_version in semantic_version.SimpleSpec('>=23'):
+            return ThreadScope.SYSTEM
+
+        return ThreadScope.DEVICE
+
+    @staticmethod
     def match_one(*, decoder, **kwargs) -> tuple[AtomicMatcher, Instruction, InstructionMatch]:
         """
         Match exactly one instruction.
@@ -566,7 +579,7 @@ __global__ void atomic_exch_kernel() {
         # Find the atomic exchange.
         _, _, matched = self.match_one(
             decoder=decoder,
-            arch=parameters.arch, operation='EXCH', dtype=numpy.int32, scope='DEVICE', consistency='STRONG',
+            arch=parameters.arch, operation='EXCH', dtype=numpy.int32, scope=self.get_exchange_thread_scope(cmake_file_api=cmake_file_api), consistency='STRONG',
         )
 
         assert {'EXCH'}.issubset(matched.modifiers)
@@ -583,7 +596,7 @@ __global__ void atomic_exch_kernel() {
         # Find the atomic exchange.
         _, _, matched = self.match_one(
             decoder=decoder,
-            arch=parameters.arch, operation='EXCH', dtype=numpy.uint64, scope='DEVICE', consistency='STRONG',
+            arch=parameters.arch, operation='EXCH', dtype=numpy.uint64, scope=self.get_exchange_thread_scope(cmake_file_api=cmake_file_api), consistency='STRONG',
         )
 
         assert {'EXCH', '64'}.issubset(matched.modifiers)
@@ -600,7 +613,7 @@ __global__ void atomic_exch_kernel() {
         # Find the atomic exchange.
         _, _, matched = self.match_one(
             decoder=decoder,
-            arch=parameters.arch, operation='EXCH', dtype=numpy.float32, scope='DEVICE', consistency='STRONG',
+            arch=parameters.arch, operation='EXCH', dtype=numpy.float32, scope=self.get_exchange_thread_scope(cmake_file_api=cmake_file_api), consistency='STRONG',
         )
 
         assert {'EXCH'}.issubset(matched.modifiers)
@@ -635,7 +648,7 @@ __global__ void atomic_exch_kernel() {
 
         _, _, matched = self.match_one(
             decoder=decoder,
-            arch=parameters.arch, operation='EXCH', dtype=32, scope='DEVICE', consistency='STRONG',
+            arch=parameters.arch, operation='EXCH', dtype=32, scope=self.get_exchange_thread_scope(cmake_file_api=cmake_file_api), consistency='STRONG',
             memory=memory,
         )
 
@@ -644,10 +657,15 @@ __global__ void atomic_exch_kernel() {
         # In the PTX, we can see the '.global' for NVIDIA, but not for Clang.
         result = subprocess.check_output(('cuobjdump', '--dump-ptx', output)).decode()
 
+        cuda_compiler_version = semantic_version.Version(cmake_cuda_compiler.version)
+
         match cmake_cuda_compiler.id:
             case 'NVIDIA':
                 assert 'atom.global.exch.b32' in result
             case 'Clang':
-                assert 'atom.exch.b32' in result
+                if cuda_compiler_version in semantic_version.SimpleSpec('>=23'):
+                    assert 'atom.relaxed.sys.exch.b32' in result
+                else:
+                    assert 'atom.exch.b32' in result
             case _:
                 raise ValueError(f'unsupported compiler {cmake_cuda_compiler}')

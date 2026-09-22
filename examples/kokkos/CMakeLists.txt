@@ -11,6 +11,8 @@ endfunction()
 
 find_package(benchmark REQUIRED COMPONENTS benchmark)
 find_package(Kokkos REQUIRED COMPONENTS kokkoscore)
+set(REPROSPECT_KOKKOS_VERSION "${Kokkos_VERSION}" CACHE INTERNAL
+    "Kokkos version, exposed to the tests and examples through the CMake file API.")
 
 find_package(
     KokkosTools

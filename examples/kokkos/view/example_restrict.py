@@ -206,7 +206,7 @@ class TestRestrict(CMakeAwareTestCase):
     SIGNATURE_TEMPLATE: typing.Final[str] = (
         r'void Kokkos::Impl::cuda_parallel_launch_local_memory<'
         r'Kokkos::Impl::ParallelFor<reprospect::examples::kokkos::view::{functor}<{scalar}>, '
-        r'Kokkos::RangePolicy<>, Kokkos::Cuda>>'
+        r'Kokkos::RangePolicy<Kokkos::Cuda>, Kokkos::Cuda>>'
     )
     """Signature template when :code:`Kokkos::parallel_for` is used."""
 

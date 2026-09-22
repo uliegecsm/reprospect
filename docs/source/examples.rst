@@ -10,14 +10,14 @@ The CI/CD pipelines build and run the examples in Docker containers for a variet
 The most convenient way to build and run the examples without reconstructing the dependencies is to reuse one of our images.
 
 For example, for an ``x86_64`` platform, with a ``Blackwell120`` GPU, targeting a compiler toolchain using ``nvcc`` as the CUDA compiler and ``gcc`` as the host compiler,
-the image ``cuda-gnu-14-nvidia-py3.13-kokkos-5.1.0:13.1.0-devel-ubuntu24.04-blackwell120`` may be used.
+the image ``cuda-gnu-14-nvidia-py3.13-kokkos-5.2.0:13.1.0-devel-ubuntu24.04-blackwell120`` may be used.
 
 Start a container in interactive mode:
 
 .. code-block:: bash
 
    docker run --rm -it --gpus=all --cap-add=SYS_ADMIN \
-       ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14-kokkos-5.1.0:13.4.1-devel-ubuntu26.04-blackwell120
+       ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14-kokkos-5.2.0:13.4.1-devel-ubuntu26.04-blackwell120
 
 Then, inside the container:
 

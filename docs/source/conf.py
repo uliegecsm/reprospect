@@ -126,7 +126,7 @@ lines += [f'   {image}\n   {kokkos}' for image, kokkos in image_pairs]
 
 # Assert that the image names hardcoded in the "Running the tests" and "Running the examples" documentation still exist in the matrix
 assert any(entry["image"] == "ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14:13.4.1-devel-ubuntu26.04" for entry in matrix)
-assert any(entry["kokkos"] == "ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14-kokkos-5.1.0:13.4.1-devel-ubuntu26.04-blackwell120" for entry in matrix)
+assert any(entry["kokkos"] == "ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14-kokkos-5.2.0:13.4.1-devel-ubuntu26.04-blackwell120" for entry in matrix)
 
 # 'unittest.TestCase' is implemented in 'unittest.test.TestCase' but is documented
 # as 'unittest.TestCase', thus confusing 'intersphinx'.

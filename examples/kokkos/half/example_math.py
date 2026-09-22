@@ -84,7 +84,7 @@ class TestMax(CMakeAwareTestCase):
         r'Kokkos::Impl::ParallelFor<'
         r'reprospect::examples::kokkos::half::FunctorMax<'
         r'\(reprospect::examples::kokkos::half::Method\){method}, '
-        r'Kokkos::View<Kokkos::Experimental::Impl::floating_point_wrapper<__half>\s*\*, Kokkos::Cuda>>, Kokkos::RangePolicy<>, Kokkos::Cuda>>'
+        r'Kokkos::View<Kokkos::Experimental::Impl::floating_point_wrapper<__half>\s*\*, Kokkos::Cuda>>, Kokkos::RangePolicy<Kokkos::Cuda>, Kokkos::Cuda>>'
     )
 
     @property

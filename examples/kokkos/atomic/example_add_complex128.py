@@ -2,6 +2,8 @@ import re
 import sys
 import typing
 
+import semantic_version
+
 from reprospect.testing.binaries.sass.instruction import (
     Constant,
     InstructionMatch,
@@ -71,6 +73,15 @@ class TestAtomicAddComplex128(add.TestCase):
         r'AtomicAddFunctor<Kokkos::View<Kokkos::complex<double>\s*\*\s*, Kokkos::CudaSpace>>',
     )
 
+    def kokkos_disables_lock_free_128bit_device_atomics(self) -> bool:
+        """
+        Kokkos disables 128-bit device atomics as of version 5.2:
+
+        - https://github.com/kokkos/kokkos/issues/9577
+        """
+        kokkos_version = semantic_version.Version(self.cmake_file_api.cache['REPROSPECT_KOKKOS_VERSION']['value'])
+        return kokkos_version in semantic_version.SimpleSpec('>=5.2')
+
     def test_lock_atomic_before_hopper90(self, decoder: Decoder) -> None:
         """
         This test proves that it uses the lock-based implementation.
@@ -81,7 +92,7 @@ class TestAtomicAddComplex128(add.TestCase):
             compiler=self.compiler(toolchain='CUDA'),
         ).match(instructions=decoder.instructions)
 
-        if self.arch.compute_capability.as_int >= 90:
+        if self.arch.compute_capability.as_int >= 90 and not self.kokkos_disables_lock_free_128bit_device_atomics():
             assert matched is None
         else:
             assert matched is not None
@@ -96,7 +107,7 @@ class TestAtomicAddComplex128(add.TestCase):
             size=128,
         ).match(cfg=ControlFlow.analyze(instructions=decoder.instructions))
 
-        if self.arch.compute_capability.as_int >= 90:
+        if self.arch.compute_capability.as_int >= 90 and not self.kokkos_disables_lock_free_128bit_device_atomics():
             assert matched is not None
         else:
             assert matched is None

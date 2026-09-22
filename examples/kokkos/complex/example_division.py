@@ -174,27 +174,27 @@ class TestSASS(TestDivision):
                 expt_logbscalbn =    {RegisterType.GPR: (42, 38), RegisterType.PRED: (4, 4)}
                 expt_norm_division = {RegisterType.GPR: (40, 34), RegisterType.PRED: (5, 5)}
             case 75:
-                expt_ilogbscalbn =   {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (6, 2)}
-                expt_logbscalbn =    {RegisterType.GPR: (41, 33), RegisterType.PRED: (4, 4), RegisterType.UGPR: (6, 2)}
-                expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (5, 5), RegisterType.UGPR: (6, 2)}
+                expt_ilogbscalbn =   {RegisterType.GPR: (42, 36), RegisterType.PRED: (4, 4)}
+                expt_logbscalbn =    {RegisterType.GPR: (45, 39), RegisterType.PRED: (4, 4)}
+                expt_norm_division = {RegisterType.GPR: (40, 32), RegisterType.PRED: (5, 5)}
             case 80:
-                expt_ilogbscalbn =   {RegisterType.GPR: (40, 30), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
-                expt_logbscalbn =    {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
-                expt_norm_division = {RegisterType.GPR: (40, 30), RegisterType.PRED: (5, 5), RegisterType.UGPR: (8, 4)}
+                expt_ilogbscalbn =   {RegisterType.GPR: (40, 36), RegisterType.PRED: (4, 4), RegisterType.UGPR: (6, 2)}
+                expt_logbscalbn =    {RegisterType.GPR: (42, 38), RegisterType.PRED: (4, 4), RegisterType.UGPR: (6, 2)}
+                expt_norm_division = {RegisterType.GPR: (40, 34), RegisterType.PRED: (5, 5), RegisterType.UGPR: (6, 2)}
             case 86:
-                expt_ilogbscalbn =   {RegisterType.GPR: (42, 38), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
-                expt_logbscalbn =    {RegisterType.GPR: (45, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
-                expt_norm_division = {RegisterType.GPR: (39, 30), RegisterType.PRED: (5, 5), RegisterType.UGPR: (8, 4)}
+                expt_ilogbscalbn =   {RegisterType.GPR: (45, 41), RegisterType.PRED: (4, 4), RegisterType.UGPR: (6, 2)}
+                expt_logbscalbn =    {RegisterType.GPR: (46, 40), RegisterType.PRED: (4, 4), RegisterType.UGPR: (6, 2)}
+                expt_norm_division = {RegisterType.GPR: (40, 36), RegisterType.PRED: (5, 5), RegisterType.UGPR: (6, 2)}
             case 89:
-                expt_ilogbscalbn =   {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
-                expt_logbscalbn =    {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
-                expt_norm_division = {RegisterType.GPR: (39, 30), RegisterType.PRED: (5, 5), RegisterType.UGPR: (8, 4)}
+                expt_ilogbscalbn =   {RegisterType.GPR: (40, 36), RegisterType.PRED: (4, 4), RegisterType.UGPR: (6, 2)}
+                expt_logbscalbn =    {RegisterType.GPR: (42, 38), RegisterType.PRED: (4, 4), RegisterType.UGPR: (6, 2)}
+                expt_norm_division = {RegisterType.GPR: (40, 37), RegisterType.PRED: (5, 5), RegisterType.UGPR: (6, 2)}
             case 90:
                 match cuda_compiler.id:
                     case 'NVIDIA':
-                        expt_ilogbscalbn =   {RegisterType.GPR: (40, 32), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
-                        expt_logbscalbn =    {RegisterType.GPR: (40, 34), RegisterType.PRED: (4, 4), RegisterType.UGPR: (9, 5)}
-                        expt_norm_division = {RegisterType.GPR: (40, 33), RegisterType.PRED: (5, 5), RegisterType.UGPR: (9, 5)}
+                        expt_ilogbscalbn =   {RegisterType.GPR: (40, 36), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
+                        expt_logbscalbn =    {RegisterType.GPR: (42, 38), RegisterType.PRED: (4, 4), RegisterType.UGPR: (8, 4)}
+                        expt_norm_division = {RegisterType.GPR: (40, 36), RegisterType.PRED: (5, 5), RegisterType.UGPR: (8, 4)}
                     case 'Clang':
                         expt_ilogbscalbn =   {RegisterType.GPR: (45, 43), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}
                         expt_logbscalbn =    {RegisterType.GPR: (45, 41), RegisterType.PRED: (4, 4), RegisterType.UGPR: (10, 6)}

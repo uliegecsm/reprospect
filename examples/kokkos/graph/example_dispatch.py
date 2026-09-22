@@ -95,8 +95,13 @@ class TestNSYS(TestDispatch):
 
             ENUM_CUPTI_SYNC_TYPE = report.table(name='ENUM_CUPTI_SYNC_TYPE')
             CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_WAIT_EVENT = report.single_row(data=ENUM_CUPTI_SYNC_TYPE[ENUM_CUPTI_SYNC_TYPE['name'] == 'CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_WAIT_EVENT'])
+            CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE = report.single_row(data=ENUM_CUPTI_SYNC_TYPE[ENUM_CUPTI_SYNC_TYPE['name'] == 'CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE'])
 
-            assert fence['syncType'] == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_WAIT_EVENT['id']
+            cuda_version = semantic_version.Version(os.environ['CUDA_VERSION'])
+            if cuda_version in semantic_version.SimpleSpec('<13.4'):
+                assert fence['syncType'] == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_WAIT_EVENT['id']
+            else:
+                assert fence['syncType'] == CUPTI_ACTIVITY_SYNCHRONIZATION_TYPE_STREAM_SYNCHRONIZE['id']
 
             stream_id = fence['streamId']
 

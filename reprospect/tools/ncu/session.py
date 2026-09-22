@@ -67,7 +67,7 @@ class Command: # pylint: disable=too-many-instance-attributes
         object.__setattr__(self, 'cmd', (
             'ncu',
             *self.opts,
-            '--force-overwrite', '-o', self.output,
+            '--force-overwrite', '-o', self.output.with_suffix('.ncu-rep'),
             '--log-file', self.log,
             self.executable,
             *(self.args or ()),

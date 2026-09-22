@@ -17,7 +17,7 @@ Start a container in interactive mode:
 .. code-block:: bash
 
    docker run --rm -it --gpus=all --cap-add=SYS_ADMIN \
-       ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14-kokkos-5.1.0:13.3.1-devel-ubuntu26.04-blackwell120
+       ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14-kokkos-5.1.0:13.4.1-devel-ubuntu26.04-blackwell120
 
 Then, inside the container:
 

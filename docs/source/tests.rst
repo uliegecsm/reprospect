@@ -8,14 +8,14 @@ The CI/CD pipelines build and run the tests in Docker containers for a variety o
 The most convenient way to build and run the tests without reconstructing the dependencies is to reuse one of our images.
 
 For example, for an ``x86_64`` platform, with a ``Blackwell120`` GPU, targeting a compiler toolchain using ``nvcc`` as the CUDA compiler and ``gcc`` as the host compiler,
-the image ``cuda-gnu-15-nvidia-py3.14:13.3.1-devel-ubuntu26.04`` may be used.
+the image ``cuda-gnu-15-nvidia-py3.14:13.4.1-devel-ubuntu26.04`` may be used.
 
 Start a container in interactive mode:
 
 .. code-block:: bash
 
    docker run --rm -it --gpus=all --cap-add=SYS_ADMIN \
-       ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14:13.3.1-devel-ubuntu26.04
+       ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14:13.4.1-devel-ubuntu26.04
 
 The GPU architecture enters through ``CMAKE_CUDA_ARCHITECTURES`` below.
 Only the images containing a Kokkos_ installation used for the `ReProspect` examples are specific to a GPU architecture.

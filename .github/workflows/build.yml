@@ -318,9 +318,9 @@ jobs:
                 pyver: [cp310, cp311, cp312, cp313, cp314]
                 build: [manylinux_x86_64, manylinux_aarch64, win_amd64]
                 include:
-                    - runs-on: ubuntu-24.04
+                    - runs-on: ubuntu-latest
                       build: manylinux_x86_64
-                    - runs-on: ubuntu-24.04-arm
+                    - runs-on: ubuntu-26.04-arm
                       build: manylinux_aarch64
                     - runs-on: windows-latest
                       build: win_amd64
@@ -345,7 +345,7 @@ jobs:
         needs: [pre-commit]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
-            image: ubuntu:24.04
+            image: ubuntu:26.04
         steps:
             - uses: actions/checkout@v7
             - uses: actions/setup-python@v7
@@ -595,7 +595,7 @@ jobs:
         ]
         runs-on: [self-hosted, linux, docker, amd64]
         container:
-            image: ubuntu:24.04
+            image: ubuntu:26.04
         if: ${{ ! failure() && ! cancelled() && github.ref == 'refs/heads/main' }}
 
         permissions:

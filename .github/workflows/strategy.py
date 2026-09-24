@@ -208,7 +208,7 @@ def runs_on(spec: Runner, jtype: typing.Literal['tests', 'examples', 'documentat
                 case ('linux', 'amd64'):
                     return SELF_HOSTED + ('amd64',)
                 case ('linux', 'arm64'):
-                    return ('ubuntu-24.04-arm',)
+                    return ('ubuntu-26.04-arm',)
                 case _:
                     raise ValueError(spec)
         case 'examples':
@@ -216,7 +216,7 @@ def runs_on(spec: Runner, jtype: typing.Literal['tests', 'examples', 'documentat
                 case ('linux', 'amd64'):
                     return ('ubuntu-latest',)
                 case ('linux', 'arm64'):
-                    return ('ubuntu-24.04-arm',)
+                    return ('ubuntu-26.04-arm',)
                 case _:
                     raise ValueError(spec)
         case _:

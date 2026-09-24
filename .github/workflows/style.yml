@@ -13,7 +13,7 @@ jobs:
     whitespace:
         runs-on: [self-hosted, linux, docker, amd64]
         container:
-            image: python:3.12
+            image: python:3.14
         steps:
           - uses: actions/checkout@v7
 
@@ -26,7 +26,7 @@ jobs:
     check-python-notebooks:
         runs-on: [self-hosted, linux, docker, amd64]
         container:
-            image: python:3.12
+            image: python:3.14
         steps:
             - uses: actions/checkout@v7
 

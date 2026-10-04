@@ -62,7 +62,7 @@ class CudaDriverError:
         assert error_name.value is not None
         assert error_msg.value is not None
 
-        return error_name.value.decode(), error_msg.value.decode() # pylint: disable=no-member
+        return error_name.value.decode(), error_msg.value.decode()
 
 class Cuda:
 

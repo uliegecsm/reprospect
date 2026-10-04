@@ -49,7 +49,7 @@ class ProfilingMetrics(collections.abc.Mapping[str, ProfilingMetricData]):
     def __init__(self, data: dict[str, ProfilingMetricData]) -> None:
         self.data: typing.Final[dict[str, ProfilingMetricData]] = data
 
-    def __getitem__(self, key: str, /) -> ProfilingMetricData:
+    def __getitem__(self, key: str) -> ProfilingMetricData:
         return self.data[key]
 
     def __len__(self) -> int:

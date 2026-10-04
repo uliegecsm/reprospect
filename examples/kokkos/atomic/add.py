@@ -1,3 +1,4 @@
+import abc
 import pathlib
 import re
 import subprocess
@@ -11,7 +12,7 @@ from reprospect.tools.binaries.sass import Decoder
 from reprospect.utils import detect
 
 
-class TestCase(CMakeAwareTestCase):
+class TestCase(CMakeAwareTestCase, abc.ABC):
     """
     Derived type must to define :py:attr:`SIGNATURE_MATCHER`.
     """

@@ -233,7 +233,7 @@ class ArchitectureAwarePatternMatcher(PatternMatcher):
         Build the regex pattern based on architecture.
         """
 
-class ArchitectureAndVersionAwarePatternMatcher(ArchitectureAwarePatternMatcher):
+class ArchitectureAndVersionAwarePatternMatcher(ArchitectureAwarePatternMatcher, abc.ABC):
     """
     Base class for matchers that generate patterns based on CUDA version and architecture.
 

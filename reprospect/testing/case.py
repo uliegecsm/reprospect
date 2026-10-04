@@ -38,7 +38,7 @@ class TestCase(abc.ABC):
         Demangler.
         """
 
-class CMakeAwareTestCase(CMakeMixin, TestCase):
+class CMakeAwareTestCase(CMakeMixin, TestCase, abc.ABC):
     """
     Test case with CMake integration.
     """

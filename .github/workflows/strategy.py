@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import copy
 import dataclasses
 import enum
@@ -156,7 +157,7 @@ def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[st
             raise ValueError((cuda_version, ubuntu_version))
     return ('nvcr.io/nvidia/cuda', tag, digest)
 
-def full_image(*, name: str, tag: str, platform: Platform) -> str:
+def full_image(*, name: str, tag: str, platform: Platform, staging_tag_suffix: str = '') -> str:
     """
     Full image from its `name` and `tag`, with remote.
 
@@ -165,11 +166,12 @@ def full_image(*, name: str, tag: str, platform: Platform) -> str:
     value = f'{REGISTRY}/{REPOSITORY}/{name}:{tag}'
     match (platform.os, platform.architecture):
         case ('linux', 'amd64'):
-            return value
+            pass
         case ('linux', 'arm64'):
-            return value + '-arm64'
+            value += '-arm64'
         case _:
             raise ValueError(platform)
+    return value + staging_tag_suffix
 
 def require_arch(spec: Runner) -> dict[str, str]:
     """
@@ -222,7 +224,10 @@ def runs_on(spec: Runner, jtype: typing.Literal['tests', 'examples', 'documentat
         case _:
             raise ValueError
 
-def complete_job_impl(*, partial: JobDict, deps: DependencyDict) -> JobDict:
+def cache_from(*, refs: list[str]) -> list[str]:
+    return [f'type=registry,ref={ref}' for ref in refs]
+
+def complete_job_impl(*, partial: JobDict, deps: DependencyDict, args: argparse.Namespace | None = None) -> JobDict:
     """
     Add fields to a job.
     """
@@ -250,8 +255,16 @@ def complete_job_impl(*, partial: JobDict, deps: DependencyDict) -> JobDict:
     partial['nvidia_arch'] = str(arch)
 
     partial['base_image'] = f'{base_name}:{base_tag}@{base_digest}'
-    partial[     'image'] = full_image(platform=partial['platform'], name=name,                                     tag=base_tag)
-    partial[    'kokkos'] = full_image(platform=partial['platform'], name=f'{name}-kokkos-{deps["kokkos"]["sha"]}', tag=f'{base_tag}-{arch}'.lower())
+
+    image_refs: list[str] =  [full_image(platform=partial['platform'], name=name, tag=base_tag)]
+    kokkos_refs: list[str] = [full_image(platform=partial['platform'], name=f'{name}-kokkos-{deps["kokkos"]["sha"]}', tag=f'{base_tag}-{arch}'.lower())]
+
+    if args is not None and args.staging_tag_suffix:
+        image_refs.insert(0,  full_image(platform=partial['platform'], name=name, tag=base_tag, staging_tag_suffix=args.staging_tag_suffix))
+        kokkos_refs.insert(0, full_image(platform=partial['platform'], name=f'{name}-kokkos-{deps["kokkos"]["sha"]}', tag=f'{base_tag}-{arch}'.lower(), staging_tag_suffix=args.staging_tag_suffix))
+
+    partial['image'] =  {'tags': image_refs[0],  'cache-from': cache_from(refs=image_refs)}
+    partial['kokkos'] = {'tags': kokkos_refs[0], 'cache-from': cache_from(refs=kokkos_refs)}
 
     # Name of the job.
     # See also https://futurestud.io/tutorials/github-actions-customize-the-job-name.
@@ -282,19 +295,19 @@ def complete_job_impl(*, partial: JobDict, deps: DependencyDict) -> JobDict:
 
     # Specifics to the 'tests' jobs.
     if partial['enable_tests']:
-        partial['tests'] = {'container': {'image': partial['image']}}
+        partial['tests'] = {'container': {'image': partial['image']['tags']}}
         partial['tests']['container']['env'] = require_arch(spec=spec)
         partial['tests']['runs-on'] = runs_on(spec=spec, jtype='tests')
 
     # Specifics to the 'examples' jobs.
     if partial['enable_examples']:
-        partial['examples'] = {'container': {'image': partial['kokkos']}}
+        partial['examples'] = {'container': {'image': partial['kokkos']['tags']}}
         partial['examples']['container']['env'] = require_arch(spec=spec)
         partial['examples']['runs-on'] = runs_on(spec=spec, jtype='examples')
 
     # Specifics to the 'documentation' job.
     if partial['use_for_documentation']:
-        partial['documentation'] = {'container': {'image': partial['kokkos']}}
+        partial['documentation'] = {'container': {'image': partial['kokkos']['tags']}}
         partial['documentation']['container']['env'] = require_arch(spec=spec)
         partial['documentation']['runs-on'] = runs_on(spec=spec, jtype='documentation')
 
@@ -304,9 +317,9 @@ def complete_job_impl(*, partial: JobDict, deps: DependencyDict) -> JobDict:
 
     return partial
 
-def from_config(config: Config, deps: DependencyDict) -> list[JobDict]:
+def from_config(config: Config, deps: DependencyDict, args: argparse.Namespace | None = None) -> list[JobDict]:
     return [
-        complete_job_impl(partial=copy.deepcopy(job), deps=deps)
+        complete_job_impl(partial=copy.deepcopy(job), deps=deps, args=args)
         for job in config.jobs()
     ]
 
@@ -323,7 +336,7 @@ def dependencies() -> DependencyDict:
     )
     return deps
 
-def build_matrix() -> list[JobDict]:
+def build_matrix(args: argparse.Namespace | None = None) -> list[JobDict]:
     """
     Generate the strategy matrix.
     """
@@ -340,7 +353,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=0),
         platforms=(Platform.from_str('linux/amd64'), Platform.from_str('linux/arm64')),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='12.8.1',
@@ -349,7 +362,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=9, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.4.1',
@@ -359,7 +372,7 @@ def build_matrix() -> list[JobDict]:
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
         use_for_documentation=True,
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.4.1',
@@ -368,7 +381,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='15'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=(Platform.from_str('linux/arm64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='12.6.3',
@@ -377,7 +390,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='12'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=5),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='12.8.1',
@@ -386,7 +399,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=8, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='12.6.3',
@@ -395,7 +408,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='13'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=8, minor=9),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.4.1',
@@ -404,7 +417,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='15'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=8, minor=6),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='12.8.1',
@@ -413,7 +426,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='Clang', version='19'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=7, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.1.0',
@@ -422,7 +435,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=10, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.2.0',
@@ -431,7 +444,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='14'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=10, minor=0),
         platforms=(Platform.from_str('linux/amd64'), Platform.from_str('linux/arm64')),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.0.0',
@@ -440,7 +453,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='Clang', version='20'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.1.0',
@@ -449,7 +462,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=10, minor=3),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.1.0',
@@ -458,7 +471,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=1),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.4.1',
@@ -467,7 +480,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='Clang', version='23')},
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='12.8.1',
@@ -476,7 +489,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='Clang', version='22')},
         compute_capability=ComputeCapability(major=9, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.1.0',
@@ -485,7 +498,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='Clang', version='22')},
         compute_capability=ComputeCapability(major=10, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.4.1',
@@ -494,7 +507,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='Clang', version='21'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     matrix.extend(from_config(Config(
         cuda_version='13.3.1',
@@ -503,7 +516,7 @@ def build_matrix() -> list[JobDict]:
         compilers={'CXX': Compiler(ID='GNU', version='15'), 'CUDA': Compiler(ID='NVIDIA')},
         compute_capability=ComputeCapability(major=12, minor=0),
         platforms=(Platform.from_str('linux/amd64'),),
-    ), deps=deps))
+    ), deps=deps, args=args))
 
     # STRATEGY-MATRIX-END
 
@@ -511,8 +524,19 @@ def build_matrix() -> list[JobDict]:
 
     return matrix
 
+def parse_args() -> argparse.Namespace:
+    """
+    Parse CLI arguments.
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--staging-tag-suffix', type=str, required=True)
+    return parser.parse_args()
+
 def main() -> None:
-    matrix = build_matrix()
+    args = parse_args()
+    logging.info(f"Received arguments: {args}")
+
+    matrix = build_matrix(args=args)
 
     # All jobs in the matrix build an image.
     print(f"matrix_images={json.dumps(matrix, default = str)}")
@@ -523,7 +547,7 @@ def main() -> None:
     job_documentation = next(x for x in matrix if 'documentation' in x)
     print(f"job_documentation={json.dumps(job_documentation, default=str)}")
 
-    print(f"image_deploy={matrix[0]['image']}")
+    print(f"image_deploy={matrix[0]['image']['tags']}")
 
     print(f"dependencies={json.dumps(dependencies(), default=str)}")
 

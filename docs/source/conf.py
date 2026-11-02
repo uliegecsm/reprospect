@@ -115,7 +115,7 @@ mermaid_d3_zoom = True
 # Write the list of Docker images that we build into a file that can be included in the documentation.
 matrix = strategy.build_matrix()
 image_pairs = sorted(
-    (entry["image"], entry["kokkos"])
+    (entry["image"]['tags'], entry["kokkos"]['tags'])
     for entry in matrix
 )
 generated = DOCS_SOURCES_DIR / 'generated'
@@ -125,8 +125,8 @@ lines += [f'   {image}\n   {kokkos}' for image, kokkos in image_pairs]
 (generated / 'images.rst').write_text('\n'.join(lines) + '\n')
 
 # Assert that the image names hardcoded in the "Running the tests" and "Running the examples" documentation still exist in the matrix
-assert any(entry["image"] == "ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14:13.4.1-devel-ubuntu26.04" for entry in matrix)
-assert any(entry["kokkos"] == "ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14-kokkos-5.2.0:13.4.1-devel-ubuntu26.04-blackwell120" for entry in matrix)
+assert any(entry["image"]['tags'] == "ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14:13.4.1-devel-ubuntu26.04" for entry in matrix)
+assert any(entry["kokkos"]['tags'] == "ghcr.io/uliegecsm/reprospect/cuda-gnu-15-nvidia-py3.14-kokkos-5.2.0:13.4.1-devel-ubuntu26.04-blackwell120" for entry in matrix)
 
 # 'unittest.TestCase' is implemented in 'unittest.test.TestCase' but is documented
 # as 'unittest.TestCase', thus confusing 'intersphinx'.

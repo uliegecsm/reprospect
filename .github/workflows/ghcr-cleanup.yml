@@ -1,0 +1,125 @@
+# Cleanup of the GHCR Docker images.
+#
+# Two kinds of images live in the registry:
+#   - staging images, pushed by PRs, tagged `<canonical tag>-staging-pr-<number>`;
+#   - canonical images, tagged without the staging suffix.
+#
+# Strategy:
+#   A. when a PR is closed, delete the staging tags of that PR only;
+#   B. on schedule or on demand:
+#       1. delete stale staging tags left behind, older than X (closed before this workflow existed, or a closing run was dropped by `concurrency`, ...)
+#       2. prune canonical images (untagged, older than X days, not referenced by any image we keep), leaving remaining staging images untouched.
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        type: boolean
+        default: true
+
+env:
+  # Infix of the staging tags, as produced by the image build.
+  STAGING_INFIX: '-staging-pr-'
+  DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run }}
+  # Max age before deletion.
+  MAX_AGE: 7 days
+
+jobs:
+  # Enumerate all container packages once (comma-separated list, output `package-list`).
+  list-packages:
+    runs-on: ubuntu-latest
+    outputs:
+      package-list: ${{ steps.list.outputs.package-list }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - run: pip install semantic_version
+
+      - id: list
+        run: |
+          PYTHONPATH=$PWD:$PWD/.github/workflows/ python - <<EOF >> $GITHUB_OUTPUT
+          import logging
+          import re
+
+          from strategy import build_matrix, REGISTRY
+
+
+          def get_package_name_from(*, image: str) -> str:
+            # Remove the image tag.
+            image = image.split(':', maxsplit=1)[0]
+            # Remove prefix.
+            return re.match(pattern=rf'{REGISTRY}/${{ github.repository_owner }}/(.*)', string=image).group(1)
+
+          if __name__ == '__main__':
+
+            logging.basicConfig(level=logging.INFO)
+
+            packages = set(
+              '${{ github.repository }}/build-images',
+              '${{ github.repository }}/setup-job-matrix',
+            )
+
+            for job in build_matrix():
+                packages.update((get_package_name_from(image=job['image']['tags']),))
+                packages.update((get_package_name_from(image=job['kokkos']['tags']),))
+
+            logging.info(packages)
+            print(f"package-list={','.join(packages)}")
+          EOF
+
+  # Strategy A.
+  cleanup-staging-pr:
+    concurrency:
+      group: docker-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    if: github.event_name == 'pull_request'
+    needs: list-packages
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+        with:
+          packages: ${{ needs.list-packages.outputs.package-list }}
+          delete-tags: '*${{ env.STAGING_INFIX }}${{ github.event.pull_request.number }}'
+          dry-run: ${{ env.DRY_RUN }}
+
+  # Strategy B.
+  cleanup:
+    # Use the same concurrency group as those that publish canonical images (see build.yml).
+    concurrency:
+      group: format('docker-refs/heads/{0}', github.event.repository.default_branch)
+      cancel-in-progress: false
+    if: github.event_name != 'pull_request'
+    needs: list-packages
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      # Action B.1.
+      - uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+        with:
+          packages: ${{ needs.list-packages.outputs.package-list }}
+          delete-tags: '*${{ env.STAGING_INFIX }}*'
+          older-than: ${{ env.MAX_AGE }}
+          dry-run: ${{ env.DRY_RUN }}
+
+      # Action B.2.
+      - uses: dataaxiom/ghcr-cleanup-action@v1.2.2
+        with:
+          packages: ${{ needs.list-packages.outputs.package-list }}
+          exclude-tags: '*${{ env.STAGING_INFIX }}*'
+          delete-untagged: true
+          delete-ghost-images: true
+          delete-partial-images: true
+          delete-orphaned-images: true
+          older-than: ${{ env.MAX_AGE }}
+          dry-run: ${{ env.DRY_RUN }}

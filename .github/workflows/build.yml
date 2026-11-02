@@ -15,14 +15,15 @@ on:
                 type: boolean
                 default: false
     schedule:
-        # At 06:00 on Sunday.
-        - cron:  '0 6 * * 6'
+        - cron: '0 6 * * 6'
     release:
         types: [published]
 
+# Concurrency group is unique per-ref, so builds on different refs run in parallel.
+# Cancellation of in-progress workflow is only allowed on non-default branches or for pull requests.
 concurrency:
-    group: ${{ github.workflow }}-${{ github.ref }}
-    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    group: docker-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: ${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) || github.event_name == 'pull_request' }}
 
 permissions:
     contents: read
@@ -42,13 +43,14 @@ jobs:
     setup-skips:
         runs-on: ubuntu-slim
         outputs:
-            build-images: ${{ steps.build-images.outputs.build-images }}
-            setup-job-matrix-image: ${{ steps.setup-job-matrix-image.outputs.setup-job-matrix-image }}
+            build-images: ${{ steps.images-setup.outputs.build-images }}
+            setup-job-matrix-image: ${{ steps.images-setup.outputs.setup-job-matrix-image }}
+            image-push: ${{ steps.images-setup.outputs.image-push }}
+            docker-build-record-retention-days: ${{ steps.images-setup.outputs.docker-build-record-retention-days }}
+            setup-job-matrix-image-staging-tag-suffix: ${{ steps.images-setup.outputs.setup-job-matrix-image-staging-tag-suffix }}
+            build-images-staging-tag-suffix: ${{ steps.images-setup.outputs.build-images-staging-tag-suffix }}
         steps:
             - uses: actions/checkout@v7
-
-            # Images generally need a rebuild either because of file changes or it was requested during the workflow dispatch.
-            # Otherwise, the jobs can be skipped, thus speeding up the workflow.
 
             # For the 'setup-job-matrix-image' job.
             - id: setup-job-matrix-image-extract-mounts
@@ -61,21 +63,6 @@ jobs:
                       docker/**
                       .github/workflows/**
                       ${{ steps.setup-job-matrix-image-extract-mounts.outputs.paths }}
-
-            - id: setup-job-matrix-image
-              env:
-                  ANY_CHANGED: ${{ steps.setup-job-matrix-image-changed-files.outputs.any_changed == 'true' }}
-                  FORCE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'] }}
-              run: |
-                  if [ "$ANY_CHANGED" = "true" ] || [ "$FORCE" = "true" ]; then
-                      SETUP_JOB_MATRIX_IMAGE=true
-                  else
-                      SETUP_JOB_MATRIX_IMAGE=false
-                  fi
-                  echo "SETUP_JOB_MATRIX_IMAGE set to ${SETUP_JOB_MATRIX_IMAGE} because:"
-                  echo "    - any changed: ${ANY_CHANGED}"
-                  echo "    - force      : ${FORCE}"
-                  echo "setup-job-matrix-image=${SETUP_JOB_MATRIX_IMAGE}" >> $GITHUB_OUTPUT
 
             # For the 'build-images' job.
             - id: build-images-extract-mounts
@@ -90,20 +77,19 @@ jobs:
                       dependencies.json
                       ${{ steps.build-images-extract-mounts.outputs.paths }}
 
-            - id: build-images
+            # Images setup (staging tag, retention days, and so on).
+            - uses: actions/setup-python@v7
+              with:
+                  python-version: '3.11'
+
+            - id: images-setup
               env:
-                  ANY_CHANGED: ${{ steps.build-images-changed-files.outputs.any_changed == 'true' }}
-                  FORCE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs['build-images'] }}
+                GITHUB_CONTEXT: ${{ toJson(github) }}
               run: |
-                  if [ "$ANY_CHANGED" = "true" ] || [ "$FORCE" = "true" ]; then
-                      BUILD_IMAGES=true
-                  else
-                      BUILD_IMAGES=false
-                  fi
-                  echo "BUILD_IMAGES set to ${BUILD_IMAGES} because:"
-                  echo "    - any changed: ${ANY_CHANGED}"
-                  echo "    - force      : ${FORCE}"
-                  echo "build-images=${BUILD_IMAGES}" >> $GITHUB_OUTPUT
+                python .github/workflows/build.py \
+                    --setup-job-matrix-image-changed-files=${{ steps.setup-job-matrix-image-changed-files.outputs.any_changed }} \
+                    --build-images-changed-files=${{ steps.build-images-changed-files.outputs.any_changed }} \
+                    >> $GITHUB_OUTPUT
 
     setup-job-matrix-image:
         runs-on: [self-hosted, linux, docker, amd64]
@@ -130,18 +116,22 @@ jobs:
               with:
                   context: .
                   platforms: linux/amd64
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: ${{ needs.setup-skips.outputs.image-push == 'true' }}
                   file: docker/dockerfile.setup-job-matrix
-                  tags: ghcr.io/${{ github.repository }}/setup-job-matrix:latest
-                  cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/setup-job-matrix:latest
+                  tags: ghcr.io/${{ github.repository }}/setup-job-matrix:latest${{ needs.setup-skips.outputs.setup-job-matrix-image-staging-tag-suffix }}
+                  cache-from: |
+                    type=registry,ref=ghcr.io/${{ github.repository }}/setup-job-matrix:latest
+                    type=registry,ref=ghcr.io/${{ github.repository }}/setup-job-matrix:latest${{ needs.setup-skips.outputs.setup-job-matrix-image-staging-tag-suffix }}
                   cache-to: type=inline
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
+              env:
+                  DOCKER_BUILD_RECORD_RETENTION_DAYS: ${{ needs.setup-skips.outputs.docker-build-record-retention-days }}
 
     setup-job-matrix:
         runs-on: [self-hosted, linux, docker, amd64]
-        needs: [setup-job-matrix-image]
+        needs: [setup-skips, setup-job-matrix-image]
         container:
-            image: ghcr.io/${{ github.repository }}/setup-job-matrix:latest
+            image: ghcr.io/${{ github.repository }}/setup-job-matrix:latest${{ needs.setup-skips.outputs.setup-job-matrix-image-staging-tag-suffix }}
         outputs:
             dependencies: ${{ steps.strategy.outputs.dependencies }}
             image_deploy: ${{ steps.strategy.outputs.image_deploy }}
@@ -156,7 +146,8 @@ jobs:
 
             - id  : strategy
               run : |
-                  PYTHONPATH=$PWD python .github/workflows/strategy.py >> $GITHUB_OUTPUT
+                  PYTHONPATH=$PWD python .github/workflows/strategy.py \
+                    --staging-tag-suffix=${{ needs.setup-skips.outputs.build-images-staging-tag-suffix }} >> $GITHUB_OUTPUT
 
     build-images-image:
         needs: [pre-commit, setup-skips]
@@ -184,18 +175,22 @@ jobs:
               with:
                   context: null
                   platforms: linux/amd64,linux/arm64
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: ${{ needs.setup-skips.outputs.image-push == 'true' }}
                   file: docker/dockerfile.build-images
-                  tags: ghcr.io/${{ github.repository }}/build-images:latest
-                  cache-from: type=registry,ref=ghcr.io/${{ github.repository }}/build-images:latest
+                  tags: ghcr.io/${{ github.repository }}/build-images:latest${{ needs.setup-skips.outputs.build-images-staging-tag-suffix }}
+                  cache-from: |
+                    type=registry,ref=ghcr.io/${{ github.repository }}/build-images:latest
+                    type=registry,ref=ghcr.io/${{ github.repository }}/build-images:latest${{ needs.setup-skips.outputs.build-images-staging-tag-suffix }}
                   cache-to: type=inline
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
+              env:
+                  DOCKER_BUILD_RECORD_RETENTION_DAYS: ${{ needs.setup-skips.outputs.docker-build-record-retention-days }}
 
     build-images:
         needs: [pre-commit, setup-job-matrix, build-images-image, setup-skips]
         runs-on: ${{ matrix.build-images.runs-on }}
         container:
-            image: ghcr.io/${{ github.repository }}/build-images:latest
+            image: ghcr.io/${{ github.repository }}/build-images:latest${{ needs.setup-skips.outputs.build-images-staging-tag-suffix }}
         services:
             docker:
                 image: docker:dind
@@ -225,10 +220,12 @@ jobs:
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: ${{ needs.setup-skips.outputs.image-push == 'true' }}
                   file: docker/dockerfile
-                  tags: ${{ matrix.image }}
-                  cache-from: type=registry,ref=${{ matrix.image }}
+                  tags: ${{ matrix.image.tags }}
+                  cache-from: |-
+                    ${{ join(matrix.image.cache-from, '
+                    ') }}
                   cache-to: type=inline
                   build-args: |
                       BASE_IMAGE=${{ matrix.base_image }}
@@ -240,18 +237,22 @@ jobs:
                       NVTX3_VERSION=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).nvtx3.version }}
                       PYTHON_VERSION=${{ matrix.python_version }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
+              env:
+                  DOCKER_BUILD_RECORD_RETENTION_DAYS: ${{ needs.setup-skips.outputs.docker-build-record-retention-days }}
 
             - uses: docker/build-push-action@v7.4.0
               with:
                   context: .
                   platforms: ${{ matrix.platform }}
-                  push: ${{ github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs['build-images']) }}
+                  push: ${{ needs.setup-skips.outputs.image-push == 'true' }}
                   file: docker/dockerfile.kokkos
-                  tags: ${{ matrix.kokkos }}
-                  cache-from: type=registry,ref=${{ matrix.kokkos }}
+                  tags: ${{ matrix.kokkos.tags }}
+                  cache-from: |-
+                    ${{ join(matrix.kokkos.cache-from, '
+                    ') }}
                   cache-to: type=inline
                   build-args: |
-                      BASE_IMAGE=${{ matrix.image }}
+                      BASE_IMAGE=${{ matrix.image.tags }}
                       KOKKOS_ARCH=${{ matrix.nvidia_arch }}
                       KOKKOS_CXX_COMPILER=${{ matrix.compilers.CXX.path }}
                       KOKKOS_CUDA_COMPILER=${{ matrix.compilers.CUDA.path }}
@@ -260,6 +261,8 @@ jobs:
                       KOKKOS_TOOLS_INSTALL_SUFFIX=${{ matrix.cmake_preset }}
                       KOKKOS_TOOLS_SHA=${{ fromJSON(needs.setup-job-matrix.outputs.dependencies).kokkos-tools.sha }}
                   labels: "org.opencontainers.image.source=${{ github.repositoryUrl }}"
+              env:
+                  DOCKER_BUILD_RECORD_RETENTION_DAYS: ${{ needs.setup-skips.outputs.docker-build-record-retention-days }}
 
     tests:
         needs: [pre-commit, setup-job-matrix, build-images]
@@ -596,7 +599,7 @@ jobs:
         runs-on: [self-hosted, linux, docker, amd64]
         container:
             image: ubuntu:26.04
-        if: ${{ ! failure() && ! cancelled() && github.ref == 'refs/heads/main' }}
+        if: ${{ ! failure() && ! cancelled() && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
 
         permissions:
             pages   : write

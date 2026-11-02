@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections.abc
 import dataclasses
 import importlib
+import importlib.util
 import logging
 import pathlib
 import re

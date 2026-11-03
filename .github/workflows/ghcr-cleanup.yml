@@ -52,11 +52,11 @@ jobs:
           from strategy import build_matrix, REGISTRY
 
 
-          def get_package_name_from(*, image: str) -> str:
+          def get_package_name_from(image: str) -> str:
             # Remove the image tag.
             image = image.split(':', maxsplit=1)[0]
-            # Remove prefix.
-            return re.match(pattern=rf'{REGISTRY}/${{ github.repository_owner }}/(.*)', string=image).group(1)
+            # Remove registry prefix (if present) and the repository owner prefix.
+            return re.match(pattern=rf'(?:{re.escape(REGISTRY)}/)?${{ github.repository_owner }}/(.*)', string=image).group(1)
 
           if __name__ == '__main__':
 
@@ -68,11 +68,10 @@ jobs:
             ))
 
             for job in build_matrix():
-                packages.update((get_package_name_from(image=job['image']['tags']),))
-                packages.update((get_package_name_from(image=job['kokkos']['tags']),))
+                packages.update((job['image']['tags'], job['kokkos']['tags']),)
 
             logging.info(packages)
-            print(f"package-list={','.join(packages)}")
+            print(f"package-list={','.join(map(get_package_name_from, packages))}")
           EOF
 
   # Strategy A.

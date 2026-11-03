@@ -62,10 +62,10 @@ jobs:
 
             logging.basicConfig(level=logging.INFO)
 
-            packages = set(
+            packages = set((
               '${{ github.repository }}/build-images',
               '${{ github.repository }}/setup-job-matrix',
-            )
+            ))
 
             for job in build_matrix():
                 packages.update((get_package_name_from(image=job['image']['tags']),))

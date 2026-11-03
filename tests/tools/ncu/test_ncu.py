@@ -4,6 +4,7 @@ import pathlib
 import re
 import subprocess
 import tempfile
+import time
 import typing
 import unittest.mock
 
@@ -597,10 +598,12 @@ class TestSession:
             opts=('--something-ncu-does-not-know',),
         ))
 
-        with unittest.mock.patch('time.sleep') as mock_sleep:
+        with unittest.mock.patch.object(ncu.session, 'time', wraps=time) as mock_time:
+            # Ensure that if 'sleep' is called, it will be a no-op (i.e. it won't really sleep).
+            mock_time.sleep = unittest.mock.Mock()
             with pytest.raises(subprocess.CalledProcessError):
                 session.run(retries=5)
-            mock_sleep.assert_not_called()
+            mock_time.sleep.assert_not_called()
 
 class TestCacher:
     """

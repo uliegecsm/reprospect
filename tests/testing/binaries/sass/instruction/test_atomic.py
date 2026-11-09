@@ -169,14 +169,27 @@ __global__ void atomic_exch_kernel() {
         return ThreadScope.DEVICE
 
     @staticmethod
+    def get_atomicExch_ptx_nvidia(*, cuda_compiler: CMakeToolchainCompiler, arch: NVIDIAArch) -> str:
+        """
+        According to :cite:`nvidia-cuda-legacy-atomic-functions`,
+        legacy atomic functions such as `atomicAdd`:
+
+            1. have *relaxed* memory ordering,
+            2. are *device* thread scope.
+
+        Starting from CUDA 13.5.0 and compute capability 100, the resulting PTX code
+        is more explicit on both the memory ordering (`.relaxed`) and thread scope (`.gpu`).
+        """
+        if semantic_version.Version(cuda_compiler.version) in semantic_version.SimpleSpec('>=13.5') and arch.compute_capability >= 100:
+            return 'atom.relaxed.gpu.global.exch.b32'
+        return 'atom.global.exch.b32'
+
+    @staticmethod
     def assert_atomicCAS_ptx(*, output: pathlib.Path, matcher: AtomicMatcher, cuda_compiler: CMakeToolchainCompiler) -> None:
         """
         Check for the expected PTX code in `output` given the :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope`.
 
-        According to:
-
-        * https://docs.nvidia.com/cuda/cuda-programming-guide/05-appendices/cpp-language-extensions.html#legacy-atomic-functions
-
+        According to :cite:`nvidia-cuda-legacy-atomic-functions`,
         it should generate :py:data:`reprospect.testing.binaries.sass.instruction.atomic.ThreadScope.DEVICE` instructions. However, as noted in:
 
         * https://github.com/uliegecsm/reprospect/issues/556
@@ -661,7 +674,7 @@ __global__ void atomic_exch_kernel() {
 
         match cmake_cuda_compiler.id:
             case 'NVIDIA':
-                assert 'atom.global.exch.b32' in result
+                assert self.get_atomicExch_ptx_nvidia(cuda_compiler=cmake_cuda_compiler, arch=parameters.arch) in result
             case 'Clang':
                 if cuda_compiler_version in semantic_version.SimpleSpec('>=23'):
                     assert 'atom.relaxed.sys.exch.b32' in result

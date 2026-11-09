@@ -153,6 +153,9 @@ def get_base_name_tag_digest(cuda_version: str, ubuntu_version: str) -> tuple[st
         case ('13.4.1', '26.04'):
             tag = '13.4.1-devel-ubuntu26.04'
             digest = 'sha256:fe678162c7114158e170f2f727a7582162a3a55d7090ed31fac04f2dbc173378'
+        case ('13.5.0', '26.04'):
+            tag = '13.5.0-devel-ubuntu26.04'
+            digest = 'sha256:cafb2ca8fcffb6669cd80b929830de884bd12bb6eb364b474e8fe99108249d1e'
         case _:
             raise ValueError((cuda_version, ubuntu_version))
     return ('nvcr.io/nvidia/cuda', tag, digest)
@@ -511,6 +514,15 @@ def build_matrix(args: argparse.Namespace | None = None) -> list[JobDict]:
 
     matrix.extend(from_config(Config(
         cuda_version='13.3.1',
+        ubuntu_version='26.04',
+        python_version='3.14',
+        compilers={'CXX': Compiler(ID='GNU', version='15'), 'CUDA': Compiler(ID='NVIDIA')},
+        compute_capability=ComputeCapability(major=12, minor=0),
+        platforms=(Platform.from_str('linux/amd64'),),
+    ), deps=deps, args=args))
+
+    matrix.extend(from_config(Config(
+        cuda_version='13.5.0',
         ubuntu_version='26.04',
         python_version='3.14',
         compilers={'CXX': Compiler(ID='GNU', version='15'), 'CUDA': Compiler(ID='NVIDIA')},

@@ -39,7 +39,7 @@ def main(*, args: argparse.Namespace) -> None:
     DEFAULT_REF: typing.Final[str] = f'refs/heads/{DEFAULT_BRANCH}'
     logging.info(f'The default branch is {DEFAULT_BRANCH!r} ({DEFAULT_REF!r}).')
 
-    IS_DEFAULT_BRANCH: typing.Final[bool] = GITHUB_CONTEXT['ref'] == DEFAULT_BRANCH
+    IS_DEFAULT_BRANCH: typing.Final[bool] = GITHUB_CONTEXT['ref'] == DEFAULT_REF
 
     if IS_DEFAULT_BRANCH:
         logging.info(f'The current \'ref\' is ${GITHUB_CONTEXT["ref"]!r}, which is the default branch.')

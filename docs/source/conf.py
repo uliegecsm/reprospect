@@ -165,6 +165,12 @@ nitpick_ignore_regex = [
 nb_merge_streams = True
 nb_execution_in_temp = True
 
+# Avoid warning about kernel running over TCP without encryption.
+# See also https://github.com/ipython/ipykernel/pull/1515.
+from jupyter_client.manager import KernelManager
+
+KernelManager.transport_encryption = 'auto'
+
 def get_last_commit(*, file: pathlib.Path, cwd: pathlib.Path) -> str:
     """
     Get the last commit hash that modified `file`.

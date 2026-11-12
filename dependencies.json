@@ -9,7 +9,7 @@
         "version": "3.5.0"
     },
     "kokkos": {
-        "sha": "5.2.0"
+        "sha": "5.3.0"
     },
     "kokkos-tools": {
         "sha": "5.2.0"

@@ -17,11 +17,14 @@ ARG KOKKOS_TOOLS_SHA
 ADD https://github.com/kokkos/kokkos/archive/${KOKKOS_SHA}.tar.gz /opt/kokkos-sources/${KOKKOS_SHA}.tar.gz
 ADD https://github.com/kokkos/kokkos-tools/archive/${KOKKOS_TOOLS_SHA}.tar.gz /opt/kokkos-tools-sources/${KOKKOS_TOOLS_SHA}.tar.gz
 
-RUN --mount=target=/tmp/kokkos-install.sh,type=bind,source=docker/kokkos.sh <<EOF
+RUN --mount=target=/tmp/kokkos-install.sh,type=bind,source=docker/kokkos.sh \
+    --mount=target=/tmp/fix_pr9650.patch,type=bind,source=docker/fix_pr9650.patch <<EOF
     set -ex
 
     cd /opt/kokkos-sources
     tar -zxf ${KOKKOS_SHA}.tar.gz
+    cd kokkos-${KOKKOS_SHA}
+    patch -p0 < /tmp/fix_pr9650.patch
 
     cd /opt/kokkos-tools-sources
     tar -zxf ${KOKKOS_TOOLS_SHA}.tar.gz

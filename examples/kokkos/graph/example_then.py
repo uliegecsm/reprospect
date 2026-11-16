@@ -39,7 +39,7 @@ class TestELF(TestThen):
         arg  = r'[A-Za-z0-9 :<>_,]+'
         return re.compile(
             r'void Kokkos::Impl::cuda_parallel_launch_local_memory<'
-            r'Kokkos::Impl::ParallelFor<Kokkos::Impl::ThenWrapper<'
+            r'Kokkos::Impl::ParallelFor<Kokkos::Impl::UnbindIndexArgument<'
             r'reprospect::examples::kokkos::graph::Functor<'
             r'Kokkos::View<int, Kokkos::CudaUVMSpace>>>, '
             rf'Kokkos::RangePolicy<Kokkos::Cuda, Kokkos::Impl::IsGraphKernelTag, Kokkos::LaunchBounds<{one}, {zero}>, void>, '
